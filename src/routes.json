@@ -1,30 +1,14 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
-    "fhir2": ">=1.2",
-    "webservices.rest": ">=2.2.0"
+    "webservices.rest": ">=2.40.0",
+    "rhdflags": ">=1.0.0-SNAPSHOT"
   },
-  "extensions": [
+  "workspaces2": [
     {
-      "name": "Red box",
-      "component": "redBox",
-      "slot": "Boxes"
-    },
-    {
-      "name": "Blue box",
-      "component": "blueBox",
-      "slot": "Boxes"
-    },
-        {
-      "name": "Brand box",
-      "component": "blueBox",
-      "slot": "Boxes"
-    }
-  ],
-  "pages": [
-    {
-      "component": "root",
-      "route": "root"
+      "name": "rhd-flag-gaps-workspace",
+      "component": "flagGapsWorkspace",
+      "window": "patient-chart-clinical-forms"
     }
   ]
 }
