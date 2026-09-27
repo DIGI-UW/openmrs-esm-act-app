@@ -1,53 +1,45 @@
-# OpenMRS ESM Template App
+# OpenMRS RHD frontend module
 
-![OpenMRS CI](https://github.com/openmrs/openmrs-esm-template-app/actions/workflows/ci.yml/badge.svg)
+RHD-specific screens for ACT 3.0, the OpenMRS 3 edition of the ACT rheumatic heart disease registry.
 
-> [!IMPORTANT]
-> **Starting a new frontend module?** The recommended way is now the [`create-o3-app`](https://github.com/openmrs/create-o3-app) CLI, which scaffolds a ready-to-run module in one command:
->
-> ```sh
-> npm create @openmrs/o3-app@latest my-module-name
-> ```
->
-> This repository is still useful as a reference for the structure the CLI generates. See the [Create a frontend module](https://o3-docs.openmrs.org/en-US/docs/recipes/create-a-frontend-module) recipe for details.
+## Missing data behind a flag
 
-This repository serves as a template for building OpenMRS frontend modules. For detailed guidance, see the [Creating a Frontend Module](https://openmrs.atlassian.net/wiki/x/rIIBCQ) documentation.
+A critical data flag says a patient is missing something, such as "Perfusion Issues missing on
+Procedures and Outcomes". This module adds a workspace, `rhd-flag-gaps-workspace`, that lists
+what is missing behind a clicked flag, one row per form and field, with the form's date and the days
+since. **Open form** opens that encounter in the patient chart's form entry workspace, ready to
+complete.
 
-For more information, please see the [OpenMRS Frontend Developer Documentation](https://openmrs.atlassian.net/wiki/x/IABBHg).
+The rows come from the [rhdflags](https://github.com/mherman22/openmrs-module-rhd-flags) module's
+gap look-up, `GET /ws/rest/v1/rhdflags/gap?patient=<uuid>&flag=<uuid>`, which needs a gap query
+configured for the flag. A flag without one shows "This flag does not list its missing data."
 
-The [Setup](https://openmrs.atlassian.net/wiki/x/PIIBCQ) section will help you get started with frontend module development.
+The workspace opens in the patient chart's Clinical forms window, so it needs the patient chart and
+forms apps. It is launched by a flag or tag action in the patient flags app, which passes the
+clicked flag as the workspace's props (`patientUuid`, `patientFlagUuid`, `flagUuid`,
+`flagName`):
+
+```json
+"@openmrs/esm-patient-flags-app": {
+  "tagActions": [{ "tagName": "Critical data", "workspace": "rhd-flag-gaps-workspace" }]
+}
+```
+
+## Requirements
+
+- Backend: webservices.rest 2.40.0 or later, and rhdflags with the gap look-up.
+- Frontend: the patient chart, forms and patient flags apps, with the flags app passing the
+  clicked flag to its workspace
+  ([mherman22/openmrs-esm-patient-chart#1](https://github.com/mherman22/openmrs-esm-patient-chart/pull/1)).
 
 ## Running this code
 
-1. Install dependencies
-
-```bash
-yarn install
+```sh
+yarn        # install dependencies
+yarn start  # serve it against a backend: openmrs develop --backend <url>
 ```
 
-2. Run the dev server
+`yarn verify` runs lint, typecheck and the tests; `yarn build` produces `dist/`.
 
-```bash
-yarn start
-```
-
-Once it is running, a browser window should open running the O3 reference application. Log in and then navigate to `/openmrs/spa/root`.
-
-## Adapting the code
-
-1. Replace all instances of "template" with your frontend module's name
-2. Update `index.ts` with your feature name, page name, and route
-3. Rename the `root.*` files to match your first page
-4. Clear `config-schema` objects and rebuild as needed
-5. Delete the `greeter` and `patient-getter` directories and clear `root.component.tsx`
-6. Clear `translations/en.json`
-7. Update `.github/workflows` for your deployment needs
-8. Replace this README with documentation for your module
-
-At this point, you should be able to write your first page as a React application.
-
-See the [Medication dispensing app](https://github.com/openmrs/openmrs-esm-dispensing-app) for a complete example of a non-trivial frontend module built using this template.
-
-## Integration
-
-See [Creating a Frontend Module](https://openmrs.atlassian.net/wiki/x/rIIBCQ) for details on how to integrate your custom frontend module into the OpenMRS reference application.
+On Node 25 or later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`: Node's own
+`localStorage` otherwise replaces the test DOM's.

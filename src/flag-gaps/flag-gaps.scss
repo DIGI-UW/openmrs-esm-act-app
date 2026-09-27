@@ -1,0 +1,10 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.container {
+  padding: layout.$spacing-05;
+}
+
+.message {
+  @include type.type-style('body-compact-01');
+}
