@@ -12,7 +12,8 @@ complete.
 
 The rows come from the [rhdflags](https://github.com/mherman22/openmrs-module-rhd-flags) module's
 gap look-up, `GET /ws/rest/v1/rhdflags/gap?patient=<uuid>&flag=<uuid>`, which needs a gap query
-configured for the flag. A flag without one shows "This flag does not list its missing data."
+configured for the flag. A flag without one shows "This flag does not list its missing data." When
+the missing data has no saved form to go on yet, the workspace offers Clinical forms to start one.
 
 The workspace opens in the patient chart's Clinical forms window, so it needs the patient chart and
 forms apps. It is launched by a flag or tag action in the patient flags app, which passes the

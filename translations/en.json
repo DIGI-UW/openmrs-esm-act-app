@@ -8,6 +8,7 @@
   "missing": "Missing",
   "missingData": "Missing data",
   "noGapList": "This flag does not list its missing data.",
-  "nothingMissing": "Nothing is missing for this flag.",
+  "noSavedForm": "No saved form is waiting to be completed. Record the missing data on a new form.",
+  "openClinicalForms": "Open clinical forms",
   "openForm": "Open form"
 }
