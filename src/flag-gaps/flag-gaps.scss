@@ -8,3 +8,12 @@
 .message {
   @include type.type-style('body-compact-01');
 }
+
+.flag + .flag {
+  margin-top: layout.$spacing-07;
+}
+
+.flagName {
+  @include type.type-style('heading-compact-02');
+  margin-bottom: layout.$spacing-03;
+}

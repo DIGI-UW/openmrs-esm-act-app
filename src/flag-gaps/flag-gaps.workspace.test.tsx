@@ -3,15 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { showSnackbar } from '@openmrs/esm-framework';
-import { fetchForm, type FlagGap, useFlagGaps } from './flag-gaps.resource';
+import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
 import FlagGapsWorkspace, { daysPending, type FlagActionWorkspaceProps } from './flag-gaps.workspace';
 
 vi.mock('./flag-gaps.resource', () => ({
-  useFlagGaps: vi.fn(),
+  usePatientFlagGaps: vi.fn(),
   fetchForm: vi.fn(),
 }));
 
-const mockUseFlagGaps = vi.mocked(useFlagGaps);
+const mockUsePatientFlagGaps = vi.mocked(usePatientFlagGaps);
 const mockFetchForm = vi.mocked(fetchForm);
 
 const workspaceProps: FlagActionWorkspaceProps = {
@@ -30,12 +30,15 @@ const firstGap: FlagGap = {
 
 const secondGap: FlagGap = { ...firstGap, encounter: 'encounter-2', encounterDatetime: '2026-09-20T10:30:00.000+0000' };
 
-function showWorkspace(launchChildWorkspace = vi.fn()) {
+function showWorkspace(
+  launchChildWorkspace = vi.fn(),
+  props: Partial<FlagActionWorkspaceProps> | null = workspaceProps,
+) {
   render(
     <FlagGapsWorkspace
-      workspaceProps={workspaceProps}
+      workspaceProps={props}
       windowProps={null}
-      groupProps={null}
+      groupProps={{ patientUuid: 'patient-uuid' }}
       launchChildWorkspace={launchChildWorkspace}
       closeWorkspace={vi.fn()}
       workspaceName="rhd-flag-gaps-workspace"
@@ -47,8 +50,25 @@ function showWorkspace(launchChildWorkspace = vi.fn()) {
   return launchChildWorkspace;
 }
 
-function gapsReturned(overrides: Partial<ReturnType<typeof useFlagGaps>>) {
-  mockUseFlagGaps.mockReturnValue({ gaps: [], configured: true, isLoading: false, error: undefined, ...overrides });
+function flagWith(gaps: Array<FlagGap>, overrides: Partial<FlagGaps> = {}): FlagGaps {
+  return { flagUuid: 'flag-uuid', flagName: 'RHD perfusion issues not recorded', configured: true, gaps, ...overrides };
+}
+
+function flagsReturned(flagGaps: Array<FlagGaps>, overrides: Partial<ReturnType<typeof usePatientFlagGaps>> = {}) {
+  mockUsePatientFlagGaps.mockReturnValue({ flagGaps, isLoading: false, error: undefined, ...overrides });
+}
+
+// The clicked flag's gaps, as the lookup returns them for one flag.
+function gapsReturned({
+  gaps = [],
+  configured = true,
+  error,
+}: {
+  gaps?: Array<FlagGap>;
+  configured?: boolean;
+  error?: Error;
+}) {
+  flagsReturned(error ? [] : [flagWith(gaps, { configured })], { error });
 }
 
 describe('flag gaps workspace', () => {
@@ -66,7 +86,10 @@ describe('flag gaps workspace', () => {
 
     showWorkspace();
 
-    expect(mockUseFlagGaps).toHaveBeenCalledWith('patient-uuid', 'flag-uuid');
+    expect(mockUsePatientFlagGaps).toHaveBeenCalledWith('patient-uuid', {
+      uuid: 'flag-uuid',
+      name: 'RHD perfusion issues not recorded',
+    });
     expect(screen.getByText('RHD perfusion issues not recorded')).toBeInTheDocument();
   });
 
@@ -138,6 +161,33 @@ describe('flag gaps workspace', () => {
     await user.click(screen.getByRole('button', { name: /open clinical forms/i }));
 
     expect(launchChildWorkspace).toHaveBeenCalledWith('clinical-forms-workspace');
+  });
+
+  it("lists the gaps behind each of the patient's flags when not told which flag was clicked", () => {
+    const sepsis = { ...firstGap, concept: { uuid: 'sepsis-uuid', display: 'Bacterial Sepsis' } };
+    flagsReturned([
+      flagWith([firstGap]),
+      flagWith([], { flagUuid: 'overdue-uuid', flagName: 'RHD prophylaxis overdue', configured: false }),
+      flagWith([sepsis], { flagUuid: 'sepsis-flag-uuid', flagName: 'RHD bacterial sepsis not recorded' }),
+    ]);
+
+    showWorkspace(vi.fn(), null);
+
+    expect(mockUsePatientFlagGaps).toHaveBeenCalledWith('patient-uuid', undefined);
+    expect(screen.getByText('Missing data')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'RHD perfusion issues not recorded' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'RHD bacterial sepsis not recorded' })).toBeInTheDocument();
+    expect(screen.queryByText('RHD prophylaxis overdue')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('table')).toHaveLength(2);
+    expect(screen.getByText('Bacterial Sepsis')).toBeInTheDocument();
+  });
+
+  it("says so when none of the patient's flags lists its missing data", () => {
+    flagsReturned([flagWith([], { configured: false })]);
+
+    showWorkspace(vi.fn(), null);
+
+    expect(screen.getByText(/none of this patient's flags lists its missing data/i)).toBeInTheDocument();
   });
 
   it('says so when the gaps cannot be loaded', () => {
