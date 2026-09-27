@@ -71,7 +71,17 @@ const FlagGapsWorkspace: React.FC<Workspace2DefinitionProps<FlagActionWorkspaceP
       return <p className={styles.message}>{t('noGapList', 'This flag does not list its missing data.')}</p>;
     }
     if (gaps.length === 0) {
-      return <p className={styles.message}>{t('nothingMissing', 'Nothing is missing for this flag.')}</p>;
+      // The flag is raised but the data has no saved form to go on yet, so it needs a new one.
+      return (
+        <>
+          <p className={styles.message}>
+            {t('noSavedForm', 'No saved form is waiting to be completed. Record the missing data on a new form.')}
+          </p>
+          <Button kind="ghost" size="sm" onClick={() => launchChildWorkspace('clinical-forms-workspace')}>
+            {t('openClinicalForms', 'Open clinical forms')}
+          </Button>
+        </>
+      );
     }
     return (
       <Table size="md" useZebraStyles={false}>

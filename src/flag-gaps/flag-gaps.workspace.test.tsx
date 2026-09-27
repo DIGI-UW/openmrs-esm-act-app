@@ -129,12 +129,15 @@ describe('flag gaps workspace', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it('says so when nothing is missing', () => {
+  it('offers a new form when no saved form is waiting to be completed', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     gapsReturned({ gaps: [] });
 
-    showWorkspace();
+    const launchChildWorkspace = showWorkspace();
+    expect(screen.getByText(/no saved form is waiting to be completed/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /open clinical forms/i }));
 
-    expect(screen.getByText(/nothing is missing/i)).toBeInTheDocument();
+    expect(launchChildWorkspace).toHaveBeenCalledWith('clinical-forms-workspace');
   });
 
   it('says so when the gaps cannot be loaded', () => {
