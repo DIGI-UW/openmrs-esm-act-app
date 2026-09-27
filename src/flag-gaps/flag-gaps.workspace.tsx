@@ -12,15 +12,20 @@ import {
   TableRow,
 } from '@carbon/react';
 import { formatDate, showSnackbar, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
-import { fetchForm, type FlagGap, useFlagGaps } from './flag-gaps.resource';
+import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
 import styles from './flag-gaps.scss';
 
-/** What the patient flags app launches a flag action's workspace with. */
+/** What a patient flags app that passes the clicked flag launches a flag action's workspace with. */
 export interface FlagActionWorkspaceProps {
   patientUuid: string;
   patientFlagUuid: string;
   flagUuid: string;
   flagName: string;
+}
+
+/** The patient chart's workspace group props, which carry the patient when the flag is not passed. */
+interface PatientChartGroupProps {
+  patientUuid?: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -29,12 +34,16 @@ export function daysPending(encounterDatetime: string, now = new Date()) {
   return Math.floor((now.getTime() - new Date(encounterDatetime).getTime()) / DAY_MS);
 }
 
-const FlagGapsWorkspace: React.FC<Workspace2DefinitionProps<FlagActionWorkspaceProps, object, object>> = ({
-  workspaceProps,
-  launchChildWorkspace,
-}) => {
+const FlagGapsWorkspace: React.FC<
+  Workspace2DefinitionProps<Partial<FlagActionWorkspaceProps>, object, PatientChartGroupProps>
+> = ({ workspaceProps, groupProps, launchChildWorkspace }) => {
   const { t } = useTranslation();
-  const { gaps, configured, isLoading, error } = useFlagGaps(workspaceProps?.patientUuid, workspaceProps?.flagUuid);
+  const patientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid;
+  const clickedFlag = workspaceProps?.flagUuid
+    ? { uuid: workspaceProps.flagUuid, name: workspaceProps.flagName }
+    : undefined;
+  const { flagGaps, isLoading, error } = usePatientFlagGaps(patientUuid, clickedFlag);
+  const listed = flagGaps.filter((flag) => flag.configured);
 
   const openGap = useCallback(
     async (gap: FlagGap) => {
@@ -67,9 +76,24 @@ const FlagGapsWorkspace: React.FC<Workspace2DefinitionProps<FlagActionWorkspaceP
         />
       );
     }
-    if (!configured) {
-      return <p className={styles.message}>{t('noGapList', 'This flag does not list its missing data.')}</p>;
+    if (listed.length === 0) {
+      return (
+        <p className={styles.message}>
+          {clickedFlag
+            ? t('noGapList', 'This flag does not list its missing data.')
+            : t('noGapLists', "None of this patient's flags lists its missing data.")}
+        </p>
+      );
     }
+    return listed.map((flag) => (
+      <section key={flag.flagUuid} className={styles.flag}>
+        {clickedFlag ? null : <h4 className={styles.flagName}>{flag.flagName}</h4>}
+        {renderGaps(flag)}
+      </section>
+    ));
+  };
+
+  const renderGaps = ({ gaps }: FlagGaps) => {
     if (gaps.length === 0) {
       // The flag is raised but the data has no saved form to go on yet, so it needs a new one.
       return (
@@ -116,7 +140,7 @@ const FlagGapsWorkspace: React.FC<Workspace2DefinitionProps<FlagActionWorkspaceP
   };
 
   return (
-    <Workspace2 title={workspaceProps?.flagName ?? t('missingData', 'Missing data')}>
+    <Workspace2 title={clickedFlag?.name ?? t('missingData', 'Missing data')}>
       <div className={styles.container}>{renderContent()}</div>
     </Workspace2>
   );
