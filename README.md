@@ -30,8 +30,22 @@ A flags app that passes the clicked flag as the workspace's props (`patientUuid`
 
 ## Requirements
 
-- Backend: webservices.rest 2.40.0 or later, and rhdflags with the gap look-up.
+- Backend: webservices.rest 2.40.0 or later, rhdflags with the gap look-up, cohort 3.7.3 or later for the RHD flag
+  lists, and reportingrest 2.0.0 or later for the report datasets.
 - Frontend: the patient chart, forms and patient flags apps.
+
+## Privileges for ACT roles
+
+The ACT screens (the home page, registry, waiting list and screen positive page, still to come) are to be shown
+only to users with the privilege set for each in `screenPrivileges`, by default `View Patient Flags`, using
+`ScreenAccess`. To read their data, a role also needs these privileges:
+
+| Data | Privileges to grant |
+| --- | --- |
+| The RHD flag lists and their members | `Get Patient Cohorts`, `View Cohorts In Cohort Module` |
+| Report datasets, such as the registry and the waiting list | `View Reports`, `Run Reports`, `Get Patients` |
+
+`Run Reports` lets a user evaluate any report on the server.
 
 ## Running this code
 
