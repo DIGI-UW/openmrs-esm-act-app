@@ -30,7 +30,8 @@ A flags app that passes the clicked flag as the workspace's props (`patientUuid`
 
 ## Requirements
 
-- Backend: webservices.rest 2.40.0 or later, rhdflags with the gap look-up, and cohort 3.7.3 or later for the RHD flag lists.
+- Backend: webservices.rest 2.40.0 or later, rhdflags with the gap look-up, cohort 3.7.3 or later for the RHD flag
+  lists, and reportingrest 2.0.0 or later for the report datasets.
 - Frontend: the patient chart, forms and patient flags apps.
 
 ## Running this code

@@ -3,7 +3,8 @@
   "backendDependencies": {
     "webservices.rest": ">=2.40.0",
     "rhdflags": ">=1.0.0-SNAPSHOT",
-    "cohort": ">=3.7.3"
+    "cohort": ">=3.7.3",
+    "reportingrest": ">=2.0.0"
   },
   "workspaces2": [
     {
