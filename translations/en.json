@@ -2,6 +2,9 @@
   "actHome": "ACT home",
   "actions": "Actions",
   "allLists": "All lists",
+  "careCascade": "Care cascade",
+  "cascadeReportDate": "Report date: {{date}}",
+  "couldNotLoadCareCascade": "Could not load the care cascade",
   "couldNotLoadGaps": "Could not load the missing data",
   "couldNotLoadWorklists": "Could not load the worklists",
   "couldNotOpenForm": "Could not open the form",
@@ -14,6 +17,7 @@
   "missingData": "Missing data",
   "noAccessToActHome": "You do not have access to ACT home.",
   "noActHomeWidgets": "No widgets have been added to ACT home yet.",
+  "noCareCascadeData": "No care cascade data",
   "noGapList": "This flag does not list its missing data.",
   "noGapLists": "None of this patient's flags lists its missing data.",
   "noRhdFlagLists": "No RHD flag lists found",
@@ -21,5 +25,6 @@
   "openClinicalForms": "Open clinical forms",
   "openForm": "Open form",
   "registerPatient": "Register patient",
+  "report": "Report",
   "worklists": "Worklists"
 }

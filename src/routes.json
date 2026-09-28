@@ -33,6 +33,12 @@
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWorklists",
       "order": 2
+    },
+    {
+      "name": "act-home-care-cascade",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeCareCascade",
+      "order": 4
     }
   ],
   "workspaces2": [

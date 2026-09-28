@@ -24,3 +24,5 @@ export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-h
 export const actHomeQuickActions = getAsyncLifecycle(() => import('./act-home/quick-actions.component'), options);
 
 export const actHomeWorklists = getAsyncLifecycle(() => import('./act-home/worklist-tiles.component'), options);
+
+export const actHomeCareCascade = getAsyncLifecycle(() => import('./act-home/care-cascade.component'), options);

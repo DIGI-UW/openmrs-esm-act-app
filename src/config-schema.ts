@@ -60,6 +60,22 @@ export const configSchema = {
     ),
     findPatientUrl: link('Where the Find a patient quick action on ACT home leads.', '${openmrsSpaBase}/search'),
   },
+  careCascade: {
+    report: {
+      _type: Type.String,
+      _default: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
+      _description:
+        'The care cascade report, by uuid or name. The ACT home widget draws its rows, one per step, from their step and patients columns.',
+    },
+    reportUrl: link("Where the care cascade widget's link to the full report leads.", '${openmrsSpaBase}/reports'),
+    steps: {
+      _type: Type.Array,
+      _elements: { _type: Type.String },
+      _default: ['Active', 'Prescribed Prophylaxis', 'Initiated BPG', 'Adherent'],
+      _description:
+        "The report's steps the widget draws, by their step value, in this order. The report's Oral and BPG rows split Prescribed Prophylaxis, so they are left out by default.",
+    },
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -94,5 +110,6 @@ export interface Config {
     riskFlags: Array<string>;
   };
   quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
+  careCascade: { report: string; reportUrl: string; steps: Array<string> };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

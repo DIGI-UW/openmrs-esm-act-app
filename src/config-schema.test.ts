@@ -25,6 +25,11 @@ describe('configSchema', () => {
         enterProphylaxisUrl: '${openmrsSpaBase}/forms',
         findPatientUrl: '${openmrsSpaBase}/search',
       },
+      careCascade: {
+        report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
+        reportUrl: '${openmrsSpaBase}/reports',
+        steps: ['Active', 'Prescribed Prophylaxis', 'Initiated BPG', 'Adherent'],
+      },
       urgencyBands: [
         { label: '1: Emergent', concept: '1fe15210-4490-58b0-a38c-bb0386e98482', deadlineDays: 1 },
         { label: '2: Urgent', concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00', deadlineDays: 60 },
