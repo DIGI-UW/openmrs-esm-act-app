@@ -22,3 +22,5 @@ export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkCompone
 export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-home-dashboard.component'), options);
 
 export const actHomeQuickActions = getAsyncLifecycle(() => import('./act-home/quick-actions.component'), options);
+
+export const actHomeWorklists = getAsyncLifecycle(() => import('./act-home/worklist-tiles.component'), options);

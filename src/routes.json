@@ -27,6 +27,12 @@
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeQuickActions",
       "order": 1
+    },
+    {
+      "name": "act-home-worklists",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeWorklists",
+      "order": 2
     }
   ],
   "workspaces2": [
