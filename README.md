@@ -28,11 +28,42 @@ from the patient chart:
 A flags app that passes the clicked flag as the workspace's props (`patientUuid`, `patientFlagUuid`,
 `flagUuid`, `flagName`) narrows the workspace to that flag.
 
+## ACT home
+
+An ACT home dashboard in the home app's left nav, at `/home/act-home`. Its widgets go in
+`rhd-home-widgets-slot`; until one is added it says so. To make it the page ACT users land on, set the home
+app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT role:
+
+```json
+"@openmrs/esm-home-app": {
+  "defaultDashboardPerRole": { "<ACT role>": "act-home" }
+}
+```
+
+Its quick actions open registration, patient search and the fast data entry app; their links are in `quickActions`.
+Enter prophylaxis lists the BPG and oral forms once the distro gives the fast data entry app a category for them, and
+shows it:
+
+```json
+"@openmrs/esm-fast-data-entry-app": {
+  "formCategories": [
+    {
+      "name": "Prophylaxis",
+      "forms": [
+        { "formUUID": "0119d2e6-e2e1-391c-9b88-d59a10b0780d", "name": "RHD BPG Delivery" },
+        { "formUUID": "ba29e982-ce18-302a-9fc4-d4b2c3983465", "name": "RHD Oral Adherence" }
+      ]
+    }
+  ],
+  "formCategoriesToShow": ["Prophylaxis"]
+}
+```
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, rhdflags with the gap look-up, cohort 3.7.3 or later for the RHD flag
   lists, and reportingrest 2.0.0 or later for the report datasets.
-- Frontend: the patient chart, forms and patient flags apps.
+- Frontend: the patient chart, forms and patient flags apps; ACT home needs the home app.
 
 ## Privileges for ACT roles
 

@@ -1,0 +1,22 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.dashboard {
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.title {
+  @include type.type-style('heading-05');
+  margin-bottom: layout.$spacing-06;
+}
+
+.widgets {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}

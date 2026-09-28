@@ -1,0 +1,42 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.step {
+  @include type.type-style('body-compact-01');
+  display: grid;
+  grid-template-columns: 12rem 1fr 3rem;
+  align-items: center;
+  gap: layout.$spacing-04;
+}
+
+.track {
+  height: layout.$spacing-05;
+}
+
+.bar {
+  display: block;
+  height: 100%;
+  @include brand-01(background-color);
+}
+
+.count {
+  @include type.type-style('heading-compact-01');
+  text-align: right;
+}
+
+.asOf {
+  @include type.type-style('helper-text-01');
+  margin-top: layout.$spacing-04;
+  color: $text-02;
+}
+
+.empty {
+  @include type.type-style('body-compact-01');
+}

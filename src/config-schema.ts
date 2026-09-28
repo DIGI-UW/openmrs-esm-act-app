@@ -13,6 +13,12 @@ const locationTags = (clinics: string, defaultTags: Array<string>) => ({
   _description: `Location tags that mark ${clinics}, used by the clinic filters.`,
 });
 
+const link = (description: string, defaultUrl: string) => ({
+  _type: Type.String,
+  _default: defaultUrl,
+  _description: description,
+});
+
 export const configSchema = {
   screenPrivileges: {
     home: screenPrivilege('the ACT home page'),
@@ -41,6 +47,33 @@ export const configSchema = {
       _elements: { _type: Type.String },
       _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up'],
       _description: 'The flags, by name, that mark a clinical risk. The lists of every other flag are missing data.',
+    },
+  },
+  quickActions: {
+    registerPatientUrl: link(
+      'Where the Register patient quick action on ACT home leads.',
+      '${openmrsSpaBase}/patient-registration',
+    ),
+    enterProphylaxisUrl: link(
+      'Where the Enter prophylaxis quick action on ACT home leads: the fast data entry app, whose forms the distro sets.',
+      '${openmrsSpaBase}/forms',
+    ),
+    findPatientUrl: link('Where the Find a patient quick action on ACT home leads.', '${openmrsSpaBase}/search'),
+  },
+  careCascade: {
+    report: {
+      _type: Type.String,
+      _default: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
+      _description:
+        'The care cascade report, by uuid or name. The ACT home widget draws its rows, one per step, from their step and patients columns.',
+    },
+    reportUrl: link("Where the care cascade widget's link to the full report leads.", '${openmrsSpaBase}/reports'),
+    steps: {
+      _type: Type.Array,
+      _elements: { _type: Type.String },
+      _default: ['Active', 'Prescribed Prophylaxis', 'Initiated BPG', 'Adherent'],
+      _description:
+        "The report's steps the widget draws, by their step value, in this order. The report's Oral and BPG rows split Prescribed Prophylaxis, so they are left out by default.",
     },
   },
   urgencyBands: {
@@ -76,5 +109,7 @@ export interface Config {
     names: Array<string>;
     riskFlags: Array<string>;
   };
+  quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
+  careCascade: { report: string; reportUrl: string; steps: Array<string> };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }
