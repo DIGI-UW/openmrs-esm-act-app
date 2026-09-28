@@ -1,5 +1,6 @@
-import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
 
 const moduleName = '@mherman22/esm-rhd-app';
 
@@ -15,3 +16,7 @@ export function startupApp() {
 }
 
 export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/flag-gaps.workspace'), options);
+
+export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);
+
+export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-home-dashboard.component'), options);

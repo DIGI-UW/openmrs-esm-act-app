@@ -28,11 +28,23 @@ from the patient chart:
 A flags app that passes the clicked flag as the workspace's props (`patientUuid`, `patientFlagUuid`,
 `flagUuid`, `flagName`) narrows the workspace to that flag.
 
+## ACT home
+
+An ACT home dashboard in the home app's left nav, at `/home/act-home`. Its widgets go in
+`rhd-home-widgets-slot`; until one is added it says so. To make it the page ACT users land on, set the home
+app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT role:
+
+```json
+"@openmrs/esm-home-app": {
+  "defaultDashboardPerRole": { "<ACT role>": "act-home" }
+}
+```
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, rhdflags with the gap look-up, cohort 3.7.3 or later for the RHD flag
   lists, and reportingrest 2.0.0 or later for the report datasets.
-- Frontend: the patient chart, forms and patient flags apps.
+- Frontend: the patient chart, forms and patient flags apps; ACT home needs the home app.
 
 ## Privileges for ACT roles
 

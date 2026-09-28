@@ -6,6 +6,23 @@
     "cohort": ">=3.7.3",
     "reportingrest": ">=2.0.0"
   },
+  "extensions": [
+    {
+      "name": "act-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "actHomeDashboardLink",
+      "meta": {
+        "name": "act-home",
+        "slot": "rhd-home-dashboard-slot",
+        "title": "actHome"
+      }
+    },
+    {
+      "name": "act-home-dashboard",
+      "slot": "rhd-home-dashboard-slot",
+      "component": "actHomeDashboard"
+    }
+  ],
   "workspaces2": [
     {
       "name": "rhd-flag-gaps-workspace",

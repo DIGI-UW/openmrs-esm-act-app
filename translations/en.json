@@ -1,4 +1,5 @@
 {
+  "actHome": "ACT home",
   "actions": "Actions",
   "couldNotLoadGaps": "Could not load the missing data",
   "couldNotOpenForm": "Could not open the form",
@@ -7,7 +8,10 @@
   "form": "Form",
   "missing": "Missing",
   "missingData": "Missing data",
+  "noAccessToActHome": "You do not have access to ACT home.",
+  "noActHomeWidgets": "No widgets have been added to ACT home yet.",
   "noGapList": "This flag does not list its missing data.",
+  "noGapLists": "None of this patient's flags lists its missing data.",
   "noSavedForm": "No saved form is waiting to be completed. Record the missing data on a new form.",
   "openClinicalForms": "Open clinical forms",
   "openForm": "Open form"
