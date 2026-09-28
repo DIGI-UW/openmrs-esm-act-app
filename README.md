@@ -40,6 +40,25 @@ app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT ro
 }
 ```
 
+Its quick actions open registration, patient search and the fast data entry app; their links are in `quickActions`.
+Enter prophylaxis lists the BPG and oral forms once the distro gives the fast data entry app a category for them, and
+shows it:
+
+```json
+"@openmrs/esm-fast-data-entry-app": {
+  "formCategories": [
+    {
+      "name": "Prophylaxis",
+      "forms": [
+        { "formUUID": "0119d2e6-e2e1-391c-9b88-d59a10b0780d", "name": "RHD BPG Delivery" },
+        { "formUUID": "ba29e982-ce18-302a-9fc4-d4b2c3983465", "name": "RHD Oral Adherence" }
+      ]
+    }
+  ],
+  "formCategoriesToShow": ["Prophylaxis"]
+}
+```
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, rhdflags with the gap look-up, cohort 3.7.3 or later for the RHD flag

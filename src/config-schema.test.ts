@@ -20,6 +20,11 @@ describe('configSchema', () => {
         names: [],
         riskFlags: ['RHD prophylaxis overdue', 'RHD lost to follow-up'],
       },
+      quickActions: {
+        registerPatientUrl: '${openmrsSpaBase}/patient-registration',
+        enterProphylaxisUrl: '${openmrsSpaBase}/forms',
+        findPatientUrl: '${openmrsSpaBase}/search',
+      },
       urgencyBands: [
         { label: '1: Emergent', concept: '1fe15210-4490-58b0-a38c-bb0386e98482', deadlineDays: 1 },
         { label: '2: Urgent', concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00', deadlineDays: 60 },

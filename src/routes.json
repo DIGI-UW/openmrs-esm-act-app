@@ -21,6 +21,12 @@
       "name": "act-home-dashboard",
       "slot": "rhd-home-dashboard-slot",
       "component": "actHomeDashboard"
+    },
+    {
+      "name": "act-home-quick-actions",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeQuickActions",
+      "order": 1
     }
   ],
   "workspaces2": [

@@ -5,6 +5,8 @@
   "couldNotOpenForm": "Could not open the form",
   "date": "Date",
   "daysPending": "Days pending",
+  "enterProphylaxis": "Enter prophylaxis",
+  "findPatient": "Find a patient",
   "form": "Form",
   "missing": "Missing",
   "missingData": "Missing data",
@@ -14,5 +16,6 @@
   "noGapLists": "None of this patient's flags lists its missing data.",
   "noSavedForm": "No saved form is waiting to be completed. Record the missing data on a new form.",
   "openClinicalForms": "Open clinical forms",
-  "openForm": "Open form"
+  "openForm": "Open form",
+  "registerPatient": "Register patient"
 }

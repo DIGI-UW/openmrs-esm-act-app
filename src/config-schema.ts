@@ -13,6 +13,12 @@ const locationTags = (clinics: string, defaultTags: Array<string>) => ({
   _description: `Location tags that mark ${clinics}, used by the clinic filters.`,
 });
 
+const link = (description: string, defaultUrl: string) => ({
+  _type: Type.String,
+  _default: defaultUrl,
+  _description: description,
+});
+
 export const configSchema = {
   screenPrivileges: {
     home: screenPrivilege('the ACT home page'),
@@ -42,6 +48,17 @@ export const configSchema = {
       _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up'],
       _description: 'The flags, by name, that mark a clinical risk. The lists of every other flag are missing data.',
     },
+  },
+  quickActions: {
+    registerPatientUrl: link(
+      'Where the Register patient quick action on ACT home leads.',
+      '${openmrsSpaBase}/patient-registration',
+    ),
+    enterProphylaxisUrl: link(
+      'Where the Enter prophylaxis quick action on ACT home leads: the fast data entry app, whose forms the distro sets.',
+      '${openmrsSpaBase}/forms',
+    ),
+    findPatientUrl: link('Where the Find a patient quick action on ACT home leads.', '${openmrsSpaBase}/search'),
   },
   urgencyBands: {
     _type: Type.Array,
@@ -76,5 +93,6 @@ export interface Config {
     names: Array<string>;
     riskFlags: Array<string>;
   };
+  quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

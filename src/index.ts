@@ -20,3 +20,5 @@ export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/fla
 export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);
 
 export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-home-dashboard.component'), options);
+
+export const actHomeQuickActions = getAsyncLifecycle(() => import('./act-home/quick-actions.component'), options);
