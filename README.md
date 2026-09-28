@@ -61,7 +61,8 @@ The module is published to npm as `@mherman22/esm-rhd-app`. A distro lists it in
 CI publishes with the `NPM_AUTH_TOKEN` repository secret, an npm token that can publish to the
 `@mherman22` scope.
 
-- Every push to main publishes a prerelease, such as `1.0.1-pre.42`, under the `next` tag.
+- A push to main publishes a prerelease, such as `1.0.1-pre.42`, under the `next` tag. Runs on main
+  queue in push order, and a run still waiting when a newer push lands is skipped.
 - Publishing a GitHub release publishes the version in `package.json` under `latest`, or under `next`
   when the release is marked as a pre-release. Promoting a pre-release to a full release later
   publishes nothing, so give the stable release its own version. Commit the version bump to main

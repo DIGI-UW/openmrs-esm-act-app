@@ -9,6 +9,9 @@ on:
     types:
       - published
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+
 env:
   ESM_NAME: "@mherman22/esm-rhd-app"
   JS_NAME: "mherman22-esm-rhd-app.js"
@@ -26,12 +29,6 @@ jobs:
       - run: yarn install --immutable
       - run: yarn verify
       - run: yarn build
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: |
-            dist
 
   pre_release:
     runs-on: ubuntu-latest
@@ -42,9 +39,6 @@ jobs:
       github.event_name == 'push'
       && github.repository == 'mherman22/openmrs-esm-rhd-app'
       && !startsWith(github.event.head_commit.message, '(chore) Release')
-
-    concurrency:
-      group: npm-next
 
     steps:
       - uses: actions/checkout@v6
