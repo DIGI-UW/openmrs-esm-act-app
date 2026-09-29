@@ -55,7 +55,7 @@ export const configSchema = {
       '${openmrsSpaBase}/patient-registration',
     ),
     enterProphylaxisUrl: link(
-      'Where the Enter prophylaxis quick action on ACT home leads: the fast data entry app, whose forms the distro sets.',
+      'Where the Enter prophylaxis quick action on ACT home leads when prophylaxisForms is empty: the fast data entry app.',
       '${openmrsSpaBase}/forms',
     ),
     prophylaxisForms: {

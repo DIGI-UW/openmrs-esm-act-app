@@ -40,24 +40,12 @@ app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT ro
 }
 ```
 
-Its quick actions open registration, patient search and the fast data entry app; their links are in `quickActions`.
-Enter prophylaxis lists the BPG and oral forms once the distro gives the fast data entry app a category for them, and
-shows it:
-
-```json
-"@openmrs/esm-fast-data-entry-app": {
-  "formCategories": [
-    {
-      "name": "Prophylaxis",
-      "forms": [
-        { "formUUID": "0119d2e6-e2e1-391c-9b88-d59a10b0780d", "name": "RHD BPG Delivery" },
-        { "formUUID": "ba29e982-ce18-302a-9fc4-d4b2c3983465", "name": "RHD Oral Adherence" }
-      ]
-    }
-  ],
-  "formCategoriesToShow": ["Prophylaxis"]
-}
-```
+Its quick actions open registration, Enter prophylaxis and patient search; their links are in `quickActions`.
+Enter prophylaxis offers the choices in `quickActions.prophylaxisForms`, as ACT 2.0 offered BPG and oral
+prophylaxis: by default Enter BPG and Enter oral prophylaxis, which open the RHD BPG Delivery and RHD Oral
+Adherence forms in fast data entry, where the patient is picked. Each choice has a `label` and a `url`; with
+none, Enter prophylaxis links to `enterProphylaxisUrl`. Fast data entry always opens on all forms, so a
+Prophylaxis category in its own config (`formCategories`) only adds a tab there.
 
 ## Procedural waiting list
 
