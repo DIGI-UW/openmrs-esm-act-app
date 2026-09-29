@@ -1,9 +1,9 @@
 {
-  "name": "@mherman22/esm-rhd-app",
+  "name": "@mherman22/esm-act-app",
   "version": "1.0.0",
   "license": "MPL-2.0",
-  "description": "RHD frontend module for ACT 3.0: lists the data missing behind a critical data flag",
-  "browser": "dist/mherman22-esm-rhd-app.js",
+  "description": "ACT 3.0 screens for OpenMRS 3: ACT home, the registry and the missing data behind RHD flags",
+  "browser": "dist/mherman22-esm-act-app.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
@@ -31,14 +31,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mherman22/openmrs-esm-rhd-app.git"
+    "url": "git+https://github.com/mherman22/openmrs-esm-act-app.git"
   },
-  "homepage": "https://github.com/mherman22/openmrs-esm-rhd-app#readme",
+  "homepage": "https://github.com/mherman22/openmrs-esm-act-app#readme",
   "publishConfig": {
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/mherman22/openmrs-esm-rhd-app/issues"
+    "url": "https://github.com/mherman22/openmrs-esm-act-app/issues"
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",

@@ -1,4 +1,4 @@
-# OpenMRS RHD frontend module
+# OpenMRS ACT frontend module
 
 RHD-specific screens for ACT 3.0, the OpenMRS 3 edition of the ACT rheumatic heart disease registry.
 
@@ -89,3 +89,27 @@ yarn start  # serve it against a backend: openmrs develop --backend <url>
 
 On Node 25 or later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`: Node's own
 `localStorage` otherwise replaces the test DOM's.
+
+## Adding it to a distro
+
+The module is published to npm as `@mherman22/esm-act-app`. A distro lists it in
+`frontend/spa-assemble-config.json`, taking `next` for the newest prerelease or a release version:
+
+```json
+"frontendModules": {
+  "@mherman22/esm-act-app": "next"
+}
+```
+
+## Releasing
+
+CI publishes with the `NPM_AUTH_TOKEN` repository secret, an npm token that can publish to the
+`@mherman22` scope.
+
+- A push to main publishes a prerelease, such as `1.0.1-pre.42`, under the `next` tag. Runs on main
+  queue in push order, and a run still waiting when a newer push lands is skipped.
+- Publishing a GitHub release publishes the version in `package.json` under `latest`, or under `next`
+  when the release is marked as a pre-release. Promoting a pre-release to a full release later
+  publishes nothing, so give the stable release its own version. Commit the version bump to main
+  first, as a direct push or squash merge, with a commit message starting `(chore) Release` so it
+  does not also publish a prerelease. Then publish the release with its tag.
