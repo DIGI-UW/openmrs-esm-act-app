@@ -1,4 +1,4 @@
-# OpenMRS RHD frontend module
+# OpenMRS ACT frontend module
 
 RHD-specific screens for ACT 3.0, the OpenMRS 3 edition of the ACT rheumatic heart disease registry.
 
@@ -92,12 +92,12 @@ On Node 25 or later, run the tests with `NODE_OPTIONS=--no-experimental-webstora
 
 ## Adding it to a distro
 
-The module is published to npm as `@mherman22/esm-rhd-app`. A distro lists it in
+The module is published to npm as `@mherman22/esm-act-app`. A distro lists it in
 `frontend/spa-assemble-config.json`, taking `next` for the newest prerelease or a release version:
 
 ```json
 "frontendModules": {
-  "@mherman22/esm-rhd-app": "next"
+  "@mherman22/esm-act-app": "next"
 }
 ```
 

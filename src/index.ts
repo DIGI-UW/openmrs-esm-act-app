@@ -3,7 +3,7 @@ import { configSchema } from './config-schema';
 import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
 
-const moduleName = '@mherman22/esm-rhd-app';
+const moduleName = '@mherman22/esm-act-app';
 
 const options = {
   featureName: 'rhd-flag-gaps',
