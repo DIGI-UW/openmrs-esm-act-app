@@ -37,6 +37,9 @@ describe('configSchema', () => {
       waitingList: {
         report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
       },
+      screenPositive: {
+        report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
+      },
       urgencyBands: [
         { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
         { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },

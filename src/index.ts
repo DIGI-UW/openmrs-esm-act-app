@@ -3,6 +3,7 @@ import { configSchema } from './config-schema';
 import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
+import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 
 const moduleName = '@mherman22/esm-act-app';
 
@@ -41,5 +42,12 @@ export const waitingListDashboard = getAsyncLifecycle(() => import('./waiting-li
 
 export const waitingListOpenForm = getAsyncLifecycle(
   () => import('./waiting-list/open-pending-form.component'),
+  options,
+);
+
+export const screenPositiveDashboardLink = getSyncLifecycle(screenPositiveDashboardLinkComponent, options);
+
+export const screenPositiveDashboard = getAsyncLifecycle(
+  () => import('./screen-positive/screen-positive.component'),
   options,
 );

@@ -96,6 +96,14 @@ export const configSchema = {
       _description: 'The Procedural Waiting List report, by uuid or name, whose rows the waiting list shows.',
     },
   },
+  screenPositive: {
+    report: {
+      _type: Type.String,
+      _default: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
+      _description:
+        'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
+    },
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -135,5 +143,6 @@ export interface Config {
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
+  screenPositive: { report: string };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

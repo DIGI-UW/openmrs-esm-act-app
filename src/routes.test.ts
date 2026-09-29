@@ -4,6 +4,7 @@ import routes from './routes.json';
 import { actHomeDashboardMeta, actHomeWidgetsSlot } from './act-home/act-home.meta';
 import { registryDashboardMeta } from './registry/registry.meta';
 import { waitingListDashboardMeta } from './waiting-list/waiting-list.meta';
+import { screenPositiveDashboardMeta } from './screen-positive/screen-positive.meta';
 
 describe('routes.json', () => {
   it('registers every component it names', () => {
@@ -37,5 +38,13 @@ describe('routes.json', () => {
 
     expect(link.meta).toEqual(waitingListDashboardMeta);
     expect(page.component).toBe('waitingListDashboard');
+  });
+
+  it('adds the screen positive list to the home app under the name and slot its page renders', () => {
+    const link = routes.extensions.find((extension) => extension.component === 'screenPositiveDashboardLink');
+    const page = routes.extensions.find((extension) => extension.slot === screenPositiveDashboardMeta.slot);
+
+    expect(link.meta).toEqual(screenPositiveDashboardMeta);
+    expect(page.component).toBe('screenPositiveDashboard');
   });
 });

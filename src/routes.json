@@ -80,6 +80,21 @@
       "name": "act-waiting-list-open-form",
       "slot": "patient-header-slot",
       "component": "waitingListOpenForm"
+    },
+    {
+      "name": "act-screen-positive-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "screenPositiveDashboardLink",
+      "meta": {
+        "name": "act-screen-positive",
+        "slot": "rhd-screen-positive-dashboard-slot",
+        "title": "screenPositive"
+      }
+    },
+    {
+      "name": "act-screen-positive-dashboard",
+      "slot": "rhd-screen-positive-dashboard-slot",
+      "component": "screenPositiveDashboard"
     }
   ],
   "workspaces2": [
