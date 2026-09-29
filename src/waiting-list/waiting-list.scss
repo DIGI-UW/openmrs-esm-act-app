@@ -21,6 +21,20 @@
   padding: layout.$spacing-05;
 }
 
+.filters {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: layout.$spacing-05;
+  align-items: end;
+  margin-bottom: layout.$spacing-05;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-05;
+}
+
 // A recommendation past the deadline for its urgency.
 .overdue {
   background-color: colors.$red-10;

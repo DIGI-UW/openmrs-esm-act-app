@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
+  Button,
   DataTableSkeleton,
   InlineNotification,
   Pagination,
@@ -11,22 +13,42 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useConfig, usePagination } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { downloadCsv } from '../table-filters/csv';
+import { FilterSelect } from '../table-filters/filter-select.component';
+import { distinctValues } from '../table-filters/distinct-values';
+import { usePagedRows } from '../table-filters/paged-rows';
 import { rankWaitingRows, type WaitingRow } from './urgency';
+import {
+  filterColumns,
+  filterWaitingList,
+  type WaitingListFilters,
+  useWaitingListFilters,
+} from './waiting-list-filters';
 import styles from './waiting-list.scss';
-
-const pageSizes = [25, 50, 100];
 
 function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
   const { rows, isLoading, error } = useReportDataset(waitingList.report);
-  const ranked = useMemo(() => rankWaitingRows(rows, urgencyBands), [rows, urgencyBands]);
-  const [pageSize, setPageSize] = useState(pageSizes[0]);
-  const { results, currentPage, goTo } = usePagination(ranked, pageSize);
+  const [filters, setFilters] = useWaitingListFilters();
+  const ranked = useMemo(
+    () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),
+    [rows, filters, urgencyBands],
+  );
+  const { results, paginationProps } = usePagedRows(ranked, filters);
+  const filterSelect = (key: keyof WaitingListFilters, label: string) => (
+    <FilterSelect
+      id={`waiting-list-${key}`}
+      label={label}
+      value={filters[key]}
+      options={distinctValues(rows, filterColumns[key])}
+      onChange={(value) => setFilters({ [key]: value })}
+    />
+  );
   const text = (column: string) => (waiting: WaitingRow) => String(waiting.row[column] ?? '');
   const columns: Array<{ header: string; text: (waiting: WaitingRow) => string }> = [
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
@@ -65,38 +87,56 @@ function WaitingListTable() {
   }
   return (
     <>
-      <Table>
-        <TableHead>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHeader key={column.header}>{column.header}</TableHeader>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {results.map((waiting) => (
-            <TableRow
-              key={String(waiting.row.recommendation_uuid)}
-              data-overdue={waiting.overdue}
-              className={waiting.overdue ? styles.overdue : undefined}
-            >
+      <div className={styles.filters}>
+        {filterSelect('cardiac', t('cardiacClinic', 'Cardiac clinic'))}
+        {filterSelect('primaryCare', t('primaryCareClinic', 'Primary care clinic'))}
+        {filterSelect('type', t('procedureTypeFilter', 'Procedure type'))}
+        {filterSelect('procedure', t('specificProcedure', 'Specific procedure'))}
+        {filterSelect('urgency', t('urgency', 'Urgency'))}
+      </div>
+      <div className={styles.actions}>
+        <Button
+          kind="tertiary"
+          size="sm"
+          disabled={!ranked.length}
+          onClick={() =>
+            downloadCsv(
+              `waiting-list-${dayjs().format('YYYY-MM-DD')}.csv`,
+              columns.map((column) => column.header),
+              ranked.map((waiting) => columns.map((column) => column.text(waiting))),
+            )
+          }
+        >
+          {t('downloadCsv', 'Download CSV')}
+        </Button>
+      </div>
+      {ranked.length ? (
+        <Table>
+          <TableHead>
+            <TableRow>
               {columns.map((column) => (
-                <TableCell key={column.header}>{column.text(waiting)}</TableCell>
+                <TableHeader key={column.header}>{column.header}</TableHeader>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Pagination
-        page={currentPage}
-        pageSize={pageSize}
-        pageSizes={pageSizes}
-        totalItems={rows.length}
-        onChange={({ page, pageSize: size }) => {
-          setPageSize(size);
-          goTo(page);
-        }}
-      />
+          </TableHead>
+          <TableBody>
+            {results.map((waiting) => (
+              <TableRow
+                key={String(waiting.row.recommendation_uuid)}
+                data-overdue={waiting.overdue}
+                className={waiting.overdue ? styles.overdue : undefined}
+              >
+                {columns.map((column) => (
+                  <TableCell key={column.header}>{column.text(waiting)}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <p className={styles.message}>{t('noWaitingListMatches', 'No recommendations match these filters.')}</p>
+      )}
+      {ranked.length > 0 && <Pagination {...paginationProps} />}
     </>
   );
 }
