@@ -9,6 +9,7 @@ import {
   Select,
   SelectItem,
   Table,
+  Tag,
   TableBody,
   TableCell,
   TableHead,
@@ -18,6 +19,7 @@ import {
 import { ConfigurableLink, formatDate, navigate, useConfig, usePagination } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useScreenAccess } from '../access/screen-access.component';
+import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { distinctValues, filterRegistry, useRegistryFilters } from './registry-filters';
@@ -34,7 +36,7 @@ function nextConsultation(row: ReportRow) {
 
 function RegistryTable() {
   const { t } = useTranslation();
-  const { registry } = useConfig<Config>();
+  const { registry, flagLists } = useConfig<Config>();
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
   // Coming back from a chart reuses the rows rather than evaluating the whole report again.
   const { rows, isLoading, error } = useReportDataset(registry.report, params, { revalidateIfStale: false });
@@ -53,6 +55,12 @@ function RegistryTable() {
       ))}
     </Select>
   );
+  // The report lists the flags whose patient lists each patient is on, separated by |; the configured ones show.
+  const flagsOf = (row: ReportRow) =>
+    String(row.rhd_flags ?? '')
+      .split('|')
+      .filter((flagName) => flagName && isListedFlag(flagLists, flagName))
+      .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName) }));
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
   const columns: Array<{
     header: string;
@@ -70,6 +78,26 @@ function RegistryTable() {
     { header: t('diagnosisCategory', 'Diagnosis category'), text: text('diagnosis_category') },
     { header: t('prophylaxisRegimen', 'Prophylaxis regimen'), text: text('prophylaxis_regimen') },
     { header: t('nextConsultation', 'Next consultation'), text: nextConsultation },
+    {
+      header: t('flags', 'Flags'),
+      text: (row) =>
+        flagsOf(row)
+          .map((list) => list.flagName)
+          .join('; '),
+      render: (row) =>
+        flagsOf(row).map((list) => (
+          <Tag
+            key={list.flagName}
+            data-testid="registry-flag"
+            data-priority={list.priority}
+            type={list.priority === 'risk' ? 'red' : 'warm-gray'}
+            className={styles[list.priority]}
+            size="sm"
+          >
+            {list.flagName}
+          </Tag>
+        )),
+    },
   ];
 
   if (error) {

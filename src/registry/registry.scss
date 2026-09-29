@@ -26,3 +26,10 @@
   align-items: end;
   margin-bottom: layout.$spacing-05;
 }
+
+// Carbon has no orange tag, so missing data flags are drawn in Carbon's orange here.
+.dataQuality {
+  background-color: colors.$orange-10;
+  color: colors.$orange-70;
+}
+

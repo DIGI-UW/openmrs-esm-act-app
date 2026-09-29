@@ -37,13 +37,14 @@ describe('Registry', () => {
       'Diagnosis category',
       'Prophylaxis regimen',
       'Next consultation',
+      'Flags',
     ]);
     const first = screen.getByRole('row', { name: /Patient 1\b/ });
     expect(
       within(first)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['Patient 1', 'rhd00001', '10', 'F', 'RHD A', 'Q28 day BPG', '15-Oct-2026']);
+    ).toEqual(['Patient 1', 'rhd00001', '10', 'F', 'RHD A', 'Q28 day BPG', '15-Oct-2026', '']);
   });
 
   it('evaluates the configured report over every enrolment up to today', () => {
