@@ -52,6 +52,7 @@
   "open": "Open",
   "openClinicalForms": "Open clinical forms",
   "openForm": "Open form",
+  "patientsWaitingForEcho": "waiting for a confirmatory echo",
   "primaryCareClinic": "Primary care clinic",
   "procedure": "Procedure",
   "procedureType": "Type",

@@ -47,6 +47,12 @@
       "order": 4
     },
     {
+      "name": "act-home-screen-positive",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeScreenPositive",
+      "order": 5
+    },
+    {
       "name": "act-registry-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "registryDashboardLink",
