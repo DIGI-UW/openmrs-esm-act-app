@@ -23,7 +23,7 @@ describe('configSchema', () => {
       quickActions: {
         registerPatientUrl: '${openmrsSpaBase}/patient-registration',
         enterProphylaxisUrl: '${openmrsSpaBase}/forms',
-        findPatientUrl: '${openmrsSpaBase}/search',
+        findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
@@ -36,6 +36,9 @@ describe('configSchema', () => {
       },
       waitingList: {
         report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
+      },
+      screenPositive: {
+        report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
       },
       urgencyBands: [
         { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },

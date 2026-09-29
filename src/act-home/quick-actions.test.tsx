@@ -8,7 +8,7 @@ import QuickActions from './quick-actions.component';
 const defaultQuickActions: Config['quickActions'] = {
   registerPatientUrl: '${openmrsSpaBase}/patient-registration',
   enterProphylaxisUrl: '${openmrsSpaBase}/forms',
-  findPatientUrl: '${openmrsSpaBase}/search',
+  findPatientUrl: '${openmrsSpaBase}/search?query=',
 };
 
 describe('QuickActions', () => {
@@ -25,7 +25,8 @@ describe('QuickActions', () => {
       '/openmrs/spa/patient-registration',
     );
     expect(screen.getByRole('link', { name: /enter prophylaxis/i })).toHaveAttribute('href', '/openmrs/spa/forms');
-    expect(screen.getByRole('link', { name: /find a patient/i })).toHaveAttribute('href', '/openmrs/spa/search');
+    // With an empty query, because the patient search app of 11.1.1-pre crashes on a /search page load without one.
+    expect(screen.getByRole('link', { name: /find a patient/i })).toHaveAttribute('href', '/openmrs/spa/search?query=');
   });
 
   it('uses the links set in the config', async () => {

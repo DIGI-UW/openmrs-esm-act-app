@@ -1,0 +1,13 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.count {
+  @include type.type-style('body-compact-01');
+  display: flex;
+  align-items: baseline;
+  gap: layout.$spacing-03;
+}
+
+.figure {
+  @include type.type-style('heading-04');
+}

@@ -1,0 +1,21 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+// A table wider than the card scrolls inside it rather than widening the page.
+.tableContainer {
+  overflow-x: auto;
+}
+
+// Overdue rows and their days pending read as they do on the waiting list page.
+.tableContainer tr[data-overdue='true'] {
+  background-color: colors.$red-10;
+}
+
+.tableContainer tr[data-overdue='true'] td[data-days-pending='true'] {
+  color: colors.$red-60;
+}
+
+.empty {
+  @include type.type-style('body-compact-01');
+}

@@ -58,7 +58,10 @@ export const configSchema = {
       'Where the Enter prophylaxis quick action on ACT home leads: the fast data entry app, whose forms the distro sets.',
       '${openmrsSpaBase}/forms',
     ),
-    findPatientUrl: link('Where the Find a patient quick action on ACT home leads.', '${openmrsSpaBase}/search'),
+    findPatientUrl: link(
+      'Where the Find a patient quick action on ACT home leads. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
+      '${openmrsSpaBase}/search?query=',
+    ),
   },
   careCascade: {
     report: {
@@ -94,6 +97,14 @@ export const configSchema = {
       _type: Type.String,
       _default: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
       _description: 'The Procedural Waiting List report, by uuid or name, whose rows the waiting list shows.',
+    },
+  },
+  screenPositive: {
+    report: {
+      _type: Type.String,
+      _default: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
+      _description:
+        'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
     },
   },
   urgencyBands: {
@@ -135,5 +146,6 @@ export interface Config {
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
+  screenPositive: { report: string };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

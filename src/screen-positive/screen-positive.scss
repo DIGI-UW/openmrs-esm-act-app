@@ -1,0 +1,36 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
+.screenPositive {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.title {
+  @include type.type-style('heading-05');
+  margin-bottom: layout.$spacing-03;
+}
+
+.description {
+  @include type.type-style('body-01');
+  margin-bottom: layout.$spacing-06;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: layout.$spacing-05;
+  align-items: end;
+  margin-bottom: layout.$spacing-05;
+}

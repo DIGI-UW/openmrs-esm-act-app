@@ -35,10 +35,22 @@
       "order": 2
     },
     {
+      "name": "act-home-waiting-list",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeWaitingList",
+      "order": 3
+    },
+    {
       "name": "act-home-care-cascade",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeCareCascade",
       "order": 4
+    },
+    {
+      "name": "act-home-screen-positive",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeScreenPositive",
+      "order": 5
     },
     {
       "name": "act-registry-dashboard-link",
@@ -74,6 +86,21 @@
       "name": "act-waiting-list-open-form",
       "slot": "patient-header-slot",
       "component": "waitingListOpenForm"
+    },
+    {
+      "name": "act-screen-positive-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "screenPositiveDashboardLink",
+      "meta": {
+        "name": "act-screen-positive",
+        "slot": "rhd-screen-positive-dashboard-slot",
+        "title": "screenPositive"
+      }
+    },
+    {
+      "name": "act-screen-positive-dashboard",
+      "slot": "rhd-screen-positive-dashboard-slot",
+      "component": "screenPositiveDashboard"
     }
   ],
   "workspaces2": [
