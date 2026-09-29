@@ -37,7 +37,7 @@ jobs:
 
     if: >-
       github.event_name == 'push'
-      && github.repository == 'mherman22/openmrs-esm-act-app'
+      && github.repository == 'DIGI-UW/openmrs-esm-act-app'
       && !startsWith(github.event.head_commit.message, '(chore) Release')
 
     steps:
@@ -58,7 +58,7 @@ jobs:
 
     needs: build
 
-    if: ${{ github.event_name == 'release' && github.repository == 'mherman22/openmrs-esm-act-app' }}
+    if: ${{ github.event_name == 'release' && github.repository == 'DIGI-UW/openmrs-esm-act-app' }}
 
     steps:
       - uses: actions/checkout@v6
