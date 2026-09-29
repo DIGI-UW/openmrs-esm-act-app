@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import routes from './routes.json';
 import { actHomeDashboardMeta, actHomeWidgetsSlot } from './act-home/act-home.meta';
+import { registryDashboardMeta } from './registry/registry.meta';
 
 describe('routes.json', () => {
   it('registers every component it names', () => {
@@ -19,5 +20,13 @@ describe('routes.json', () => {
     expect(link.meta).toEqual(actHomeDashboardMeta);
     expect(dashboard.component).toBe('actHomeDashboard');
     expect(actHomeWidgetsSlot).not.toBe(actHomeDashboardMeta.slot);
+  });
+
+  it('adds the registry to the home app under the name and slot its page renders', () => {
+    const link = routes.extensions.find((extension) => extension.component === 'registryDashboardLink');
+    const page = routes.extensions.find((extension) => extension.slot === registryDashboardMeta.slot);
+
+    expect(link.meta).toEqual(registryDashboardMeta);
+    expect(page.component).toBe('registryDashboard');
   });
 });

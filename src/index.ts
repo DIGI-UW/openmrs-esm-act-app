@@ -1,6 +1,7 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
+import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
 
 const moduleName = '@mherman22/esm-rhd-app';
 
@@ -26,3 +27,7 @@ export const actHomeQuickActions = getAsyncLifecycle(() => import('./act-home/qu
 export const actHomeWorklists = getAsyncLifecycle(() => import('./act-home/worklist-tiles.component'), options);
 
 export const actHomeCareCascade = getAsyncLifecycle(() => import('./act-home/care-cascade.component'), options);
+
+export const registryDashboardLink = getSyncLifecycle(registryDashboardLinkComponent, options);
+
+export const registryDashboard = getAsyncLifecycle(() => import('./registry/registry.component'), options);

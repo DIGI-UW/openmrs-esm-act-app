@@ -10,7 +10,7 @@ const locationTags = (clinics: string, defaultTags: Array<string>) => ({
   _type: Type.Array,
   _elements: { _type: Type.String },
   _default: defaultTags,
-  _description: `Location tags that mark ${clinics}, used by the clinic filters.`,
+  _description: `Location tags that mark ${clinics}.`,
 });
 
 const link = (description: string, defaultUrl: string) => ({
@@ -76,6 +76,19 @@ export const configSchema = {
         "The report's steps the widget draws, by their step value, in this order. The report's Oral and BPG rows split Prescribed Prophylaxis, so they are left out by default.",
     },
   },
+  registry: {
+    report: {
+      _type: Type.String,
+      _default: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
+      _description: 'The RHD Patient List report, by uuid or name, whose rows the registry lists.',
+    },
+    showBpgColumns: {
+      _type: Type.Boolean,
+      _default: false,
+      _description:
+        "Show the report's bpg_status and adherence columns and a BPG status filter. Turn on once the report returns them.",
+    },
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -111,5 +124,6 @@ export interface Config {
   };
   quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
+  registry: { report: string; showBpgColumns: boolean };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

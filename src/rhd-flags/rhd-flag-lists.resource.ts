@@ -36,12 +36,22 @@ async function fetchMemberUuids(cohortUuid: string) {
   return new Set(members.filter((member) => !member.voided).map((member) => member.patient.uuid));
 }
 
-async function findLists({ names, namePrefix }: Config['flagLists']) {
+/** Whether the flag is one of the configured RHD flags: named in names, or else starting with namePrefix. */
+export function isListedFlag({ names, namePrefix }: Config['flagLists'], flagName: string) {
+  return names.length ? names.includes(flagName) : flagName.startsWith(namePrefix);
+}
+
+export function flagPriority({ riskFlags }: Config['flagLists'], flagName: string): RhdFlagList['priority'] {
+  return riskFlags.includes(flagName) ? 'risk' : 'dataQuality';
+}
+
+async function findLists(flagLists: Config['flagLists']) {
+  const { names, namePrefix } = flagLists;
   if (names.length) {
     const found = await Promise.all(names.map(async (name) => (await searchLists(name)).find((l) => l.name === name)));
     return names.map((name, i) => ({ name, uuid: found[i]?.uuid ?? null }));
   }
-  return (await searchLists(namePrefix)).filter((list) => list.name.startsWith(namePrefix));
+  return (await searchLists(namePrefix)).filter((list) => isListedFlag(flagLists, list.name));
 }
 
 /**
@@ -56,11 +66,7 @@ export function useRhdFlagLists({ withMembers = false } = {}) {
       const lists = await findLists(flagLists);
       return Promise.all(
         lists.map(async (list): Promise<RhdFlagList> => {
-          const common = {
-            cohortUuid: list.uuid,
-            flagName: list.name,
-            priority: flagLists.riskFlags.includes(list.name) ? 'risk' : 'dataQuality',
-          } as const;
+          const common = { cohortUuid: list.uuid, flagName: list.name, priority: flagPriority(flagLists, list.name) };
           if (!withMembers) {
             return { ...common, memberCount: list.uuid ? await countMembers(list.uuid) : 0 };
           }

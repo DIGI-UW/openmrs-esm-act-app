@@ -1,0 +1,255 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
+import {
+  Button,
+  DataTableSkeleton,
+  InlineNotification,
+  Pagination,
+  Search,
+  Select,
+  SelectItem,
+  Table,
+  Tag,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@carbon/react';
+import { ConfigurableLink, formatDate, navigate, useConfig, usePagination } from '@openmrs/esm-framework';
+import { type Config } from '../config-schema';
+import { useScreenAccess } from '../access/screen-access.component';
+import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
+import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { parseReportDate } from '../reports/report-date';
+import { downloadCsv } from './csv';
+import { distinctValues, filterRegistry, useRegistryFilters } from './registry-filters';
+import styles from './registry.scss';
+
+const pageSizes = [25, 50, 100];
+
+const chartUrl = (row: ReportRow) => '${openmrsSpaBase}' + `/patient/${row.patient_uuid}/chart`;
+
+function nextConsultation(row: ReportRow) {
+  const date = parseReportDate(row.next_consultation_date);
+  return date ? formatDate(date, { time: false, noToday: true }) : '';
+}
+
+function RegistryTable() {
+  const { t } = useTranslation();
+  const { registry, flagLists } = useConfig<Config>();
+  const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
+  // Coming back from a chart paints the cached rows, then evaluates the report again for what the chart changed.
+  const { rows, isLoading, error } = useReportDataset(registry.report, params);
+  const [filters, setFilters] = useRegistryFilters();
+  // A BPG status in the URL has no filter to clear it while the setting is off, so it is not applied.
+  const shown = useMemo(
+    () => filterRegistry(rows, registry.showBpgColumns ? filters : { ...filters, bpg: '' }),
+    [rows, filters, registry.showBpgColumns],
+  );
+  const [pageSize, setPageSize] = useState(pageSizes[0]);
+  const { results, currentPage, goTo } = usePagination(shown, pageSize);
+  // A change of filters, chosen here or by following the Registry link again, starts from the first page.
+  useEffect(() => goTo(1), [filters, goTo]);
+  const filterSelect = (id: string, label: string, value: string, options: Array<string>, key: string) => (
+    <Select id={id} labelText={label} value={value} onChange={(event) => setFilters({ [key]: event.target.value })}>
+      <SelectItem value="" text={t('all', 'All')} />
+      {/* A value from a bookmarked URL that no longer matches still shows, so it can be cleared. */}
+      {[...options, ...(value && !options.includes(value) ? [value] : [])].map((option) => (
+        <SelectItem key={option} value={option} text={option} />
+      ))}
+    </Select>
+  );
+  // The report lists the flags whose patient lists each patient is on, separated by |; the configured ones show.
+  const flagsOf = (row: ReportRow) =>
+    String(row.rhd_flags ?? '')
+      .split('|')
+      .filter((flagName) => flagName && isListedFlag(flagLists, flagName))
+      .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName) }));
+  const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
+  const columns: Array<{
+    header: string;
+    text: (row: ReportRow) => string;
+    render?: (row: ReportRow) => React.ReactNode;
+  }> = [
+    {
+      header: t('name', 'Name'),
+      text: text('full_name'),
+      render: (row) => <ConfigurableLink to={chartUrl(row)}>{String(row.full_name ?? '')}</ConfigurableLink>,
+    },
+    { header: t('actId', 'ACT ID'), text: text('rhd_id') },
+    { header: t('age', 'Age'), text: text('age_years') },
+    { header: t('sex', 'Sex'), text: text('sex') },
+    { header: t('diagnosisCategory', 'Diagnosis category'), text: text('diagnosis_category') },
+    { header: t('prophylaxisRegimen', 'Prophylaxis regimen'), text: text('prophylaxis_regimen') },
+    { header: t('nextConsultation', 'Next consultation'), text: nextConsultation },
+    ...(registry.showBpgColumns
+      ? [
+          { header: t('bpgStatus', 'BPG status'), text: text('bpg_status') },
+          {
+            header: t('adherence', 'Adherence'),
+            text: (row: ReportRow) => (row.adherence == null ? '' : `${row.adherence}%`),
+          },
+        ]
+      : []),
+    {
+      header: t('flags', 'Flags'),
+      text: (row) =>
+        flagsOf(row)
+          .map((list) => list.flagName)
+          .join('; '),
+      render: (row) =>
+        flagsOf(row).map((list) => (
+          <Tag
+            key={list.flagName}
+            data-testid="registry-flag"
+            data-priority={list.priority}
+            type={list.priority === 'risk' ? 'red' : 'warm-gray'}
+            className={styles[list.priority]}
+            size="sm"
+          >
+            {list.flagName}
+          </Tag>
+        )),
+    },
+  ];
+
+  if (error) {
+    return (
+      <InlineNotification
+        kind="error"
+        lowContrast
+        hideCloseButton
+        title={t('couldNotLoadRegistry', 'Could not load the registry')}
+      />
+    );
+  }
+  if (isLoading) {
+    return (
+      <div data-testid="registry-loading">
+        <DataTableSkeleton columnCount={columns.length} showHeader={false} showToolbar={false} />
+      </div>
+    );
+  }
+  if (!rows.length) {
+    return <p className={styles.message}>{t('noRegistryPatients', 'No patients are enrolled in the registry.')}</p>;
+  }
+  return (
+    <>
+      <div className={styles.filters}>
+        <Search
+          labelText={t('searchRegistry', 'Search by name or ACT ID')}
+          placeholder={t('searchRegistry', 'Search by name or ACT ID')}
+          value={filters.q}
+          onChange={(event) => setFilters({ q: event.target.value })}
+        />
+        {filterSelect(
+          'registry-status',
+          t('status', 'Status'),
+          filters.status,
+          distinctValues(rows, 'enrollment_status'),
+          'status',
+        )}
+        {filterSelect(
+          'registry-cardiac',
+          t('cardiacClinic', 'Cardiac clinic'),
+          filters.cardiac,
+          distinctValues(rows, 'cardiac_clinic'),
+          'cardiac',
+        )}
+        {filterSelect(
+          'registry-primary-care',
+          t('primaryCareClinic', 'Primary care clinic'),
+          filters.primaryCare,
+          distinctValues(rows, 'primary_care_clinic'),
+          'primaryCare',
+        )}
+        {filterSelect(
+          'registry-category',
+          t('categoryAtDiagnosis', 'Category at diagnosis'),
+          filters.category,
+          distinctValues(rows, 'diagnosis_category'),
+          'category',
+        )}
+        {registry.showBpgColumns &&
+          filterSelect(
+            'registry-bpg',
+            t('bpgStatus', 'BPG status'),
+            filters.bpg,
+            distinctValues(rows, 'bpg_status'),
+            'bpg',
+          )}
+      </div>
+      <div className={styles.actions}>
+        <Button
+          kind="tertiary"
+          size="sm"
+          disabled={!shown.length}
+          onClick={() =>
+            downloadCsv(
+              `registry-${dayjs().format('YYYY-MM-DD')}.csv`,
+              columns.map((column) => column.header),
+              shown.map((row) => columns.map((column) => column.text(row))),
+            )
+          }
+        >
+          {t('downloadCsv', 'Download CSV')}
+        </Button>
+      </div>
+      {shown.length ? (
+        <Table>
+          <TableHead>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHeader key={column.header}>{column.header}</TableHeader>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {results.map((row) => (
+              <TableRow
+                key={String(row.patient_uuid)}
+                className={styles.row}
+                onClick={(event) => (event.target as HTMLElement).closest('a') || navigate({ to: chartUrl(row) })}
+              >
+                {columns.map((column) => (
+                  <TableCell key={column.header}>{column.render ? column.render(row) : column.text(row)}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <p className={styles.message}>{t('noRegistryMatches', 'No patients match these filters.')}</p>
+      )}
+      {shown.length > 0 && (
+        <Pagination
+          page={currentPage}
+          pageSize={pageSize}
+          pageSizes={pageSizes}
+          totalItems={shown.length}
+          onChange={({ page, pageSize: size }) => {
+            setPageSize(size);
+            goTo(page);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+export default function Registry() {
+  const { t } = useTranslation();
+  const canSeeRegistry = useScreenAccess('registry');
+
+  if (!canSeeRegistry) {
+    return <p className={styles.message}>{t('noAccessToRegistry', 'You do not have access to the registry.')}</p>;
+  }
+  return (
+    <div className={styles.registry}>
+      <h1 className={styles.title}>{t('registry', 'Registry')}</h1>
+      <RegistryTable />
+    </div>
+  );
+}
