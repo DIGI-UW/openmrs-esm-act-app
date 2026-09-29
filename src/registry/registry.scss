@@ -18,3 +18,11 @@
   @include type.type-style('body-01');
   padding: layout.$spacing-05;
 }
+
+.filters {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  gap: layout.$spacing-05;
+  align-items: end;
+  margin-bottom: layout.$spacing-05;
+}

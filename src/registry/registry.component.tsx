@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
   DataTableSkeleton,
   InlineNotification,
   Pagination,
+  Search,
+  Select,
+  SelectItem,
   Table,
   TableBody,
   TableCell,
@@ -17,6 +20,7 @@ import { type Config } from '../config-schema';
 import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
+import { distinctValues, filterRegistry, useRegistryFilters } from './registry-filters';
 import styles from './registry.scss';
 
 const pageSizes = [25, 50, 100];
@@ -34,8 +38,21 @@ function RegistryTable() {
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
   // Coming back from a chart reuses the rows rather than evaluating the whole report again.
   const { rows, isLoading, error } = useReportDataset(registry.report, params, { revalidateIfStale: false });
+  const [filters, setFilters] = useRegistryFilters();
+  const shown = useMemo(() => filterRegistry(rows, filters), [rows, filters]);
   const [pageSize, setPageSize] = useState(pageSizes[0]);
-  const { results, currentPage, goTo } = usePagination(rows, pageSize);
+  const { results, currentPage, goTo } = usePagination(shown, pageSize);
+  // A change of filters, chosen here or by following the Registry link again, starts from the first page.
+  useEffect(() => goTo(1), [filters, goTo]);
+  const filterSelect = (id: string, label: string, value: string, options: Array<string>, key: string) => (
+    <Select id={id} labelText={label} value={value} onChange={(event) => setFilters({ [key]: event.target.value })}>
+      <SelectItem value="" text={t('all', 'All')} />
+      {/* A value from a bookmarked URL that no longer matches still shows, so it can be cleared. */}
+      {[...options, ...(value && !options.includes(value) ? [value] : [])].map((option) => (
+        <SelectItem key={option} value={option} text={option} />
+      ))}
+    </Select>
+  );
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
   const columns: Array<{
     header: string;
@@ -77,38 +94,80 @@ function RegistryTable() {
   }
   return (
     <>
-      <Table>
-        <TableHead>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHeader key={column.header}>{column.header}</TableHeader>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {results.map((row) => (
-            <TableRow
-              key={String(row.patient_uuid)}
-              className={styles.row}
-              onClick={(event) => (event.target as HTMLElement).closest('a') || navigate({ to: chartUrl(row) })}
-            >
+      <div className={styles.filters}>
+        <Search
+          labelText={t('searchRegistry', 'Search by name or ACT ID')}
+          placeholder={t('searchRegistry', 'Search by name or ACT ID')}
+          value={filters.q}
+          onChange={(event) => setFilters({ q: event.target.value })}
+        />
+        {filterSelect(
+          'registry-status',
+          t('status', 'Status'),
+          filters.status,
+          distinctValues(rows, 'enrollment_status'),
+          'status',
+        )}
+        {filterSelect(
+          'registry-cardiac',
+          t('cardiacClinic', 'Cardiac clinic'),
+          filters.cardiac,
+          distinctValues(rows, 'cardiac_clinic'),
+          'cardiac',
+        )}
+        {filterSelect(
+          'registry-primary-care',
+          t('primaryCareClinic', 'Primary care clinic'),
+          filters.primaryCare,
+          distinctValues(rows, 'primary_care_clinic'),
+          'primaryCare',
+        )}
+        {filterSelect(
+          'registry-category',
+          t('categoryAtDiagnosis', 'Category at diagnosis'),
+          filters.category,
+          distinctValues(rows, 'diagnosis_category'),
+          'category',
+        )}
+      </div>
+      {shown.length ? (
+        <Table>
+          <TableHead>
+            <TableRow>
               {columns.map((column) => (
-                <TableCell key={column.header}>{column.render ? column.render(row) : column.text(row)}</TableCell>
+                <TableHeader key={column.header}>{column.header}</TableHeader>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Pagination
-        page={currentPage}
-        pageSize={pageSize}
-        pageSizes={pageSizes}
-        totalItems={rows.length}
-        onChange={({ page, pageSize: size }) => {
-          setPageSize(size);
-          goTo(page);
-        }}
-      />
+          </TableHead>
+          <TableBody>
+            {results.map((row) => (
+              <TableRow
+                key={String(row.patient_uuid)}
+                className={styles.row}
+                onClick={(event) => (event.target as HTMLElement).closest('a') || navigate({ to: chartUrl(row) })}
+              >
+                {columns.map((column) => (
+                  <TableCell key={column.header}>{column.render ? column.render(row) : column.text(row)}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <p className={styles.message}>{t('noRegistryMatches', 'No patients match these filters.')}</p>
+      )}
+      {shown.length > 0 && (
+        <Pagination
+          page={currentPage}
+          pageSize={pageSize}
+          pageSizes={pageSizes}
+          totalItems={shown.length}
+          onChange={({ page, pageSize: size }) => {
+            setPageSize(size);
+            goTo(page);
+          }}
+        />
+      )}
     </>
   );
 }

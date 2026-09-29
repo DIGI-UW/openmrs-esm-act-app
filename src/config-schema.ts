@@ -10,7 +10,7 @@ const locationTags = (clinics: string, defaultTags: Array<string>) => ({
   _type: Type.Array,
   _elements: { _type: Type.String },
   _default: defaultTags,
-  _description: `Location tags that mark ${clinics}, used by the clinic filters.`,
+  _description: `Location tags that mark ${clinics}.`,
 });
 
 const link = (description: string, defaultUrl: string) => ({
