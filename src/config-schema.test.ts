@@ -23,6 +23,10 @@ describe('configSchema', () => {
       quickActions: {
         registerPatientUrl: '${openmrsSpaBase}/patient-registration',
         enterProphylaxisUrl: '${openmrsSpaBase}/forms',
+        prophylaxisForms: [
+          { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
+          { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
+        ],
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       careCascade: {

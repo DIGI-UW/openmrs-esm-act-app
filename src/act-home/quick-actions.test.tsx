@@ -1,6 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { type Config } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import QuickActions from './quick-actions.component';
@@ -8,6 +9,7 @@ import QuickActions from './quick-actions.component';
 const defaultQuickActions: Config['quickActions'] = {
   registerPatientUrl: '${openmrsSpaBase}/patient-registration',
   enterProphylaxisUrl: '${openmrsSpaBase}/forms',
+  prophylaxisForms: [],
   findPatientUrl: '${openmrsSpaBase}/search?query=',
 };
 
@@ -17,19 +19,44 @@ describe('QuickActions', () => {
     await signInWith([homePrivilege]);
   });
 
-  it('links register patient, enter prophylaxis and find a patient to their screens', () => {
+  it('links register patient and find a patient to their screens', () => {
     render(<QuickActions />);
 
     expect(screen.getByRole('link', { name: /register patient/i })).toHaveAttribute(
       'href',
       '/openmrs/spa/patient-registration',
     );
-    expect(screen.getByRole('link', { name: /enter prophylaxis/i })).toHaveAttribute('href', '/openmrs/spa/forms');
     // With an empty query, because the patient search app of 11.1.1-pre crashes on a /search page load without one.
     expect(screen.getByRole('link', { name: /find a patient/i })).toHaveAttribute('href', '/openmrs/spa/search?query=');
   });
 
-  it('uses the links set in the config', async () => {
+  it('offers BPG and oral prophylaxis as ACT 2.0 did, each opening its form in fast data entry', async () => {
+    render(<QuickActions />);
+
+    const enter = screen.getByRole('button', { name: /enter prophylaxis/i });
+    expect(enter).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: /enter bpg/i })).not.toBeInTheDocument();
+
+    await userEvent.click(enter);
+
+    expect(enter).toHaveAttribute('aria-expanded', 'true');
+    const choices = within(screen.getByRole('list', { name: /enter prophylaxis/i })).getAllByRole('link');
+    expect(choices.map((choice) => [choice.textContent, choice.getAttribute('href')])).toEqual([
+      ['Enter BPG', '/openmrs/spa/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d'],
+      ['Enter oral prophylaxis', '/openmrs/spa/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465'],
+    ]);
+  });
+
+  it('hides the choices again when enter prophylaxis is clicked a second time', async () => {
+    render(<QuickActions />);
+
+    await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
+    await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
+
+    expect(screen.queryByRole('link', { name: /enter bpg/i })).not.toBeInTheDocument();
+  });
+
+  it('links enter prophylaxis straight to its screen when no prophylaxis forms are configured', async () => {
     await signInWith([homePrivilege], {
       quickActions: { ...defaultQuickActions, enterProphylaxisUrl: '${openmrsSpaBase}/forms/prophylaxis' },
     });
@@ -48,5 +75,6 @@ describe('QuickActions', () => {
     render(<QuickActions />);
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

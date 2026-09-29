@@ -6,6 +6,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: layout.$spacing-05;
+  // The prophylaxis choices open under their tile without stretching the tiles beside it.
+  align-items: start;
 }
 
 .action {
@@ -29,4 +31,36 @@
   padding: layout.$spacing-03;
   @include brand-01(background-color);
   color: $ui-01;
+}
+
+// A button tile looks like the link tiles beside it.
+button.action {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $ui-03;
+  border-top: none;
+  background-color: $ui-01;
+}
+
+.choiceLink {
+  @include type.type-style('body-compact-02');
+  display: block;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  color: $ui-05;
+  text-decoration: none;
+
+  &:hover {
+    background-color: $ui-02;
+  }
 }
