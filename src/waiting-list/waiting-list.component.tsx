@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { navigate, useConfig } from '@openmrs/esm-framework';
+import { CardiologyPictogram, navigate, useConfig } from '@openmrs/esm-framework';
+import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
@@ -170,15 +171,17 @@ export default function WaitingList() {
     );
   }
   return (
-    <div className={styles.waitingList}>
-      <h1 className={styles.title}>{t('waitingList', 'Procedural waiting list')}</h1>
-      <p className={styles.description}>
-        {t(
-          'waitingListDescription',
-          'Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency',
-        )}
-      </p>
-      <WaitingListTable />
-    </div>
+    <>
+      <ActPageHeader title={t('waitingList', 'Procedural waiting list')} illustration={<CardiologyPictogram />} />
+      <div className={styles.waitingList}>
+        <p className={styles.description}>
+          {t(
+            'waitingListDescription',
+            'Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency',
+          )}
+        </p>
+        <WaitingListTable />
+      </div>
+    </>
   );
 }

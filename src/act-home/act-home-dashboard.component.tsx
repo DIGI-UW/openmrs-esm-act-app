@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layer, Tile } from '@carbon/react';
-import { ExtensionSlot, useAssignedExtensions } from '@openmrs/esm-framework';
+import { ExtensionSlot, HomePictogram, useAssignedExtensions } from '@openmrs/esm-framework';
+import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useScreenAccess } from '../access/screen-access.component';
 import { actHomeWidgetsSlot } from './act-home.meta';
 import styles from './act-home.scss';
@@ -16,15 +17,19 @@ export default function ActHomeDashboard() {
   }
 
   return (
-    <div className={styles.dashboard}>
-      <h1 className={styles.title}>{t('actHome', 'ACT home')}</h1>
-      {widgets.length ? (
-        <ExtensionSlot name={actHomeWidgetsSlot} className={styles.widgets} />
-      ) : (
-        <Layer>
-          <Tile className={styles.message}>{t('noActHomeWidgets', 'No widgets have been added to ACT home yet.')}</Tile>
-        </Layer>
-      )}
-    </div>
+    <>
+      <ActPageHeader title={t('actHome', 'ACT home')} illustration={<HomePictogram />} />
+      <div className={styles.dashboard}>
+        {widgets.length ? (
+          <ExtensionSlot name={actHomeWidgetsSlot} className={styles.widgets} />
+        ) : (
+          <Layer>
+            <Tile className={styles.message}>
+              {t('noActHomeWidgets', 'No widgets have been added to ACT home yet.')}
+            </Tile>
+          </Layer>
+        )}
+      </div>
+    </>
   );
 }

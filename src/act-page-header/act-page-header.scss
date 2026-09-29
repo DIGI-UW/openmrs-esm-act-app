@@ -1,0 +1,17 @@
+@use '@carbon/layout';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+// Full width above the screen's padded body, as Service Queues' header sits above its page.
+.header {
+  background-color: $ui-02;
+  border-block: 1px solid $ui-03;
+  display: flex;
+  justify-content: space-between;
+  padding-right: layout.$spacing-03;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}

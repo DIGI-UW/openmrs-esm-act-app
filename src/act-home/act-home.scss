@@ -5,11 +5,6 @@
   padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
 }
 
-.title {
-  @include type.type-style('heading-05');
-  margin-bottom: layout.$spacing-06;
-}
-
 .widgets {
   display: flex;
   flex-direction: column;
