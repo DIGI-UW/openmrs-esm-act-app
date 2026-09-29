@@ -58,5 +58,6 @@
   "suitableForRepair": "Suitable for repair",
   "urgency": "Urgency",
   "waitingList": "Procedural waiting list",
+  "waitingListDescription": "Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency",
   "worklists": "Worklists"
 }

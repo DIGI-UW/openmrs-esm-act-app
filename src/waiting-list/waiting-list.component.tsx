@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DataTableSkeleton,
@@ -14,25 +14,28 @@ import {
 import { useConfig, usePagination } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useScreenAccess } from '../access/screen-access.component';
-import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { useReportDataset } from '../reports/report-dataset.resource';
+import { rankWaitingRows, type WaitingRow } from './urgency';
 import styles from './waiting-list.scss';
 
 const pageSizes = [25, 50, 100];
 
 function WaitingListTable() {
   const { t } = useTranslation();
-  const { waitingList } = useConfig<Config>();
+  const { waitingList, urgencyBands } = useConfig<Config>();
   const { rows, isLoading, error } = useReportDataset(waitingList.report);
+  const ranked = useMemo(() => rankWaitingRows(rows, urgencyBands), [rows, urgencyBands]);
   const [pageSize, setPageSize] = useState(pageSizes[0]);
-  const { results, currentPage, goTo } = usePagination(rows, pageSize);
-  const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
-  const columns: Array<{ header: string; text: (row: ReportRow) => string }> = [
+  const { results, currentPage, goTo } = usePagination(ranked, pageSize);
+  const text = (column: string) => (waiting: WaitingRow) => String(waiting.row[column] ?? '');
+  const columns: Array<{ header: string; text: (waiting: WaitingRow) => string }> = [
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
     { header: t('sex', 'Sex'), text: text('sex') },
     { header: t('age', 'Age'), text: text('age_years') },
     { header: t('procedureType', 'Type'), text: text('procedure_type') },
     { header: t('procedure', 'Procedure'), text: text('procedure_name') },
     { header: t('urgency', 'Urgency'), text: text('urgency') },
+    { header: t('daysPending', 'Days pending'), text: (waiting) => String(waiting.daysPending ?? '') },
     { header: t('district', 'District'), text: text('district') },
     { header: t('contraindications', 'Contraindications'), text: text('contraindications') },
     { header: t('suitableForRepair', 'Suitable for repair'), text: text('suitable_for_repair') },
@@ -71,10 +74,14 @@ function WaitingListTable() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {results.map((row) => (
-            <TableRow key={String(row.recommendation_uuid)}>
+          {results.map((waiting) => (
+            <TableRow
+              key={String(waiting.row.recommendation_uuid)}
+              data-overdue={waiting.overdue}
+              className={waiting.overdue ? styles.overdue : undefined}
+            >
               {columns.map((column) => (
-                <TableCell key={column.header}>{column.text(row)}</TableCell>
+                <TableCell key={column.header}>{column.text(waiting)}</TableCell>
               ))}
             </TableRow>
           ))}
@@ -108,6 +115,12 @@ export default function WaitingList() {
   return (
     <div className={styles.waitingList}>
       <h1 className={styles.title}>{t('waitingList', 'Procedural waiting list')}</h1>
+      <p className={styles.description}>
+        {t(
+          'waitingListDescription',
+          'Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency',
+        )}
+      </p>
       <WaitingListTable />
     </div>
   );

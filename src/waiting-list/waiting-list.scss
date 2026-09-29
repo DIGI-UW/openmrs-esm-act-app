@@ -1,3 +1,4 @@
+@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
 
@@ -7,10 +8,24 @@
 
 .title {
   @include type.type-style('heading-05');
+  margin-bottom: layout.$spacing-03;
+}
+
+.description {
+  @include type.type-style('body-01');
   margin-bottom: layout.$spacing-06;
 }
 
 .message {
   @include type.type-style('body-01');
   padding: layout.$spacing-05;
+}
+
+// A recommendation past the deadline for its urgency.
+.overdue {
+  background-color: colors.$red-10;
+
+  td {
+    background-color: colors.$red-10;
+  }
 }
