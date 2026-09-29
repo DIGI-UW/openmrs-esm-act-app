@@ -49,7 +49,7 @@ const FlagGapsWorkspace: React.FC<
   const openGap = useCallback(
     async (gap: FlagGap) => {
       try {
-        await openEncounterForm(launchChildWorkspace, gap.form.uuid, gap.encounter);
+        await openEncounterForm(launchChildWorkspace, gap.form.uuid, gap.encounter, gap.concept.uuid);
       } catch (e) {
         showSnackbar({
           kind: 'error',
