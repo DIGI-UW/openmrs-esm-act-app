@@ -35,6 +35,12 @@
       "order": 2
     },
     {
+      "name": "act-home-waiting-list",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeWaitingList",
+      "order": 3
+    },
+    {
       "name": "act-home-care-cascade",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeCareCascade",

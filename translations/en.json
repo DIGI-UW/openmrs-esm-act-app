@@ -44,6 +44,7 @@
   "noSavedForm": "No saved form is waiting to be completed. Record the missing data on a new form.",
   "noWaitingListMatches": "No recommendations match these filters.",
   "noWaitingRecommendations": "No procedural recommendations are waiting.",
+  "open": "Open",
   "openClinicalForms": "Open clinical forms",
   "openForm": "Open form",
   "primaryCareClinic": "Primary care clinic",
@@ -62,5 +63,6 @@
   "urgency": "Urgency",
   "waitingList": "Procedural waiting list",
   "waitingListDescription": "Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency",
+  "waitingListMostUrgent": "Procedural waiting list, most urgent first",
   "worklists": "Worklists"
 }
