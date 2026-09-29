@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
+  Button,
   DataTableSkeleton,
   InlineNotification,
   Pagination,
@@ -22,6 +23,7 @@ import { useScreenAccess } from '../access/screen-access.component';
 import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
+import { downloadCsv } from './csv';
 import { distinctValues, filterRegistry, useRegistryFilters } from './registry-filters';
 import styles from './registry.scss';
 
@@ -178,6 +180,22 @@ function RegistryTable() {
             distinctValues(rows, 'bpg_status'),
             'bpg',
           )}
+      </div>
+      <div className={styles.actions}>
+        <Button
+          kind="tertiary"
+          size="sm"
+          disabled={!shown.length}
+          onClick={() =>
+            downloadCsv(
+              `registry-${dayjs().format('YYYY-MM-DD')}.csv`,
+              columns.map((column) => column.header),
+              shown.map((row) => columns.map((column) => column.text(row))),
+            )
+          }
+        >
+          {t('downloadCsv', 'Download CSV')}
+        </Button>
       </div>
       {shown.length ? (
         <Table>

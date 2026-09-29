@@ -19,6 +19,7 @@
   "date": "Date",
   "daysPending": "Days pending",
   "diagnosisCategory": "Diagnosis category",
+  "downloadCsv": "Download CSV",
   "enterProphylaxis": "Enter prophylaxis",
   "findPatient": "Find a patient",
   "flags": "Flags",

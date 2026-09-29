@@ -33,3 +33,9 @@
   background-color: colors.$orange-10;
   color: colors.$orange-70;
 }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-05;
+}
