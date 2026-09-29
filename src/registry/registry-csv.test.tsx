@@ -27,6 +27,7 @@ describe('Registry CSV download', () => {
       rows: registryRows,
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
   });
 
@@ -55,6 +56,7 @@ describe('Registry CSV download', () => {
       rows: [{ ...registryRows[0], rhd_flags: 'RHD INR target missing|RHD prophylaxis overdue' }],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
     render(<Registry />);
 
@@ -69,6 +71,7 @@ describe('Registry CSV download', () => {
       rows: [{ ...registryRows[0], full_name: 'Nambi, Esther "Essie"' }],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
     render(<Registry />);
 
@@ -90,6 +93,7 @@ describe('Registry CSV download', () => {
       rows: [{ ...registryRows[0], full_name: name }],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
     render(<Registry />);
 

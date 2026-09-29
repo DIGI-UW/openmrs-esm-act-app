@@ -64,6 +64,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
         rows: [row('on', band.concept, band.deadlineDays), row('past', band.concept, band.deadlineDays + 1)],
         isLoading: false,
         error: undefined,
+        mutate: vi.fn(),
       });
 
       render(<WaitingList />);
@@ -83,6 +84,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
       rows: [row('on', week.concept, week.deadlineDays)],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
 
     render(<WaitingList />);
@@ -91,7 +93,13 @@ describe('Procedural waiting list days pending and overdue rows', () => {
   });
 
   it('says under the title what the list holds and what a red row means', () => {
-    vi.mocked(useReportDataset).mockReturnValue({ columns: [], rows: [], isLoading: false, error: undefined });
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
 
     render(<WaitingList />);
 
@@ -108,6 +116,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
       rows: [row('unbanded', 'some-other-concept', 400)],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
 
     render(<WaitingList />);
@@ -129,6 +138,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
       ],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
 
     render(<WaitingList />);
@@ -149,6 +159,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
       rows: [row('past', urgencyBands[0].concept, urgencyBands[0].deadlineDays + 1)],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
 
     render(<WaitingList />);
@@ -167,6 +178,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
       rows: [{ ...row('array', urgencyBands[0].concept, 0), date_added: [2026, 9, 19, 0, 0] }],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
 
     render(<WaitingList />);

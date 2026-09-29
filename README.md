@@ -57,9 +57,9 @@ Days pending counts from the report's `date_added`. A row turns red once its day
 urgency band, set in `urgencyBands` by the Urgency answer's concept; the defaults are the RHD Consultation Visit's
 four answers, due in 7, 30, 90 and 180 days. Overdue rows come first, then the bands in the order they are listed.
 
-Its filters are kept in the URL, and Download CSV saves the filtered rows. Open form opens the patient's chart with
-that consultation in the form workspace, through the `act-waiting-list-open-form` extension in the chart's
-`patient-header-slot`.
+Its filters are kept in the URL, and Download CSV saves the filtered rows. Open form opens that consultation for
+editing in a workspace on the list itself, the forms app's `exportedPatientFormEntryWorkspace`, registered in this
+app's own `act-waiting-list` workspace group as Service Queues registers it; saving it evaluates the list again.
 
 ## Requirements
 

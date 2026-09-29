@@ -45,11 +45,6 @@ export const waitingListDashboardLink = getSyncLifecycle(waitingListDashboardLin
 
 export const waitingListDashboard = getAsyncLifecycle(() => import('./waiting-list/waiting-list.component'), options);
 
-export const waitingListOpenForm = getAsyncLifecycle(
-  () => import('./waiting-list/open-pending-form.component'),
-  options,
-);
-
 export const screenPositiveDashboardLink = getSyncLifecycle(screenPositiveDashboardLinkComponent, options);
 
 export const screenPositiveDashboard = getAsyncLifecycle(

@@ -10,7 +10,14 @@ vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn()
 const mockUseReportDataset = vi.mocked(useReportDataset);
 
 function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
-  mockUseReportDataset.mockReturnValue({ columns: [], rows: [], isLoading: false, error: undefined, ...value });
+  mockUseReportDataset.mockReturnValue({
+    columns: [],
+    rows: [],
+    isLoading: false,
+    error: undefined,
+    mutate: vi.fn(),
+    ...value,
+  });
 }
 
 describe('ACT home screen positive, pending confirmation count', () => {

@@ -13,17 +13,22 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { CardiologyPictogram, navigate, useConfig } from '@openmrs/esm-framework';
+import {
+  CardiologyPictogram,
+  fetchCurrentPatient,
+  launchWorkspace2,
+  showSnackbar,
+  useConfig,
+} from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
-import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { downloadCsv } from '../table-filters/csv';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { requestFormInChart } from './pending-form';
+import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { rankWaitingRows, type WaitingRow } from './urgency';
 import {
   filterColumns,
@@ -33,20 +38,32 @@ import {
 } from './waiting-list-filters';
 import styles from './waiting-list.scss';
 
+const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
+
 function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
-  const { rows, isLoading, error } = useReportDataset(waitingList.report);
+  const { rows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   const [filters, setFilters] = useWaitingListFilters();
   const ranked = useMemo(
     () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),
     [rows, filters, urgencyBands],
   );
   const { results, paginationProps } = usePagedRows(ranked, filters);
-  const openForm = ({ row }: WaitingRow) => {
+  // The forms app's form entry workspace for use outside the chart, in this app's own group on the list.
+  const openForm = async ({ row }: WaitingRow) => {
     const patientUuid = String(row.patient_uuid);
-    requestFormInChart({ patientUuid, formUuid: String(row.form_uuid), encounterUuid: String(row.encounter_uuid) });
-    navigate({ to: patientChartUrl(patientUuid) });
+    try {
+      const [form, patient] = await Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]);
+      // An edit loads its encounter's own visit, so the list passes none.
+      launchWorkspace2(
+        waitingListFormEntryWorkspace,
+        { form, encounterUuid: String(row.encounter_uuid), handlePostResponse: () => mutate() },
+        { patient, patientUuid, visitContext: null, mutateVisitContext: () => mutate() },
+      );
+    } catch (e) {
+      showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
+    }
   };
   const filterSelect = (key: keyof WaitingListFilters, label: string) => (
     <FilterSelect
