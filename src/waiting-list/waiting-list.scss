@@ -2,7 +2,10 @@
 @use '@carbon/layout';
 @use '@carbon/type';
 
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
 .waitingList {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
 }
 
@@ -16,6 +19,29 @@
   margin-bottom: layout.$spacing-06;
 }
 
+.tableContainer {
+  // Open form stays in view while a table wider than the screen scrolls sideways.
+  th:last-child,
+  td:last-child {
+    position: sticky;
+    right: 0;
+  }
+
+  th:last-child {
+    background-color: colors.$gray-20;
+  }
+
+  // Opaque, so columns scrolling under it stay hidden; it takes a hovered or overdue row's colour.
+  td:last-child {
+    background-color: colors.$gray-10;
+  }
+
+  tr:hover td:last-child,
+  tr[data-overdue='true'] td:last-child {
+    background-color: inherit;
+  }
+}
+
 .message {
   @include type.type-style('body-01');
   padding: layout.$spacing-05;
@@ -23,7 +49,8 @@
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  // Wraps onto more rows where five filters do not fit, as on a tablet.
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: layout.$spacing-05;
   align-items: end;
   margin-bottom: layout.$spacing-05;
@@ -35,11 +62,7 @@
   margin-bottom: layout.$spacing-05;
 }
 
-// A recommendation past the deadline for its urgency.
-.overdue {
+// A recommendation past the deadline for its urgency; the tests read the same attribute.
+.tableContainer tr[data-overdue='true'] {
   background-color: colors.$red-10;
-
-  td {
-    background-color: colors.$red-10;
-  }
 }

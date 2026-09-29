@@ -36,3 +36,8 @@ export const registryDashboard = getAsyncLifecycle(() => import('./registry/regi
 export const waitingListDashboardLink = getSyncLifecycle(waitingListDashboardLinkComponent, options);
 
 export const waitingListDashboard = getAsyncLifecycle(() => import('./waiting-list/waiting-list.component'), options);
+
+export const waitingListOpenForm = getAsyncLifecycle(
+  () => import('./waiting-list/open-pending-form.component'),
+  options,
+);

@@ -17,6 +17,7 @@ import {
 } from '@carbon/react';
 import { ConfigurableLink, formatDate, navigate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
 import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
@@ -28,7 +29,7 @@ import { usePagedRows } from '../table-filters/paged-rows';
 import { filterRegistry, registryFilterColumns, useRegistryFilters } from './registry-filters';
 import styles from './registry.scss';
 
-const chartUrl = (row: ReportRow) => '${openmrsSpaBase}' + `/patient/${row.patient_uuid}/chart`;
+const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
 
 function nextConsultation(row: ReportRow) {
   const date = parseReportDate(row.next_consultation_date);

@@ -13,14 +13,16 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useConfig } from '@openmrs/esm-framework';
+import { navigate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { downloadCsv } from '../table-filters/csv';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
+import { requestFormInChart } from './pending-form';
 import { rankWaitingRows, type WaitingRow } from './urgency';
 import {
   filterColumns,
@@ -40,6 +42,11 @@ function WaitingListTable() {
     [rows, filters, urgencyBands],
   );
   const { results, paginationProps } = usePagedRows(ranked, filters);
+  const openForm = ({ row }: WaitingRow) => {
+    const patientUuid = String(row.patient_uuid);
+    requestFormInChart({ patientUuid, formUuid: String(row.form_uuid), encounterUuid: String(row.encounter_uuid) });
+    navigate({ to: patientChartUrl(patientUuid) });
+  };
   const filterSelect = (key: keyof WaitingListFilters, label: string) => (
     <FilterSelect
       id={`waiting-list-${key}`}
@@ -111,28 +118,32 @@ function WaitingListTable() {
         </Button>
       </div>
       {ranked.length ? (
-        <Table>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHeader key={column.header}>{column.header}</TableHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {results.map((waiting) => (
-              <TableRow
-                key={String(waiting.row.recommendation_uuid)}
-                data-overdue={waiting.overdue}
-                className={waiting.overdue ? styles.overdue : undefined}
-              >
+        <div className={styles.tableContainer}>
+          <Table>
+            <TableHead>
+              <TableRow>
                 {columns.map((column) => (
-                  <TableCell key={column.header}>{column.text(waiting)}</TableCell>
+                  <TableHeader key={column.header}>{column.header}</TableHeader>
                 ))}
+                <TableHeader aria-label={t('actions', 'Actions')} />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {results.map((waiting) => (
+                <TableRow key={String(waiting.row.recommendation_uuid)} data-overdue={waiting.overdue}>
+                  {columns.map((column) => (
+                    <TableCell key={column.header}>{column.text(waiting)}</TableCell>
+                  ))}
+                  <TableCell>
+                    <Button kind="ghost" size="sm" onClick={() => openForm(waiting)}>
+                      {t('openForm', 'Open form')}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
         <p className={styles.message}>{t('noWaitingListMatches', 'No recommendations match these filters.')}</p>
       )}
