@@ -152,6 +152,58 @@ describe('flag gaps workspace opening the form at the missing question', () => {
     expect(scrolled).toHaveLength(1);
   });
 
+  it.each([
+    ['clicks', (target: Element) => fireEvent.pointerDown(target)],
+    ['types', (target: Element) => fireEvent.keyDown(target, { key: 'a' })],
+    ['touches the screen', (target: Element) => fireEvent.touchStart(target)],
+  ])('leaves the scrolling to the user once they %s', async (_, takeOver) => {
+    showWorkspace([gap('site-infection-uuid')]);
+
+    await userEvent.click(screen.getByRole('button', { name: /open form/i }));
+    renderForm(siteInfection);
+    await waitFor(() => expect(scrolled).toHaveLength(1));
+    takeOver(screen.getByRole('button', { name: 'Site infection' }));
+    questionTop = 1200;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(scrolled).toHaveLength(1);
+  });
+
+  it('stops keeping the question in view once the form has had time to settle', async () => {
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'],
+      shouldAdvanceTime: true,
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    showWorkspace([gap('site-infection-uuid')]);
+
+    await user.click(screen.getByRole('button', { name: /open form/i }));
+    renderForm(siteInfection);
+    await waitFor(() => expect(scrolled).toHaveLength(1));
+    await vi.advanceTimersByTimeAsync(3_100);
+    questionTop = 1200;
+    await vi.advanceTimersByTimeAsync(200);
+    vi.useRealTimers();
+
+    expect(scrolled).toHaveLength(1);
+  });
+
+  it('gives up waiting for the question after 15 seconds', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    showWorkspace([gap('site-infection-uuid')]);
+
+    await user.click(screen.getByRole('button', { name: /open form/i }));
+    await waitFor(() => expect(openmrsFetch).toHaveBeenCalled());
+    await vi.advanceTimersByTimeAsync(15_100);
+    renderForm(siteInfection);
+    await vi.advanceTimersByTimeAsync(50);
+    vi.useRealTimers();
+
+    expect(screen.getByRole('button', { name: 'Site infection' })).not.toHaveFocus();
+    expect(scrolled).toHaveLength(0);
+  });
+
   it('focuses the first field of a date question, whose id the date picker puts on its group', async () => {
     vi.mocked(openmrsFetch).mockResolvedValue({
       data: {

@@ -93,9 +93,8 @@ export async function focusFormQuestion(form: FormWithResources, conceptUuid: st
 }
 
 /**
- * The form engine renders a question before it has filled in the questions above it, which then push it out
- * of view. Scrolls it back each time it moves, until the form settles, the user scrolls, clicks or types, or the
- * question leaves the page.
+ * The engine renders a question before filling in those above it, which push it out of view; scroll it back
+ * until the form settles or the user takes over.
  */
 function keepInView(question: HTMLElement) {
   const userInput = ['wheel', 'touchstart', 'pointerdown', 'keydown'];

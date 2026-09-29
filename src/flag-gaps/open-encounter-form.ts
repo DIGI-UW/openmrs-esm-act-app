@@ -14,7 +14,7 @@ export async function openEncounterForm(
   const form = await fetchForm(formUuid);
   await launch('patient-form-entry-workspace', { form, encounterUuid });
   if (focusConcept) {
-    // The form is open by now; not finding its question leaves it at the top, as it opened before.
+    // A question the form never renders leaves it at the top.
     focusFormQuestion(form, focusConcept).catch(() => undefined);
   }
 }
