@@ -26,13 +26,8 @@ function respond(byUrl: (url: string) => unknown) {
   }) as never);
 }
 
-function renderDataset(
-  report: string | null,
-  params?: Record<string, string>,
-  options?: { revalidateIfStale?: boolean },
-  cache = new Map(),
-) {
-  return renderHook(() => useReportDataset(report, params, options), {
+function renderDataset(report: string | null, params?: Record<string, string>, cache = new Map()) {
+  return renderHook(() => useReportDataset(report, params), {
     wrapper: ({ children }) => <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>{children}</SWRConfig>,
   });
 }
@@ -163,18 +158,20 @@ describe('useReportDataset', () => {
     expect(new URL(mockOpenmrsFetch.mock.calls[1][0], 'http://host').searchParams.get('startDate')).toBe('2026-06-01');
   });
 
-  it('reuses the rows when a screen mounts again, if asked not to revalidate', async () => {
+  it('shows the cached rows when a screen mounts again, then evaluates the report again', async () => {
     respond(() => evaluated(rows));
     const cache = new Map();
-    const { result: firstMount, unmount } = renderDataset(waitingListUuid, {}, { revalidateIfStale: false }, cache);
+    const { result: firstMount, unmount } = renderDataset(waitingListUuid, {}, cache);
     await waitFor(() => expect(firstMount.current.rows).toEqual(rows));
     unmount();
+    const updatedRows = [{ patient_uuid: 'amina', urgency: '1: Emergency' }];
+    respond(() => evaluated(updatedRows));
 
-    const { result: secondMount } = renderDataset(waitingListUuid, {}, { revalidateIfStale: false }, cache);
+    const { result: secondMount } = renderDataset(waitingListUuid, {}, cache);
 
-    expect(secondMount.current.rows).toEqual(rows);
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(secondMount.current).toMatchObject({ rows, isLoading: false });
+    await waitFor(() => expect(secondMount.current.rows).toEqual(updatedRows));
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
   });
 
   it('fetches nothing without a report', () => {

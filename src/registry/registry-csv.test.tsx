@@ -82,6 +82,8 @@ describe('Registry CSV download', () => {
     ['+256 700', "'+256 700"],
     ['-1', "'-1"],
     ['@SUM(A1)', "'@SUM(A1)"],
+    ['\t=1+1', "'\t=1+1"],
+    ['\r=1+1', `"'\r=1+1"`],
   ])('writes %s as text, so a spreadsheet does not run it', async (name, cell) => {
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],

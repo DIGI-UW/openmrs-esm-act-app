@@ -54,14 +54,10 @@ describe('Registry', () => {
     render(<Registry />);
 
     vi.useRealTimers();
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith(
-      'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
-      {
-        startDate: '1900-01-01',
-        endDate: '2026-09-29',
-      },
-      { revalidateIfStale: false },
-    );
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
+      startDate: '1900-01-01',
+      endDate: '2026-09-29',
+    });
   });
 
   it('shows the patients a page at a time', async () => {

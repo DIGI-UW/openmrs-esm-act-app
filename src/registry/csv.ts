@@ -1,6 +1,6 @@
-/** A cell starting with =, +, - or @ gets a leading ' so a spreadsheet shows it as text rather than running it. */
+/** A cell starting with =, +, -, @, a tab or a carriage return gets a leading ' so a spreadsheet shows it as text. */
 function csvCell(text: string) {
-  const value = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  const value = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
   return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 

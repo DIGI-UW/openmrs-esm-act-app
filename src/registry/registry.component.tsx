@@ -40,8 +40,8 @@ function RegistryTable() {
   const { t } = useTranslation();
   const { registry, flagLists } = useConfig<Config>();
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
-  // Coming back from a chart reuses the rows rather than evaluating the whole report again.
-  const { rows, isLoading, error } = useReportDataset(registry.report, params, { revalidateIfStale: false });
+  // Coming back from a chart paints the cached rows, then evaluates the report again for what the chart changed.
+  const { rows, isLoading, error } = useReportDataset(registry.report, params);
   const [filters, setFilters] = useRegistryFilters();
   // A BPG status in the URL has no filter to clear it while the setting is off, so it is not applied.
   const shown = useMemo(
