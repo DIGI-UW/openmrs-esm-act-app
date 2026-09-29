@@ -31,14 +31,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mherman22/openmrs-esm-act-app.git"
+    "url": "git+https://github.com/DIGI-UW/openmrs-esm-act-app.git"
   },
-  "homepage": "https://github.com/mherman22/openmrs-esm-act-app#readme",
+  "homepage": "https://github.com/DIGI-UW/openmrs-esm-act-app#readme",
   "publishConfig": {
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/mherman22/openmrs-esm-act-app/issues"
+    "url": "https://github.com/DIGI-UW/openmrs-esm-act-app/issues"
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",
