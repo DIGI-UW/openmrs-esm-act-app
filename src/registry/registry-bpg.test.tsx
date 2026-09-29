@@ -21,7 +21,13 @@ describe('Registry BPG status and adherence', () => {
   beforeEach(() => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
-    vi.mocked(useReportDataset).mockReturnValue({ columns: [], rows: withBpg, isLoading: false, error: undefined });
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: withBpg,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
   });
 
   it('leaves the columns and the filter out while the setting is off', async () => {
@@ -51,6 +57,7 @@ describe('Registry BPG status and adherence', () => {
       rows: [{ ...withBpg[0], adherence: null }],
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
 
     render(<Registry />);

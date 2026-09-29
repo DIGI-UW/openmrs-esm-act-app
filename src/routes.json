@@ -83,11 +83,6 @@
       "component": "waitingListDashboard"
     },
     {
-      "name": "act-waiting-list-open-form",
-      "slot": "patient-header-slot",
-      "component": "waitingListOpenForm"
-    },
-    {
       "name": "act-screen-positive-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "screenPositiveDashboardLink",
@@ -103,11 +98,30 @@
       "component": "screenPositiveDashboard"
     }
   ],
+  "workspaceGroups2": [
+    {
+      "name": "act-waiting-list",
+      "scopePattern": "/home/act-waiting-list"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "act-waiting-list-form-entry",
+      "group": "act-waiting-list",
+      "width": "extra-wide",
+      "canMaximize": true
+    }
+  ],
   "workspaces2": [
     {
       "name": "rhd-flag-gaps-workspace",
       "component": "flagGapsWorkspace",
       "window": "patient-chart-clinical-forms"
+    },
+    {
+      "name": "act-waiting-list-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-waiting-list-form-entry"
     }
   ]
 }

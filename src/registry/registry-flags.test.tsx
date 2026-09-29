@@ -24,7 +24,13 @@ describe('Registry flags column', () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
     await signInWith(['View Patient Flags']);
-    vi.mocked(useReportDataset).mockReturnValue({ columns: [], rows: flaggedRows, isLoading: false, error: undefined });
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: flaggedRows,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
   });
 
   it("shows each patient's RHD flags from the report, risk flags red and missing data flags orange", () => {

@@ -10,7 +10,10 @@ describe('routes.json', () => {
   it('registers every component it names', () => {
     const entry = readFileSync('src/index.ts', 'utf8');
     const exported = [...entry.matchAll(/^export const (\w+) =/gm)].map(([, name]) => name);
-    const components = [...routes.extensions, ...routes.workspaces2].map((registration) => registration.component);
+    // A component another app exports is named app#component, and is that app's to register.
+    const components = [...routes.extensions, ...routes.workspaces2]
+      .map((registration) => registration.component)
+      .filter((component) => !component.includes('#'));
 
     expect(components.filter((component) => !exported.includes(component))).toEqual([]);
   });
@@ -38,6 +41,21 @@ describe('routes.json', () => {
 
     expect(link.meta).toEqual(waitingListDashboardMeta);
     expect(page.component).toBe('waitingListDashboard');
+  });
+
+  it("opens the waiting list's consultations in a workspace of its own, scoped to the waiting list", () => {
+    const group = routes.workspaceGroups2.find((g) => g.name === 'act-waiting-list');
+    const window = routes.workspaceWindows2.find((w) => w.name === 'act-waiting-list-form-entry');
+    const workspace = routes.workspaces2.find((w) => w.name === 'act-waiting-list-form-entry-workspace');
+
+    expect(group.scopePattern).toBe(`/home/${waitingListDashboardMeta.name}`);
+    expect(window.group).toBe(group.name);
+    expect(workspace).toEqual(
+      expect.objectContaining({
+        component: '@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace',
+        window: window.name,
+      }),
+    );
   });
 
   it('adds the screen positive list to the home app under the name and slot its page renders', () => {

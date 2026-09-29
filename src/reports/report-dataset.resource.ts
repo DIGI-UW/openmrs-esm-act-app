@@ -37,15 +37,16 @@ async function evaluateReport(reportUuidOrName: string, params: Record<string, s
 }
 
 /**
- * Evaluates a report, given by uuid or by name, and returns its first dataset. A failure is not retried.
+ * Evaluates a report, given by uuid or by name, and returns its first dataset, and `mutate` to evaluate it again.
+ * A failure is not retried.
  * The server sends `columns` only with rows, so an empty dataset has none and a screen defines its own headers.
  */
 export function useReportDataset(reportUuidOrName: string | null, params: Record<string, string> = {}) {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     reportUuidOrName ? ['rhd-report-dataset', reportUuidOrName, params] : null,
     () => evaluateReport(reportUuidOrName, params),
     { shouldRetryOnError: false },
   );
 
-  return { columns: data?.metadata.columns ?? [], rows: data?.rows ?? [], isLoading, error };
+  return { columns: data?.metadata.columns ?? [], rows: data?.rows ?? [], isLoading, error, mutate };
 }

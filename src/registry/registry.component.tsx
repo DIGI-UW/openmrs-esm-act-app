@@ -15,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { ConfigurableLink, formatDate, navigate, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, formatDate, navigate, PatientListsPictogram, useConfig } from '@openmrs/esm-framework';
+import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
@@ -202,9 +203,11 @@ export default function Registry() {
     return <p className={styles.message}>{t('noAccessToRegistry', 'You do not have access to the registry.')}</p>;
   }
   return (
-    <div className={styles.registry}>
-      <h1 className={styles.title}>{t('registry', 'Registry')}</h1>
-      <RegistryTable />
-    </div>
+    <>
+      <ActPageHeader title={t('registry', 'Registry')} illustration={<PatientListsPictogram />} />
+      <div className={styles.registry}>
+        <RegistryTable />
+      </div>
+    </>
   );
 }

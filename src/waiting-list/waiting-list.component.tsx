@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,16 +13,22 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { navigate, useConfig } from '@openmrs/esm-framework';
+import {
+  CardiologyPictogram,
+  fetchCurrentPatient,
+  launchWorkspace2,
+  showSnackbar,
+  useConfig,
+} from '@openmrs/esm-framework';
+import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
-import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { downloadCsv } from '../table-filters/csv';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { requestFormInChart } from './pending-form';
+import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { rankWaitingRows, type WaitingRow } from './urgency';
 import {
   filterColumns,
@@ -32,20 +38,43 @@ import {
 } from './waiting-list-filters';
 import styles from './waiting-list.scss';
 
+const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
+
 function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
-  const { rows, isLoading, error } = useReportDataset(waitingList.report);
+  const { rows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   const [filters, setFilters] = useWaitingListFilters();
   const ranked = useMemo(
     () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),
     [rows, filters, urgencyBands],
   );
   const { results, paginationProps } = usePagedRows(ranked, filters);
-  const openForm = ({ row }: WaitingRow) => {
+  // Opening a row again passes the same objects, which the open workspace takes as the same form rather than
+  // prompting to close it.
+  const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
+  const openForm = async ({ row }: WaitingRow) => {
     const patientUuid = String(row.patient_uuid);
-    requestFormInChart({ patientUuid, formUuid: String(row.form_uuid), encounterUuid: String(row.encounter_uuid) });
-    navigate({ to: patientChartUrl(patientUuid) });
+    const encounterUuid = String(row.encounter_uuid);
+    if (!loaded.current.has(encounterUuid)) {
+      loaded.current.set(
+        encounterUuid,
+        Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]),
+      );
+    }
+    try {
+      const [form, patient] = await loaded.current.get(encounterUuid);
+      // An edit loads its encounter's own visit, so the list passes none. Both form engines report a save
+      // through mutateVisitContext.
+      launchWorkspace2(
+        waitingListFormEntryWorkspace,
+        { form, encounterUuid },
+        { patient, patientUuid, visitContext: null, mutateVisitContext: mutate },
+      );
+    } catch (e) {
+      loaded.current.delete(encounterUuid);
+      showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
+    }
   };
   const filterSelect = (key: keyof WaitingListFilters, label: string) => (
     <FilterSelect
@@ -170,15 +199,17 @@ export default function WaitingList() {
     );
   }
   return (
-    <div className={styles.waitingList}>
-      <h1 className={styles.title}>{t('waitingList', 'Procedural waiting list')}</h1>
-      <p className={styles.description}>
-        {t(
-          'waitingListDescription',
-          'Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency',
-        )}
-      </p>
-      <WaitingListTable />
-    </div>
+    <>
+      <ActPageHeader title={t('waitingList', 'Procedural waiting list')} illustration={<CardiologyPictogram />} />
+      <div className={styles.waitingList}>
+        <p className={styles.description}>
+          {t(
+            'waitingListDescription',
+            'Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency',
+          )}
+        </p>
+        <WaitingListTable />
+      </div>
+    </>
   );
 }

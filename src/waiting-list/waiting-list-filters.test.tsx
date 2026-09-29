@@ -51,7 +51,13 @@ describe('Procedural waiting list filters and CSV', () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-waiting-list');
     await signInWith(['View Patient Flags']);
-    vi.mocked(useReportDataset).mockReturnValue({ columns: [], rows, isLoading: false, error: undefined });
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
   });
 
   it('offers each filter the values the recommendations have', () => {
@@ -106,7 +112,13 @@ describe('Procedural waiting list filters and CSV', () => {
       { ...rows[1], recommendation_uuid: 'second' },
       rows[0],
     ];
-    vi.mocked(useReportDataset).mockReturnValue({ columns: [], rows: twice, isLoading: false, error: undefined });
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: twice,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
     render(<WaitingList />);
 
     await choose('Urgency', '1 - within 1 week');
@@ -168,6 +180,7 @@ describe('Procedural waiting list filters and CSV', () => {
       rows: twoPagesEach,
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
     render(<WaitingList />);
     await userEvent.click(screen.getByRole('button', { name: /next page/i }));

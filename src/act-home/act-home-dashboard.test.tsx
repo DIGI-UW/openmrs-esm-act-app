@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { type AssignedExtension, ExtensionSlot, useAssignedExtensions } from '@openmrs/esm-framework';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import ActHomeDashboard from './act-home-dashboard.component';
@@ -8,13 +8,13 @@ import ActHomeDashboard from './act-home-dashboard.component';
 const mockUseAssignedExtensions = vi.mocked(useAssignedExtensions);
 
 describe('ActHomeDashboard', () => {
-  it('shows the ACT home heading and an empty state while no widget is assigned', async () => {
+  it('shows the ACT home header and an empty state while no widget is assigned', async () => {
     await signInWith([homePrivilege]);
     mockUseAssignedExtensions.mockReturnValue([]);
 
     render(<ActHomeDashboard />);
 
-    expect(screen.getByRole('heading', { name: 'ACT home' })).toBeInTheDocument();
+    expect(within(screen.getByTestId('act-page-header')).getByText('ACT home')).toBeInTheDocument();
     expect(screen.getByText('No widgets have been added to ACT home yet.')).toBeInTheDocument();
   });
 
@@ -37,7 +37,7 @@ describe('ActHomeDashboard', () => {
 
     render(<ActHomeDashboard />);
 
-    expect(screen.queryByRole('heading', { name: 'ACT home' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('act-page-header')).not.toBeInTheDocument();
     expect(screen.getByText('You do not have access to ACT home.')).toBeInTheDocument();
   });
 });

@@ -18,7 +18,14 @@ const cascade = [
 ];
 
 function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
-  mockUseReportDataset.mockReturnValue({ columns: [], rows: [], isLoading: false, error: undefined, ...value });
+  mockUseReportDataset.mockReturnValue({
+    columns: [],
+    rows: [],
+    isLoading: false,
+    error: undefined,
+    mutate: vi.fn(),
+    ...value,
+  });
 }
 
 describe('CareCascade', () => {

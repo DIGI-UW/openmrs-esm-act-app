@@ -11,7 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { ConfigurableLink, formatDate, useConfig } from '@openmrs/esm-framework';
+import { CardiologyPictogram, ConfigurableLink, formatDate, useConfig } from '@openmrs/esm-framework';
+import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
@@ -136,12 +137,17 @@ export default function ScreenPositive() {
     );
   }
   return (
-    <div className={styles.screenPositive}>
-      <h1 className={styles.title}>{t('screenPositive', 'Screen positive, pending confirmation')}</h1>
-      <p className={styles.description}>
-        {t('screenPositiveDescription', 'Registry patients who screened positive and wait for a confirmatory echo')}
-      </p>
-      <ScreenPositiveTable />
-    </div>
+    <>
+      <ActPageHeader
+        title={t('screenPositive', 'Screen positive, pending confirmation')}
+        illustration={<CardiologyPictogram />}
+      />
+      <div className={styles.screenPositive}>
+        <p className={styles.description}>
+          {t('screenPositiveDescription', 'Registry patients who screened positive and wait for a confirmatory echo')}
+        </p>
+        <ScreenPositiveTable />
+      </div>
+    </>
   );
 }

@@ -30,6 +30,7 @@ describe('Registry filters', () => {
       rows: registryRows,
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     });
   });
 
