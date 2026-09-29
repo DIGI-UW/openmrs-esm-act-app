@@ -6,6 +6,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: layout.$spacing-05;
+  // The prophylaxis choices open under their tile without stretching the tiles beside it.
+  align-items: start;
 }
 
 .action {
@@ -34,7 +36,6 @@
 // A button tile looks like the link tiles beside it.
 button.action {
   width: 100%;
-  font: inherit;
   text-align: left;
   cursor: pointer;
 }
