@@ -23,7 +23,7 @@ describe('configSchema', () => {
       quickActions: {
         registerPatientUrl: '${openmrsSpaBase}/patient-registration',
         enterProphylaxisUrl: '${openmrsSpaBase}/forms',
-        findPatientUrl: '${openmrsSpaBase}/search',
+        findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',

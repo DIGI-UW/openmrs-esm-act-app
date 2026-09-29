@@ -58,7 +58,10 @@ export const configSchema = {
       'Where the Enter prophylaxis quick action on ACT home leads: the fast data entry app, whose forms the distro sets.',
       '${openmrsSpaBase}/forms',
     ),
-    findPatientUrl: link('Where the Find a patient quick action on ACT home leads.', '${openmrsSpaBase}/search'),
+    findPatientUrl: link(
+      'Where the Find a patient quick action on ACT home leads. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
+      '${openmrsSpaBase}/search?query=',
+    ),
   },
   careCascade: {
     report: {
