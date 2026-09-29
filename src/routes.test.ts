@@ -50,7 +50,6 @@ describe('routes.json', () => {
 
     expect(group.scopePattern).toBe(`/home/${waitingListDashboardMeta.name}`);
     expect(window.group).toBe(group.name);
-    // The forms app's form entry workspace meant for use outside the patient chart.
     expect(workspace).toEqual(
       expect.objectContaining({
         component: '@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace',

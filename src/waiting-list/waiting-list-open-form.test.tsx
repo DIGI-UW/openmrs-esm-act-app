@@ -54,21 +54,37 @@ describe('Opening a recommendation consultation from the waiting list', () => {
     expect(vi.mocked(navigate)).not.toHaveBeenCalled();
   });
 
-  it('evaluates the waiting list again once the consultation is saved, so the row shows the change', async () => {
+  it('evaluates the waiting list once again after the consultation is saved, so the row shows the change', async () => {
     render(<WaitingList />);
     await openFormOf('rhd00003');
     await waitFor(() => expect(vi.mocked(launchWorkspace2)).toHaveBeenCalled());
     const [, workspaceProps, windowProps] = vi.mocked(launchWorkspace2).mock.calls[0] as [
       string,
-      { handlePostResponse: () => void },
+      Record<string, unknown>,
       { mutateVisitContext: () => void },
     ];
 
-    workspaceProps.handlePostResponse();
-    expect(mutate).toHaveBeenCalledTimes(1);
-    // An HTML form reports its save only through the visit context.
+    // Both form engines report a save through the visit context, so that alone evaluates the list again.
     windowProps.mutateVisitContext();
-    expect(mutate).toHaveBeenCalledTimes(2);
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(workspaceProps).not.toHaveProperty('handlePostResponse');
+  });
+
+  it('launches the same props when a row is opened again, so the open form is left as it is', async () => {
+    render(<WaitingList />);
+    await openFormOf('rhd00003');
+    await openFormOf('rhd00003');
+
+    await waitFor(() => expect(vi.mocked(launchWorkspace2)).toHaveBeenCalledTimes(2));
+    const [first, second] = vi.mocked(launchWorkspace2).mock.calls as Array<
+      [string, Record<string, unknown>, Record<string, unknown>]
+    >;
+    for (const key of Object.keys(first[1])) {
+      expect(second[1][key]).toBe(first[1][key]);
+    }
+    for (const key of Object.keys(first[2])) {
+      expect(second[2][key]).toBe(first[2][key]);
+    }
   });
 
   it('says so, and opens nothing, when the patient cannot be loaded', async () => {

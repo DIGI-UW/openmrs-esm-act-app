@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -50,18 +50,29 @@ function WaitingListTable() {
     [rows, filters, urgencyBands],
   );
   const { results, paginationProps } = usePagedRows(ranked, filters);
-  // The forms app's form entry workspace for use outside the chart, in this app's own group on the list.
+  // Opening a row again passes the same objects, which the open workspace takes as the same form rather than
+  // prompting to close it.
+  const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
   const openForm = async ({ row }: WaitingRow) => {
     const patientUuid = String(row.patient_uuid);
+    const encounterUuid = String(row.encounter_uuid);
+    if (!loaded.current.has(encounterUuid)) {
+      loaded.current.set(
+        encounterUuid,
+        Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]),
+      );
+    }
     try {
-      const [form, patient] = await Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]);
-      // An edit loads its encounter's own visit, so the list passes none.
+      const [form, patient] = await loaded.current.get(encounterUuid);
+      // An edit loads its encounter's own visit, so the list passes none. Both form engines report a save
+      // through mutateVisitContext.
       launchWorkspace2(
         waitingListFormEntryWorkspace,
-        { form, encounterUuid: String(row.encounter_uuid), handlePostResponse: () => mutate() },
-        { patient, patientUuid, visitContext: null, mutateVisitContext: () => mutate() },
+        { form, encounterUuid },
+        { patient, patientUuid, visitContext: null, mutateVisitContext: mutate },
       );
     } catch (e) {
+      loaded.current.delete(encounterUuid);
       showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
     }
   };
