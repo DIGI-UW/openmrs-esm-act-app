@@ -59,6 +59,20 @@ shows it:
 }
 ```
 
+## Procedural waiting list
+
+A Procedural waiting list dashboard in the home app's left nav, at `/home/act-waiting-list`. It lists the rows of
+the report set in `waitingList.report`, by default the distro's Procedural Waiting List: the open interventional
+recommendations from each RHD Registry patient's latest consultation.
+
+Days pending counts from the report's `date_added`. A row turns red once its days pending pass the deadline of its
+urgency band, set in `urgencyBands` by the Urgency answer's concept; the defaults are the RHD Consultation Visit's
+four answers, due in 7, 30, 90 and 180 days. Overdue rows come first, then the bands in the order they are listed.
+
+Its filters are kept in the URL, and Download CSV saves the filtered rows. Open form opens the patient's chart with
+that consultation in the form workspace, through the `act-waiting-list-open-form` extension in the chart's
+`patient-header-slot`.
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, rhdflags with the gap look-up, cohort 3.7.3 or later for the RHD flag

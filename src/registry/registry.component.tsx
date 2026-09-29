@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,8 +7,6 @@ import {
   InlineNotification,
   Pagination,
   Search,
-  Select,
-  SelectItem,
   Table,
   Tag,
   TableBody,
@@ -17,19 +15,21 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { ConfigurableLink, formatDate, navigate, useConfig, usePagination } from '@openmrs/esm-framework';
+import { ConfigurableLink, formatDate, navigate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
 import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
-import { downloadCsv } from './csv';
-import { distinctValues, filterRegistry, useRegistryFilters } from './registry-filters';
+import { downloadCsv } from '../table-filters/csv';
+import { FilterSelect } from '../table-filters/filter-select.component';
+import { distinctValues } from '../table-filters/distinct-values';
+import { usePagedRows } from '../table-filters/paged-rows';
+import { filterRegistry, registryFilterColumns, useRegistryFilters } from './registry-filters';
 import styles from './registry.scss';
 
-const pageSizes = [25, 50, 100];
-
-const chartUrl = (row: ReportRow) => '${openmrsSpaBase}' + `/patient/${row.patient_uuid}/chart`;
+const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
 
 function nextConsultation(row: ReportRow) {
   const date = parseReportDate(row.next_consultation_date);
@@ -48,18 +48,15 @@ function RegistryTable() {
     () => filterRegistry(rows, registry.showBpgColumns ? filters : { ...filters, bpg: '' }),
     [rows, filters, registry.showBpgColumns],
   );
-  const [pageSize, setPageSize] = useState(pageSizes[0]);
-  const { results, currentPage, goTo } = usePagination(shown, pageSize);
-  // A change of filters, chosen here or by following the Registry link again, starts from the first page.
-  useEffect(() => goTo(1), [filters, goTo]);
-  const filterSelect = (id: string, label: string, value: string, options: Array<string>, key: string) => (
-    <Select id={id} labelText={label} value={value} onChange={(event) => setFilters({ [key]: event.target.value })}>
-      <SelectItem value="" text={t('all', 'All')} />
-      {/* A value from a bookmarked URL that no longer matches still shows, so it can be cleared. */}
-      {[...options, ...(value && !options.includes(value) ? [value] : [])].map((option) => (
-        <SelectItem key={option} value={option} text={option} />
-      ))}
-    </Select>
+  const { results, paginationProps } = usePagedRows(shown, filters);
+  const filterSelect = (key: keyof typeof registryFilterColumns, label: string) => (
+    <FilterSelect
+      id={`registry-${key}`}
+      label={label}
+      value={filters[key]}
+      options={distinctValues(rows, registryFilterColumns[key])}
+      onChange={(value) => setFilters({ [key]: value })}
+    />
   );
   // The report lists the flags whose patient lists each patient is on, separated by |; the configured ones show.
   const flagsOf = (row: ReportRow) =>
@@ -144,42 +141,11 @@ function RegistryTable() {
           value={filters.q}
           onChange={(event) => setFilters({ q: event.target.value })}
         />
-        {filterSelect(
-          'registry-status',
-          t('status', 'Status'),
-          filters.status,
-          distinctValues(rows, 'enrollment_status'),
-          'status',
-        )}
-        {filterSelect(
-          'registry-cardiac',
-          t('cardiacClinic', 'Cardiac clinic'),
-          filters.cardiac,
-          distinctValues(rows, 'cardiac_clinic'),
-          'cardiac',
-        )}
-        {filterSelect(
-          'registry-primary-care',
-          t('primaryCareClinic', 'Primary care clinic'),
-          filters.primaryCare,
-          distinctValues(rows, 'primary_care_clinic'),
-          'primaryCare',
-        )}
-        {filterSelect(
-          'registry-category',
-          t('categoryAtDiagnosis', 'Category at diagnosis'),
-          filters.category,
-          distinctValues(rows, 'diagnosis_category'),
-          'category',
-        )}
-        {registry.showBpgColumns &&
-          filterSelect(
-            'registry-bpg',
-            t('bpgStatus', 'BPG status'),
-            filters.bpg,
-            distinctValues(rows, 'bpg_status'),
-            'bpg',
-          )}
+        {filterSelect('status', t('status', 'Status'))}
+        {filterSelect('cardiac', t('cardiacClinic', 'Cardiac clinic'))}
+        {filterSelect('primaryCare', t('primaryCareClinic', 'Primary care clinic'))}
+        {filterSelect('category', t('categoryAtDiagnosis', 'Category at diagnosis'))}
+        {registry.showBpgColumns && filterSelect('bpg', t('bpgStatus', 'BPG status'))}
       </div>
       <div className={styles.actions}>
         <Button
@@ -223,18 +189,7 @@ function RegistryTable() {
       ) : (
         <p className={styles.message}>{t('noRegistryMatches', 'No patients match these filters.')}</p>
       )}
-      {shown.length > 0 && (
-        <Pagination
-          page={currentPage}
-          pageSize={pageSize}
-          pageSizes={pageSizes}
-          totalItems={shown.length}
-          onChange={({ page, pageSize: size }) => {
-            setPageSize(size);
-            goTo(page);
-          }}
-        />
-      )}
+      {shown.length > 0 && <Pagination {...paginationProps} />}
     </>
   );
 }

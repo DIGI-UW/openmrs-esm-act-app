@@ -12,7 +12,8 @@ import {
   TableRow,
 } from '@carbon/react';
 import { formatDate, showSnackbar, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
-import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
+import { type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
+import { openEncounterForm } from './open-encounter-form';
 import styles from './flag-gaps.scss';
 
 /** What a patient flags app that passes the clicked flag launches a flag action's workspace with. */
@@ -48,8 +49,7 @@ const FlagGapsWorkspace: React.FC<
   const openGap = useCallback(
     async (gap: FlagGap) => {
       try {
-        const form = await fetchForm(gap.form.uuid);
-        await launchChildWorkspace('patient-form-entry-workspace', { form, encounterUuid: gap.encounter });
+        await openEncounterForm(launchChildWorkspace, gap.form.uuid, gap.encounter);
       } catch (e) {
         showSnackbar({
           kind: 'error',

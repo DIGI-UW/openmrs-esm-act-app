@@ -89,6 +89,13 @@ export const configSchema = {
         "Show the report's bpg_status and adherence columns and a BPG status filter. Turn on once the report returns them.",
     },
   },
+  waitingList: {
+    report: {
+      _type: Type.String,
+      _default: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
+      _description: 'The Procedural Waiting List report, by uuid or name, whose rows the waiting list shows.',
+    },
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -97,11 +104,13 @@ export const configSchema = {
       deadlineDays: { _type: Type.Number, _description: 'Days allowed before a patient in this band is overdue.' },
     },
     _default: [
-      { label: '1: Emergent', concept: '1fe15210-4490-58b0-a38c-bb0386e98482', deadlineDays: 1 },
-      { label: '2: Urgent', concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00', deadlineDays: 60 },
-      { label: '3: Elective', concept: '2666bf97-7400-57c7-b535-7903e22ced34', deadlineDays: 180 },
+      { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
+      { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
+      { label: '3 - within 3 months', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
+      { label: '4 - within 6 months', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
     ],
-    _description: 'Urgency bands for the procedural waiting list, with their deadlines, as in ACT 2.0.',
+    _description:
+      "Urgency bands for the procedural waiting list, most urgent first: the RHD Consultation Visit's Urgency answers, with the days allowed before a recommendation is overdue.",
     _validators: [
       validator(
         (bands: Array<{ concept?: string; deadlineDays?: unknown }>) =>
@@ -125,5 +134,6 @@ export interface Config {
   quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
   registry: { report: string; showBpgColumns: boolean };
+  waitingList: { report: string };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }
