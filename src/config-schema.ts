@@ -58,6 +58,19 @@ export const configSchema = {
       'Where the Enter prophylaxis quick action on ACT home leads: the fast data entry app, whose forms the distro sets.',
       '${openmrsSpaBase}/forms',
     ),
+    prophylaxisForms: {
+      _type: Type.Array,
+      _elements: {
+        label: { _type: Type.String, _description: 'The choice as ACT home shows it.' },
+        url: { _type: Type.String, _description: 'Where the choice leads.' },
+      },
+      _default: [
+        { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
+        { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
+      ],
+      _description:
+        'The choices the Enter prophylaxis quick action offers, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
+    },
     findPatientUrl: link(
       'Where the Find a patient quick action on ACT home leads. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
       '${openmrsSpaBase}/search?query=',
@@ -142,7 +155,12 @@ export interface Config {
     names: Array<string>;
     riskFlags: Array<string>;
   };
-  quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
+  quickActions: {
+    registerPatientUrl: string;
+    enterProphylaxisUrl: string;
+    prophylaxisForms: Array<{ label: string; url: string }>;
+    findPatientUrl: string;
+  };
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
