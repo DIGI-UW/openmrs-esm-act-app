@@ -89,6 +89,13 @@ export const configSchema = {
         "Show the report's bpg_status and adherence columns and a BPG status filter. Turn on once the report returns them.",
     },
   },
+  waitingList: {
+    report: {
+      _type: Type.String,
+      _default: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
+      _description: 'The Procedural Waiting List report, by uuid or name, whose rows the waiting list shows.',
+    },
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -125,5 +132,6 @@ export interface Config {
   quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
   registry: { report: string; showBpgColumns: boolean };
+  waitingList: { report: string };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

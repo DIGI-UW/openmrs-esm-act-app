@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import routes from './routes.json';
 import { actHomeDashboardMeta, actHomeWidgetsSlot } from './act-home/act-home.meta';
 import { registryDashboardMeta } from './registry/registry.meta';
+import { waitingListDashboardMeta } from './waiting-list/waiting-list.meta';
 
 describe('routes.json', () => {
   it('registers every component it names', () => {
@@ -28,5 +29,13 @@ describe('routes.json', () => {
 
     expect(link.meta).toEqual(registryDashboardMeta);
     expect(page.component).toBe('registryDashboard');
+  });
+
+  it('adds the procedural waiting list to the home app under the name and slot its page renders', () => {
+    const link = routes.extensions.find((extension) => extension.component === 'waitingListDashboardLink');
+    const page = routes.extensions.find((extension) => extension.slot === waitingListDashboardMeta.slot);
+
+    expect(link.meta).toEqual(waitingListDashboardMeta);
+    expect(page.component).toBe('waitingListDashboard');
   });
 });

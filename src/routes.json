@@ -54,6 +54,21 @@
       "name": "act-registry-dashboard",
       "slot": "rhd-registry-dashboard-slot",
       "component": "registryDashboard"
+    },
+    {
+      "name": "act-waiting-list-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "waitingListDashboardLink",
+      "meta": {
+        "name": "act-waiting-list",
+        "slot": "rhd-waiting-list-dashboard-slot",
+        "title": "waitingList"
+      }
+    },
+    {
+      "name": "act-waiting-list-dashboard",
+      "slot": "rhd-waiting-list-dashboard-slot",
+      "component": "waitingListDashboard"
     }
   ],
   "workspaces2": [

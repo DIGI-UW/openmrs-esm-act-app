@@ -34,6 +34,9 @@ describe('configSchema', () => {
         report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
         showBpgColumns: false,
       },
+      waitingList: {
+        report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
+      },
       urgencyBands: [
         { label: '1: Emergent', concept: '1fe15210-4490-58b0-a38c-bb0386e98482', deadlineDays: 1 },
         { label: '2: Urgent', concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00', deadlineDays: 60 },
