@@ -6,10 +6,11 @@ export interface RegistryFilters {
   cardiac: string;
   primaryCare: string;
   category: string;
+  bpg: string;
   q: string;
 }
 
-const keys: Array<keyof RegistryFilters> = ['status', 'cardiac', 'primaryCare', 'category', 'q'];
+const keys: Array<keyof RegistryFilters> = ['status', 'cardiac', 'primaryCare', 'category', 'bpg', 'q'];
 
 function fromUrl(): RegistryFilters {
   const params = new URLSearchParams(window.location.search);
@@ -57,6 +58,7 @@ export function filterRegistry(rows: Array<ReportRow>, filters: RegistryFilters)
       (!filters.cardiac || row.cardiac_clinic === filters.cardiac) &&
       (!filters.primaryCare || row.primary_care_clinic === filters.primaryCare) &&
       (!filters.category || row.diagnosis_category === filters.category) &&
+      (!filters.bpg || row.bpg_status === filters.bpg) &&
       (!q ||
         [row.full_name, row.rhd_id].some((value) =>
           String(value ?? '')

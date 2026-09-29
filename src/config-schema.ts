@@ -82,6 +82,12 @@ export const configSchema = {
       _default: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
       _description: 'The RHD Patient List report, by uuid or name, whose rows the registry lists.',
     },
+    showBpgColumns: {
+      _type: Type.Boolean,
+      _default: false,
+      _description:
+        "Show the report's bpg_status and adherence columns and a BPG status filter. Turn on once the report returns them.",
+    },
   },
   urgencyBands: {
     _type: Type.Array,
@@ -118,6 +124,6 @@ export interface Config {
   };
   quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
-  registry: { report: string };
+  registry: { report: string; showBpgColumns: boolean };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

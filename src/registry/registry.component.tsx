@@ -41,7 +41,11 @@ function RegistryTable() {
   // Coming back from a chart reuses the rows rather than evaluating the whole report again.
   const { rows, isLoading, error } = useReportDataset(registry.report, params, { revalidateIfStale: false });
   const [filters, setFilters] = useRegistryFilters();
-  const shown = useMemo(() => filterRegistry(rows, filters), [rows, filters]);
+  // A BPG status in the URL has no filter to clear it while the setting is off, so it is not applied.
+  const shown = useMemo(
+    () => filterRegistry(rows, registry.showBpgColumns ? filters : { ...filters, bpg: '' }),
+    [rows, filters, registry.showBpgColumns],
+  );
   const [pageSize, setPageSize] = useState(pageSizes[0]);
   const { results, currentPage, goTo } = usePagination(shown, pageSize);
   // A change of filters, chosen here or by following the Registry link again, starts from the first page.
@@ -78,6 +82,15 @@ function RegistryTable() {
     { header: t('diagnosisCategory', 'Diagnosis category'), text: text('diagnosis_category') },
     { header: t('prophylaxisRegimen', 'Prophylaxis regimen'), text: text('prophylaxis_regimen') },
     { header: t('nextConsultation', 'Next consultation'), text: nextConsultation },
+    ...(registry.showBpgColumns
+      ? [
+          { header: t('bpgStatus', 'BPG status'), text: text('bpg_status') },
+          {
+            header: t('adherence', 'Adherence'),
+            text: (row: ReportRow) => (row.adherence == null ? '' : `${row.adherence}%`),
+          },
+        ]
+      : []),
     {
       header: t('flags', 'Flags'),
       text: (row) =>
@@ -157,6 +170,14 @@ function RegistryTable() {
           distinctValues(rows, 'diagnosis_category'),
           'category',
         )}
+        {registry.showBpgColumns &&
+          filterSelect(
+            'registry-bpg',
+            t('bpgStatus', 'BPG status'),
+            filters.bpg,
+            distinctValues(rows, 'bpg_status'),
+            'bpg',
+          )}
       </div>
       {shown.length ? (
         <Table>
