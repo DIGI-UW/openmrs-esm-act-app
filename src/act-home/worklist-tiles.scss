@@ -1,0 +1,50 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: layout.$spacing-04;
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  height: 100%;
+  padding: layout.$spacing-04;
+  background-color: $ui-01;
+  border: 1px solid $ui-03;
+  border-top-width: layout.$spacing-02;
+}
+
+.link .tile:hover {
+  background-color: $ui-03;
+}
+
+.risk {
+  border-top-color: colors.$red-60;
+}
+
+.dataQuality {
+  border-top-color: colors.$orange-40;
+}
+
+.count {
+  @include type.type-style('heading-05');
+}
+
+.name {
+  @include type.type-style('body-compact-01');
+}
+
+.empty {
+  @include type.type-style('body-compact-01');
+}

@@ -2,8 +2,60 @@
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
     "webservices.rest": ">=2.40.0",
-    "rhdflags": ">=1.0.0-SNAPSHOT"
+    "rhdflags": ">=1.0.0-SNAPSHOT",
+    "cohort": ">=3.7.3",
+    "reportingrest": ">=2.0.0"
   },
+  "extensions": [
+    {
+      "name": "act-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "actHomeDashboardLink",
+      "meta": {
+        "name": "act-home",
+        "slot": "rhd-home-dashboard-slot",
+        "title": "actHome"
+      }
+    },
+    {
+      "name": "act-home-dashboard",
+      "slot": "rhd-home-dashboard-slot",
+      "component": "actHomeDashboard"
+    },
+    {
+      "name": "act-home-quick-actions",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeQuickActions",
+      "order": 1
+    },
+    {
+      "name": "act-home-worklists",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeWorklists",
+      "order": 2
+    },
+    {
+      "name": "act-home-care-cascade",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeCareCascade",
+      "order": 4
+    },
+    {
+      "name": "act-registry-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "registryDashboardLink",
+      "meta": {
+        "name": "act-registry",
+        "slot": "rhd-registry-dashboard-slot",
+        "title": "registry"
+      }
+    },
+    {
+      "name": "act-registry-dashboard",
+      "slot": "rhd-registry-dashboard-slot",
+      "component": "registryDashboard"
+    }
+  ],
   "workspaces2": [
     {
       "name": "rhd-flag-gaps-workspace",

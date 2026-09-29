@@ -1,0 +1,41 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.registry {
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.title {
+  @include type.type-style('heading-05');
+  margin-bottom: layout.$spacing-06;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  gap: layout.$spacing-05;
+  align-items: end;
+  margin-bottom: layout.$spacing-05;
+}
+
+// Carbon has no orange tag, so missing data flags are drawn in Carbon's orange here.
+.dataQuality {
+  background-color: colors.$orange-10;
+  color: colors.$orange-70;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-05;
+}
