@@ -76,6 +76,13 @@ export const configSchema = {
         "The report's steps the widget draws, by their step value, in this order. The report's Oral and BPG rows split Prescribed Prophylaxis, so they are left out by default.",
     },
   },
+  registry: {
+    report: {
+      _type: Type.String,
+      _default: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
+      _description: 'The RHD Patient List report, by uuid or name, whose rows the registry lists.',
+    },
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -111,5 +118,6 @@ export interface Config {
   };
   quickActions: { registerPatientUrl: string; enterProphylaxisUrl: string; findPatientUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<string> };
+  registry: { report: string };
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

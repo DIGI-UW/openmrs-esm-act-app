@@ -1,0 +1,32 @@
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { render } from '@testing-library/react';
+import { DashboardExtension } from '@openmrs/esm-framework';
+import { signInWith } from '../access/sign-in.test-helper';
+import RegistryDashboardLink from './registry-dashboard-link.component';
+
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  DashboardExtension: vi.fn(() => null),
+}));
+
+describe('RegistryDashboardLink', () => {
+  it('links the home left nav to /home/act-registry', async () => {
+    window.spaBase = '/openmrs/spa';
+    await signInWith(['View Patient Flags']);
+
+    render(<RegistryDashboardLink />);
+
+    expect(vi.mocked(DashboardExtension).mock.calls[0][0]).toEqual(
+      expect.objectContaining({ path: 'act-registry', basePath: '/openmrs/spa/home', title: 'registry' }),
+    );
+  });
+
+  it('is hidden from a user without the registry privilege', async () => {
+    await signInWith(['Get Patients']);
+
+    render(<RegistryDashboardLink />);
+
+    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
+  });
+});

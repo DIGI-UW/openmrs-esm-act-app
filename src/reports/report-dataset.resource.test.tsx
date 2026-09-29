@@ -26,11 +26,14 @@ function respond(byUrl: (url: string) => unknown) {
   }) as never);
 }
 
-function renderDataset(report: string | null, params?: Record<string, string>) {
-  return renderHook(() => useReportDataset(report, params), {
-    wrapper: ({ children }) => (
-      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{children}</SWRConfig>
-    ),
+function renderDataset(
+  report: string | null,
+  params?: Record<string, string>,
+  options?: { revalidateIfStale?: boolean },
+  cache = new Map(),
+) {
+  return renderHook(() => useReportDataset(report, params, options), {
+    wrapper: ({ children }) => <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>{children}</SWRConfig>,
   });
 }
 
@@ -158,6 +161,20 @@ describe('useReportDataset', () => {
 
     await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2));
     expect(new URL(mockOpenmrsFetch.mock.calls[1][0], 'http://host').searchParams.get('startDate')).toBe('2026-06-01');
+  });
+
+  it('reuses the rows when a screen mounts again, if asked not to revalidate', async () => {
+    respond(() => evaluated(rows));
+    const cache = new Map();
+    const { result: firstMount, unmount } = renderDataset(waitingListUuid, {}, { revalidateIfStale: false }, cache);
+    await waitFor(() => expect(firstMount.current.rows).toEqual(rows));
+    unmount();
+
+    const { result: secondMount } = renderDataset(waitingListUuid, {}, { revalidateIfStale: false }, cache);
+
+    expect(secondMount.current.rows).toEqual(rows);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
   });
 
   it('fetches nothing without a report', () => {
