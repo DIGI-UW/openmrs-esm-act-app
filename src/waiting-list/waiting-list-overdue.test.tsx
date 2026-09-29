@@ -143,6 +143,24 @@ describe('Procedural waiting list days pending and overdue rows', () => {
     ]);
   });
 
+  it('marks only the Days pending cell, which the stylesheet colours red on an overdue row', () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [row('past', urgencyBands[0].concept, urgencyBands[0].deadlineDays + 1)],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(<WaitingList />);
+
+    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const marked = within(screen.getAllByRole('row')[1])
+      .getAllByRole('cell')
+      .map((cell, i) => [headers[i], cell.getAttribute('data-days-pending')])
+      .filter(([, marker]) => marker !== null);
+    expect(marked).toEqual([['Days pending', 'true']]);
+  });
+
   it('reads the date the report sends as a Java date array', () => {
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],

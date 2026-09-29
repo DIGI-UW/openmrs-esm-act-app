@@ -66,3 +66,8 @@
 .tableContainer tr[data-overdue='true'] {
   background-color: colors.$red-10;
 }
+
+// The figure that makes a row overdue reads in red, as the mockup shows; the tests read the same attribute.
+.tableContainer tr[data-overdue='true'] td[data-days-pending='true'] {
+  color: colors.$red-60;
+}

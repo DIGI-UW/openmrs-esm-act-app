@@ -57,14 +57,18 @@ function WaitingListTable() {
     />
   );
   const text = (column: string) => (waiting: WaitingRow) => String(waiting.row[column] ?? '');
-  const columns: Array<{ header: string; text: (waiting: WaitingRow) => string }> = [
+  const columns: Array<{ header: string; text: (waiting: WaitingRow) => string; daysPending?: boolean }> = [
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
     { header: t('sex', 'Sex'), text: text('sex') },
     { header: t('age', 'Age'), text: text('age_years') },
     { header: t('procedureType', 'Type'), text: text('procedure_type') },
     { header: t('procedure', 'Procedure'), text: text('procedure_name') },
     { header: t('urgency', 'Urgency'), text: text('urgency') },
-    { header: t('daysPending', 'Days pending'), text: (waiting) => String(waiting.daysPending ?? '') },
+    {
+      header: t('daysPending', 'Days pending'),
+      text: (waiting) => String(waiting.daysPending ?? ''),
+      daysPending: true,
+    },
     { header: t('district', 'District'), text: text('district') },
     { header: t('contraindications', 'Contraindications'), text: text('contraindications') },
     { header: t('suitableForRepair', 'Suitable for repair'), text: text('suitable_for_repair') },
@@ -132,7 +136,9 @@ function WaitingListTable() {
               {results.map((waiting) => (
                 <TableRow key={String(waiting.row.recommendation_uuid)} data-overdue={waiting.overdue}>
                   {columns.map((column) => (
-                    <TableCell key={column.header}>{column.text(waiting)}</TableCell>
+                    <TableCell key={column.header} data-days-pending={column.daysPending}>
+                      {column.text(waiting)}
+                    </TableCell>
                   ))}
                   <TableCell>
                     <Button kind="ghost" size="sm" onClick={() => openForm(waiting)}>
