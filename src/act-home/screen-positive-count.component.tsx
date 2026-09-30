@@ -22,7 +22,9 @@ function Row() {
     >
       <span>{t('screenPositive', 'Screen positive, pending confirmation')}</span>
       {error ? (
-        <span className={styles.error}>{t('couldNotLoadScreenPositive', 'Could not load the screen positive list')}</span>
+        <span className={styles.error}>
+          {t('couldNotLoadScreenPositive', 'Could not load the screen positive list')}
+        </span>
       ) : isLoading ? (
         <span data-testid="screen-positive-count-loading" className={styles.loading}>
           <SkeletonText />

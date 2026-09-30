@@ -79,7 +79,7 @@ function ScreenPositiveTable() {
   if (isLoading) {
     return (
       <div data-testid="screen-positive-loading">
-        <DataTableSkeleton columnCount={columns.length} showHeader={false} showToolbar={false} />
+        <DataTableSkeleton columnCount={columns.length} zebra showHeader={false} showToolbar={false} />
       </div>
     );
   }

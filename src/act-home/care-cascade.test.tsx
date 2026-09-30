@@ -62,7 +62,7 @@ describe('CareCascade', () => {
     ]);
   });
 
-  it("ends with the screen positive count, opening that list, for a user who may see it", async () => {
+  it('ends with the screen positive count, opening that list, for a user who may see it', async () => {
     await signInWith([homePrivilege, 'View Patient Flags']);
     dataset({ rows: cascade });
 
@@ -113,7 +113,11 @@ describe('CareCascade', () => {
 
   it('evaluates the report set in the config', async () => {
     await signInWith([homePrivilege], {
-      careCascade: { report: 'RHD Care Cascade', reportUrl: '${openmrsSpaBase}/reports', steps: [{ step: 'Active', label: 'Active' }] },
+      careCascade: {
+        report: 'RHD Care Cascade',
+        reportUrl: '${openmrsSpaBase}/reports',
+        steps: [{ step: 'Active', label: 'Active' }],
+      },
     });
     dataset({ rows: cascade });
 

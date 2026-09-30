@@ -13,11 +13,7 @@ const registryUrl = (flagName: string) =>
 
 function WorklistTile({ list }: { list: RhdFlagList }) {
   const content = (
-    <div
-      data-testid="worklist-tile"
-      data-priority={list.priority}
-      className={styles.tile}
-    >
+    <div data-testid="worklist-tile" data-priority={list.priority} className={styles.tile}>
       <span className={styles.count}>{list.memberCount}</span>
       <span className={styles.name}>{list.flagName}</span>
     </div>

@@ -126,7 +126,7 @@ function RegistryTable() {
   if (isLoading) {
     return (
       <div data-testid="registry-loading">
-        <DataTableSkeleton columnCount={columns.length} showHeader={false} showToolbar={false} />
+        <DataTableSkeleton columnCount={columns.length} zebra showHeader={false} showToolbar={false} />
       </div>
     );
   }
