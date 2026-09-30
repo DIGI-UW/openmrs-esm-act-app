@@ -98,7 +98,7 @@ function ScreenPositiveTable() {
       </div>
       {shown.length ? (
         <div className={styles.tableContainer}>
-          <Table>
+          <Table useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (

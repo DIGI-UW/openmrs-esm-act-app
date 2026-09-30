@@ -7,8 +7,8 @@
   overflow-x: auto;
 }
 
-// Overdue rows and their days pending read as they do on the waiting list page.
-.tableContainer tr[data-overdue='true'] {
+// Overdue rows and their days pending read as they do on the waiting list page, over the zebra rows.
+.tableContainer :global(.cds--data-table--zebra) tbody tr[data-overdue='true']:not(.cds--parent-row) td {
   background-color: $act-risk-background;
 }
 

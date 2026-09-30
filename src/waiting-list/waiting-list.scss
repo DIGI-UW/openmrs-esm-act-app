@@ -23,18 +23,9 @@
     right: 0;
   }
 
+  // Opaque, so columns scrolling under it stay hidden. Its cells take their row's zebra colour.
   th:last-child {
     background-color: $ui-03;
-  }
-
-  // Opaque, so columns scrolling under it stay hidden; it takes a hovered or overdue row's colour.
-  td:last-child {
-    background-color: $ui-01;
-  }
-
-  tr:hover td:last-child,
-  tr[data-overdue='true'] td:last-child {
-    background-color: inherit;
   }
 }
 
@@ -58,8 +49,9 @@
   margin-bottom: layout.$spacing-05;
 }
 
-// A recommendation past the deadline for its urgency; the tests read the same attribute.
-.tableContainer tr[data-overdue='true'] {
+// A recommendation past the deadline for its urgency; the tests read the same attribute. Painted on the cells,
+// and specific enough to outrank the styleguide's zebra rows, which paint theirs.
+.tableContainer :global(.cds--data-table--zebra) tbody tr[data-overdue='true']:not(.cds--parent-row) td {
   background-color: $act-risk-background;
 }
 

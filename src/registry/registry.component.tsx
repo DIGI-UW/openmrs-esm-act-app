@@ -172,7 +172,7 @@ function RegistryTable() {
         </Button>
       </div>
       {shown.length ? (
-        <Table>
+        <Table useZebraStyles>
           <TableHead>
             <TableRow>
               {columns.map((column) => (

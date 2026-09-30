@@ -152,7 +152,7 @@ function WaitingListTable() {
       </div>
       {ranked.length ? (
         <div className={styles.tableContainer}>
-          <Table>
+          <Table useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (

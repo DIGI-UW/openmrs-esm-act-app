@@ -58,7 +58,7 @@ function Summary() {
         </div>
       ) : mostUrgent.length ? (
         <div className={styles.tableContainer}>
-          <Table size="sm">
+          <Table size="sm" useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (
