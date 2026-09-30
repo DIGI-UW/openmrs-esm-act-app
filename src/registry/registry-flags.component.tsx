@@ -7,6 +7,9 @@ import styles from './registry.scss';
 
 type Flag = Pick<RhdFlagList, 'flagName' | 'priority'>;
 
+// Leftwards, as Flags is the table's last column.
+const align = 'bottom-end';
+
 function FlagTag({ priority, children }: { priority: Flag['priority']; children: React.ReactNode }) {
   return (
     <Tag
@@ -41,16 +44,13 @@ export function RegistryFlags({ flags, rowsBelow }: { flags: Array<Flag>; rowsBe
   const tag = (
     <FlagTag priority={flags.some((flag) => flag.priority === 'risk') ? 'risk' : 'dataQuality'}>{label}</FlagTag>
   );
-  // A tooltip opening below its tag grows about a row per flag, and would be cut off by the table's scroll box
-  // past the page's last row, so a tooltip without that room floats over the page. The rest stay in place:
-  // floating tracks every scroll, which slows a long page. They open leftwards, as Flags is the last column.
+  // Floating tracks every scroll, so only a tooltip with no more rows below it than flags floats.
   const floating = rowsBelow <= flags.length;
-  // A tooltip on hover on a desktop, and on a tap elsewhere, as O3's ward app does: a tap's trailing
-  // mouseleave would close a hover tooltip.
+  // Off desktop a Toggletip, as in O3's ward app: a tap's trailing mouseleave shuts a hover tooltip.
   return desktop ? (
     <DefinitionTooltip
       className={styles.flagsTooltip}
-      align="bottom-end"
+      align={align}
       autoAlign={floating}
       openOnHover
       definition={names}
@@ -58,7 +58,7 @@ export function RegistryFlags({ flags, rowsBelow }: { flags: Array<Flag>; rowsBe
       {tag}
     </DefinitionTooltip>
   ) : (
-    <Toggletip align="bottom-end" autoAlign={floating}>
+    <Toggletip align={align} autoAlign={floating}>
       <ToggletipButton label={label}>{tag}</ToggletipButton>
       <ToggletipContent>{names}</ToggletipContent>
     </Toggletip>

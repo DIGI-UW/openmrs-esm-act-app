@@ -34,7 +34,7 @@ function flagsOf(name: string) {
     .map((tag) => [tag.textContent, tag.getAttribute('data-priority'), tag.className.includes('cds--tag--red')]);
 }
 
-// The box a tooltip's text floats in: a Toggletip puts its text one element inside it, and it has no role.
+// A Toggletip puts a tooltip's text one element inside the box it floats in, which has no role.
 // eslint-disable-next-line testing-library/no-node-access
 const floatingBoxOf = (text: string) => screen.getByText(text).closest('.cds--popover-content');
 
@@ -110,7 +110,7 @@ describe('Registry flags column', () => {
       const tagOf = (name: RegExp, count: number) =>
         within(screen.getByRole('row', { name })).getByRole('button', { name: `${count} flags` });
 
-      // Of the page's ten rows: Patient 8 has 2 flags and 2 rows below, Patient 6 has 4 flags and 4 rows below.
+      // On the page of ten: Patient 8 has 2 flags and 2 rows below; Patient 6, 4 flags and 4 below.
       await open(tagOf(/Patient 8\b/, 2));
       expect(floatingBoxOf('RHD 30-day follow-up due, RHD INR target missing')).toHaveStyle({ position: 'fixed' });
       await open(tagOf(/Patient 6\b/, 4));
@@ -119,7 +119,7 @@ describe('Registry flags column', () => {
           'RHD 30-day follow-up due, RHD INR target missing, RHD lost to follow-up, RHD prophylaxis overdue',
         ),
       ).toHaveStyle({ position: 'fixed' });
-      // Patient 7 has 2 flags and 3 rows below, room enough, so it does without autoAlign's scroll tracking.
+      // Patient 7 has 2 flags and 3 rows below: room enough, so it stays in place.
       await open(tagOf(/Patient 7\b/, 2));
       expect(floatingBoxOf('RHD lost to follow-up, RHD prophylaxis overdue')).not.toHaveStyle({ position: 'fixed' });
     },
