@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePagination } from '@openmrs/esm-framework';
 
-const pageSizes = [25, 50, 100];
+const pageSizes = [10, 25, 50, 100];
 
 /** A filtered table's current page of rows, and the props for its Carbon Pagination. */
 export function usePagedRows<T>(rows: Array<T>, filters: object) {

@@ -47,7 +47,7 @@ describe('Registry BPG status and adherence', () => {
 
     render(<Registry />);
 
-    expect(screen.getAllByRole('row')).toHaveLength(1 + 25);
+    expect(screen.getByText(/of 30 items/)).toBeInTheDocument();
   });
 
   it('leaves the adherence empty for a patient who has none', async () => {

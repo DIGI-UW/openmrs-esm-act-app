@@ -185,9 +185,10 @@ describe('Procedural waiting list filters and CSV', () => {
     render(<WaitingList />);
     await userEvent.click(screen.getByRole('button', { name: /next page/i }));
 
+    expect(screen.getByText(/11–20 of/)).toBeInTheDocument();
     await choose('Cardiac clinic', 'Lira RRH');
 
-    expect(screen.getAllByRole('row')).toHaveLength(1 + 25);
+    expect(screen.getByText(/1–10 of/)).toBeInTheDocument();
   });
 
   it('downloads the filtered rows from every page, with the visible columns', async () => {
