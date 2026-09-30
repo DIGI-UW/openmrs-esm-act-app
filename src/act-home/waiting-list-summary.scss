@@ -1,19 +1,24 @@
-@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '../styles/act-colours' as *;
 
 // A table wider than the card scrolls inside it rather than widening the page.
 .tableContainer {
   overflow-x: auto;
+
+  th,
+  td {
+    padding-inline: layout.$spacing-03;
+  }
 }
 
 // Overdue rows and their days pending read as they do on the waiting list page.
-.tableContainer tr[data-overdue='true'] {
-  background-color: colors.$red-10;
+.tableContainer :global(.cds--data-table--zebra) tbody tr[data-overdue='true']:not(.cds--parent-row) td {
+  background-color: $act-risk-background;
 }
 
 .tableContainer tr[data-overdue='true'] td[data-days-pending='true'] {
-  color: colors.$red-60;
+  color: $act-risk;
 }
 
 .empty {

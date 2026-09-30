@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveRows } from '../screen-positive/screen-positive.fixture';
-import ScreenPositiveCount from './screen-positive-count.component';
+import ScreenPositiveRow from './screen-positive-count.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
@@ -20,7 +20,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
   });
 }
 
-describe('ACT home screen positive, pending confirmation count', () => {
+describe("ACT home's screen positive row, in the care cascade", () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     await signInWith([homePrivilege, 'View Patient Flags']);
@@ -29,7 +29,7 @@ describe('ACT home screen positive, pending confirmation count', () => {
   it("shows how many patients the list's report returns", () => {
     dataset({ rows: screenPositiveRows.slice(0, 3) });
 
-    render(<ScreenPositiveCount />);
+    render(<ScreenPositiveRow />);
 
     expect(screen.getByTestId('screen-positive-count')).toHaveTextContent('3');
   });
@@ -37,7 +37,7 @@ describe('ACT home screen positive, pending confirmation count', () => {
   it('evaluates the report the list uses', () => {
     dataset({ rows: screenPositiveRows });
 
-    render(<ScreenPositiveCount />);
+    render(<ScreenPositiveRow />);
 
     expect(mockUseReportDataset).toHaveBeenLastCalledWith('e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63');
   });
@@ -45,7 +45,7 @@ describe('ACT home screen positive, pending confirmation count', () => {
   it('shows none when no patient is waiting', () => {
     dataset({ rows: [] });
 
-    render(<ScreenPositiveCount />);
+    render(<ScreenPositiveRow />);
 
     expect(screen.getByTestId('screen-positive-count')).toHaveTextContent('0');
   });
@@ -53,9 +53,9 @@ describe('ACT home screen positive, pending confirmation count', () => {
   it('links to the list', () => {
     dataset({ rows: screenPositiveRows });
 
-    render(<ScreenPositiveCount />);
+    render(<ScreenPositiveRow />);
 
-    expect(screen.getByRole('link', { name: /open/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /screen positive, pending confirmation/i })).toHaveAttribute(
       'href',
       '/openmrs/spa/home/act-screen-positive',
     );
@@ -64,7 +64,7 @@ describe('ACT home screen positive, pending confirmation count', () => {
   it('says so when the report cannot be evaluated', () => {
     dataset({ error: new Error('Server responded with 404') });
 
-    render(<ScreenPositiveCount />);
+    render(<ScreenPositiveRow />);
 
     expect(screen.getByText('Could not load the screen positive list')).toBeInTheDocument();
     expect(screen.queryByTestId('screen-positive-count')).not.toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('ACT home screen positive, pending confirmation count', () => {
   it('shows a placeholder while the report runs', () => {
     dataset({ isLoading: true });
 
-    render(<ScreenPositiveCount />);
+    render(<ScreenPositiveRow />);
 
     expect(screen.getByTestId('screen-positive-count-loading')).toBeInTheDocument();
     expect(screen.queryByTestId('screen-positive-count')).not.toBeInTheDocument();
@@ -83,7 +83,7 @@ describe('ACT home screen positive, pending confirmation count', () => {
     await signInWith([homePrivilege], { screenPrivileges: { screenPositive: 'App: act.screenpositive' } as never });
     dataset({ rows: screenPositiveRows });
 
-    render(<ScreenPositiveCount />);
+    render(<ScreenPositiveRow />);
 
     expect(screen.queryByText(/screen positive/i)).not.toBeInTheDocument();
   });

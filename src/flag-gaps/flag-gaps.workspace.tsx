@@ -63,7 +63,7 @@ const FlagGapsWorkspace: React.FC<
 
   const renderContent = () => {
     if (isLoading) {
-      return <DataTableSkeleton role="progressbar" compact zebra={false} showHeader={false} showToolbar={false} />;
+      return <DataTableSkeleton role="progressbar" compact zebra showHeader={false} showToolbar={false} />;
     }
     if (error) {
       return (
@@ -108,7 +108,7 @@ const FlagGapsWorkspace: React.FC<
       );
     }
     return (
-      <Table size="md" useZebraStyles={false}>
+      <Table size="md" useZebraStyles>
         <TableHead>
           <TableRow>
             <TableHeader>{t('form', 'Form')}</TableHeader>

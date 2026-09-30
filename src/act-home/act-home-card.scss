@@ -22,4 +22,7 @@
 .header .link {
   width: auto;
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
 }

@@ -1,7 +1,7 @@
-@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
 
 .tiles {
   display: grid;
@@ -12,6 +12,10 @@
 .link {
   color: inherit;
   text-decoration: none;
+
+  &:focus-visible .tile {
+    @include act-focus;
+  }
 }
 
 .tile {
@@ -23,18 +27,11 @@
   background-color: $ui-01;
   border: 1px solid $ui-03;
   border-top-width: layout.$spacing-02;
+  @include brand-01(border-top-color);
 }
 
 .link .tile:hover {
   background-color: $ui-03;
-}
-
-.risk {
-  border-top-color: colors.$red-60;
-}
-
-.dataQuality {
-  border-top-color: colors.$orange-40;
 }
 
 .count {

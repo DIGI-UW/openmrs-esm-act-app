@@ -1,0 +1,13 @@
+@use '@carbon/colors';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+$act-risk: $danger;
+$act-risk-background: colors.$red-10;
+
+$act-data-quality-background: colors.$orange-10;
+$act-data-quality-text: colors.$orange-70;
+
+@mixin act-focus {
+  outline: 2px solid var(--brand-03);
+  outline-offset: -2px;
+}

@@ -1,14 +1,24 @@
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .dashboard {
   padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
 }
 
 .widgets {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: layout.$spacing-06;
+
+  > :global([data-extension-id='act-home-quick-actions']),
+  > :global([data-extension-id='act-home-worklists']) {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: $breakpoint-tablet-max) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .message {

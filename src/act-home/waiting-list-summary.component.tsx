@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  DataTableSkeleton,
   InlineNotification,
-  SkeletonText,
   Table,
   TableBody,
   TableCell,
@@ -54,11 +54,18 @@ function Summary() {
         />
       ) : isLoading ? (
         <div data-testid="waiting-list-summary-loading">
-          <SkeletonText paragraph lineCount={5} />
+          <DataTableSkeleton
+            columnCount={columns.length}
+            rowCount={shownRows}
+            compact
+            zebra
+            showHeader={false}
+            showToolbar={false}
+          />
         </div>
       ) : mostUrgent.length ? (
         <div className={styles.tableContainer}>
-          <Table size="sm">
+          <Table size="sm" useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (

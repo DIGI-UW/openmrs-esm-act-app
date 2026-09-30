@@ -116,7 +116,7 @@ function WaitingListTable() {
   if (isLoading) {
     return (
       <div data-testid="waiting-list-loading">
-        <DataTableSkeleton columnCount={columns.length} showHeader={false} showToolbar={false} />
+        <DataTableSkeleton columnCount={columns.length} zebra showHeader={false} showToolbar={false} />
       </div>
     );
   }
@@ -152,7 +152,7 @@ function WaitingListTable() {
       </div>
       {ranked.length ? (
         <div className={styles.tableContainer}>
-          <Table>
+          <Table useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (

@@ -137,12 +137,16 @@ describe('ACT home procedural waiting list summary', () => {
     expect(screen.getByText('Could not load the procedural waiting list')).toBeInTheDocument();
   });
 
-  it('shows a placeholder while the report runs', () => {
+  it('shows a table skeleton of its columns and rows while the report runs', () => {
     dataset({ isLoading: true });
 
     render(<WaitingListSummary />);
 
-    expect(screen.getByTestId('waiting-list-summary-loading')).toBeInTheDocument();
+    const skeleton = within(screen.getByTestId('waiting-list-summary-loading')).getByRole('table');
+    const [, body] = within(skeleton).getAllByRole('rowgroup');
+    const rows = within(body).getAllByRole('row');
+    expect(rows).toHaveLength(5);
+    expect(within(rows[0]).getAllByRole('cell')).toHaveLength(5);
   });
 
   it('is hidden from a user without the waiting list privilege', async () => {

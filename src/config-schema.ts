@@ -86,10 +86,20 @@ export const configSchema = {
     reportUrl: link("Where the care cascade widget's link to the full report leads.", '${openmrsSpaBase}/reports'),
     steps: {
       _type: Type.Array,
-      _elements: { _type: Type.String },
-      _default: ['Active', 'Prescribed Prophylaxis', 'Initiated BPG', 'Adherent'],
+      _elements: {
+        _type: Type.Object,
+        step: { _type: Type.String, _description: "The report row's step value." },
+        label: { _type: Type.String, _description: 'What the widget calls it.' },
+      },
+      _default: [
+        { step: 'Active', label: 'Active' },
+        { step: 'Prescribed Prophylaxis', label: 'Prescribed' },
+        { step: 'Initiated BPG', label: 'Initiated' },
+        { step: 'Covered today', label: 'Covered today' },
+        { step: 'Adherent', label: 'Adherent (80%+)' },
+      ],
       _description:
-        "The report's steps the widget draws, by their step value, in this order. The report's Oral and BPG rows split Prescribed Prophylaxis, so they are left out by default.",
+        "The report's steps the widget draws, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed Prophylaxis, so they are left out by default.",
     },
   },
   registry: {
@@ -161,7 +171,7 @@ export interface Config {
     prophylaxisForms: Array<{ label: string; url: string }>;
     findPatientUrl: string;
   };
-  careCascade: { report: string; reportUrl: string; steps: Array<string> };
+  careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
   screenPositive: { report: string };

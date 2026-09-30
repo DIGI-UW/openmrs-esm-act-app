@@ -7,6 +7,7 @@ import { type Config } from '../config-schema';
 import { ScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { ActHomeCard } from './act-home-card.component';
+import ScreenPositiveRow from './screen-positive-count.component';
 import styles from './care-cascade.scss';
 
 function Cascade() {
@@ -18,8 +19,8 @@ function Cascade() {
   // The cascade descriptor names its columns step and patients, one row per step.
   const byStep = new Map(rows.map((row) => [String(row.step), Number(row.patients)]));
   const steps = careCascade.steps
-    .filter((step) => byStep.has(step))
-    .map((step) => ({ step, patients: byStep.get(step) }));
+    .filter(({ step }) => byStep.has(step))
+    .map(({ step, label }) => ({ step, label, patients: byStep.get(step) }));
   const largest = Math.max(0, ...steps.map((row) => row.patients));
 
   return (
@@ -43,7 +44,7 @@ function Cascade() {
           <div className={styles.steps}>
             {steps.map((row) => (
               <div key={row.step} data-testid="cascade-step" className={styles.step}>
-                <span>{row.step}</span>
+                <span>{row.label}</span>
                 <span className={styles.track}>
                   <span
                     data-testid="cascade-bar"
@@ -64,6 +65,7 @@ function Cascade() {
       ) : (
         <p className={styles.empty}>{t('noCareCascadeData', 'No care cascade data')}</p>
       )}
+      <ScreenPositiveRow />
     </ActHomeCard>
   );
 }
