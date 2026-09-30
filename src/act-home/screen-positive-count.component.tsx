@@ -36,7 +36,6 @@ function Row() {
   );
 }
 
-/** The care cascade's last row: how many screened positive and wait for a confirmatory echo, opening that list. */
 export default function ScreenPositiveRow() {
   return (
     <ScreenAccess screen="screenPositive">

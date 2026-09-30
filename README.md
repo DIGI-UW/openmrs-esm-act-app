@@ -61,33 +61,6 @@ Its filters are kept in the URL, and Download CSV saves the filtered rows. Open 
 editing in a workspace on the list itself, the forms app's `exportedPatientFormEntryWorkspace`, registered in this
 app's own `act-waiting-list` workspace group as Service Queues registers it; saving it evaluates the list again.
 
-## Colours and branding
-
-The ACT screens take their colours from the OpenMRS styleguide, so they follow a distribution's
-branding. The distro sets it in the styleguide's config:
-
-```json
-"@openmrs/esm-styleguide": {
-  "Brand color #1": "#005d5d",
-  "Brand color #2": "#004144",
-  "Brand color #3": "#007d79"
-}
-```
-
-Use them as OpenMRS does, through the styleguide's `brand-01`, `brand-02` and `brand-03` mixins
-(`@use '@openmrs/esm-styleguide/src/vars' as *;`):
-
-- **brand-01**, the primary colour: accents such as the quick actions' icons, the care cascade's bars, and
-  the top edge of the worklist tiles.
-- **brand-02**, the secondary: the hover and pressed state of those accents.
-- **brand-03**, the tertiary: focus rings and selected items, through the `act-focus` mixin.
-
-Use the styleguide's neutrals for surfaces and text (`$ui-01` to `$ui-05`, `$text-02`). Status colours
-stay the same whatever the brand, so a warning never takes a site's colour. They are in
-`src/styles/_act-colours.scss`: `$act-risk` (the styleguide's danger red) for overdue waiting list
-rows, and `$act-data-quality-background` and `$act-data-quality-text` (Carbon's orange) for missing data flag tags. A new screen uses these variables and
-mixins rather than hex values or Carbon's palette directly.
-
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, ACT Core with the gap look-up, cohort 3.7.3 or later for the RHD flag

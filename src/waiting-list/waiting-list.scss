@@ -23,7 +23,6 @@
     right: 0;
   }
 
-  // Opaque, so columns scrolling under it stay hidden. Its cells take their row's zebra colour.
   th:last-child {
     background-color: $ui-03;
   }
@@ -49,8 +48,7 @@
   margin-bottom: layout.$spacing-05;
 }
 
-// A recommendation past the deadline for its urgency; the tests read the same attribute. Painted on the cells,
-// and specific enough to outrank the styleguide's zebra rows, which paint theirs.
+// A recommendation past the deadline for its urgency; the tests read the same attribute.
 .tableContainer :global(.cds--data-table--zebra) tbody tr[data-overdue='true']:not(.cds--parent-row) td {
   background-color: $act-risk-background;
 }

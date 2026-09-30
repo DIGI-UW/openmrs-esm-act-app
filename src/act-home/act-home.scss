@@ -6,7 +6,6 @@
   padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
 }
 
-// The waiting list and the care cascade sit side by side, under full-width quick actions and worklists.
 .widgets {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

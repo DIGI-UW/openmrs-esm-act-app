@@ -23,7 +23,7 @@
   margin-bottom: layout.$spacing-05;
 }
 
-// Carbon has no orange tag, so missing data flags take ACT's data quality colours.
+// Carbon has no orange tag, so missing data flags are drawn in Carbon's orange here.
 .dataQuality {
   background-color: $act-data-quality-background;
   color: $act-data-quality-text;
