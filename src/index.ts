@@ -32,11 +32,6 @@ export const actHomeWaitingList = getAsyncLifecycle(() => import('./act-home/wai
 
 export const actHomeCareCascade = getAsyncLifecycle(() => import('./act-home/care-cascade.component'), options);
 
-export const actHomeScreenPositive = getAsyncLifecycle(
-  () => import('./act-home/screen-positive-count.component'),
-  options,
-);
-
 export const registryDashboardLink = getSyncLifecycle(registryDashboardLinkComponent, options);
 
 export const registryDashboard = getAsyncLifecycle(() => import('./registry/registry.component'), options);

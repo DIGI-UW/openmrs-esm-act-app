@@ -32,7 +32,13 @@ describe('configSchema', () => {
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
         reportUrl: '${openmrsSpaBase}/reports',
-        steps: ['Active', 'Prescribed Prophylaxis', 'Initiated BPG', 'Adherent'],
+        steps: [
+          { step: 'Active', label: 'Active' },
+          { step: 'Prescribed Prophylaxis', label: 'Prescribed' },
+          { step: 'Initiated BPG', label: 'Initiated' },
+          { step: 'Covered today', label: 'Covered today' },
+          { step: 'Adherent', label: 'Adherent (80%+)' },
+        ],
       },
       registry: {
         report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tile } from '@carbon/react';
+import { ArrowRight } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import styles from './act-home-card.scss';
 
@@ -20,6 +21,7 @@ export function ActHomeCard({
         {link && (
           <ConfigurableLink to={link.to} className={styles.link}>
             {link.label}
+            <ArrowRight size={16} aria-hidden="true" />
           </ConfigurableLink>
         )}
       </div>

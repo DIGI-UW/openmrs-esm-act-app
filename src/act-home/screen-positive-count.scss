@@ -1,13 +1,32 @@
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
-.count {
+.row {
   @include type.type-style('body-compact-01');
   display: flex;
-  align-items: baseline;
-  gap: layout.$spacing-03;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-05;
+  margin-top: layout.$spacing-05;
+  padding-top: layout.$spacing-05;
+  border-top: 1px solid $ui-03;
+  color: $ui-05;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .figure {
-  @include type.type-style('heading-04');
+  @include type.type-style('heading-compact-01');
+}
+
+.loading {
+  width: layout.$spacing-07;
+}
+
+.error {
+  color: $danger;
 }
