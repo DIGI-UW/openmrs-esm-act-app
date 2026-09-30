@@ -22,9 +22,9 @@ const columnRows = withFlags([
   null,
   'RHD INR target missing',
   'RHD INR target missing|RHD perfusion issues not recorded|RHD site infection not recorded',
-  null,
-  null,
-  null,
+  'RHD 30-day follow-up due|RHD INR target missing|RHD lost to follow-up|RHD prophylaxis overdue',
+  'RHD lost to follow-up|RHD prophylaxis overdue',
+  'RHD 30-day follow-up due|RHD INR target missing',
   'RHD 30-day follow-up due|RHD prophylaxis overdue',
 ]);
 
@@ -85,7 +85,7 @@ describe('Registry flags column', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('on a tablet, opens the flags behind "N flags" on a tap, which the tap\'s trailing mouseleave does not close', async () => {
+  it('on a tablet, opens the flags behind "N flags" on a tap, which its trailing mouseleave does not close, without opening the chart', async () => {
     setLayout('tablet');
     render(<Registry />);
 
@@ -94,7 +94,7 @@ describe('Registry flags column', () => {
     fireEvent.mouseLeave(flagsTag());
 
     expect(flagsTag()).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText(patient1Flags)).toBeInTheDocument();
+    expect(flagsTag()).toHaveAccessibleDescription(patient1Flags);
     await userEvent.click(screen.getByText(patient1Flags));
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -103,18 +103,25 @@ describe('Registry flags column', () => {
     { layout: 'small-desktop' as const, open: (tag: HTMLElement) => userEvent.hover(tag) },
     { layout: 'tablet' as const, open: (tag: HTMLElement) => userEvent.click(tag) },
   ])(
-    'on $layout, floats an "N flags" tooltip over the page in the last three rows, where the table would clip it',
+    'on $layout, floats an "N flags" tooltip over the page when there are no more rows below it than it has flags',
     async ({ layout, open }) => {
       setLayout(layout);
       render(<Registry />);
-      const tagOf = (name: RegExp) =>
-        within(screen.getByRole('row', { name })).getByRole('button', { name: '2 flags' });
+      const tagOf = (name: RegExp, count: number) =>
+        within(screen.getByRole('row', { name })).getByRole('button', { name: `${count} flags` });
 
-      await open(tagOf(/Patient 9\b/));
-      expect(floatingBoxOf('RHD 30-day follow-up due, RHD prophylaxis overdue')).toHaveStyle({ position: 'fixed' });
-      // Above them the tooltip has room in the table, and does without autoAlign's scroll tracking.
-      await open(tagOf(/Patient 1\b/));
-      expect(floatingBoxOf(patient1Flags)).not.toHaveStyle({ position: 'fixed' });
+      // Of the page's ten rows: Patient 8 has 2 flags and 2 rows below, Patient 6 has 4 flags and 4 rows below.
+      await open(tagOf(/Patient 8\b/, 2));
+      expect(floatingBoxOf('RHD 30-day follow-up due, RHD INR target missing')).toHaveStyle({ position: 'fixed' });
+      await open(tagOf(/Patient 6\b/, 4));
+      expect(
+        floatingBoxOf(
+          'RHD 30-day follow-up due, RHD INR target missing, RHD lost to follow-up, RHD prophylaxis overdue',
+        ),
+      ).toHaveStyle({ position: 'fixed' });
+      // Patient 7 has 2 flags and 3 rows below, room enough, so it does without autoAlign's scroll tracking.
+      await open(tagOf(/Patient 7\b/, 2));
+      expect(floatingBoxOf('RHD lost to follow-up, RHD prophylaxis overdue')).not.toHaveStyle({ position: 'fixed' });
     },
   );
 

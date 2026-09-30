@@ -41,9 +41,6 @@ import styles from './registry.scss';
 
 const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
 
-// Room for a three-line flags tooltip below a desktop row.
-const rowsBelowToFloat = 3;
-
 function nextConsultation(row: ReportRow) {
   const date = parseReportDate(row.next_consultation_date);
   return date ? formatDate(date, { time: false, noToday: true }) : '';
@@ -132,11 +129,7 @@ function RegistryTable() {
       : []),
     {
       header: t('flags', 'Flags'),
-      // A tooltip opening below one of the page's last rows would be cut off by the table's scroll box, so
-      // those float over the page. The rest stay in place: floating tracks every scroll, which slows a long page.
-      render: (row, index) => (
-        <RegistryFlags flags={flagsOf(row)} floating={index >= results.length - rowsBelowToFloat} />
-      ),
+      render: (row, index) => <RegistryFlags flags={flagsOf(row)} rowsBelow={results.length - 1 - index} />,
     },
   ];
 
