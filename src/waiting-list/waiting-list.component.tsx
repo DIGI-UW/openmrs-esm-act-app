@@ -16,9 +16,11 @@ import {
 import {
   CardiologyPictogram,
   fetchCurrentPatient,
+  isDesktop,
   launchWorkspace2,
   showSnackbar,
   useConfig,
+  useLayoutType,
 } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
@@ -43,6 +45,7 @@ const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
 function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
+  const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   const [filters, setFilters] = useWaitingListFilters();
   const ranked = useMemo(
@@ -115,9 +118,15 @@ function WaitingListTable() {
   }
   if (isLoading) {
     return (
-      <div data-testid="waiting-list-loading">
-        <DataTableSkeleton columnCount={columns.length} zebra showHeader={false} showToolbar={false} />
-      </div>
+      <DataTableSkeleton
+        role="progressbar"
+        columnCount={columns.length + 1}
+        rowCount={paginationProps.pageSize}
+        compact={desktop}
+        zebra
+        showHeader={false}
+        showToolbar={false}
+      />
     );
   }
   if (!rows.length) {
@@ -152,7 +161,7 @@ function WaitingListTable() {
       </div>
       {ranked.length ? (
         <div className={styles.tableContainer}>
-          <Table useZebraStyles>
+          <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (

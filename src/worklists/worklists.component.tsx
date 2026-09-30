@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { navigate, PatientListsPictogram, useConfig } from '@openmrs/esm-framework';
+import { isDesktop, navigate, PatientListsPictogram, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { riskFirst, WorklistChoice, WorklistTileGrid } from '../act-home/worklist-tiles.component';
 import { type Config } from '../config-schema';
@@ -32,6 +32,7 @@ const filterKeys = ['flag'] as const;
 function WorklistPatients({ list }: { list: RhdFlagList }) {
   const { t } = useTranslation();
   const { registry } = useConfig<Config>();
+  const desktop = isDesktop(useLayoutType());
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
   const { rows, isLoading, error } = useReportDataset(registry.report, params);
   const shown = useMemo(() => rows.filter((row) => rowFlags(row).includes(list.flagName)), [rows, list]);
@@ -78,9 +79,15 @@ function WorklistPatients({ list }: { list: RhdFlagList }) {
   }
   if (isLoading) {
     return (
-      <div data-testid="worklist-patients-loading">
-        <DataTableSkeleton columnCount={columns.length} zebra showHeader={false} showToolbar={false} />
-      </div>
+      <DataTableSkeleton
+        role="progressbar"
+        columnCount={columns.length}
+        rowCount={paginationProps.pageSize}
+        compact={desktop}
+        zebra
+        showHeader={false}
+        showToolbar={false}
+      />
     );
   }
   if (!shown.length) {
@@ -89,7 +96,7 @@ function WorklistPatients({ list }: { list: RhdFlagList }) {
   return (
     <>
       <div className={styles.tableContainer}>
-        <Table useZebraStyles>
+        <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
           <TableHead>
             <TableRow>
               {columns.map((column) => (

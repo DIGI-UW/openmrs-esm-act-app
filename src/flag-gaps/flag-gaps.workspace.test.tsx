@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
 import FlagGapsWorkspace, { daysPending, type FlagActionWorkspaceProps } from './flag-gaps.workspace';
+import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 
 vi.mock('./flag-gaps.resource', () => ({
   usePatientFlagGaps: vi.fn(),
@@ -201,6 +202,29 @@ describe('flag gaps workspace', () => {
 });
 
 describe('daysPending', () => {
+  it.each(layouts)(
+    'loads as a table skeleton of its columns, compact as its table on $layout',
+    ({ layout, compact }) => {
+      setLayout(layout);
+      flagsReturned([], { isLoading: true });
+
+      showWorkspace();
+
+      const { skeleton, columns } = tableSkeleton();
+      expect(columns).toBe(5);
+      expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
+    },
+  );
+
+  it.each(layouts)('lists the gaps in a $size table on $layout', ({ layout, size }) => {
+    setLayout(layout);
+    gapsReturned({ gaps: [firstGap] });
+
+    showWorkspace();
+
+    expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
+  });
+
   it('counts whole days since the encounter', () => {
     expect(daysPending('2026-09-10T09:00:00.000+0000', new Date('2026-09-25T08:59:00.000Z'))).toBe(14);
     expect(daysPending('2026-09-10T09:00:00.000+0000', new Date('2026-09-25T09:00:00.000Z'))).toBe(15);

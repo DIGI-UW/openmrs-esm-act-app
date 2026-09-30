@@ -11,7 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { CardiologyPictogram, ConfigurableLink, formatDate, useConfig } from '@openmrs/esm-framework';
+import {
+  CardiologyPictogram,
+  ConfigurableLink,
+  formatDate,
+  isDesktop,
+  useConfig,
+  useLayoutType,
+} from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -37,6 +44,7 @@ function screenDate(row: ReportRow) {
 function ScreenPositiveTable() {
   const { t } = useTranslation();
   const { screenPositive } = useConfig<Config>();
+  const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error } = useReportDataset(screenPositive.report);
   const [filters, setFilters] = useScreenPositiveFilters();
   const shown = useMemo(() => filterScreenPositive(rows, filters), [rows, filters]);
@@ -78,9 +86,15 @@ function ScreenPositiveTable() {
   }
   if (isLoading) {
     return (
-      <div data-testid="screen-positive-loading">
-        <DataTableSkeleton columnCount={columns.length} zebra showHeader={false} showToolbar={false} />
-      </div>
+      <DataTableSkeleton
+        role="progressbar"
+        columnCount={columns.length}
+        rowCount={paginationProps.pageSize}
+        compact={desktop}
+        zebra
+        showHeader={false}
+        showToolbar={false}
+      />
     );
   }
   if (!rows.length) {
@@ -98,7 +112,7 @@ function ScreenPositiveTable() {
       </div>
       {shown.length ? (
         <div className={styles.tableContainer}>
-          <Table useZebraStyles>
+          <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (

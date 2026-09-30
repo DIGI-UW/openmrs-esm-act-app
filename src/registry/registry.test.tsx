@@ -4,6 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { navigate } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
@@ -138,17 +139,31 @@ describe('Registry', () => {
     expect(screen.getByText('Could not load the registry')).toBeInTheDocument();
   });
 
-  it('shows a placeholder while the report runs', () => {
-    dataset({ isLoading: true });
+  it.each(layouts)(
+    'loads as a table skeleton of a page of rows, sized as its table on $layout',
+    ({ layout, compact, size }) => {
+      setLayout(layout);
+      dataset({ isLoading: true });
+      const { rerender } = render(<Registry />);
 
-    render(<Registry />);
-
-    expect(screen.getByTestId('registry-loading')).toBeInTheDocument();
-  });
+      const { skeleton, rows, columns } = tableSkeleton();
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 8 });
+      expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
+      dataset({ rows: registryRows });
+      rerender(<Registry />);
+      expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
+    },
+  );
 
   it('tells a user without the registry privilege that they cannot see it', async () => {
     await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'App: act.registry', worklists: 'x', waitingList: 'x', screenPositive: 'x' },
+      screenPrivileges: {
+        home: 'x',
+        registry: 'App: act.registry',
+        worklists: 'x',
+        waitingList: 'x',
+        screenPositive: 'x',
+      },
     });
     dataset({ rows: registryRows });
 

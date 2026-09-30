@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useConfig } from '@openmrs/esm-framework';
+import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { ScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -24,6 +24,7 @@ const shownRows = 5;
 function Summary() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
+  const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error } = useReportDataset(waitingList.report);
   // The page's ranking with no filter applied, so these are its first rows.
   const mostUrgent = useMemo(() => rankWaitingRows(rows, urgencyBands).slice(0, shownRows), [rows, urgencyBands]);
@@ -53,19 +54,18 @@ function Summary() {
           title={t('couldNotLoadWaitingList', 'Could not load the procedural waiting list')}
         />
       ) : isLoading ? (
-        <div data-testid="waiting-list-summary-loading">
-          <DataTableSkeleton
-            columnCount={columns.length}
-            rowCount={shownRows}
-            compact
-            zebra
-            showHeader={false}
-            showToolbar={false}
-          />
-        </div>
+        <DataTableSkeleton
+          role="progressbar"
+          columnCount={columns.length}
+          rowCount={shownRows}
+          compact={desktop}
+          zebra
+          showHeader={false}
+          showToolbar={false}
+        />
       ) : mostUrgent.length ? (
         <div className={styles.tableContainer}>
-          <Table size="sm" useZebraStyles>
+          <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (
