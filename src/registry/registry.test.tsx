@@ -51,6 +51,24 @@ describe('Registry', () => {
     );
   });
 
+  it('shows only the age or the sex a patient has, and an empty cell for neither', () => {
+    const [first, second, third] = registryRows;
+    dataset({
+      rows: [
+        { ...first, sex: null },
+        { ...second, age_years: null },
+        { ...third, age_years: null, sex: null },
+      ],
+    });
+
+    render(<Registry />);
+
+    const ageSex = (name: RegExp) => within(screen.getByRole('row', { name })).getAllByRole('cell')[1].textContent;
+    expect(ageSex(/Patient 1\b/)).toBe('10');
+    expect(ageSex(/Patient 2\b/)).toBe('M');
+    expect(ageSex(/Patient 3\b/)).toBe('');
+  });
+
   it('evaluates the configured report over every enrolment up to today', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 29, 10) });
     dataset({ rows: registryRows });

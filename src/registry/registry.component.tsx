@@ -114,7 +114,10 @@ function RegistryTable() {
         </>
       ),
     },
-    { header: t('ageSex', 'Age, sex'), render: (row) => `${text('age_years')(row)} ${text('sex')(row)}` },
+    {
+      header: t('ageSex', 'Age, sex'),
+      render: (row) => [text('age_years')(row), text('sex')(row)].filter(Boolean).join(' '),
+    },
     { header: t('diagnosis', 'Diagnosis'), render: text('diagnosis_category') },
     { header: t('prophylaxis', 'Prophylaxis'), render: text('prophylaxis_regimen') },
     ...(registry.showBpgColumns
