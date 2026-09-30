@@ -18,3 +18,12 @@ export function ActPageHeader({
     </PageHeader>
   );
 }
+
+/** An ACT screen's page: white to the foot of the window, as O3's home dashboards are, however short its content. */
+export function ActPage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className={styles.page} data-testid="act-page">
+      {children}
+    </div>
+  );
+}

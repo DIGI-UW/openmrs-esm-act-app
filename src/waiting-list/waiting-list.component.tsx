@@ -22,7 +22,7 @@ import {
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
-import { ActPageHeader } from '../act-page-header/act-page-header.component';
+import { ActPage, ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -208,7 +208,7 @@ export default function WaitingList() {
     );
   }
   return (
-    <>
+    <ActPage>
       <ActPageHeader title={t('waitingList', 'Procedural waiting list')} illustration={<CardiologyPictogram />} />
       <div className={styles.waitingList}>
         <p className={styles.description}>
@@ -219,6 +219,6 @@ export default function WaitingList() {
         </p>
         <WaitingListTable />
       </div>
-    </>
+    </ActPage>
   );
 }

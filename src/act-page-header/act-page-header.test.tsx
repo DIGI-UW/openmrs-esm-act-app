@@ -69,6 +69,7 @@ describe('ACT page header', () => {
       const header = screen.getByTestId('act-page-header');
       expect(within(header).getByText(name)).toBeInTheDocument();
       expect(within(header).getByText(pictogram)).toBeInTheDocument();
+      expect(screen.getByTestId('act-page')).toContainElement(header);
       // The header replaces each screen's own heading rather than sitting beside it.
       expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
     },

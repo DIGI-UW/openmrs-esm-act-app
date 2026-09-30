@@ -1,6 +1,12 @@
 @use '@carbon/layout';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
+// The window below the top nav, as O3's Patient lists page fills it, so the home app's grey never shows beneath.
+.page {
+  min-height: calc(100vh - layout.$spacing-09);
+  background-color: $ui-02;
+}
+
 // Full width above the screen's padded body, as Service Queues' header sits above its page.
 .header {
   background-color: $ui-02;

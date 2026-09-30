@@ -24,7 +24,7 @@ import {
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
-import { ActPageHeader } from '../act-page-header/act-page-header.component';
+import { ActPage, ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
@@ -225,11 +225,11 @@ export default function Registry() {
     return <p className={styles.message}>{t('noAccessToRegistry', 'You do not have access to the registry.')}</p>;
   }
   return (
-    <>
+    <ActPage>
       <ActPageHeader title={t('registry', 'Registry')} illustration={<PatientListsPictogram />} />
       <div className={styles.registry}>
         <RegistryTable />
       </div>
-    </>
+    </ActPage>
   );
 }

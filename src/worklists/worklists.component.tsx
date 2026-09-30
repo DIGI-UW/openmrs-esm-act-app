@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { isDesktop, navigate, PatientListsPictogram, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { ActPageHeader } from '../act-page-header/act-page-header.component';
+import { ActPage, ActPageHeader } from '../act-page-header/act-page-header.component';
 import { riskFirst, WorklistChoice, WorklistTileGrid } from '../act-home/worklist-tiles.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -176,12 +176,12 @@ export default function Worklists() {
     return <p className={styles.message}>{t('noAccessToWorklists', 'You do not have access to the worklists.')}</p>;
   }
   return (
-    <>
+    <ActPage>
       <ActPageHeader title={t('worklists', 'Worklists')} illustration={<PatientListsPictogram />} />
       <div className={styles.worklists}>
         <p className={styles.description}>{t('worklistsDescription', 'Patients needing action, by list')}</p>
         <WorklistsContent />
       </div>
-    </>
+    </ActPage>
   );
 }

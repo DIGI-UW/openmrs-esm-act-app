@@ -19,7 +19,7 @@ import {
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
-import { ActPageHeader } from '../act-page-header/act-page-header.component';
+import { ActPage, ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useScreenAccess } from '../access/screen-access.component';
@@ -151,7 +151,7 @@ export default function ScreenPositive() {
     );
   }
   return (
-    <>
+    <ActPage>
       <ActPageHeader
         title={t('screenPositive', 'Screen positive, pending confirmation')}
         illustration={<CardiologyPictogram />}
@@ -162,6 +162,6 @@ export default function ScreenPositive() {
         </p>
         <ScreenPositiveTable />
       </div>
-    </>
+    </ActPage>
   );
 }
