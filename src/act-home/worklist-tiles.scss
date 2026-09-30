@@ -27,18 +27,11 @@
   background-color: $ui-01;
   border: 1px solid $ui-03;
   border-top-width: layout.$spacing-02;
+  @include brand-01(border-top-color);
 }
 
 .link .tile:hover {
   background-color: $ui-03;
-}
-
-.risk {
-  border-top-color: $act-risk;
-}
-
-.dataQuality {
-  border-top-color: $act-data-quality;
 }
 
 .count {

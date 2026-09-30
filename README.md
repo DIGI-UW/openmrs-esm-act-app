@@ -77,14 +77,15 @@ branding. The distro sets it in the styleguide's config:
 Use them as OpenMRS does, through the styleguide's `brand-01`, `brand-02` and `brand-03` mixins
 (`@use '@openmrs/esm-styleguide/src/vars' as *;`):
 
-- **brand-01**, the primary colour: accents such as the quick actions' icons and the care cascade's bars.
+- **brand-01**, the primary colour: accents such as the quick actions' icons, the care cascade's bars, and
+  the top edge of the worklist tiles.
 - **brand-02**, the secondary: the hover and pressed state of those accents.
 - **brand-03**, the tertiary: focus rings and selected items, through the `act-focus` mixin.
 
 Use the styleguide's neutrals for surfaces and text (`$ui-01` to `$ui-05`, `$text-02`). Status colours
 stay the same whatever the brand, so a warning never takes a site's colour. They are in
-`src/styles/_act-colours.scss`: `$act-risk` (the styleguide's danger red) for clinical risk and overdue
-rows, and `$act-data-quality` (Carbon's orange) for missing data. A new screen uses these variables and
+`src/styles/_act-colours.scss`: `$act-risk` (the styleguide's danger red) for overdue waiting list
+rows, and `$act-data-quality-background` and `$act-data-quality-text` (Carbon's orange) for missing data flag tags. A new screen uses these variables and
 mixins rather than hex values or Carbon's palette directly.
 
 ## Requirements

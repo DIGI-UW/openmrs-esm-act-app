@@ -16,7 +16,7 @@ function WorklistTile({ list }: { list: RhdFlagList }) {
     <div
       data-testid="worklist-tile"
       data-priority={list.priority}
-      className={`${styles.tile} ${styles[list.priority]}`}
+      className={styles.tile}
     >
       <span className={styles.count}>{list.memberCount}</span>
       <span className={styles.name}>{list.flagName}</span>

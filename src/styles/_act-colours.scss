@@ -6,12 +6,11 @@
 // brand-01 is the accent, brand-02 its hover and pressed state, brand-03 focus and selection.
 // Status colours stay the same whatever the brand, so a warning never takes a site's colour.
 
-// Clinical risk, and a waiting list recommendation past its deadline: the styleguide's danger red.
+// A waiting list recommendation past its deadline: the styleguide's danger red.
 $act-risk: $danger;
 $act-risk-background: colors.$red-10;
 
-// Missing data. Carbon has no orange tag or token, so this is Carbon's orange.
-$act-data-quality: colors.$orange-40;
+// A missing data flag's tag. Carbon has no orange tag or token, so this is Carbon's orange.
 $act-data-quality-background: colors.$orange-10;
 $act-data-quality-text: colors.$orange-70;
 
