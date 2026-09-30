@@ -2,9 +2,15 @@
 @use '@carbon/layout';
 @use '@carbon/type';
 
-// A table wider than the card scrolls inside it rather than widening the page.
+// A table wider than the card scrolls inside it rather than widening the page. Tighter cells let its five
+// columns fit the half-width card beside the care cascade.
 .tableContainer {
   overflow-x: auto;
+
+  th,
+  td {
+    padding-inline: layout.$spacing-03;
+  }
 }
 
 // Overdue rows and their days pending read as they do on the waiting list page.

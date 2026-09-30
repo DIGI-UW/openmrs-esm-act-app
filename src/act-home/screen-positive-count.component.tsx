@@ -1,52 +1,46 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { InlineNotification, SkeletonText } from '@carbon/react';
-import { useConfig } from '@openmrs/esm-framework';
+import { SkeletonText } from '@carbon/react';
+import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { ScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveDashboardMeta } from '../screen-positive/screen-positive.meta';
-import { ActHomeCard } from './act-home-card.component';
 import styles from './screen-positive-count.scss';
 
-function Count() {
+function Row() {
   const { t } = useTranslation();
   const { screenPositive } = useConfig<Config>();
   // The list's own report, one row per patient, so the count is the list's length.
   const { rows, isLoading, error } = useReportDataset(screenPositive.report);
 
   return (
-    <ActHomeCard
-      title={t('screenPositive', 'Screen positive, pending confirmation')}
-      link={{ label: t('open', 'Open'), to: `\${openmrsSpaBase}/home/${screenPositiveDashboardMeta.name}` }}
+    <ConfigurableLink
+      to={`\${openmrsSpaBase}/home/${screenPositiveDashboardMeta.name}`}
+      className={styles.row}
+      data-testid="screen-positive-row"
     >
+      <span>{t('screenPositive', 'Screen positive, pending confirmation')}</span>
       {error ? (
-        <InlineNotification
-          kind="error"
-          lowContrast
-          hideCloseButton
-          title={t('couldNotLoadScreenPositive', 'Could not load the screen positive list')}
-        />
+        <span className={styles.error}>{t('couldNotLoadScreenPositive', 'Could not load the screen positive list')}</span>
       ) : isLoading ? (
-        <div data-testid="screen-positive-count-loading">
+        <span data-testid="screen-positive-count-loading" className={styles.loading}>
           <SkeletonText />
-        </div>
+        </span>
       ) : (
-        <p className={styles.count}>
-          <span data-testid="screen-positive-count" className={styles.figure}>
-            {rows.length}
-          </span>
-          <span>{t('patientsWaitingForEcho', 'waiting for a confirmatory echo')}</span>
-        </p>
+        <span data-testid="screen-positive-count" className={styles.figure}>
+          {rows.length}
+        </span>
       )}
-    </ActHomeCard>
+    </ConfigurableLink>
   );
 }
 
-export default function ScreenPositiveCount() {
+/** The care cascade's last row: how many screened positive and wait for a confirmatory echo, opening that list. */
+export default function ScreenPositiveRow() {
   return (
     <ScreenAccess screen="screenPositive">
-      <Count />
+      <Row />
     </ScreenAccess>
   );
 }
