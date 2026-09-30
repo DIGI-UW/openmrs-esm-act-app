@@ -27,7 +27,7 @@ import { downloadCsv } from '../table-filters/csv';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { filterRegistry, registryFilterColumns, useRegistryFilters } from './registry-filters';
+import { filterRegistry, registryFilterColumns, rowFlags, useRegistryFilters } from './registry-filters';
 import styles from './registry.scss';
 
 const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
@@ -59,12 +59,12 @@ function RegistryTable() {
       onChange={(value) => setFilters({ [key]: value })}
     />
   );
-  // The report lists the flags whose patient lists each patient is on, separated by |; the configured ones show.
+  // Of the flags whose patient lists each patient is on, the configured ones show.
   const flagsOf = (row: ReportRow) =>
-    String(row.rhd_flags ?? '')
-      .split('|')
-      .filter((flagName) => flagName && isListedFlag(flagLists, flagName))
+    rowFlags(row)
+      .filter((flagName) => isListedFlag(flagLists, flagName))
       .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName) }));
+  const flagOptions = [...new Set(rows.flatMap((row) => flagsOf(row).map((list) => list.flagName)))].sort();
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
   const columns: Array<{
     header: string;
@@ -147,6 +147,13 @@ function RegistryTable() {
         {filterSelect('primaryCare', t('primaryCareClinic', 'Primary care clinic'))}
         {filterSelect('category', t('categoryAtDiagnosis', 'Category at diagnosis'))}
         {registry.showBpgColumns && filterSelect('bpg', t('bpgStatus', 'BPG status'))}
+        <FilterSelect
+          id="registry-flag"
+          label={t('rhdFlag', 'RHD flag')}
+          value={filters.flag}
+          options={flagOptions}
+          onChange={(value) => setFilters({ flag: value })}
+        />
       </div>
       <div className={styles.actions}>
         <Button

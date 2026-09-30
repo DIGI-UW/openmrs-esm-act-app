@@ -7,7 +7,9 @@ import { ActHomeCard } from './act-home-card.component';
 import { type RhdFlagList, useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
 import styles from './worklist-tiles.scss';
 
-const patientListsUrl = '${openmrsSpaBase}/home/patient-lists';
+// A tile opens the registry narrowed to its flag's patients.
+const registryUrl = (flagName: string) =>
+  '${openmrsSpaBase}/home/act-registry?' + new URLSearchParams({ flag: flagName }).toString();
 
 function WorklistTile({ list }: { list: RhdFlagList }) {
   const content = (
@@ -21,7 +23,7 @@ function WorklistTile({ list }: { list: RhdFlagList }) {
     </div>
   );
   return list.cohortUuid ? (
-    <ConfigurableLink to={`${patientListsUrl}/${list.cohortUuid}`} className={styles.link}>
+    <ConfigurableLink to={registryUrl(list.flagName)} className={styles.link}>
       {content}
     </ConfigurableLink>
   ) : (
@@ -35,7 +37,7 @@ function Worklists() {
   const riskFirst = [...lists.filter((l) => l.priority === 'risk'), ...lists.filter((l) => l.priority !== 'risk')];
 
   return (
-    <ActHomeCard title={t('worklists', 'Worklists')} link={{ label: t('allLists', 'All lists'), to: patientListsUrl }}>
+    <ActHomeCard title={t('worklists', 'Worklists')}>
       {error ? (
         <InlineNotification
           kind="error"
