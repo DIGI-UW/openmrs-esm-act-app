@@ -1,7 +1,7 @@
-@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
 
 .tiles {
   display: grid;
@@ -12,6 +12,10 @@
 .link {
   color: inherit;
   text-decoration: none;
+
+  &:focus-visible .tile {
+    @include act-focus;
+  }
 }
 
 .tile {
@@ -30,11 +34,11 @@
 }
 
 .risk {
-  border-top-color: colors.$red-60;
+  border-top-color: $act-risk;
 }
 
 .dataQuality {
-  border-top-color: colors.$orange-40;
+  border-top-color: $act-data-quality;
 }
 
 .count {

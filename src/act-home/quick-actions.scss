@@ -1,6 +1,7 @@
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
 
 .actions {
   display: grid;
@@ -23,6 +24,14 @@
 
   &:hover {
     background-color: $ui-02;
+  }
+
+  &:hover .icon {
+    @include brand-02(background-color);
+  }
+
+  &:focus-visible {
+    @include act-focus;
   }
 }
 
@@ -62,5 +71,9 @@ button.action {
 
   &:hover {
     background-color: $ui-02;
+  }
+
+  &:focus-visible {
+    @include act-focus;
   }
 }

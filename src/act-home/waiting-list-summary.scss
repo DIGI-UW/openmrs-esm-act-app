@@ -1,6 +1,6 @@
-@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '../styles/act-colours' as *;
 
 // A table wider than the card scrolls inside it rather than widening the page.
 .tableContainer {
@@ -9,11 +9,11 @@
 
 // Overdue rows and their days pending read as they do on the waiting list page.
 .tableContainer tr[data-overdue='true'] {
-  background-color: colors.$red-10;
+  background-color: $act-risk-background;
 }
 
 .tableContainer tr[data-overdue='true'] td[data-days-pending='true'] {
-  color: colors.$red-60;
+  color: $act-risk;
 }
 
 .empty {

@@ -1,6 +1,7 @@
-@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
 
 // A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
 .waitingList {
@@ -23,12 +24,12 @@
   }
 
   th:last-child {
-    background-color: colors.$gray-20;
+    background-color: $ui-03;
   }
 
   // Opaque, so columns scrolling under it stay hidden; it takes a hovered or overdue row's colour.
   td:last-child {
-    background-color: colors.$gray-10;
+    background-color: $ui-01;
   }
 
   tr:hover td:last-child,
@@ -59,10 +60,10 @@
 
 // A recommendation past the deadline for its urgency; the tests read the same attribute.
 .tableContainer tr[data-overdue='true'] {
-  background-color: colors.$red-10;
+  background-color: $act-risk-background;
 }
 
 // The figure that makes a row overdue reads in red, as the mockup shows; the tests read the same attribute.
 .tableContainer tr[data-overdue='true'] td[data-days-pending='true'] {
-  color: colors.$red-60;
+  color: $act-risk;
 }
