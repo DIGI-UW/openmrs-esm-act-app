@@ -63,6 +63,7 @@
   "rhdFlag": "RHD flag",
   "screenPositive": "Screen positive, pending confirmation",
   "screenPositiveDescription": "Registry patients who screened positive and wait for a confirmatory echo",
+  "screenPositiveNav": "Screen positive",
   "searchRegistry": "Search by name or ACT ID",
   "sex": "Sex",
   "specificProcedure": "Specific procedure",
