@@ -1,8 +1,9 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { navigate } from '@openmrs/esm-framework';
+import { setLayout } from '../table-skeleton.test-helper';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
@@ -21,6 +22,10 @@ const columnRows = withFlags([
   null,
   'RHD INR target missing',
   'RHD INR target missing|RHD perfusion issues not recorded|RHD site infection not recorded',
+  null,
+  null,
+  null,
+  'RHD 30-day follow-up due|RHD prophylaxis overdue',
 ]);
 
 function flagsOf(name: string) {
@@ -29,9 +34,9 @@ function flagsOf(name: string) {
     .map((tag) => [tag.textContent, tag.getAttribute('data-priority'), tag.className.includes('cds--tag--red')]);
 }
 
-// Carbon's popover container has no role to find it by, and its class is what these tests check.
+// The box a tooltip's text floats in: a Toggletip puts its text one element inside it, and it has no role.
 // eslint-disable-next-line testing-library/no-node-access
-const popoverOf = (element: HTMLElement) => element.closest('.cds--popover-container');
+const floatingBoxOf = (text: string) => screen.getByText(text).closest('.cds--popover-content');
 
 describe('Registry flags column', () => {
   beforeEach(async () => {
@@ -63,25 +68,55 @@ describe('Registry flags column', () => {
     expect(flagsOf('Patient 5')).toEqual([['3 flags', 'dataQuality', false]]);
   });
 
-  it('lists the flags behind "N flags" in its tooltip, without opening the chart', async () => {
+  const patient1Flags = 'RHD INR target missing, RHD prophylaxis overdue';
+  const flagsTag = () =>
+    within(screen.getByRole('row', { name: /Patient 1\b/ })).getByRole('button', { name: '2 flags' });
+
+  it('on a desktop, shows the flags behind "N flags" in a tooltip on hover, without opening the chart', async () => {
+    setLayout('small-desktop');
     render(<Registry />);
 
-    const tag = within(screen.getByRole('row', { name: /Patient 1\b/ })).getByRole('button', { name: '2 flags' });
-    expect(tag).toHaveAccessibleDescription('RHD INR target missing, RHD prophylaxis overdue');
-    expect(tag).toHaveAttribute('aria-expanded', 'false');
-    await userEvent.click(tag);
+    expect(flagsTag()).toHaveAccessibleDescription(patient1Flags);
+    expect(flagsTag()).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.hover(flagsTag());
 
-    expect(tag).toHaveAttribute('aria-expanded', 'true');
-    await userEvent.click(screen.getByText('RHD INR target missing, RHD prophylaxis overdue'));
+    expect(flagsTag()).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(screen.getByText(patient1Flags));
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('lets the "N flags" tooltip place itself, so the table\'s scroll box does not clip it on the last rows', () => {
+  it('on a tablet, opens the flags behind "N flags" on a tap, which the tap\'s trailing mouseleave does not close', async () => {
+    setLayout('tablet');
     render(<Registry />);
 
-    const tag = within(screen.getByRole('row', { name: /Patient 1\b/ })).getByRole('button', { name: '2 flags' });
-    expect(popoverOf(tag)).toHaveClass('cds--popover--auto-align');
+    expect(flagsTag()).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(flagsTag());
+    fireEvent.mouseLeave(flagsTag());
+
+    expect(flagsTag()).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText(patient1Flags)).toBeInTheDocument();
+    await userEvent.click(screen.getByText(patient1Flags));
+    expect(navigate).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { layout: 'small-desktop' as const, open: (tag: HTMLElement) => userEvent.hover(tag) },
+    { layout: 'tablet' as const, open: (tag: HTMLElement) => userEvent.click(tag) },
+  ])(
+    'on $layout, floats an "N flags" tooltip over the page in the last three rows, where the table would clip it',
+    async ({ layout, open }) => {
+      setLayout(layout);
+      render(<Registry />);
+      const tagOf = (name: RegExp) =>
+        within(screen.getByRole('row', { name })).getByRole('button', { name: '2 flags' });
+
+      await open(tagOf(/Patient 9\b/));
+      expect(floatingBoxOf('RHD 30-day follow-up due, RHD prophylaxis overdue')).toHaveStyle({ position: 'fixed' });
+      // Above them the tooltip has room in the table, and does without autoAlign's scroll tracking.
+      await open(tagOf(/Patient 1\b/));
+      expect(floatingBoxOf(patient1Flags)).not.toHaveStyle({ position: 'fixed' });
+    },
+  );
 
   it('renders the "N flags" tag as a span, as the content of its tooltip button must be', () => {
     render(<Registry />);

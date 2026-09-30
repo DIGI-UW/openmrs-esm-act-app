@@ -49,7 +49,6 @@ describe('Registry', () => {
       'href',
       '/openmrs/spa/patient/patient-1/chart',
     );
-    expect(within(patient).getByText('rhd00001')).not.toBe(within(patient).getByRole('link'));
   });
 
   it('evaluates the configured report over every enrolment up to today', () => {

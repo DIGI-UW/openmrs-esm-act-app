@@ -41,6 +41,9 @@ import styles from './registry.scss';
 
 const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
 
+// Room for a three-line flags tooltip below a desktop row.
+const rowsBelowToFloat = 3;
+
 function nextConsultation(row: ReportRow) {
   const date = parseReportDate(row.next_consultation_date);
   return date ? formatDate(date, { time: false, noToday: true }) : '';
@@ -76,8 +79,6 @@ function RegistryTable() {
       .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName) }));
   const flagOptions = [...new Set(rows.flatMap((row) => flagsOf(row).map((list) => list.flagName)))].sort();
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
-  const flagNames = (row: ReportRow) => flagsOf(row).map((list) => list.flagName);
-  const adherence = (row: ReportRow) => (row.adherence == null ? '' : `${row.adherence}%`);
   // The CSV keeps each report field in its own column.
   const csvColumns: Array<{ header: string; text: (row: ReportRow) => string }> = [
     { header: t('name', 'Name'), text: text('full_name') },
@@ -90,12 +91,21 @@ function RegistryTable() {
     ...(registry.showBpgColumns
       ? [
           { header: t('bpgStatus', 'BPG status'), text: text('bpg_status') },
-          { header: t('adherence', 'Adherence'), text: adherence },
+          {
+            header: t('adherence', 'Adherence'),
+            text: (row: ReportRow) => (row.adherence == null ? '' : `${row.adherence}%`),
+          },
         ]
       : []),
-    { header: t('flags', 'Flags'), text: (row) => flagNames(row).join('; ') },
+    {
+      header: t('flags', 'Flags'),
+      text: (row) =>
+        flagsOf(row)
+          .map((list) => list.flagName)
+          .join('; '),
+    },
   ];
-  const columns: Array<{ header: string; render: (row: ReportRow) => React.ReactNode }> = [
+  const columns: Array<{ header: string; render: (row: ReportRow, index: number) => React.ReactNode }> = [
     {
       header: t('patient', 'Patient'),
       render: (row) => (
@@ -120,7 +130,14 @@ function RegistryTable() {
           },
         ]
       : []),
-    { header: t('flags', 'Flags'), render: (row) => <RegistryFlags flags={flagsOf(row)} /> },
+    {
+      header: t('flags', 'Flags'),
+      // A tooltip opening below one of the page's last rows would be cut off by the table's scroll box, so
+      // those float over the page. The rest stay in place: floating tracks every scroll, which slows a long page.
+      render: (row, index) => (
+        <RegistryFlags flags={flagsOf(row)} floating={index >= results.length - rowsBelowToFloat} />
+      ),
+    },
   ];
 
   if (error) {
@@ -197,7 +214,7 @@ function RegistryTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {results.map((row) => (
+            {results.map((row, index) => (
               <TableRow
                 key={String(row.patient_uuid)}
                 className={styles.row}
@@ -206,7 +223,7 @@ function RegistryTable() {
                 }
               >
                 {columns.map((column) => (
-                  <TableCell key={column.header}>{column.render(row)}</TableCell>
+                  <TableCell key={column.header}>{column.render(row, index)}</TableCell>
                 ))}
               </TableRow>
             ))}
