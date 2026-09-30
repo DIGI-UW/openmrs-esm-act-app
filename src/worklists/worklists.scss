@@ -1,0 +1,43 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
+.worklists {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-06;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.description {
+  @include type.type-style('body-01');
+}
+
+.patients {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: layout.$spacing-05;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+}
+
+.title {
+  @include type.type-style('heading-compact-02');
+  margin-bottom: layout.$spacing-05;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.actId {
+  display: block;
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}

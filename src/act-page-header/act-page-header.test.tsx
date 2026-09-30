@@ -8,6 +8,7 @@ import ActHomeDashboard from '../act-home/act-home-dashboard.component';
 import Registry from '../registry/registry.component';
 import WaitingList from '../waiting-list/waiting-list.component';
 import ScreenPositive from '../screen-positive/screen-positive.component';
+import Worklists from '../worklists/worklists.component';
 import { ActPageHeader } from './act-page-header.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
@@ -24,6 +25,12 @@ const screens = [
     Screen: Registry,
     pictogram: 'PatientListsPictogram',
     noAccess: 'You do not have access to the registry.',
+  },
+  {
+    name: 'Worklists',
+    Screen: Worklists,
+    pictogram: 'PatientListsPictogram',
+    noAccess: 'You do not have access to the worklists.',
   },
   {
     name: 'Procedural waiting list',
@@ -69,7 +76,7 @@ describe('ACT page header', () => {
 
   it.each(screens)('shows $name no header to a user who may not see it', async ({ Screen, noAccess }) => {
     await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'x', waitingList: 'x', screenPositive: 'x' },
+      screenPrivileges: { home: 'x', registry: 'x', worklists: 'x', waitingList: 'x', screenPositive: 'x' },
     });
 
     render(<Screen />);

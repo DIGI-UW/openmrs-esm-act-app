@@ -8,6 +8,7 @@ describe('configSchema', () => {
       screenPrivileges: {
         home: 'View Patient Flags',
         registry: 'View Patient Flags',
+        worklists: 'View Patient Flags',
         waitingList: 'View Patient Flags',
         screenPositive: 'View Patient Flags',
       },

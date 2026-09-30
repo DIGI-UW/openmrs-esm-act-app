@@ -23,6 +23,7 @@ export const configSchema = {
   screenPrivileges: {
     home: screenPrivilege('the ACT home page'),
     registry: screenPrivilege('the registry list'),
+    worklists: screenPrivilege('the worklists page'),
     waitingList: screenPrivilege('the procedural waiting list'),
     screenPositive: screenPrivilege('the screen positive, pending confirmation page'),
   },
@@ -155,7 +156,7 @@ export const configSchema = {
   },
 };
 
-export type ActScreen = 'home' | 'registry' | 'waitingList' | 'screenPositive';
+export type ActScreen = 'home' | 'registry' | 'worklists' | 'waitingList' | 'screenPositive';
 
 export interface Config {
   screenPrivileges: Record<ActScreen, string>;

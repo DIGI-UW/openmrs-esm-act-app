@@ -38,7 +38,7 @@ describe('WorklistTiles', () => {
     await signInWith([homePrivilege]);
   });
 
-  it("shows one tile per list with its count, opening the registry narrowed to the list's flag", () => {
+  it('shows one tile per list with its count, opening the Worklists page with that list chosen', () => {
     lists({ lists: demoLists });
 
     render(<WorklistTiles />);
@@ -47,10 +47,16 @@ describe('WorklistTiles', () => {
     expect(tiles.map((tile) => tile.textContent)).toEqual(demoLists.map((l) => `${l.memberCount}${l.flagName}`));
     expect(screen.getByRole('link', { name: /RHD prophylaxis overdue/ })).toHaveAttribute(
       'href',
-      '/openmrs/spa/home/act-registry?flag=RHD+prophylaxis+overdue',
+      '/openmrs/spa/home/act-worklists?flag=RHD+prophylaxis+overdue',
     );
-    // The tiles are every list, so the card links nowhere else.
-    expect(screen.getAllByRole('link')).toHaveLength(demoLists.length);
+  });
+
+  it('links to the Worklists page', () => {
+    lists({ lists: demoLists });
+
+    render(<WorklistTiles />);
+
+    expect(screen.getByRole('link', { name: 'All lists' })).toHaveAttribute('href', '/openmrs/spa/home/act-worklists');
   });
 
   it('puts the risk lists first, each group in the order the lists come', () => {
@@ -84,7 +90,7 @@ describe('WorklistTiles', () => {
     expect(screen.getAllByTestId('worklist-tile').at(-1)).toHaveTextContent('0RHD death not recorded on patient');
     expect(screen.getByRole('link', { name: /RHD death not recorded on patient/ })).toHaveAttribute(
       'href',
-      '/openmrs/spa/home/act-registry?flag=RHD+death+not+recorded+on+patient',
+      '/openmrs/spa/home/act-worklists?flag=RHD+death+not+recorded+on+patient',
     );
   });
 
