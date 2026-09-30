@@ -5,6 +5,7 @@ import { actHomeDashboardMeta, actHomeWidgetsSlot } from './act-home/act-home.me
 import { registryDashboardMeta } from './registry/registry.meta';
 import { waitingListDashboardMeta } from './waiting-list/waiting-list.meta';
 import { screenPositiveDashboardMeta } from './screen-positive/screen-positive.meta';
+import { worklistsDashboardMeta } from './worklists/worklists.meta';
 
 describe('routes.json', () => {
   it('registers every component it names', () => {
@@ -33,6 +34,18 @@ describe('routes.json', () => {
 
     expect(link.meta).toEqual(registryDashboardMeta);
     expect(page.component).toBe('registryDashboard');
+  });
+
+  it('adds the Worklists page to the home app under the name and slot its page renders, after the registry', () => {
+    const links = routes.extensions.filter((extension) => extension.slot === 'homepage-dashboard-slot');
+    const link = links.find((extension) => extension.component === 'worklistsDashboardLink');
+    const page = routes.extensions.find((extension) => extension.slot === worklistsDashboardMeta.slot);
+
+    expect(link.meta).toEqual(worklistsDashboardMeta);
+    expect(page.component).toBe('worklistsDashboard');
+    expect(links.indexOf(link)).toBe(
+      links.findIndex((extension) => extension.component === 'registryDashboardLink') + 1,
+    );
   });
 
   it('adds the procedural waiting list to the home app under the name and slot its page renders', () => {

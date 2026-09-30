@@ -157,7 +157,7 @@ describe('Screen positive, pending confirmation', () => {
 
   it('tells a user without the screen positive privilege that they cannot see it', async () => {
     await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'x', waitingList: 'x', screenPositive: 'App: act.screenpositive' },
+      screenPrivileges: { home: 'x', registry: 'x', worklists: 'x', waitingList: 'x', screenPositive: 'App: act.screenpositive' },
     });
     dataset({ rows: screenPositiveRows });
 

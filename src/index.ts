@@ -2,6 +2,7 @@ import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmr
 import { configSchema } from './config-schema';
 import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
+import worklistsDashboardLinkComponent from './worklists/worklists-dashboard-link.component';
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 
@@ -35,6 +36,10 @@ export const actHomeCareCascade = getAsyncLifecycle(() => import('./act-home/car
 export const registryDashboardLink = getSyncLifecycle(registryDashboardLinkComponent, options);
 
 export const registryDashboard = getAsyncLifecycle(() => import('./registry/registry.component'), options);
+
+export const worklistsDashboardLink = getSyncLifecycle(worklistsDashboardLinkComponent, options);
+
+export const worklistsDashboard = getAsyncLifecycle(() => import('./worklists/worklists.component'), options);
 
 export const waitingListDashboardLink = getSyncLifecycle(waitingListDashboardLinkComponent, options);
 

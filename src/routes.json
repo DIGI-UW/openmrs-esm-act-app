@@ -62,6 +62,21 @@
       "component": "registryDashboard"
     },
     {
+      "name": "act-worklists-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "worklistsDashboardLink",
+      "meta": {
+        "name": "act-worklists",
+        "slot": "rhd-worklists-dashboard-slot",
+        "title": "worklists"
+      }
+    },
+    {
+      "name": "act-worklists-dashboard",
+      "slot": "rhd-worklists-dashboard-slot",
+      "component": "worklistsDashboard"
+    },
+    {
       "name": "act-waiting-list-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "waitingListDashboardLink",

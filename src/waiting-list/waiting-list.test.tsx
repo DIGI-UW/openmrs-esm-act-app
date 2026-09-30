@@ -99,7 +99,7 @@ describe('Procedural waiting list', () => {
 
   it('tells a user without the waiting list privilege that they cannot see it', async () => {
     await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'x', waitingList: 'App: act.waitinglist', screenPositive: 'x' },
+      screenPrivileges: { home: 'x', registry: 'x', worklists: 'x', waitingList: 'App: act.waitinglist', screenPositive: 'x' },
     });
     dataset({ rows: waitingListRows });
 

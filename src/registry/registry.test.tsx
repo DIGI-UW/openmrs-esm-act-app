@@ -148,7 +148,7 @@ describe('Registry', () => {
 
   it('tells a user without the registry privilege that they cannot see it', async () => {
     await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'App: act.registry', waitingList: 'x', screenPositive: 'x' },
+      screenPrivileges: { home: 'x', registry: 'App: act.registry', worklists: 'x', waitingList: 'x', screenPositive: 'x' },
     });
     dataset({ rows: registryRows });
 

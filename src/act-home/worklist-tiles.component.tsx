@@ -5,35 +5,63 @@ import { ConfigurableLink } from '@openmrs/esm-framework';
 import { ScreenAccess } from '../access/screen-access.component';
 import { ActHomeCard } from './act-home-card.component';
 import { type RhdFlagList, useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
+import { worklistsUrl } from '../worklists/worklists.meta';
 import styles from './worklist-tiles.scss';
 
-// A tile opens the registry narrowed to its flag's patients.
-const registryUrl = (flagName: string) =>
-  '${openmrsSpaBase}/home/act-registry?' + new URLSearchParams({ flag: flagName }).toString();
+export function riskFirst(lists: Array<RhdFlagList>) {
+  return [...lists.filter((l) => l.priority === 'risk'), ...lists.filter((l) => l.priority !== 'risk')];
+}
 
-function WorklistTile({ list }: { list: RhdFlagList }) {
-  const content = (
-    <div data-testid="worklist-tile" data-priority={list.priority} className={styles.tile}>
+function WorklistTileContent({ list, selected = false }: { list: RhdFlagList; selected?: boolean }) {
+  return (
+    <div
+      data-testid="worklist-tile"
+      data-priority={list.priority}
+      className={selected ? `${styles.tile} ${styles.selected}` : styles.tile}
+    >
       <span className={styles.count}>{list.memberCount}</span>
       <span className={styles.name}>{list.flagName}</span>
     </div>
   );
+}
+
+export function WorklistTileGrid({ children }: { children: React.ReactNode }) {
+  return <div className={styles.tiles}>{children}</div>;
+}
+
+/** A tile that chooses its list on the page it is on. */
+export function WorklistChoice({
+  list,
+  selected,
+  onSelect,
+}: {
+  list: RhdFlagList;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button type="button" className={styles.choice} aria-pressed={selected} onClick={onSelect}>
+      <WorklistTileContent list={list} selected={selected} />
+    </button>
+  );
+}
+
+function WorklistTile({ list }: { list: RhdFlagList }) {
   return list.cohortUuid ? (
-    <ConfigurableLink to={registryUrl(list.flagName)} className={styles.link}>
-      {content}
+    <ConfigurableLink to={worklistsUrl(list.flagName)} className={styles.link}>
+      <WorklistTileContent list={list} />
     </ConfigurableLink>
   ) : (
-    content
+    <WorklistTileContent list={list} />
   );
 }
 
 function Worklists() {
   const { t } = useTranslation();
   const { lists, isLoading, error } = useRhdFlagLists();
-  const riskFirst = [...lists.filter((l) => l.priority === 'risk'), ...lists.filter((l) => l.priority !== 'risk')];
 
   return (
-    <ActHomeCard title={t('worklists', 'Worklists')}>
+    <ActHomeCard title={t('worklists', 'Worklists')} link={{ label: t('allLists', 'All lists'), to: worklistsUrl() }}>
       {error ? (
         <InlineNotification
           kind="error"
@@ -48,11 +76,11 @@ function Worklists() {
       ) : lists.length === 0 ? (
         <p className={styles.empty}>{t('noRhdFlagLists', 'No RHD flag lists found')}</p>
       ) : (
-        <div className={styles.tiles}>
-          {riskFirst.map((list) => (
+        <WorklistTileGrid>
+          {riskFirst(lists).map((list) => (
             <WorklistTile key={list.flagName} list={list} />
           ))}
-        </div>
+        </WorklistTileGrid>
       )}
     </ActHomeCard>
   );
