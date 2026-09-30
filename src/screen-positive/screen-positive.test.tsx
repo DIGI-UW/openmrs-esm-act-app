@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { signInWith } from '../access/sign-in.test-helper';
+import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveRows } from './screen-positive.fixture';
 import ScreenPositive from './screen-positive.component';
@@ -147,17 +148,31 @@ describe('Screen positive, pending confirmation', () => {
     expect(screen.getByText('Could not load the screen positive list')).toBeInTheDocument();
   });
 
-  it('shows a placeholder while the report runs', () => {
-    dataset({ isLoading: true });
+  it.each(layouts)(
+    'loads as a table skeleton of a page of rows, sized as its table on $layout',
+    ({ layout, compact, size }) => {
+      setLayout(layout);
+      dataset({ isLoading: true });
+      const { rerender } = render(<ScreenPositive />);
 
-    render(<ScreenPositive />);
-
-    expect(screen.getByTestId('screen-positive-loading')).toBeInTheDocument();
-  });
+      const { skeleton, rows, columns } = tableSkeleton();
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 7 });
+      expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
+      dataset({ rows: screenPositiveRows });
+      rerender(<ScreenPositive />);
+      expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
+    },
+  );
 
   it('tells a user without the screen positive privilege that they cannot see it', async () => {
     await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'x', worklists: 'x', waitingList: 'x', screenPositive: 'App: act.screenpositive' },
+      screenPrivileges: {
+        home: 'x',
+        registry: 'x',
+        worklists: 'x',
+        waitingList: 'x',
+        screenPositive: 'App: act.screenpositive',
+      },
     });
     dataset({ rows: screenPositiveRows });
 

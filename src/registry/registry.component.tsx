@@ -15,7 +15,15 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { ConfigurableLink, formatDate, navigate, PatientListsPictogram, useConfig } from '@openmrs/esm-framework';
+import {
+  ConfigurableLink,
+  formatDate,
+  isDesktop,
+  navigate,
+  PatientListsPictogram,
+  useConfig,
+  useLayoutType,
+} from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -40,6 +48,7 @@ function nextConsultation(row: ReportRow) {
 function RegistryTable() {
   const { t } = useTranslation();
   const { registry, flagLists } = useConfig<Config>();
+  const desktop = isDesktop(useLayoutType());
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
   // Coming back from a chart paints the cached rows, then evaluates the report again for what the chart changed.
   const { rows, isLoading, error } = useReportDataset(registry.report, params);
@@ -125,9 +134,15 @@ function RegistryTable() {
   }
   if (isLoading) {
     return (
-      <div data-testid="registry-loading">
-        <DataTableSkeleton columnCount={columns.length} zebra showHeader={false} showToolbar={false} />
-      </div>
+      <DataTableSkeleton
+        role="progressbar"
+        columnCount={columns.length}
+        rowCount={paginationProps.pageSize}
+        compact={desktop}
+        zebra
+        showHeader={false}
+        showToolbar={false}
+      />
     );
   }
   if (!rows.length) {
@@ -172,7 +187,7 @@ function RegistryTable() {
         </Button>
       </div>
       {shown.length ? (
-        <Table useZebraStyles>
+        <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
           <TableHead>
             <TableRow>
               {columns.map((column) => (

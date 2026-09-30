@@ -11,7 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { formatDate, showSnackbar, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  isDesktop,
+  showSnackbar,
+  useLayoutType,
+  Workspace2,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import { type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
 import { openEncounterForm } from './open-encounter-form';
 import styles from './flag-gaps.scss';
@@ -39,6 +46,7 @@ const FlagGapsWorkspace: React.FC<
   Workspace2DefinitionProps<Partial<FlagActionWorkspaceProps>, object, PatientChartGroupProps>
 > = ({ workspaceProps, groupProps, launchChildWorkspace }) => {
   const { t } = useTranslation();
+  const desktop = isDesktop(useLayoutType());
   const patientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid;
   const clickedFlag = workspaceProps?.flagUuid
     ? { uuid: workspaceProps.flagUuid, name: workspaceProps.flagName }
@@ -63,7 +71,7 @@ const FlagGapsWorkspace: React.FC<
 
   const renderContent = () => {
     if (isLoading) {
-      return <DataTableSkeleton role="progressbar" compact zebra showHeader={false} showToolbar={false} />;
+      return <DataTableSkeleton role="progressbar" compact={desktop} zebra showHeader={false} showToolbar={false} />;
     }
     if (error) {
       return (
@@ -108,7 +116,7 @@ const FlagGapsWorkspace: React.FC<
       );
     }
     return (
-      <Table size="md" useZebraStyles>
+      <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
         <TableHead>
           <TableRow>
             <TableHeader>{t('form', 'Form')}</TableHeader>

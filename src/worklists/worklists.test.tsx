@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { navigate } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { type RhdFlagList, useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
 import Worklists from './worklists.component';
@@ -160,13 +161,21 @@ describe('Worklists', () => {
     });
   });
 
-  it('shows a table skeleton while the patients load', () => {
-    dataset({ isLoading: true });
+  it.each(layouts)(
+    'loads as a table skeleton of a page of rows, sized as its table on $layout',
+    ({ layout, compact, size }) => {
+      setLayout(layout);
+      dataset({ isLoading: true });
+      const { rerender } = render(<Worklists />);
 
-    render(<Worklists />);
-
-    expect(within(screen.getByTestId('worklist-patients-loading')).getByRole('table')).toBeInTheDocument();
-  });
+      const { skeleton, rows: rowCount, columns } = tableSkeleton();
+      expect({ rows: rowCount, columns }).toEqual({ rows: 10, columns: 5 });
+      expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
+      dataset({ rows: rows });
+      rerender(<Worklists />);
+      expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
+    },
+  );
 
   it('says so when the patients cannot be loaded', () => {
     dataset({ error: new Error('Server responded with 500') });

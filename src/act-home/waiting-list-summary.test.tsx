@@ -2,6 +2,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from '../waiting-list/waiting-list.fixture';
 import WaitingList from '../waiting-list/waiting-list.component';
@@ -137,17 +138,21 @@ describe('ACT home procedural waiting list summary', () => {
     expect(screen.getByText('Could not load the procedural waiting list')).toBeInTheDocument();
   });
 
-  it('shows a table skeleton of its columns and rows while the report runs', () => {
-    dataset({ isLoading: true });
+  it.each(layouts)(
+    'loads as a table skeleton of its five rows, sized as its table on $layout',
+    ({ layout, compact, size }) => {
+      setLayout(layout);
+      dataset({ isLoading: true });
+      const { rerender } = render(<WaitingListSummary />);
 
-    render(<WaitingListSummary />);
-
-    const skeleton = within(screen.getByTestId('waiting-list-summary-loading')).getByRole('table');
-    const [, body] = within(skeleton).getAllByRole('rowgroup');
-    const rows = within(body).getAllByRole('row');
-    expect(rows).toHaveLength(5);
-    expect(within(rows[0]).getAllByRole('cell')).toHaveLength(5);
-  });
+      const { skeleton, rows, columns } = tableSkeleton();
+      expect({ rows, columns }).toEqual({ rows: 5, columns: 5 });
+      expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
+      dataset({ rows: waitingListRows });
+      rerender(<WaitingListSummary />);
+      expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
+    },
+  );
 
   it('is hidden from a user without the waiting list privilege', async () => {
     await signInWith([homePrivilege], { screenPrivileges: { waitingList: 'App: act.waitingList' } as never });
