@@ -1,7 +1,7 @@
 # ACT Registry O3 prototype: screens
 
 Screenshots of the ACT Registry O3 prototype (claude.ai design project "ACT O3", exported as
-`ACT Registry O3 Prototype.html`), taken as the default role and as the Clinician view. The
+`ACT Registry O3 Prototype.html`), taken for each role the prototype offers. The
 issues that build ACT 3.0 towards it link to these. The data in them is fictional.
 
 | Screen | File |
@@ -20,3 +20,7 @@ issues that build ACT 3.0 towards it link to these. The data in them is fictiona
 | Register patient | `17-register.png` |
 | Patient chart: summary, prophylaxis, visits, cardiac tests | `20-chart-summary.png`, `21-chart-proph.png`, `22-chart-visits.png`, `23-chart-cardiac.png` |
 | Clinical forms list, and a form's key fields | `24-clinical-forms.png`, `25-consult-form.png` |
+| Record BPG injection: patient search in context | `05-search-bpg.png` |
+| Data clerk: home and Facility reports | `30-home-dataclerk.png`, `31-facility-reports.png` |
+| Chart as a data clerk and as a community clinician | `32-chart-dataclerk.png`, `39-chart-community.png` |
+| Admin placeholders: site, instance and global admin | `33-home-siteadmin.png`, `34-siteadmin-users.png`, `37-home-instanceadmin.png`, `38-home-globaladmin.png` |
