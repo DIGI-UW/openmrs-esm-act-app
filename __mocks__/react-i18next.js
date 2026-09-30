@@ -1,4 +1,3 @@
-/** At present, this entire mock is boilerplate. */
 const React = require('react');
 const reactI18next = require('react-i18next');
 

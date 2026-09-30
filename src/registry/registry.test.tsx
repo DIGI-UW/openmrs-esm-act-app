@@ -44,6 +44,12 @@ describe('Registry', () => {
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
     ).toEqual(['Patient 1rhd00001', '10 F', 'RHD A', 'Q28 day BPG', '']);
+    const [patient] = within(first).getAllByRole('cell');
+    expect(within(patient).getByRole('link', { name: 'Patient 1' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/patient/patient-1/chart',
+    );
+    expect(within(patient).getByText('rhd00001')).not.toBe(within(patient).getByRole('link'));
   });
 
   it('evaluates the configured report over every enrolment up to today', () => {

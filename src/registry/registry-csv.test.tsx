@@ -50,7 +50,7 @@ describe('Registry CSV download', () => {
     expect(lines).toHaveLength(1 + 30);
   });
 
-  it("writes each patient's flags as the table shows them", async () => {
+  it("writes each of a patient's flags, joined by semicolons", async () => {
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: [{ ...registryRows[0], rhd_flags: 'RHD INR target missing|RHD prophylaxis overdue' }],

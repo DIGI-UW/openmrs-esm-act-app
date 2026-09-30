@@ -29,6 +29,10 @@ function flagsOf(name: string) {
     .map((tag) => [tag.textContent, tag.getAttribute('data-priority'), tag.className.includes('cds--tag--red')]);
 }
 
+// Carbon's popover container has no role to find it by, and its class is what these tests check.
+// eslint-disable-next-line testing-library/no-node-access
+const popoverOf = (element: HTMLElement) => element.closest('.cds--popover-container');
+
 describe('Registry flags column', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
@@ -72,7 +76,14 @@ describe('Registry flags column', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('renders each flag tag as inline content, as the tooltip button around "N flags" requires', () => {
+  it('lets the "N flags" tooltip place itself, so the table\'s scroll box does not clip it on the last rows', () => {
+    render(<Registry />);
+
+    const tag = within(screen.getByRole('row', { name: /Patient 1\b/ })).getByRole('button', { name: '2 flags' });
+    expect(popoverOf(tag)).toHaveClass('cds--popover--auto-align');
+  });
+
+  it('renders the "N flags" tag as a span, as the content of its tooltip button must be', () => {
     render(<Registry />);
 
     expect(within(screen.getByRole('row', { name: /Patient 1\b/ })).getByTestId('registry-flag').tagName).toBe('SPAN');

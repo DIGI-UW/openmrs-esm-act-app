@@ -32,10 +32,12 @@ export function RegistryFlags({ flags }: { flags: Array<Flag> }) {
     ));
   }
   // As O3's service queues show a priority's comment: a DefinitionTooltip opens on a tap as well as a hover.
+  // autoAlign places it over the page, so the table's scroll box does not clip it on the last rows.
   return (
     <DefinitionTooltip
       className={styles.flagsTooltip}
-      align="bottom-left"
+      align="bottom-start"
+      autoAlign
       openOnHover
       definition={flags.map((flag) => flag.flagName).join(', ')}
     >

@@ -78,7 +78,7 @@ function RegistryTable() {
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
   const flagNames = (row: ReportRow) => flagsOf(row).map((list) => list.flagName);
   const adherence = (row: ReportRow) => (row.adherence == null ? '' : `${row.adherence}%`);
-  // The CSV keeps the report's fields apart, as they were before the table grouped them.
+  // The CSV keeps each report field in its own column.
   const csvColumns: Array<{ header: string; text: (row: ReportRow) => string }> = [
     { header: t('name', 'Name'), text: text('full_name') },
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
