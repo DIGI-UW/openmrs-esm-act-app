@@ -31,7 +31,7 @@ describe('Registry CSV download', () => {
     });
   });
 
-  it('downloads the filtered rows, from every page, with the visible columns as shown', async () => {
+  it('downloads the filtered rows, from every page, with the report fields in separate columns', async () => {
     render(<Registry />);
     await userEvent.selectOptions(screen.getByLabelText('Category at diagnosis'), 'RHD A');
 

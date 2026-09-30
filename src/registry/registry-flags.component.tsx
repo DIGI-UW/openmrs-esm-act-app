@@ -9,6 +9,7 @@ type Flag = Pick<RhdFlagList, 'flagName' | 'priority'>;
 function FlagTag({ priority, children }: { priority: Flag['priority']; children: React.ReactNode }) {
   return (
     <Tag
+      as="span"
       data-testid="registry-flag"
       data-priority={priority}
       type={priority === 'risk' ? 'red' : 'warm-gray'}

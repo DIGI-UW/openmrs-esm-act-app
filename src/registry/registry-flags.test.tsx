@@ -68,7 +68,14 @@ describe('Registry flags column', () => {
     await userEvent.click(tag);
 
     expect(tag).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(screen.getByText('RHD INR target missing, RHD prophylaxis overdue'));
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('renders each flag tag as inline content, as the tooltip button around "N flags" requires', () => {
+    render(<Registry />);
+
+    expect(within(screen.getByRole('row', { name: /Patient 1\b/ })).getByTestId('registry-flag').tagName).toBe('SPAN');
   });
 
   it.each([

@@ -202,7 +202,7 @@ function RegistryTable() {
                 key={String(row.patient_uuid)}
                 className={styles.row}
                 onClick={(event) =>
-                  (event.target as HTMLElement).closest('a, button') || navigate({ to: chartUrl(row) })
+                  (event.target as HTMLElement).closest('a, .cds--popover-container') || navigate({ to: chartUrl(row) })
                 }
               >
                 {columns.map((column) => (
