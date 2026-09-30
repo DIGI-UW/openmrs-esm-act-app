@@ -1,7 +1,7 @@
 # ACT Registry O3 prototype: screens
 
 Screenshots of the ACT Registry O3 prototype (claude.ai design project "ACT O3", exported as
-`ACT Registry O3 Prototype.html`), taken for each role the prototype offers. The
+`ACT Registry O3 Prototype.html`; screens 40 to 43 from the export of 1 October 2026, which adds the next steps workflow), taken for each role the prototype offers. The
 issues that build ACT 3.0 towards it link to these. The data in them is fictional.
 
 | Screen | File |
@@ -23,4 +23,7 @@ issues that build ACT 3.0 towards it link to these. The data in them is fictiona
 | Record BPG injection: patient search in context | `05-search-bpg.png` |
 | Data clerk: home and Facility reports | `30-home-dataclerk.png`, `31-facility-reports.png` |
 | Chart as a data clerk and as a community clinician | `32-chart-dataclerk.png`, `39-chart-community.png` |
+| Next steps for this visit on the patient summary, as a clinician and as a community clinician | `40-chart-next-steps.png`, `43-chart-community-next-steps.png` |
+| Clinical forms: Suggested for this visit, other forms folded | `41-clinical-forms-suggested.png` |
+| Saving a form adds a next step: anaphylaxis after BPG asks for a consultation | `42-next-step-added.png` |
 | Admin placeholders: site, instance and global admin | `33-home-siteadmin.png`, `34-siteadmin-users.png`, `37-home-instanceadmin.png`, `38-home-globaladmin.png` |
