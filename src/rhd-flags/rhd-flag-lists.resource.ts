@@ -3,7 +3,7 @@ import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
 
-/** The patient list rhdflags keeps for one flag, with the patients on it now. */
+/** The patient list ACT Core keeps for one flag, with the patients on it now. */
 export interface RhdFlagList {
   cohortUuid: string | null;
   flagName: string;
@@ -75,7 +75,7 @@ export function useRhdFlagLists({ withMembers = false } = {}) {
         }),
       );
     },
-    // rhdflags updates the lists daily, so a screen mounting again reuses the cached lists.
+    // ACT Core updates the lists daily, so a screen mounting again reuses the cached lists.
     { revalidateIfStale: false },
   );
 
