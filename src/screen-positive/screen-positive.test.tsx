@@ -126,9 +126,9 @@ describe('Screen positive, pending confirmation', () => {
 
     render(<ScreenPositive />);
 
-    expect(screen.getAllByRole('row')).toHaveLength(1 + 25);
+    expect(screen.getAllByRole('row')).toHaveLength(1 + 10);
     await userEvent.click(screen.getByRole('button', { name: /next page/i }));
-    expect(screen.getAllByRole('row')).toHaveLength(1 + 5);
+    expect(screen.getByText(/11–20 of 30 items/)).toBeInTheDocument();
   });
 
   it('says so when no patient is waiting for a confirmatory echo', () => {

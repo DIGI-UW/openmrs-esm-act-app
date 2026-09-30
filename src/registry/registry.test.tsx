@@ -67,15 +67,21 @@ describe('Registry', () => {
     });
   });
 
-  it('shows the patients a page at a time', async () => {
+  it('shows the patients ten to a page, offering 10, 25, 50 and 100', async () => {
     dataset({ rows: registryRows });
 
     render(<Registry />);
 
-    expect(screen.getAllByRole('row')).toHaveLength(1 + 25);
+    expect(screen.getAllByRole('row')).toHaveLength(1 + 10);
+    expect(screen.getByLabelText(/items per page/i)).toHaveValue('10');
+    expect(
+      within(screen.getByLabelText(/items per page/i))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['10', '25', '50', '100']);
     await userEvent.click(screen.getByRole('button', { name: /next page/i }));
-    expect(screen.getAllByRole('row')).toHaveLength(1 + 5);
-    expect(screen.getByRole('row', { name: /Patient 30\b/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('row')).toHaveLength(1 + 10);
+    expect(screen.getByRole('row', { name: /Patient 11\b/ })).toBeInTheDocument();
   });
 
   it("opens a patient's chart from their row", async () => {

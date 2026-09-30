@@ -16,6 +16,11 @@ function shownNames() {
     .map((row) => row.querySelector('td').textContent);
 }
 
+/** How many rows the filters leave, over every page, as the pagination counts them. */
+function matching() {
+  return Number(screen.getByText(/of \d+ items/).textContent.match(/of (\d+) items/)[1]);
+}
+
 async function choose(label: string, option: string) {
   await userEvent.selectOptions(screen.getByLabelText(label), option);
 }
@@ -52,7 +57,7 @@ describe('Registry filters', () => {
     ]);
     await choose('Cardiac clinic', 'Gulu RRH');
 
-    expect(shownNames()).toHaveLength(15);
+    expect(matching()).toBe(15);
     expect(shownNames().every((name) => Number(name.split(' ')[1]) % 2 === 0)).toBe(true);
   });
 
@@ -66,7 +71,7 @@ describe('Registry filters', () => {
     ).toEqual(['All', 'Anyeke HCIV']);
     await choose('Primary care clinic', 'Anyeke HCIV');
 
-    expect(shownNames()).toHaveLength(15);
+    expect(matching()).toBe(15);
   });
 
   it('narrows the rows by category at diagnosis', async () => {
@@ -129,7 +134,7 @@ describe('Registry filters', () => {
     expect(screen.getByLabelText('Cardiac clinic')).toHaveValue('Old clinic');
     expect(screen.getByText('No patients match these filters.')).toBeInTheDocument();
     await choose('Cardiac clinic', '');
-    expect(shownNames()).toHaveLength(25);
+    expect(matching()).toBe(30);
   });
 
   it('follows the URL when the Registry link resets it', async () => {
@@ -143,7 +148,7 @@ describe('Registry filters', () => {
     });
 
     expect(screen.getByLabelText('Category at diagnosis')).toHaveValue('');
-    expect(shownNames()).toHaveLength(25);
+    expect(matching()).toBe(30);
   });
 
   it('starts again from the first page when the Registry link resets the filters', async () => {
@@ -167,7 +172,7 @@ describe('Registry filters', () => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
 
-    expect(shownNames()[0]).toBe('Patient 26');
+    expect(shownNames()[0]).toBe('Patient 11');
   });
 
   it('writes the URL once typing has paused, not on every key', () => {
