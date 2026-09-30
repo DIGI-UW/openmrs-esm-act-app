@@ -6,6 +6,9 @@ import type * as EsmApi from '@openmrs/esm-api';
 /** Gives ACT home its own privilege, so a widget gated on another screen's privilege is caught. */
 export const homePrivilege = 'App: act.home';
 
+/** Gives the data clerk workspace its own privilege, so a widget gated on another screen's privilege is caught. */
+export const dataClerkPrivilege = 'App: act.dataClerk';
+
 /** Signs in a user holding the given privileges, checked with the framework's own userHasAccess. */
 export async function signInWith(privileges: Array<string>, config: Partial<Config> = {}) {
   const { userHasAccess: realUserHasAccess } = await vi.importActual<typeof EsmApi>('@openmrs/esm-api');
@@ -14,7 +17,12 @@ export async function signInWith(privileges: Array<string>, config: Partial<Conf
   vi.mocked(useConfig<Config>).mockReturnValue({
     ...defaults,
     ...config,
-    screenPrivileges: { ...defaults.screenPrivileges, home: homePrivilege, ...config.screenPrivileges },
+    screenPrivileges: {
+      ...defaults.screenPrivileges,
+      home: homePrivilege,
+      dataClerk: dataClerkPrivilege,
+      ...config.screenPrivileges,
+    },
   });
   vi.mocked(useSession).mockReturnValue({
     authenticated: true,

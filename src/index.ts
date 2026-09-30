@@ -4,6 +4,7 @@ import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.co
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
+import dataClerkDashboardLinkComponent from './data-clerk/data-clerk-dashboard-link.component';
 
 const moduleName = '@mherman22/esm-act-app';
 
@@ -44,5 +45,17 @@ export const screenPositiveDashboardLink = getSyncLifecycle(screenPositiveDashbo
 
 export const screenPositiveDashboard = getAsyncLifecycle(
   () => import('./screen-positive/screen-positive.component'),
+  options,
+);
+
+export const dataClerkDashboardLink = getSyncLifecycle(dataClerkDashboardLinkComponent, options);
+
+export const dataClerkDashboard = getAsyncLifecycle(
+  () => import('./data-clerk/data-clerk-dashboard.component'),
+  options,
+);
+
+export const dataClerkQuickActions = getAsyncLifecycle(
+  () => import('./data-clerk/data-clerk-quick-actions.component'),
   options,
 );

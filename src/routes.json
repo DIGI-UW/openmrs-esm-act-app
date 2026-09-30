@@ -90,6 +90,27 @@
       "name": "act-screen-positive-dashboard",
       "slot": "rhd-screen-positive-dashboard-slot",
       "component": "screenPositiveDashboard"
+    },
+    {
+      "name": "act-data-clerk-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "dataClerkDashboardLink",
+      "meta": {
+        "name": "act-data-clerk",
+        "slot": "rhd-data-clerk-dashboard-slot",
+        "title": "dataClerk"
+      }
+    },
+    {
+      "name": "act-data-clerk-dashboard",
+      "slot": "rhd-data-clerk-dashboard-slot",
+      "component": "dataClerkDashboard"
+    },
+    {
+      "name": "act-data-clerk-quick-actions",
+      "slot": "rhd-data-clerk-widgets-slot",
+      "component": "dataClerkQuickActions",
+      "order": 1
     }
   ],
   "workspaceGroups2": [

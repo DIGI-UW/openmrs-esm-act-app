@@ -25,6 +25,7 @@ export const configSchema = {
     registry: screenPrivilege('the registry list'),
     waitingList: screenPrivilege('the procedural waiting list'),
     screenPositive: screenPrivilege('the screen positive, pending confirmation page'),
+    dataClerk: screenPrivilege('the data clerk workspace'),
   },
   clinicLocationTags: {
     cardiac: locationTags('cardiac clinics', ['RHD Tertiary', 'RHD District']),
@@ -74,6 +75,28 @@ export const configSchema = {
     findPatientUrl: link(
       'Where the Find a patient quick action on ACT home leads. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
       '${openmrsSpaBase}/search?query=',
+    ),
+  },
+  dataClerkQuickActions: {
+    recordBpgUrl: link(
+      'Where the Record BPG injection quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d',
+    ),
+    recordOralUrl: link(
+      'Where the Record oral prophylaxis quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465',
+    ),
+    registerPatientUrl: link(
+      'Where the Register patient quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/patient-registration',
+    ),
+    findPatientUrl: link(
+      'Where the Find a patient quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/search?query=',
+    ),
+    facilityReportUrl: link(
+      'Where the Facility report quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/home/reports',
     ),
   },
   careCascade: {
@@ -155,7 +178,7 @@ export const configSchema = {
   },
 };
 
-export type ActScreen = 'home' | 'registry' | 'waitingList' | 'screenPositive';
+export type ActScreen = 'home' | 'registry' | 'waitingList' | 'screenPositive' | 'dataClerk';
 
 export interface Config {
   screenPrivileges: Record<ActScreen, string>;
@@ -170,6 +193,13 @@ export interface Config {
     enterProphylaxisUrl: string;
     prophylaxisForms: Array<{ label: string; url: string }>;
     findPatientUrl: string;
+  };
+  dataClerkQuickActions: {
+    recordBpgUrl: string;
+    recordOralUrl: string;
+    registerPatientUrl: string;
+    findPatientUrl: string;
+    facilityReportUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };

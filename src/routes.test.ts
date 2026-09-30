@@ -5,6 +5,7 @@ import { actHomeDashboardMeta, actHomeWidgetsSlot } from './act-home/act-home.me
 import { registryDashboardMeta } from './registry/registry.meta';
 import { waitingListDashboardMeta } from './waiting-list/waiting-list.meta';
 import { screenPositiveDashboardMeta } from './screen-positive/screen-positive.meta';
+import { dataClerkDashboardMeta, dataClerkWidgetsSlot } from './data-clerk/data-clerk.meta';
 
 describe('routes.json', () => {
   it('registers every component it names', () => {
@@ -64,5 +65,14 @@ describe('routes.json', () => {
 
     expect(link.meta).toEqual(screenPositiveDashboardMeta);
     expect(page.component).toBe('screenPositiveDashboard');
+  });
+
+  it('adds the data clerk workspace to the home app under the name and slot its dashboard renders', () => {
+    const link = routes.extensions.find((extension) => extension.component === 'dataClerkDashboardLink');
+    const dashboard = routes.extensions.find((extension) => extension.slot === dataClerkDashboardMeta.slot);
+
+    expect(link.meta).toEqual(dataClerkDashboardMeta);
+    expect(dashboard.component).toBe('dataClerkDashboard');
+    expect(dataClerkWidgetsSlot).not.toBe(dataClerkDashboardMeta.slot);
   });
 });
