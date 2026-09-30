@@ -39,7 +39,7 @@ describe('usePatientFlagGaps', () => {
       configured: true,
       gaps: [gap],
     });
-    const gapUrls = mockOpenmrsFetch.mock.calls.map(([url]) => url).filter((url) => url.includes('/rhdflags/gap'));
+    const gapUrls = mockOpenmrsFetch.mock.calls.map(([url]) => url).filter((url) => url.includes('/actcore/gap'));
     expect(gapUrls).toEqual([expect.stringContaining('patient=patient-uuid&flag=perfusion')]);
   });
 

@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-/** One piece of data missing behind a flag, as the rhdflags gap endpoint returns it. */
+/** One piece of data missing behind a flag, as the ACT Core gap endpoint returns it. */
 export interface FlagGap {
   encounter: string;
   encounterDatetime: string;
@@ -32,7 +32,7 @@ const formRepresentation =
 
 async function fetchFlagGaps(patientUuid: string, flagUuid: string, flagName: string): Promise<FlagGaps> {
   const { data } = await openmrsFetch<FlagGapsResponse>(
-    `${restBaseUrl}/rhdflags/gap?patient=${patientUuid}&flag=${flagUuid}`,
+    `${restBaseUrl}/actcore/gap?patient=${patientUuid}&flag=${flagUuid}`,
   );
   return { flagUuid, flagName, configured: data.configured, gaps: data.results };
 }
