@@ -31,7 +31,12 @@ const renderNodes = (reactNodes) => {
 };
 
 const useMock = [(k) => k, {}];
-useMock.t = (k, o) => (o && o.defaultValue) || (typeof o === 'string' ? o : k);
+// Fills in {{values}}, as openmrs-esm-patient-management's mock does.
+useMock.t = (k, o, values = {}) =>
+  Object.entries(values).reduce(
+    (text, [name, value]) => text.replace(new RegExp(`{{${name}}}`, 'g'), () => String(value)),
+    (o && o.defaultValue) || (typeof o === 'string' ? o : k),
+  );
 useMock.i18n = {};
 
 module.exports = {

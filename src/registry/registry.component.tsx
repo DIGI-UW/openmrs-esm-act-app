@@ -8,7 +8,6 @@ import {
   Pagination,
   Search,
   Table,
-  Tag,
   TableBody,
   TableCell,
   TableHead,
@@ -36,6 +35,8 @@ import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { filterRegistry, registryFilterColumns, rowFlags, useRegistryFilters } from './registry-filters';
+import { AdherenceRing } from './adherence-ring.component';
+import { RegistryFlags } from './registry-flags.component';
 import styles from './registry.scss';
 
 const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
@@ -75,16 +76,11 @@ function RegistryTable() {
       .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName) }));
   const flagOptions = [...new Set(rows.flatMap((row) => flagsOf(row).map((list) => list.flagName)))].sort();
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
-  const columns: Array<{
-    header: string;
-    text: (row: ReportRow) => string;
-    render?: (row: ReportRow) => React.ReactNode;
-  }> = [
-    {
-      header: t('name', 'Name'),
-      text: text('full_name'),
-      render: (row) => <ConfigurableLink to={chartUrl(row)}>{String(row.full_name ?? '')}</ConfigurableLink>,
-    },
+  const flagNames = (row: ReportRow) => flagsOf(row).map((list) => list.flagName);
+  const adherence = (row: ReportRow) => (row.adherence == null ? '' : `${row.adherence}%`);
+  // The CSV keeps the report's fields apart, as they were before the table grouped them.
+  const csvColumns: Array<{ header: string; text: (row: ReportRow) => string }> = [
+    { header: t('name', 'Name'), text: text('full_name') },
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
     { header: t('age', 'Age'), text: text('age_years') },
     { header: t('sex', 'Sex'), text: text('sex') },
@@ -94,32 +90,37 @@ function RegistryTable() {
     ...(registry.showBpgColumns
       ? [
           { header: t('bpgStatus', 'BPG status'), text: text('bpg_status') },
+          { header: t('adherence', 'Adherence'), text: adherence },
+        ]
+      : []),
+    { header: t('flags', 'Flags'), text: (row) => flagNames(row).join('; ') },
+  ];
+  const columns: Array<{ header: string; render: (row: ReportRow) => React.ReactNode }> = [
+    {
+      header: t('patient', 'Patient'),
+      render: (row) => (
+        <>
+          <ConfigurableLink to={chartUrl(row)} className={styles.name}>
+            {text('full_name')(row)}
+          </ConfigurableLink>
+          <span className={styles.actId}>{text('rhd_id')(row)}</span>
+        </>
+      ),
+    },
+    { header: t('ageSex', 'Age, sex'), render: (row) => `${text('age_years')(row)} ${text('sex')(row)}` },
+    { header: t('diagnosis', 'Diagnosis'), render: text('diagnosis_category') },
+    { header: t('prophylaxis', 'Prophylaxis'), render: text('prophylaxis_regimen') },
+    ...(registry.showBpgColumns
+      ? [
+          { header: t('bpgStatus', 'BPG status'), render: text('bpg_status') },
           {
             header: t('adherence', 'Adherence'),
-            text: (row: ReportRow) => (row.adherence == null ? '' : `${row.adherence}%`),
+            render: (row: ReportRow) =>
+              row.adherence == null ? null : <AdherenceRing value={Number(row.adherence)} />,
           },
         ]
       : []),
-    {
-      header: t('flags', 'Flags'),
-      text: (row) =>
-        flagsOf(row)
-          .map((list) => list.flagName)
-          .join('; '),
-      render: (row) =>
-        flagsOf(row).map((list) => (
-          <Tag
-            key={list.flagName}
-            data-testid="registry-flag"
-            data-priority={list.priority}
-            type={list.priority === 'risk' ? 'red' : 'warm-gray'}
-            className={styles[list.priority]}
-            size="sm"
-          >
-            {list.flagName}
-          </Tag>
-        )),
-    },
+    { header: t('flags', 'Flags'), render: (row) => <RegistryFlags flags={flagsOf(row)} /> },
   ];
 
   if (error) {
@@ -178,8 +179,8 @@ function RegistryTable() {
           onClick={() =>
             downloadCsv(
               `registry-${dayjs().format('YYYY-MM-DD')}.csv`,
-              columns.map((column) => column.header),
-              shown.map((row) => columns.map((column) => column.text(row))),
+              csvColumns.map((column) => column.header),
+              shown.map((row) => csvColumns.map((column) => column.text(row))),
             )
           }
         >
@@ -200,10 +201,12 @@ function RegistryTable() {
               <TableRow
                 key={String(row.patient_uuid)}
                 className={styles.row}
-                onClick={(event) => (event.target as HTMLElement).closest('a') || navigate({ to: chartUrl(row) })}
+                onClick={(event) =>
+                  (event.target as HTMLElement).closest('a, button') || navigate({ to: chartUrl(row) })
+                }
               >
                 {columns.map((column) => (
-                  <TableCell key={column.header}>{column.render ? column.render(row) : column.text(row)}</TableCell>
+                  <TableCell key={column.header}>{column.render(row)}</TableCell>
                 ))}
               </TableRow>
             ))}

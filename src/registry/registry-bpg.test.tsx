@@ -75,7 +75,9 @@ describe('Registry BPG status and adherence', () => {
     const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
     const row = within(screen.getByRole('row', { name: /Patient 2\b/ })).getAllByRole('cell');
     expect(row[headers.indexOf('BPG status')]).toHaveTextContent('Not covered');
-    expect(row[headers.indexOf('Adherence')]).toHaveTextContent('51%');
+    expect(within(row[headers.indexOf('Adherence')]).getByRole('img', { name: 'Adherence 51%' })).toHaveTextContent(
+      '51%',
+    );
   });
 
   it('narrows the rows by BPG status', async () => {

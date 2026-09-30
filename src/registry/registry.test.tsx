@@ -31,28 +31,19 @@ describe('Registry', () => {
     await signInWith([registryPrivilege]);
   });
 
-  it("lists the report's patients with their name, ACT ID, age, sex, diagnosis, regimen and next consultation", () => {
+  it("lists the report's patients with their name above their ACT ID, age and sex, diagnosis and prophylaxis", () => {
     dataset({ rows: registryRows });
 
     render(<Registry />);
 
     const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-    expect(headers).toEqual([
-      'Name',
-      'ACT ID',
-      'Age',
-      'Sex',
-      'Diagnosis category',
-      'Prophylaxis regimen',
-      'Next consultation',
-      'Flags',
-    ]);
+    expect(headers).toEqual(['Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Flags']);
     const first = screen.getByRole('row', { name: /Patient 1\b/ });
     expect(
       within(first)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['Patient 1', 'rhd00001', '10', 'F', 'RHD A', 'Q28 day BPG', '15-Oct-2026', '']);
+    ).toEqual(['Patient 1rhd00001', '10 F', 'RHD A', 'Q28 day BPG', '']);
   });
 
   it('evaluates the configured report over every enrolment up to today', () => {
@@ -147,7 +138,7 @@ describe('Registry', () => {
       const { rerender } = render(<Registry />);
 
       const { skeleton, rows, columns } = tableSkeleton();
-      expect({ rows, columns }).toEqual({ rows: 10, columns: 8 });
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 5 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: registryRows });
       rerender(<Registry />);
