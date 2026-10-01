@@ -20,7 +20,7 @@ export function startupApp() {
 }
 
 export const prophylaxisStatusTag = getAsyncLifecycle(
-  () => import('./prophylaxis/prophylaxis-status-tag.extension'),
+  () => import('./prophylaxis/prophylaxis-status-tag.component'),
   options,
 );
 

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { openmrsFetch } from '@openmrs/esm-framework';
-import ProphylaxisStatusTag from './prophylaxis-status-tag.extension';
+import ProphylaxisStatusTag from './prophylaxis-status-tag.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
