@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText } from '@carbon/react';
-import { AddIcon, CardHeader, formatDate, parseDate, useConfig, useVisit } from '@openmrs/esm-framework';
+import { AddIcon, CardHeader, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
@@ -32,24 +32,9 @@ const date = (value: string | null) => (value ? formatDate(parseDate(value), { t
 export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const { t } = useTranslation();
   const { prophylaxisCard } = useConfig<Config>();
-  const { summary, error, mutate } = useProphylaxisSummary(patientUuid);
+  const { summary, error } = useProphylaxisSummary(patientUuid);
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
   const regimenLabel = useRegimenLabel();
-
-  // A saved form revalidates the visit, so a new encounter in it means the summary may have moved.
-  const { activeVisit, isLoading: visitLoading } = useVisit(patientUuid);
-  const encounters = activeVisit?.encounters?.length ?? 0;
-  // Unset until the visit has loaded, so loading it is not taken for a save.
-  const seenEncounters = useRef<number | null>(null);
-  useEffect(() => {
-    if (visitLoading) {
-      return;
-    }
-    if (seenEncounters.current !== null && encounters !== seenEncounters.current) {
-      mutate();
-    }
-    seenEncounters.current = encounters;
-  }, [encounters, mutate, visitLoading]);
 
   if (error) {
     return null;

@@ -15,12 +15,13 @@ export interface ProphylaxisSummary {
 }
 
 export function useProphylaxisSummary(patientUuid: string | null) {
-  const { data, error, mutate } = useSWR<FetchResponse<ProphylaxisSummary>, Error>(
-    patientUuid ? `${restBaseUrl}/actcore/prophylaxis?patient=${patientUuid}` : null,
-    openmrsFetch,
+  const { data, error } = useSWR<FetchResponse<ProphylaxisSummary>, Error>(
+    // Keyed under the patient's /encounter, which every form save invalidates, so a save refetches it.
+    patientUuid ? `${restBaseUrl}/encounter?patient=${patientUuid}&for=actcore-prophylaxis` : null,
+    () => openmrsFetch<ProphylaxisSummary>(`${restBaseUrl}/actcore/prophylaxis?patient=${patientUuid}`),
     // A user without Get Observations is refused every time, once per banner on a search page.
     { shouldRetryOnError: false },
   );
 
-  return { summary: data?.data, error, mutate };
+  return { summary: data?.data, error };
 }

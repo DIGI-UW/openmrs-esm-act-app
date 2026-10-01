@@ -2,8 +2,8 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SWRConfig } from 'swr';
-import { getDefaultsFromConfigSchema, openmrsFetch, useConfig, useVisit } from '@openmrs/esm-framework';
+import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
+import { getDefaultsFromConfigSchema, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import ProphylaxisCard from './prophylaxis-card.component';
@@ -29,25 +29,28 @@ function respondWith(summary: object | Error) {
     summary instanceof Error ? Promise.reject(summary) : Promise.resolve({ data: summary })) as never);
 }
 
-function visitWith(encounters: Array<{ uuid: string }> | 'loading') {
-  vi.mocked(useVisit).mockReturnValue({
-    activeVisit: encounters === 'loading' ? null : { uuid: 'visit', encounters },
-    isLoading: encounters === 'loading',
-    mutate: vi.fn(),
-  } as never);
+let mutateCache: ScopedMutator;
+
+function CacheMutator() {
+  mutateCache = useSWRConfig().mutate;
+  return null;
 }
 
-// One cache per test, kept across a rerender, so a rerender alone asks for nothing again.
 function renderCard() {
-  const cache = new Map();
-  const card = () => (
-    <SWRConfig value={{ provider: () => cache, shouldRetryOnError: false }}>
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      <CacheMutator />
       <ProphylaxisCard patientUuid="winnie" />
-    </SWRConfig>
+    </SWRConfig>,
   );
-  const view = render(card());
-  return { ...view, rerender: () => view.rerender(card()) };
 }
+
+// The chart's invalidatePatientEncounters, which the forms app runs after every save.
+const invalidatePatientEncounters = (patientUuid: string) =>
+  mutateCache(
+    (key) =>
+      typeof key === 'string' && key.includes(`${restBaseUrl}/encounter`) && key.includes(`patient=${patientUuid}`),
+  );
 
 const field = (name: string) => screen.getByTestId(`prophylaxis-${name}`);
 
@@ -55,7 +58,6 @@ describe('ProphylaxisCard', () => {
   beforeEach(() => {
     vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
-    vi.mocked(useVisit).mockReturnValue({ activeVisit: null, isLoading: false, mutate: vi.fn() } as never);
   });
 
   it('shows the regimen, last dose, overdue next due and on-time count', async () => {
@@ -144,32 +146,36 @@ describe('ProphylaxisCard', () => {
     expect(openForm).toHaveBeenCalledWith(formUuid);
   });
 
-  it('asks for the summary again when a save adds an encounter to the visit', async () => {
+  it('asks for the summary again when a form save invalidates the patient encounters', async () => {
     respondWith(winnie);
-    visitWith([{ uuid: 'consultation' }]);
-
-    const { rerender } = renderCard();
+    renderCard();
     await screen.findByText('BPG · every 4 weeks');
-    const asked = mockOpenmrsFetch.mock.calls.length;
+    expect(field('next-due')).toHaveAttribute('data-overdue', 'true');
 
-    rerender();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(mockOpenmrsFetch.mock.calls.length).toBe(asked);
+    respondWith({ ...winnie, lastGiven: '2026-10-02', nextDue: '2026-10-30', status: 'ok' });
+    await invalidatePatientEncounters('winnie');
 
-    visitWith([{ uuid: 'consultation' }, { uuid: 'bpg-delivery' }]);
-    rerender();
-
-    await waitFor(() => expect(mockOpenmrsFetch.mock.calls.length).toBeGreaterThan(asked));
+    await waitFor(() => expect(field('last-dose')).toHaveTextContent('02-Oct-2026'));
+    expect(field('next-due')).toHaveAttribute('data-overdue', 'false');
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
   });
 
-  it('asks for the summary once when the visit loads with encounters already in it', async () => {
+  it('does not ask again when another patient encounters are invalidated', async () => {
     respondWith(winnie);
-    visitWith('loading');
-
-    const { rerender } = renderCard();
+    renderCard();
     await screen.findByText('BPG · every 4 weeks');
-    visitWith([{ uuid: 'consultation' }, { uuid: 'bpg-delivery' }]);
-    rerender();
+
+    await invalidatePatientEncounters('someone-else');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks for the summary once on mount', async () => {
+    respondWith(winnie);
+
+    renderCard();
+    await screen.findByText('BPG · every 4 weeks');
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
