@@ -19,6 +19,11 @@ export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
 
+export const prophylaxisStatusTag = getAsyncLifecycle(
+  () => import('./prophylaxis/prophylaxis-status-tag.component'),
+  options,
+);
+
 export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/flag-gaps.workspace'), options);
 
 export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);
