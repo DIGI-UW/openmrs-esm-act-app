@@ -78,4 +78,10 @@ describe('routes.json', () => {
     expect(link.meta).toEqual(screenPositiveDashboardMeta);
     expect(page.component).toBe('screenPositiveDashboard');
   });
+
+  it("adds the prophylaxis status tag to the patient banner's tags", () => {
+    const tag = routes.extensions.find((extension) => extension.component === 'prophylaxisStatusTag');
+
+    expect(tag.slot).toBe('patient-banner-tags-slot');
+  });
 });

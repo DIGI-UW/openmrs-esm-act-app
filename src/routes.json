@@ -105,6 +105,11 @@
       "name": "act-screen-positive-dashboard",
       "slot": "rhd-screen-positive-dashboard-slot",
       "component": "screenPositiveDashboard"
+    },
+    {
+      "name": "act-prophylaxis-status-tag",
+      "slot": "patient-banner-tags-slot",
+      "component": "prophylaxisStatusTag"
     }
   ],
   "workspaceGroups2": [
