@@ -1,4 +1,3 @@
-/** At present, this entire mock is boilerplate. */
 const React = require('react');
 const reactI18next = require('react-i18next');
 
@@ -31,7 +30,11 @@ const renderNodes = (reactNodes) => {
 };
 
 const useMock = [(k) => k, {}];
-useMock.t = (k, o) => (o && o.defaultValue) || (typeof o === 'string' ? o : k);
+useMock.t = (k, o, values = {}) =>
+  Object.entries(values).reduce(
+    (text, [name, value]) => text.replace(new RegExp(`{{${name}}}`, 'g'), () => String(value)),
+    (o && o.defaultValue) || (typeof o === 'string' ? o : k),
+  );
 useMock.i18n = {};
 
 module.exports = {

@@ -1,5 +1,6 @@
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 @use '../styles/act-colours' as *;
 
 .registry {
@@ -27,6 +28,27 @@
 .dataQuality {
   background-color: $act-data-quality-background;
   color: $act-data-quality-text;
+}
+
+.name {
+  font-weight: 600;
+  color: $ui-05;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.actId {
+  display: block;
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+// The tooltip's trigger is the tag itself, without the dotted underline of a definition.
+.flagsTooltip :global(.cds--definition-term) {
+  border-bottom: none;
 }
 
 .actions {

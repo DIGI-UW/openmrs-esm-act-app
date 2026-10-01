@@ -11,14 +11,18 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 }));
 
 describe('ScreenPositiveDashboardLink', () => {
-  it('links the home left nav to /home/act-screen-positive, with a label short enough for one line', async () => {
+  it('links the home left nav to /home/act-screen-positive, as the prototype names it', async () => {
     window.spaBase = '/openmrs/spa';
     await signInWith(['View Patient Flags']);
 
     render(<ScreenPositiveDashboardLink />);
 
     expect(vi.mocked(DashboardExtension).mock.calls[0][0]).toEqual(
-      expect.objectContaining({ path: 'act-screen-positive', basePath: '/openmrs/spa/home', title: 'Screen positive' }),
+      expect.objectContaining({
+        path: 'act-screen-positive',
+        basePath: '/openmrs/spa/home',
+        title: 'Screen positive pending',
+      }),
     );
   });
 

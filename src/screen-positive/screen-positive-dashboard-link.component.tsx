@@ -5,11 +5,11 @@ import { screenPositiveDashboardMeta } from './screen-positive.meta';
 
 export default function ScreenPositiveDashboardLink() {
   const { t } = useTranslation();
-  // The left nav's label is short, to fit on one line; the page and its ACT home card keep the full name.
+  // The left nav takes the prototype's name; the page and its ACT home card keep the full name.
   return (
     <ActDashboardLink
       screen="screenPositive"
-      meta={{ ...screenPositiveDashboardMeta, title: t('screenPositiveNav', 'Screen positive') }}
+      meta={{ ...screenPositiveDashboardMeta, title: t('screenPositiveNav', 'Screen positive pending') }}
     />
   );
 }

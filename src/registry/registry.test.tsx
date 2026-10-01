@@ -31,28 +31,42 @@ describe('Registry', () => {
     await signInWith([registryPrivilege]);
   });
 
-  it("lists the report's patients with their name, ACT ID, age, sex, diagnosis, regimen and next consultation", () => {
+  it("lists the report's patients with their name above their ACT ID, age and sex, diagnosis and prophylaxis", () => {
     dataset({ rows: registryRows });
 
     render(<Registry />);
 
     const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-    expect(headers).toEqual([
-      'Name',
-      'ACT ID',
-      'Age',
-      'Sex',
-      'Diagnosis category',
-      'Prophylaxis regimen',
-      'Next consultation',
-      'Flags',
-    ]);
+    expect(headers).toEqual(['Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Flags']);
     const first = screen.getByRole('row', { name: /Patient 1\b/ });
     expect(
       within(first)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['Patient 1', 'rhd00001', '10', 'F', 'RHD A', 'Q28 day BPG', '15-Oct-2026', '']);
+    ).toEqual(['Patient 1rhd00001', '10 F', 'RHD A', 'Q28 day BPG', '']);
+    const [patient] = within(first).getAllByRole('cell');
+    expect(within(patient).getByRole('link', { name: 'Patient 1' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/patient/patient-1/chart',
+    );
+  });
+
+  it('shows only the age or the sex a patient has, and an empty cell for neither', () => {
+    const [first, second, third] = registryRows;
+    dataset({
+      rows: [
+        { ...first, sex: null },
+        { ...second, age_years: null },
+        { ...third, age_years: null, sex: null },
+      ],
+    });
+
+    render(<Registry />);
+
+    const ageSex = (name: RegExp) => within(screen.getByRole('row', { name })).getAllByRole('cell')[1].textContent;
+    expect(ageSex(/Patient 1\b/)).toBe('10');
+    expect(ageSex(/Patient 2\b/)).toBe('M');
+    expect(ageSex(/Patient 3\b/)).toBe('');
   });
 
   it('evaluates the configured report over every enrolment up to today', () => {
@@ -147,7 +161,7 @@ describe('Registry', () => {
       const { rerender } = render(<Registry />);
 
       const { skeleton, rows, columns } = tableSkeleton();
-      expect({ rows, columns }).toEqual({ rows: 10, columns: 8 });
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 5 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: registryRows });
       rerender(<Registry />);

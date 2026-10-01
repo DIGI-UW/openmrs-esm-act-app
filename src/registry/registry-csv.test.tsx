@@ -31,7 +31,7 @@ describe('Registry CSV download', () => {
     });
   });
 
-  it('downloads the filtered rows, from every page, with the visible columns as shown', async () => {
+  it('downloads the filtered rows, from every page, with the report fields in separate columns', async () => {
     render(<Registry />);
     await userEvent.selectOptions(screen.getByLabelText('Category at diagnosis'), 'RHD A');
 
@@ -50,7 +50,7 @@ describe('Registry CSV download', () => {
     expect(lines).toHaveLength(1 + 30);
   });
 
-  it("writes each patient's flags as the table shows them", async () => {
+  it("writes each of a patient's flags, joined by semicolons", async () => {
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: [{ ...registryRows[0], rhd_flags: 'RHD INR target missing|RHD prophylaxis overdue' }],

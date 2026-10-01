@@ -13,7 +13,7 @@ function shownNames() {
   return screen
     .getAllByRole('row')
     .slice(1)
-    .map((row) => row.querySelector('td').textContent);
+    .map((row) => row.querySelector('a').textContent);
 }
 
 /** How many rows the filters leave, over every page, as the pagination counts them. */
