@@ -26,4 +26,5 @@ issues that build ACT 3.0 towards it link to these. The data in them is fictiona
 | Next steps for this visit on the patient summary, as a clinician and as a community clinician | `40-chart-next-steps.png`, `43-chart-community-next-steps.png` |
 | Clinical forms: Suggested for this visit, other forms folded | `41-clinical-forms-suggested.png` |
 | Saving a form adds a next step: anaphylaxis after BPG asks for a consultation | `42-next-step-added.png` |
+| Enter prophylaxis: the patient search, a search, and the form it opens in the chart (as prescribed, and the oral choice for a BPG patient) | `44-enter-prophylaxis.png`, `45-enter-prophylaxis-search.png`, `46-enter-prophylaxis-bpg-form.png`, `47-enter-prophylaxis-oral-override.png` |
 | Admin placeholders: site, instance and global admin | `33-home-siteadmin.png`, `34-siteadmin-users.png`, `37-home-instanceadmin.png`, `38-home-globaladmin.png` |
