@@ -24,6 +24,12 @@
   margin-bottom: layout.$spacing-05;
 }
 
+// Carbon has no yellow tag, so No prescription is drawn in Carbon's yellow here.
+.noPrescription {
+  background-color: $act-no-prescription-background;
+  color: $act-no-prescription-text;
+}
+
 // Carbon has no orange tag, so missing data flags are drawn in Carbon's orange here.
 .dataQuality {
   background-color: $act-data-quality-background;

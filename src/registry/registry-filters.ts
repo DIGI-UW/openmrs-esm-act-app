@@ -6,7 +6,7 @@ const keys = ['status', 'cardiac', 'primaryCare', 'category', 'bpg', 'flag', 'q'
 
 export type RegistryFilters = Record<(typeof keys)[number], string>;
 
-/** The report column each dropdown filter offers the values of. */
+/** The report column each dropdown filter matches. */
 export const registryFilterColumns = {
   status: 'enrollment_status',
   cardiac: 'cardiac_clinic',

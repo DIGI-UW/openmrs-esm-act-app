@@ -36,6 +36,7 @@ import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { filterRegistry, registryFilterColumns, rowFlags, useRegistryFilters } from './registry-filters';
 import { AdherenceRing } from './adherence-ring.component';
+import { BpgStatusTag, bpgStatuses, useBpgStatusLabel } from './bpg-status-tag.component';
 import { RegistryFlags } from './registry-flags.component';
 import styles from './registry.scss';
 
@@ -60,7 +61,8 @@ function RegistryTable() {
     [rows, filters, registry.showBpgColumns],
   );
   const { results, paginationProps } = usePagedRows(shown, filters);
-  const filterSelect = (key: keyof typeof registryFilterColumns, label: string) => (
+  const bpgStatusLabel = useBpgStatusLabel();
+  const filterSelect = (key: Exclude<keyof typeof registryFilterColumns, 'bpg'>, label: string) => (
     <FilterSelect
       id={`registry-${key}`}
       label={label}
@@ -122,7 +124,7 @@ function RegistryTable() {
     { header: t('prophylaxis', 'Prophylaxis'), render: text('prophylaxis_regimen') },
     ...(registry.showBpgColumns
       ? [
-          { header: t('bpgStatus', 'BPG status'), render: text('bpg_status') },
+          { header: t('bpgStatus', 'BPG status'), render: (row: ReportRow) => <BpgStatusTag row={row} /> },
           {
             header: t('adherence', 'Adherence'),
             render: (row: ReportRow) =>
@@ -175,7 +177,16 @@ function RegistryTable() {
         {filterSelect('cardiac', t('cardiacClinic', 'Cardiac clinic'))}
         {filterSelect('primaryCare', t('primaryCareClinic', 'Primary care clinic'))}
         {filterSelect('category', t('categoryAtDiagnosis', 'Category at diagnosis'))}
-        {registry.showBpgColumns && filterSelect('bpg', t('bpgStatus', 'BPG status'))}
+        {registry.showBpgColumns && (
+          <FilterSelect
+            id="registry-bpg"
+            label={t('bpgStatus', 'BPG status')}
+            value={filters.bpg}
+            options={bpgStatuses}
+            optionLabel={bpgStatusLabel}
+            onChange={(value) => setFilters({ bpg: value })}
+          />
+        )}
         <FilterSelect
           id="registry-flag"
           label={t('rhdFlag', 'RHD flag')}
