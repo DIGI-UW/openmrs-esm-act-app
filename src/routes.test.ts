@@ -84,4 +84,12 @@ describe('routes.json', () => {
 
     expect(tag.slot).toBe('patient-banner-tags-slot');
   });
+
+  it('adds the Prophylaxis card to the patient summary', () => {
+    const card = routes.extensions.find((extension) => extension.component === 'prophylaxisCard');
+
+    expect(card.slot).toBe('patient-chart-summary-dashboard-slot');
+    // The summary lays its cards two to a row unless one asks for the whole row.
+    expect(card).toMatchObject({ order: 0, meta: { fullWidth: true } });
+  });
 });

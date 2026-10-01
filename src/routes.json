@@ -110,6 +110,15 @@
       "name": "act-prophylaxis-status-tag",
       "slot": "patient-banner-tags-slot",
       "component": "prophylaxisStatusTag"
+    },
+    {
+      "name": "act-prophylaxis-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "prophylaxisCard",
+      "order": 0,
+      "meta": {
+        "fullWidth": true
+      }
     }
   ],
   "workspaceGroups2": [

@@ -131,6 +131,23 @@ export const configSchema = {
         'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
     },
   },
+  prophylaxisCard: {
+    bpgForm: {
+      _type: Type.UUID,
+      _default: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
+      _description: "The form the patient summary's Prophylaxis card opens to record a BPG injection.",
+    },
+    oralForm: {
+      _type: Type.UUID,
+      _default: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
+      _description: "The form the patient summary's Prophylaxis card opens to record oral prophylaxis.",
+    },
+  },
+  visitType: {
+    _type: Type.UUID,
+    _default: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
+    _description: 'The visit type an ACT screen starts when it opens a form for a patient with no active visit.',
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -176,5 +193,7 @@ export interface Config {
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
   screenPositive: { report: string };
+  prophylaxisCard: { bpgForm: string; oralForm: string };
+  visitType: string;
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }
