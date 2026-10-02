@@ -28,6 +28,7 @@ describe('configSchema', () => {
           { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
           { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
         ],
+        findPatientInPanel: true,
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       careCascade: {
@@ -55,6 +56,7 @@ describe('configSchema', () => {
         bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
         oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
       },
+      actIdentifierType: '240f85fa-46e1-540e-9234-2796c623f7ea',
       visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
       urgencyBands: [
         { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },

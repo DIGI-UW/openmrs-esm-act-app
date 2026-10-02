@@ -72,6 +72,12 @@ export const configSchema = {
       _description:
         'The choices the Enter prophylaxis quick action offers, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
     },
+    findPatientInPanel: {
+      _type: Type.Boolean,
+      _default: true,
+      _description:
+        "Whether Find a patient on ACT home opens ACT's patient search over the page. When false, it leads to findPatientUrl.",
+    },
     findPatientUrl: link(
       'Where the Find a patient quick action on ACT home leads. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
       '${openmrsSpaBase}/search?query=',
@@ -143,6 +149,11 @@ export const configSchema = {
       _description: "The form the patient summary's Prophylaxis card opens to record oral prophylaxis.",
     },
   },
+  actIdentifierType: {
+    _type: Type.UUID,
+    _default: '240f85fa-46e1-540e-9234-2796c623f7ea',
+    _description: "The identifier type ACT's patient search shows as the patient's ACT ID.",
+  },
   visitType: {
     _type: Type.UUID,
     _default: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
@@ -187,6 +198,7 @@ export interface Config {
     registerPatientUrl: string;
     enterProphylaxisUrl: string;
     prophylaxisForms: Array<{ label: string; url: string }>;
+    findPatientInPanel: boolean;
     findPatientUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
@@ -194,6 +206,7 @@ export interface Config {
   waitingList: { report: string };
   screenPositive: { report: string };
   prophylaxisCard: { bpgForm: string; oralForm: string };
+  actIdentifierType: string;
   visitType: string;
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

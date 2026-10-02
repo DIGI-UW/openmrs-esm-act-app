@@ -4,6 +4,7 @@ import { Add, ArrowUpRight, Search } from '@carbon/react/icons';
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { ScreenAccess } from '../access/screen-access.component';
+import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
 import styles from './quick-actions.scss';
 
 function ActionLabel({ label, Icon }: { label: string; Icon: typeof Add }) {
@@ -51,6 +52,30 @@ function EnterProphylaxis() {
   );
 }
 
+/** Find a patient: ACT's patient search over the page, or the configured page. */
+function FindPatient() {
+  const { t } = useTranslation();
+  const { quickActions } = useConfig<Config>();
+  const [open, setOpen] = useState(false);
+  const label = <ActionLabel label={t('findPatient', 'Find a patient')} Icon={Search} />;
+
+  if (!quickActions.findPatientInPanel) {
+    return (
+      <ConfigurableLink to={quickActions.findPatientUrl} className={styles.action}>
+        {label}
+      </ConfigurableLink>
+    );
+  }
+  return (
+    <>
+      <button type="button" className={styles.action} onClick={() => setOpen(true)}>
+        {label}
+      </button>
+      {open && <PatientSearchPanel onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
 export default function QuickActions() {
   const { t } = useTranslation();
   const { quickActions } = useConfig<Config>();
@@ -62,9 +87,7 @@ export default function QuickActions() {
           <ActionLabel label={t('registerPatient', 'Register patient')} Icon={Add} />
         </ConfigurableLink>
         <EnterProphylaxis />
-        <ConfigurableLink to={quickActions.findPatientUrl} className={styles.action}>
-          <ActionLabel label={t('findPatient', 'Find a patient')} Icon={Search} />
-        </ConfigurableLink>
+        <FindPatient />
       </div>
     </ScreenAccess>
   );
