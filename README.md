@@ -65,6 +65,12 @@ Its filters are kept in the URL, and Download CSV saves the filtered rows. Open 
 editing in a workspace on the list itself, the forms app's `exportedPatientFormEntryWorkspace`, registered in this
 app's own `act-waiting-list` workspace group as Service Queues registers it; saving it evaluates the list again.
 
+## Patient summary cards
+
+- **Contact**: the patient's phone (Telephone Number), its owner (Phone Owner Relationship, else Phone Owner),
+  village (the address's city or village) and primary clinic (Health Center), with Edit opening the patient's
+  registration. The attribute types and where Edit leads (`editUrl`) are in `contactCard`.
+
 ## Patient chart pages
 
 Pages for the patient chart's left nav, whose links are registered in no slot so that the distro chooses the chart's

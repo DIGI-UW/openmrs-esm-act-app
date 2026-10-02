@@ -155,6 +155,15 @@
       "meta": {
         "fullWidth": true
       }
+    },
+    {
+      "name": "act-contact-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "contactCard",
+      "order": 0,
+      "meta": {
+        "fullWidth": true
+      }
     }
   ],
   "workspaceGroups2": [

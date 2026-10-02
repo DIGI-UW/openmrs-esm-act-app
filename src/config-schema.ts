@@ -226,6 +226,30 @@ export const configSchema = {
       ),
     },
   },
+  contactCard: {
+    phoneAttributeType: {
+      _type: Type.UUID,
+      _default: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+      _description: "The person attribute the patient summary's Contact card shows as Phone, Telephone Number.",
+    },
+    phoneOwnerAttributeTypes: {
+      _type: Type.Array,
+      _elements: { _type: Type.UUID },
+      _default: ['b36b2e80-c1ad-5417-84fc-89075904a089', 'ea3cb7ae-ffbe-5aee-8343-44977898f675'],
+      _description:
+        'The person attributes the Contact card shows as Phone owner, the first the patient has: by default Phone Owner Relationship, then Phone Owner.',
+    },
+    primaryClinicAttributeType: {
+      _type: Type.UUID,
+      _default: '8d87236c-c2cc-11de-8d13-0010c6dffd0f',
+      _description:
+        "The person attribute, holding a location, that the Contact card shows as Primary clinic, Health Center, the registry's primary care clinic.",
+    },
+    editUrl: link(
+      "Where the Contact card's Edit leads, with the patient's uuid for ${patientUuid}: by default the patient's registration.",
+      '${openmrsSpaBase}/patient/${patientUuid}/edit',
+    ),
+  },
   prophylaxisCard: {
     bpgForm: {
       _type: Type.UUID,
@@ -336,6 +360,12 @@ export interface Config {
     bpgEncounterType: string;
     oralEncounterType: string;
     concepts: Record<'injectionDate' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
+  };
+  contactCard: {
+    phoneAttributeType: string;
+    phoneOwnerAttributeTypes: Array<string>;
+    primaryClinicAttributeType: string;
+    editUrl: string;
   };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;

@@ -80,6 +80,12 @@ describe('configSchema', () => {
           adherence: '8edff8dc-4af6-5d0f-bf1d-8e349c7a1b15',
         },
       },
+      contactCard: {
+        phoneAttributeType: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+        phoneOwnerAttributeTypes: ['b36b2e80-c1ad-5417-84fc-89075904a089', 'ea3cb7ae-ffbe-5aee-8343-44977898f675'],
+        primaryClinicAttributeType: '8d87236c-c2cc-11de-8d13-0010c6dffd0f',
+        editUrl: '${openmrsSpaBase}/patient/${patientUuid}/edit',
+      },
       prophylaxisCard: {
         bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
         oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
