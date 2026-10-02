@@ -31,7 +31,7 @@ import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
-import { rankWaitingRows, type WaitingRow } from './urgency';
+import { labelUrgencies, rankWaitingRows, type WaitingRow } from './urgency';
 import {
   filterColumns,
   filterWaitingList,
@@ -46,7 +46,9 @@ function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
-  const { rows, isLoading, error, mutate } = useReportDataset(waitingList.report);
+  const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
+  // Named by band before anything reads them, so the column, its filter and the CSV agree.
+  const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
   const [filters, setFilters] = useWaitingListFilters();
   const ranked = useMemo(
     () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),

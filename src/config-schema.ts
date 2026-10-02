@@ -176,18 +176,40 @@ export const configSchema = {
   urgencyBands: {
     _type: Type.Array,
     _elements: {
-      label: { _type: Type.String, _description: 'The name of the band.' },
+      label: { _type: Type.String, _description: 'What the waiting list and its Urgency filter call the band.' },
+      shortLabel: {
+        _type: Type.String,
+        _description: "What ACT home's waiting list widget calls the band; without one, it uses label.",
+      },
       concept: { _type: Type.ConceptUuid, _description: 'The answer that records this band.' },
       deadlineDays: { _type: Type.Number, _description: 'Days allowed before a patient in this band is overdue.' },
     },
     _default: [
+      {
+        label: '1: Emergent (24 hours)',
+        shortLabel: '1: Emergent',
+        concept: '1fe15210-4490-58b0-a38c-bb0386e98482',
+        deadlineDays: 1,
+      },
       { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
       { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
+      {
+        label: '2: Urgent (60 days)',
+        shortLabel: '2: Urgent',
+        concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
+        deadlineDays: 60,
+      },
       { label: '3 - within 3 months', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
+      {
+        label: '3: Elective (180 days)',
+        shortLabel: '3: Elective',
+        concept: '2666bf97-7400-57c7-b535-7903e22ced34',
+        deadlineDays: 180,
+      },
       { label: '4 - within 6 months', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
     ],
     _description:
-      "Urgency bands for the procedural waiting list, most urgent first: the RHD Consultation Visit's Urgency answers, with the days allowed before a recommendation is overdue.",
+      "Urgency bands for the procedural waiting list, most urgent first: ACT 2.0's three urgencies, which answer the RHD Consultation Visit's Urgency, with the days allowed before a recommendation is overdue. The four answers they replaced keep their old deadlines, for recommendations saved before, and every band sits in deadline order. A recommendation whose answer no band names keeps the answer's name, is not marked overdue and is listed after the bands.",
     _validators: [
       validator(
         (bands: Array<{ concept?: string; deadlineDays?: unknown }>) =>
@@ -223,5 +245,5 @@ export interface Config {
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
   visitType: string;
-  urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
+  urgencyBands: Array<{ label?: string; shortLabel?: string; concept: string; deadlineDays: number }>;
 }

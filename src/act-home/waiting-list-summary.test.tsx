@@ -22,10 +22,10 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
   });
 }
 
-const [week, month, threeMonths] = [
-  '406285f2-be72-5594-8664-c8568ad9bc88',
-  '82c5209b-c183-5bc9-941c-890eba821a44',
-  '925610f9-1c3c-5396-880f-02a5fe309d53',
+const [emergent, urgent, elective] = [
+  '1fe15210-4490-58b0-a38c-bb0386e98482',
+  '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
+  '2666bf97-7400-57c7-b535-7903e22ced34',
 ];
 
 function row(id: string, urgency: string, concept: string, dateAdded: string) {
@@ -39,15 +39,14 @@ function row(id: string, urgency: string, concept: string, dateAdded: string) {
   };
 }
 
-// On 2026-09-29: two overdue (a week band 10 days old, a month band 40 days old), then the rest by band and age.
 const rows = [
-  row('rhd00001', '3 - within 3 months', threeMonths, '2026-09-24'),
-  row('rhd00002', '2 - within 1 month', month, '2026-08-20'),
-  row('rhd00003', '1 - within 1 week', week, '2026-09-26'),
-  row('rhd00004', '3 - within 3 months', threeMonths, '2026-08-01'),
-  row('rhd00005', '1 - within 1 week', week, '2026-09-19'),
-  row('rhd00006', '2 - within 1 month', month, '2026-09-14'),
-  row('rhd00007', '3 - within 3 months', threeMonths, '2026-09-28'),
+  row('rhd00001', '3: elective (180 days/6 months)', elective, '2026-09-24'),
+  row('rhd00002', '2: urgent (60 days/2 months)', urgent, '2026-07-20'),
+  row('rhd00003', '1: emergent (24 hours)', emergent, '2026-09-28'),
+  row('rhd00004', '3: elective (180 days/6 months)', elective, '2026-08-01'),
+  row('rhd00005', '1: emergent (24 hours)', emergent, '2026-09-19'),
+  row('rhd00006', '2: urgent (60 days/2 months)', urgent, '2026-09-14'),
+  row('rhd00007', '3: elective (180 days/6 months)', elective, '2026-09-28'),
 ];
 
 function ids() {
@@ -97,7 +96,7 @@ describe('ACT home procedural waiting list summary', () => {
       within(first)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['rhd00005', 'Catheterization', 'Mitral balloon valvuloplasty', '1 - within 1 week', '10']);
+    ).toEqual(['rhd00005', 'Catheterization', 'Mitral balloon valvuloplasty', '1: Emergent', '10']);
     expect(
       screen
         .getAllByRole('row')
@@ -112,6 +111,24 @@ describe('ACT home procedural waiting list summary', () => {
     render(<WaitingListSummary />);
 
     expect(mockUseReportDataset).toHaveBeenLastCalledWith('5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10');
+  });
+
+  it("names a band configured without a short label by its label, and one with neither by the report's name", async () => {
+    await signInWith([homePrivilege, 'View Patient Flags'], {
+      urgencyBands: [
+        { label: 'Emergent', concept: emergent, deadlineDays: 1 },
+        { concept: urgent, deadlineDays: 60 },
+      ],
+    });
+    dataset({ rows: [rows[4], rows[5]] });
+
+    render(<WaitingListSummary />);
+
+    const urgencies = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((tr) => within(tr).getAllByRole('cell')[3].textContent);
+    expect(urgencies).toEqual(['Emergent', '2: urgent (60 days/2 months)']);
   });
 
   it('links to the full waiting list', () => {

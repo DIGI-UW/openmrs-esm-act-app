@@ -49,7 +49,7 @@ describe('Procedural waiting list', () => {
       Age: '10',
       Type: 'Catheterization',
       Procedure: 'Mitral balloon valvuloplasty',
-      Urgency: '3 - within 3 months',
+      Urgency: '3: Elective (180 days)',
       District: 'KITGUM',
       Contraindications: 'Yes',
       'Suitable for repair': 'No',

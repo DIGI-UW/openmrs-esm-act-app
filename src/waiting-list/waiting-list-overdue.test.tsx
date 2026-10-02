@@ -11,6 +11,12 @@ import WaitingList from './waiting-list.component';
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 
 const { urgencyBands } = getDefaultsFromConfigSchema(configSchema) as Config;
+// ACT 2.0's urgency answers, as the distro's concepts define them.
+const [emergent, urgent, elective] = [
+  '1fe15210-4490-58b0-a38c-bb0386e98482',
+  '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
+  '2666bf97-7400-57c7-b535-7903e22ced34',
+];
 
 function daysAgo(days: number) {
   const date = new Date(2026, 8, 29);
@@ -47,41 +53,26 @@ describe('Procedural waiting list days pending and overdue rows', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('defaults to the consultation form four urgency answers, due in 7, 30, 90 and 180 days', () => {
-    expect(urgencyBands.map((band) => [band.concept, band.deadlineDays])).toEqual([
-      ['406285f2-be72-5594-8664-c8568ad9bc88', 7],
-      ['82c5209b-c183-5bc9-941c-890eba821a44', 30],
-      ['925610f9-1c3c-5396-880f-02a5fe309d53', 90],
-      ['57e3873e-018e-5ed6-b7d4-5f73ef464cbd', 180],
+  it("defaults to ACT 2.0's three urgencies, due in 24 hours, 60 days and 180 days, with the four answers they replaced, by deadline", () => {
+    expect(urgencyBands.map((band) => [band.concept, band.deadlineDays, band.label, band.shortLabel])).toEqual([
+      [emergent, 1, '1: Emergent (24 hours)', '1: Emergent'],
+      ['406285f2-be72-5594-8664-c8568ad9bc88', 7, '1 - within 1 week', undefined],
+      ['82c5209b-c183-5bc9-941c-890eba821a44', 30, '2 - within 1 month', undefined],
+      [urgent, 60, '2: Urgent (60 days)', '2: Urgent'],
+      ['925610f9-1c3c-5396-880f-02a5fe309d53', 90, '3 - within 3 months', undefined],
+      [elective, 180, '3: Elective (180 days)', '3: Elective'],
+      ['57e3873e-018e-5ed6-b7d4-5f73ef464cbd', 180, '4 - within 6 months', undefined],
     ]);
   });
 
-  it.each(urgencyBands.map((band) => [band.label, band] as const))(
-    'marks a %s recommendation overdue once it is past its deadline, not on it',
-    (_, band) => {
-      vi.mocked(useReportDataset).mockReturnValue({
-        columns: [],
-        rows: [row('on', band.concept, band.deadlineDays), row('past', band.concept, band.deadlineDays + 1)],
-        isLoading: false,
-        error: undefined,
-        mutate: vi.fn(),
-      });
-
-      render(<WaitingList />);
-
-      expect(shown()).toEqual([
-        { id: 'past', days: String(band.deadlineDays + 1), overdue: true },
-        { id: 'on', days: String(band.deadlineDays), overdue: false },
-      ]);
-    },
-  );
-
-  it('counts whole days, so an afternoon view shows the same days pending as a morning one', () => {
-    vi.setSystemTime(new Date(2026, 8, 29, 23, 30));
-    const week = urgencyBands[0];
+  it('keeps a recommendation saved with a replaced answer on its old deadline, ranked by that deadline', () => {
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
-      rows: [row('on', week.concept, week.deadlineDays)],
+      rows: [
+        row('week-6', '406285f2-be72-5594-8664-c8568ad9bc88', 6),
+        row('week-8-overdue', '406285f2-be72-5594-8664-c8568ad9bc88', 8),
+        row('elective-10', elective, 10),
+      ],
       isLoading: false,
       error: undefined,
       mutate: vi.fn(),
@@ -89,7 +80,70 @@ describe('Procedural waiting list days pending and overdue rows', () => {
 
     render(<WaitingList />);
 
-    expect(shown()).toEqual([{ id: 'on', days: String(week.deadlineDays), overdue: false }]);
+    expect(shown()).toEqual([
+      { id: 'week-8-overdue', days: '8', overdue: true },
+      { id: 'week-6', days: '6', overdue: false },
+      { id: 'elective-10', days: '10', overdue: false },
+    ]);
+  });
+
+  it.each([
+    ['an emergent', emergent, 1],
+    ['an urgent', urgent, 60],
+    ['an elective', elective, 180],
+  ])('turns %s recommendation red and lists it first once it is past its deadline', (_, concept, deadline) => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [row('on', concept, deadline), row('past', concept, deadline + 1)],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<WaitingList />);
+
+    expect(shown()).toEqual([
+      { id: 'past', days: String(deadline + 1), overdue: true },
+      { id: 'on', days: String(deadline), overdue: false },
+    ]);
+  });
+
+  it("shows each urgency by its band's label rather than the answer's name", () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [
+        { ...row('emergent', emergent, 0), urgency: '1: emergent (24 hours)' },
+        { ...row('unbanded', 'some-other-concept', 0), urgency: '2 - within 1 month' },
+      ],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<WaitingList />);
+
+    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const urgencies = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((tr) => within(tr).getAllByRole('cell')[headers.indexOf('Urgency')].textContent);
+    expect(urgencies).toEqual(['1: Emergent (24 hours)', '2 - within 1 month']);
+  });
+
+  it('counts whole days, so an afternoon view shows the same days pending as a morning one', () => {
+    vi.setSystemTime(new Date(2026, 8, 29, 23, 30));
+    const band = urgencyBands[0];
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [row('on', band.concept, band.deadlineDays)],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<WaitingList />);
+
+    expect(shown()).toEqual([{ id: 'on', days: String(band.deadlineDays), overdue: false }]);
   });
 
   it('says under the title what the list holds and what a red row means', () => {
@@ -125,15 +179,14 @@ describe('Procedural waiting list days pending and overdue rows', () => {
   });
 
   it('lists overdue rows first, then by urgency, then the longest waiting first', () => {
-    const [week, month, threeMonths] = urgencyBands.map((band) => band.concept);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: [
-        row('three-months-10', threeMonths, 10),
-        row('week-3', week, 3),
-        row('month-40-overdue', month, 40),
-        row('three-months-50', threeMonths, 50),
-        row('week-9-overdue', week, 9),
+        row('elective-10', elective, 10),
+        row('emergent-1', emergent, 1),
+        row('urgent-70-overdue', urgent, 70),
+        row('elective-50', elective, 50),
+        row('emergent-9-overdue', emergent, 9),
         row('unbanded', 'some-other-concept', 5),
       ],
       isLoading: false,
@@ -144,11 +197,11 @@ describe('Procedural waiting list days pending and overdue rows', () => {
     render(<WaitingList />);
 
     expect(shown().map((r) => r.id)).toEqual([
-      'week-9-overdue',
-      'month-40-overdue',
-      'week-3',
-      'three-months-50',
-      'three-months-10',
+      'emergent-9-overdue',
+      'urgent-70-overdue',
+      'emergent-1',
+      'elective-50',
+      'elective-10',
       'unbanded',
     ]);
   });

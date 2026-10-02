@@ -22,6 +22,15 @@ function daysSince(value: unknown, today: Date) {
   return Math.round((start.getTime() - added.getTime()) / DAY_MS);
 }
 
+/** The rows with each urgency named by its band's `name`, else its `label`, else the report's name. */
+export function labelUrgencies(rows: Array<ReportRow>, bands: Config['urgencyBands'], name: 'label' | 'shortLabel') {
+  return rows.map((row) => {
+    const band = bands.find((b) => b.concept === row.urgency_concept);
+    const urgency = band?.[name] ?? band?.label;
+    return urgency ? { ...row, urgency } : row;
+  });
+}
+
 /** Each row with its days pending and whether it is past its urgency band's deadline, overdue first, then by band. */
 export function rankWaitingRows(rows: Array<ReportRow>, bands: Config['urgencyBands'], today = new Date()) {
   return rows

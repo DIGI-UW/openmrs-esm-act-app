@@ -64,9 +64,27 @@ describe('configSchema', () => {
       actIdentifierType: '240f85fa-46e1-540e-9234-2796c623f7ea',
       visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
       urgencyBands: [
+        {
+          label: '1: Emergent (24 hours)',
+          shortLabel: '1: Emergent',
+          concept: '1fe15210-4490-58b0-a38c-bb0386e98482',
+          deadlineDays: 1,
+        },
         { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
         { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
+        {
+          label: '2: Urgent (60 days)',
+          shortLabel: '2: Urgent',
+          concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
+          deadlineDays: 60,
+        },
         { label: '3 - within 3 months', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
+        {
+          label: '3: Elective (180 days)',
+          shortLabel: '3: Elective',
+          concept: '2666bf97-7400-57c7-b535-7903e22ced34',
+          deadlineDays: 180,
+        },
         { label: '4 - within 6 months', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
       ],
     });
