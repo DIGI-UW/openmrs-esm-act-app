@@ -1,21 +1,22 @@
 import useSWR from 'swr';
-import useSWRImmutable from 'swr/immutable';
 import dayjs from 'dayjs';
-import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
 import { answersTo, type PatientEncounter, patientEncountersUrl } from '../patient-encounters';
-import { isUuid } from '../uuid';
 
 export interface BpgInjection {
   uuid: string;
   /** The day the injection was given, as YYYY-MM-DD, matching ACT Core's injection dates. */
   day: string;
-  /** The Facility answer as recorded, a location's uuid or text; null without one. */
+  /** The Facility answer's location name, which REST resolves from the uuid the form saves, or its text; null without one. */
   facility: string | null;
   location: string | null;
   lateReasons: Array<string>;
 }
+
+const facilityName = (value: unknown) =>
+  typeof value === 'object' && value !== null ? (value as { display: string }).display : String(value);
 
 export interface OralEntry {
   uuid: string;
@@ -25,13 +26,6 @@ export interface OralEntry {
 }
 
 const representation = 'custom:(uuid,encounterDatetime,location:(display),obs:(concept:(uuid),value:(uuid,display)))';
-
-/** A Facility answer's location name; the recorded value when it is not a location's uuid or the lookup fails; null while it loads. */
-export function useFacilityName(value: string | null) {
-  const url = value && isUuid(value) ? `${restBaseUrl}/location/${value}?v=custom:(display)` : null;
-  const { data, error } = useSWRImmutable<FetchResponse<{ display: string }>, Error>(url, openmrsFetch);
-  return url && !error ? (data?.data.display ?? null) : value;
-}
 
 export function useBpgInjections(patientUuid: string) {
   const { prophylaxisPage } = useConfig<Config>();
@@ -45,7 +39,7 @@ export function useBpgInjections(patientUuid: string) {
       return {
         uuid: encounter.uuid,
         day: dayjs(String(date?.value ?? encounter.encounterDatetime)).format('YYYY-MM-DD'),
-        facility: facility ? String(facility.value) : null,
+        facility: facility ? facilityName(facility.value) : null,
         location: encounter.location?.display ?? null,
         lateReasons: answersTo(encounter, concepts.lateReason).map((o) => (o.value as { display: string }).display),
       };
