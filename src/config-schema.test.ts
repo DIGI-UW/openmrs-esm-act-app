@@ -51,6 +51,11 @@ describe('configSchema', () => {
       screenPositive: {
         report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
       },
+      prophylaxisCard: {
+        bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
+        oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
+      },
+      visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
       urgencyBands: [
         { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
         { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },

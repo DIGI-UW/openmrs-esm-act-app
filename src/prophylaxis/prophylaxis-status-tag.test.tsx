@@ -1,8 +1,8 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { SWRConfig } from 'swr';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import ProphylaxisStatusTag from './prophylaxis-status-tag.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -25,10 +25,18 @@ function respondWith(status: string | null) {
 
 const patientUuid = 'patient-uuid';
 
+let mutateCache: ScopedMutator;
+
+function CacheMutator() {
+  mutateCache = useSWRConfig().mutate;
+  return null;
+}
+
 // A cache per render keeps one test's answer out of the next; the 1 ms interval lets a retry happen in a test.
 function renderTag(patient?: fhir.Patient) {
   return render(
     <SWRConfig value={{ provider: () => new Map(), errorRetryInterval: 1 }}>
+      <CacheMutator />
       <ProphylaxisStatusTag patientUuid={patientUuid} patient={patient} />
     </SWRConfig>,
   );
@@ -51,6 +59,21 @@ describe('ProphylaxisStatusTag', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       expect.stringMatching(new RegExp(`/actcore/prophylaxis\\?patient=${patientUuid}$`)),
     );
+  });
+
+  it('drops the Overdue tag when a form save invalidates the patient encounters', async () => {
+    respondWith('overdue');
+    renderTag();
+    await screen.findByTestId('prophylaxis-status');
+
+    respondWith('ok');
+    // The chart's invalidatePatientEncounters, which the forms app runs after every save.
+    await mutateCache(
+      (key) =>
+        typeof key === 'string' && key.includes(`${restBaseUrl}/encounter`) && key.includes(`patient=${patientUuid}`),
+    );
+
+    await waitFor(() => expect(screen.queryByTestId('prophylaxis-status')).not.toBeInTheDocument());
   });
 
   it('says Due today in blue for a dose due today', async () => {

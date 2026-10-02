@@ -19,6 +19,8 @@ export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
 
+export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
+
 export const prophylaxisStatusTag = getAsyncLifecycle(
   () => import('./prophylaxis/prophylaxis-status-tag.component'),
   options,
