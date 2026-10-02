@@ -55,8 +55,14 @@ export const configSchema = {
       'Where the Register patient quick action on ACT home leads.',
       '${openmrsSpaBase}/patient-registration',
     ),
+    enterProphylaxisInFastDataEntry: {
+      _type: Type.Boolean,
+      _default: false,
+      _description:
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart.",
+    },
     enterProphylaxisUrl: link(
-      'Where the Enter prophylaxis quick action on ACT home leads when prophylaxisForms is empty: the fast data entry app.',
+      'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',
       '${openmrsSpaBase}/forms',
     ),
     prophylaxisForms: {
@@ -70,10 +76,16 @@ export const configSchema = {
         { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
       ],
       _description:
-        'The choices the Enter prophylaxis quick action offers, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
+        'The choices the Enter prophylaxis quick action offers when enterProphylaxisInFastDataEntry is true, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
+    },
+    findPatientInPanel: {
+      _type: Type.Boolean,
+      _default: true,
+      _description:
+        "Whether Find a patient on ACT home opens ACT's patient search over the page. When false, it leads to findPatientUrl.",
     },
     findPatientUrl: link(
-      'Where the Find a patient quick action on ACT home leads. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
+      'Where the Find a patient quick action on ACT home leads when findPatientInPanel is false. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
       '${openmrsSpaBase}/search?query=',
     ),
   },
@@ -130,6 +142,11 @@ export const configSchema = {
       _description:
         'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
     },
+    echoForm: {
+      _type: Type.UUID,
+      _default: '88e54fb0-1243-3f7a-b925-f64648ca6635',
+      _description: "The form the screen positive list's Enter echo result opens beside the list.",
+    },
   },
   prophylaxisCard: {
     bpgForm: {
@@ -142,6 +159,11 @@ export const configSchema = {
       _default: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
       _description: "The form the patient summary's Prophylaxis card opens to record oral prophylaxis.",
     },
+  },
+  actIdentifierType: {
+    _type: Type.UUID,
+    _default: '240f85fa-46e1-540e-9234-2796c623f7ea',
+    _description: "The identifier type ACT's patient search shows as the patient's ACT ID.",
   },
   visitType: {
     _type: Type.UUID,
@@ -185,15 +207,18 @@ export interface Config {
   };
   quickActions: {
     registerPatientUrl: string;
+    enterProphylaxisInFastDataEntry: boolean;
     enterProphylaxisUrl: string;
     prophylaxisForms: Array<{ label: string; url: string }>;
+    findPatientInPanel: boolean;
     findPatientUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
-  screenPositive: { report: string };
+  screenPositive: { report: string; echoForm: string };
   prophylaxisCard: { bpgForm: string; oralForm: string };
+  actIdentifierType: string;
   visitType: string;
   urgencyBands: Array<{ label: string; concept: string; deadlineDays: number }>;
 }

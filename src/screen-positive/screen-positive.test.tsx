@@ -57,11 +57,21 @@ describe('Screen positive, pending confirmation', () => {
       'Cardiac clinic',
       'Primary care clinic',
       'Date of positive screen',
+      '',
     ]);
     const cells = within(screen.getByRole('row', { name: /rhd00002\b/ }))
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
-    expect(cells).toEqual(['rhd00002', 'Patient 2', '9', 'M', 'Gulu RRH', 'Anyeke HCIV', '17-Sept-2026']);
+    expect(cells).toEqual([
+      'rhd00002',
+      'Patient 2',
+      '9',
+      'M',
+      'Gulu RRH',
+      'Anyeke HCIV',
+      '17-Sept-2026',
+      'Enter echo result',
+    ]);
   });
 
   it("links each patient's name to their chart", () => {
@@ -156,7 +166,7 @@ describe('Screen positive, pending confirmation', () => {
       const { rerender } = render(<ScreenPositive />);
 
       const { skeleton, rows, columns } = tableSkeleton();
-      expect({ rows, columns }).toEqual({ rows: 10, columns: 7 });
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 8 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: screenPositiveRows });
       rerender(<ScreenPositive />);

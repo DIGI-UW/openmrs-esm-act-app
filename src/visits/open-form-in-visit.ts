@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   getGlobalStore,
   launchWorkspace2,
-  saveVisit,
   showSnackbar,
   useConfig,
   useSession,
@@ -12,6 +11,7 @@ import {
 } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
+import { startVisit } from './start-visit';
 
 /** How long to wait for the patient chart to take a visit just started, before giving up on the form. */
 export const visitWaitMs = 10000;
@@ -74,21 +74,8 @@ export function useOpenFormInVisit(patientUuid: string) {
           throw e;
         });
         if (!hasVisit) {
-          // A null start lets the server stamp it, so a fast client clock cannot put it in the future.
-          const { data: visit } = await saveVisit(
-            { patient: patientUuid, visitType, location: sessionLocation?.uuid, startDatetime: null },
-            new AbortController(),
-          ).catch((e) => {
-            throw e?.response?.status === 403
-              ? new Error(t('cannotStartVisit', 'You may not start a visit for this patient.'))
-              : e;
-          });
+          const visit = await startVisit(t, patientUuid, visitType, sessionLocation?.uuid);
           mutate();
-          showSnackbar({
-            kind: 'success',
-            title: t('visitStarted', '{{visitType}} started', { visitType: visit.visitType?.display }),
-            subtitle: t('visitStartedForForm', 'Started automatically so the form can be saved'),
-          });
           if (!(await chartTakes(visit.uuid))) {
             showSnackbar({
               kind: 'error',

@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Button,
   DataTableSkeleton,
   InlineNotification,
   Pagination,
@@ -14,11 +15,18 @@ import {
 import {
   CardiologyPictogram,
   ConfigurableLink,
+  fetchCurrentPatient,
   formatDate,
   isDesktop,
+  launchWorkspace2,
+  showSnackbar,
   useConfig,
   useLayoutType,
+  useSession,
+  type Visit,
 } from '@openmrs/esm-framework';
+import { fetchForm } from '../flag-gaps/flag-gaps.resource';
+import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -41,11 +49,53 @@ function screenDate(row: ReportRow) {
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 }
 
+const screenPositiveFormEntryWorkspace = 'act-screen-positive-form-entry-workspace';
+
 function ScreenPositiveTable() {
   const { t } = useTranslation();
-  const { screenPositive } = useConfig<Config>();
+  const { screenPositive, visitType } = useConfig<Config>();
+  const { sessionLocation } = useSession();
   const desktop = isDesktop(useLayoutType());
-  const { rows, isLoading, error } = useReportDataset(screenPositive.report);
+  const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
+  // Same objects on a second click, so the open workspace does not prompt to close the form.
+  const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
+  const visits = useRef(new Map<string, Visit>());
+  // A click while the row is still opening is ignored, as it would start a second visit.
+  const opening = useRef(new Set<string>());
+  const enterEcho = async (row: ReportRow) => {
+    const patientUuid = String(row.patient_uuid);
+    if (opening.current.has(patientUuid)) {
+      return;
+    }
+    opening.current.add(patientUuid);
+    if (!loaded.current.has(patientUuid)) {
+      loaded.current.set(
+        patientUuid,
+        Promise.all([fetchForm(screenPositive.echoForm), fetchCurrentPatient(patientUuid)]),
+      );
+    }
+    try {
+      const [form, patient] = await loaded.current.get(patientUuid);
+      // Asked again on each click, as the visit may have ended since; the same visit keeps the same object.
+      const active = await findActiveVisit(patientUuid);
+      const visit =
+        active && visits.current.get(patientUuid)?.uuid === active.uuid
+          ? visits.current.get(patientUuid)
+          : (active ?? (await startVisit(t, patientUuid, visitType, sessionLocation?.uuid)));
+      visits.current.set(patientUuid, visit);
+      // Both form engines report a save through mutateVisitContext, which evaluates the list again.
+      launchWorkspace2(
+        screenPositiveFormEntryWorkspace,
+        { form, encounterUuid: '' },
+        { patient, patientUuid, visitContext: visit, mutateVisitContext: mutate },
+      );
+    } catch (e) {
+      loaded.current.delete(patientUuid);
+      showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
+    } finally {
+      opening.current.delete(patientUuid);
+    }
+  };
   const [filters, setFilters] = useScreenPositiveFilters();
   const shown = useMemo(() => filterScreenPositive(rows, filters), [rows, filters]);
   const { results, paginationProps } = usePagedRows(shown, filters);
@@ -88,7 +138,7 @@ function ScreenPositiveTable() {
     return (
       <DataTableSkeleton
         role="progressbar"
-        columnCount={columns.length}
+        columnCount={columns.length + 1}
         rowCount={paginationProps.pageSize}
         compact={desktop}
         zebra
@@ -118,6 +168,7 @@ function ScreenPositiveTable() {
                 {columns.map((column) => (
                   <TableHeader key={column.header}>{column.header}</TableHeader>
                 ))}
+                <TableHeader aria-label={t('actions', 'Actions')} />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -126,6 +177,11 @@ function ScreenPositiveTable() {
                   {columns.map((column) => (
                     <TableCell key={column.header}>{column.render(row)}</TableCell>
                   ))}
+                  <TableCell>
+                    <Button kind="ghost" size="sm" onClick={() => enterEcho(row)}>
+                      {t('enterEchoResult', 'Enter echo result')}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
