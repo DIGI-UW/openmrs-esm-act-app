@@ -1,0 +1,5 @@
+@use '../styles/act-colours' as *;
+
+.late {
+  @include act-yellow-tag;
+}

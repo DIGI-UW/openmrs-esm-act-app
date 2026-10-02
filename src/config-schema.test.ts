@@ -69,6 +69,17 @@ describe('configSchema', () => {
           ejectionFraction: 'ed630fda-8451-53c0-929e-40eafd9bca9b',
         },
       },
+      prophylaxisPage: {
+        bpgEncounterType: '04cf03db-3b8e-5020-84b0-50b06338767a',
+        oralEncounterType: '55271793-ef37-58da-9d86-1d9092a5a809',
+        concepts: {
+          injectionDate: '183fb30e-b861-5b7c-806f-7118a40f2b51',
+          facility: '01e6dd39-b8ba-5b0a-bcd7-6b8d5973c1bc',
+          lateReason: 'f7cbfcdc-58bb-5e85-86ab-ffce26a08615',
+          weeks: '75cd7e15-5f05-58d1-acb1-4a046eb1b437',
+          adherence: '8edff8dc-4af6-5d0f-bf1d-8e349c7a1b15',
+        },
+      },
       prophylaxisCard: {
         bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
         oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',

@@ -12,6 +12,8 @@ export interface ProphylaxisSummary {
   nextDue: string | null;
   status: ProphylaxisStatus;
   onTime: { given: number; total: number; months: number } | null;
+  /** Every BPG injection, newest first; onTime is null when no injection course was in force that day. */
+  injections?: Array<{ date: string; onTime: boolean | null }>;
 }
 
 export function useProphylaxisSummary(patientUuid: string | null) {

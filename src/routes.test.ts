@@ -7,6 +7,7 @@ import { waitingListDashboardMeta } from './waiting-list/waiting-list.meta';
 import { screenPositiveDashboardMeta } from './screen-positive/screen-positive.meta';
 import { worklistsDashboardMeta } from './worklists/worklists.meta';
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
+import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 
 describe('routes.json', () => {
   it('registers every component it names', () => {
@@ -115,6 +116,16 @@ describe('routes.json', () => {
     // The chart's pages are the distro's to choose (DIGI-UW/openmrs-module-actcore#29), so the link names no slot.
     expect(link).not.toHaveProperty('slot');
     expect(page.slot).toBe(cardiacTestsDashboardMeta.slot);
+    expect(page.meta).toEqual({ fullWidth: true });
+  });
+
+  it("registers the chart's Prophylaxis page under the slot and path its link names, for a distro to add to the chart's nav", () => {
+    const link = routes.extensions.find((extension) => extension.component === 'prophylaxisPageDashboardLink');
+    const page = routes.extensions.find((extension) => extension.component === 'prophylaxisPageDashboard');
+
+    expect(link.meta).toEqual(prophylaxisPageDashboardMeta);
+    expect(link).not.toHaveProperty('slot');
+    expect(page.slot).toBe(prophylaxisPageDashboardMeta.slot);
     expect(page.meta).toEqual({ fullWidth: true });
   });
 });

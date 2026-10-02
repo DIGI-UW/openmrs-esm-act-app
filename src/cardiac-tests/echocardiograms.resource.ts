@@ -1,29 +1,25 @@
 import useSWR from 'swr';
-import { parseDate, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { parseDate, useConfig } from '@openmrs/esm-framework';
 import { type Config, type EchoField } from '../config-schema';
 import { fetchAll } from '../fetch-all';
-
-interface EchoEncounter {
-  uuid: string;
-  encounterDatetime: string;
-  obs: Array<{ concept: { uuid: string }; value: unknown }>;
-}
+import { answersTo, type PatientEncounter, patientEncountersUrl } from '../patient-encounters';
 
 export type Echocardiogram = { uuid: string; date: Date } & Partial<Record<Exclude<EchoField, 'date'>, unknown>>;
 
 /** The patient's echocardiograms, newest first, each with its answers by field. */
 export function useEchocardiograms(patientUuid: string) {
   const { cardiacTests } = useConfig<Config>();
-  // Under the patient's /encounter, which common-lib's invalidatePatientEncounters revalidates after a form is saved.
-  const url =
-    `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${cardiacTests.echoEncounterType}` +
-    '&v=custom:(uuid,encounterDatetime,obs:(concept:(uuid),value:(display)))';
-  const { data, error, isLoading } = useSWR<Array<EchoEncounter>, Error>(url, () => fetchAll<EchoEncounter>(url));
+  const url = patientEncountersUrl(
+    patientUuid,
+    cardiacTests.echoEncounterType,
+    'custom:(uuid,encounterDatetime,obs:(concept:(uuid),value:(display)))',
+  );
+  const { data, error, isLoading } = useSWR<Array<PatientEncounter>, Error>(url, () => fetchAll<PatientEncounter>(url));
   const fields = Object.entries(cardiacTests.concepts) as Array<[EchoField, string]>;
   const echocardiograms = (data ?? [])
     .map((encounter): Echocardiogram => {
       const answers = Object.fromEntries(
-        fields.map(([field, concept]) => [field, encounter.obs.find((o) => o.concept.uuid === concept)?.value]),
+        fields.map(([field, concept]) => [field, answersTo(encounter, concept)[0]?.value]),
       );
       const { date, ...findings } = answers;
       return { uuid: encounter.uuid, date: parseDate(String(date ?? encounter.encounterDatetime)), ...findings };
