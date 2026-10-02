@@ -49,12 +49,11 @@ describe('routes.json', () => {
     );
   });
 
-  it("lists ACT's home nav links in the prototype's order", () => {
-    const links = routes.extensions
-      .filter((extension) => extension.slot === 'homepage-dashboard-slot')
-      .map((extension) => extension.component);
+  it("registers ACT's home nav links in the prototype's order, with no order of their own", () => {
+    const links = routes.extensions.filter((extension) => extension.slot === 'homepage-dashboard-slot');
 
-    expect(links).toEqual([
+    expect(links.filter((extension) => 'order' in extension)).toEqual([]);
+    expect(links.map((extension) => extension.component)).toEqual([
       'actHomeDashboardLink',
       'registryDashboardLink',
       'worklistsDashboardLink',
