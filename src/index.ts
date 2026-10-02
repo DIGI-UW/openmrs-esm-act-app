@@ -24,8 +24,6 @@ export function startupApp() {
 
 export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
 
-export const contactCard = getAsyncLifecycle(() => import('./contact-card/contact-card.component'), options);
-
 export const prophylaxisStatusTag = getAsyncLifecycle(
   () => import('./prophylaxis/prophylaxis-status-tag.component'),
   options,

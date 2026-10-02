@@ -128,12 +128,4 @@ describe('routes.json', () => {
     expect(page.slot).toBe(prophylaxisPageDashboardMeta.slot);
     expect(page.meta).toEqual({ fullWidth: true });
   });
-
-  it('adds the Contact card to the patient summary, after the Prophylaxis card', () => {
-    const cards = routes.extensions.filter((extension) => extension.slot === 'patient-chart-summary-dashboard-slot');
-    const contact = cards.find((extension) => extension.component === 'contactCard');
-
-    expect(contact).toMatchObject({ order: 0, meta: { fullWidth: true } });
-    expect(cards.indexOf(contact)).toBe(cards.findIndex((extension) => extension.component === 'prophylaxisCard') + 1);
-  });
 });
