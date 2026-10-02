@@ -192,16 +192,52 @@ export const configSchema = {
       ),
     },
   },
+  prophylaxisPage: {
+    bpgEncounterType: {
+      _type: Type.UUID,
+      _default: '04cf03db-3b8e-5020-84b0-50b06338767a',
+      _description: "The encounter type of the BPG injections the chart's Prophylaxis page lists, the BPG form's.",
+    },
+    oralEncounterType: {
+      _type: Type.UUID,
+      _default: '55271793-ef37-58da-9d86-1d9092a5a809',
+      _description: "The encounter type of the oral adherence entries the Prophylaxis page lists, the oral form's.",
+    },
+    concepts: {
+      injectionDate: concept(
+        'Date of Injection, the date a BPG row shows; without one, the encounter date.',
+        '183fb30e-b861-5b7c-806f-7118a40f2b51',
+      ),
+      facility: concept(
+        'Facility, a location picked on the BPG form; without one, the encounter location.',
+        '01e6dd39-b8ba-5b0a-bcd7-6b8d5973c1bc',
+      ),
+      lateReason: concept(
+        'If injection(s) late, why?, the reasons a late injection tag names.',
+        'f7cbfcdc-58bb-5e85-86ab-ffce26a08615',
+      ),
+      weeks: concept(
+        'Weeks in Reporting Period, the period an oral row shows.',
+        '75cd7e15-5f05-58d1-acb1-4a046eb1b437',
+      ),
+      adherence: concept(
+        'Adherence Estimate, the percentage an oral row shows.',
+        '8edff8dc-4af6-5d0f-bf1d-8e349c7a1b15',
+      ),
+    },
+  },
   prophylaxisCard: {
     bpgForm: {
       _type: Type.UUID,
       _default: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
-      _description: "The form the patient summary's Prophylaxis card opens to record a BPG injection.",
+      _description:
+        "The form Record BPG opens, on the patient summary's Prophylaxis card and the chart's Prophylaxis page, to record a BPG injection.",
     },
     oralForm: {
       _type: Type.UUID,
       _default: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
-      _description: "The form the patient summary's Prophylaxis card opens to record oral prophylaxis.",
+      _description:
+        "The form Record oral opens, on the patient summary's Prophylaxis card and the chart's Prophylaxis page, to record oral prophylaxis.",
     },
   },
   actIdentifierType: {
@@ -295,6 +331,11 @@ export interface Config {
     echoForm: string;
     echoEncounterType: string;
     concepts: Record<EchoField, string>;
+  };
+  prophylaxisPage: {
+    bpgEncounterType: string;
+    oralEncounterType: string;
+    concepts: Record<'injectionDate' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
   };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;

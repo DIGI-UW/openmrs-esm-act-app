@@ -73,11 +73,15 @@ pages. A distro adds a page's link to the chart's `patient-chart-dashboard-slot`
 ```json
 "@openmrs/esm-patient-chart-app": {
   "extensionSlots": {
-    "patient-chart-dashboard-slot": { "add": ["act-cardiac-tests-dashboard-link"] }
+    "patient-chart-dashboard-slot": { "add": ["act-prophylaxis-dashboard-link", "act-cardiac-tests-dashboard-link"] }
   }
 }
 ```
 
+- **Prophylaxis** (`act-prophylaxis-dashboard-link`): the patient's BPG injections, newest first, with the facility
+  and a tag saying whether each was on time, timed by ACT Core as the Prophylaxis card's on-time count is; then their
+  oral adherence entries, if any. Record BPG and Record oral open the forms set in `prophylaxisCard`. The encounter
+  types and concepts are in `prophylaxisPage`.
 - **Cardiac tests** (`act-cardiac-tests-dashboard-link`): the patient's echocardiograms, newest first, with the
   mitral and aortic valve findings and left ventricular ejection fraction; Add opens the echo form, starting a visit
   when the patient has none. The form, its encounter type and the concepts are in `cardiacTests`.

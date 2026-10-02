@@ -1,11 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, SkeletonText } from '@carbon/react';
-import { AddIcon, CardHeader, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
-import { type Config } from '../config-schema';
-import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+import { SkeletonText } from '@carbon/react';
+import { CardHeader, formatDate, parseDate } from '@openmrs/esm-framework';
+import { RecordProphylaxisButtons } from './record-prophylaxis-buttons.component';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
-import styles from './prophylaxis-card.scss';
+import styles from '../styles/summary-card.scss';
 
 interface ProphylaxisCardProps {
   patientUuid: string;
@@ -31,9 +30,7 @@ const date = (value: string | null) => (value ? formatDate(parseDate(value), { t
 /** The patient summary's prophylaxis: regimen, last and next dose, on-time count, and the forms to record a dose. */
 export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const { t } = useTranslation();
-  const { prophylaxisCard } = useConfig<Config>();
   const { summary, error } = useProphylaxisSummary(patientUuid);
-  const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
   const regimenLabel = useRegimenLabel();
 
   if (error) {
@@ -61,26 +58,7 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   return (
     <div className={styles.card}>
       <CardHeader title={t('prophylaxis', 'Prophylaxis')}>
-        <div className={styles.actions}>
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            disabled={isOpening}
-            onClick={() => openForm(prophylaxisCard.bpgForm)}
-          >
-            {t('recordBpg', 'Record BPG')}
-          </Button>
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            disabled={isOpening}
-            onClick={() => openForm(prophylaxisCard.oralForm)}
-          >
-            {t('recordOral', 'Record oral')}
-          </Button>
-        </div>
+        <RecordProphylaxisButtons patientUuid={patientUuid} />
       </CardHeader>
       {!fields ? (
         <div data-testid="prophylaxis-loading">

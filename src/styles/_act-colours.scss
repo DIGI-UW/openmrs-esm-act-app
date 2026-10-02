@@ -10,6 +10,12 @@ $act-data-quality-text: colors.$orange-70;
 $act-no-prescription-background: colors.$yellow-10;
 $act-no-prescription-text: colors.$yellow-70;
 
+// Carbon has no yellow tag, so ACT's yellow tags (No prescription, Late) are drawn with this.
+@mixin act-yellow-tag {
+  background-color: $act-no-prescription-background;
+  color: $act-no-prescription-text;
+}
+
 @mixin act-focus {
   outline: 2px solid var(--brand-03);
   outline-offset: -2px;

@@ -112,6 +112,24 @@
       "component": "prophylaxisStatusTag"
     },
     {
+      "name": "act-prophylaxis-dashboard-link",
+      "component": "prophylaxisPageDashboardLink",
+      "meta": {
+        "slot": "act-prophylaxis-dashboard-slot",
+        "path": "act-prophylaxis",
+        "title": "Prophylaxis",
+        "icon": "omrs-icon-medication"
+      }
+    },
+    {
+      "name": "act-prophylaxis-dashboard",
+      "slot": "act-prophylaxis-dashboard-slot",
+      "component": "prophylaxisPageDashboard",
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "act-cardiac-tests-dashboard-link",
       "component": "cardiacTestsDashboardLink",
       "meta": {

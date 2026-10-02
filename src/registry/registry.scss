@@ -26,8 +26,7 @@
 
 // Carbon has no yellow tag, so No prescription is drawn in Carbon's yellow here.
 .noPrescription {
-  background-color: $act-no-prescription-background;
-  color: $act-no-prescription-text;
+  @include act-yellow-tag;
 }
 
 // Carbon has no orange tag, so missing data flags are drawn in Carbon's orange here.

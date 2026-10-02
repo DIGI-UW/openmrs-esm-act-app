@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { isUuid } from '../uuid';
 import { fetchAll } from '../fetch-all';
 
 export interface ReportColumn {
@@ -14,8 +15,6 @@ interface EvaluatedReport {
   dataSets: Array<{ metadata: { columns: Array<ReportColumn> }; rows: Array<ReportRow> }>;
 }
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** reportDefinition?q matches names containing the text, so the exact name is picked from its hits. */
 async function findReportUuid(name: string) {
   const definitions = await fetchAll<{ uuid: string; name: string }>(
@@ -29,7 +28,7 @@ async function findReportUuid(name: string) {
 }
 
 async function evaluateReport(reportUuidOrName: string, params: Record<string, string>) {
-  const uuid = uuidPattern.test(reportUuidOrName) ? reportUuidOrName : await findReportUuid(reportUuidOrName);
+  const uuid = isUuid(reportUuidOrName) ? reportUuidOrName : await findReportUuid(reportUuidOrName);
   const { data } = await openmrsFetch<EvaluatedReport>(
     `${restBaseUrl}/reportingrest/reportdata/${uuid}?${new URLSearchParams(params)}`,
   );
