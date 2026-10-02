@@ -1,5 +1,4 @@
 @use '@carbon/layout';
-@use '@carbon/type';
 @use '../styles/act-colours' as *;
 
 // A table wider than the card scrolls inside it rather than widening the page.
@@ -21,6 +20,3 @@
   color: $act-risk;
 }
 
-.empty {
-  @include type.type-style('body-compact-01');
-}

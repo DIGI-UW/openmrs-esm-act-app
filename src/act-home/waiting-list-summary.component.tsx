@@ -17,6 +17,7 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import { labelUrgencies, rankWaitingRows, type WaitingRow } from '../waiting-list/urgency';
 import { waitingListDashboardMeta } from '../waiting-list/waiting-list.meta';
 import { ActHomeCard } from './act-home-card.component';
+import { TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './waiting-list-summary.scss';
 
 const shownRows = 5;
@@ -90,7 +91,9 @@ function Summary() {
           </Table>
         </div>
       ) : (
-        <p className={styles.empty}>{t('noWaitingRecommendations', 'No procedural recommendations are waiting.')}</p>
+        <TableEmptyState
+          message={t('noWaitingRecommendations', 'There are no procedural recommendations to display')}
+        />
       )}
     </ActHomeCard>
   );

@@ -38,6 +38,7 @@ import {
   type WaitingListFilters,
   useWaitingListFilters,
 } from './waiting-list-filters';
+import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './waiting-list.scss';
 
 const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
@@ -133,7 +134,7 @@ function WaitingListTable() {
   }
   if (!rows.length) {
     return (
-      <p className={styles.message}>{t('noWaitingRecommendations', 'No procedural recommendations are waiting.')}</p>
+      <TableEmptyState message={t('noWaitingRecommendations', 'There are no procedural recommendations to display')} />
     );
   }
   return (
@@ -191,7 +192,7 @@ function WaitingListTable() {
           </Table>
         </div>
       ) : (
-        <p className={styles.message}>{t('noWaitingListMatches', 'No recommendations match these filters.')}</p>
+        <FilterEmptyState message={t('noWaitingListMatches', 'No recommendations to display')} />
       )}
       {ranked.length > 0 && <Pagination {...paginationProps} />}
     </>

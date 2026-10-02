@@ -42,6 +42,7 @@ import {
   type ScreenPositiveFilters,
   useScreenPositiveFilters,
 } from './screen-positive-filters';
+import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './screen-positive.scss';
 
 function screenDate(row: ReportRow) {
@@ -149,9 +150,9 @@ function ScreenPositiveTable() {
   }
   if (!rows.length) {
     return (
-      <p className={styles.message}>
-        {t('noScreenPositivePatients', 'No screen positive patients are waiting for a confirmatory echo.')}
-      </p>
+      <TableEmptyState
+        message={t('noScreenPositivePatients', 'There are no screen positive patients waiting for a confirmatory echo')}
+      />
     );
   }
   return (
@@ -188,7 +189,7 @@ function ScreenPositiveTable() {
           </Table>
         </div>
       ) : (
-        <p className={styles.message}>{t('noScreenPositiveMatches', 'No patients match these filters.')}</p>
+        <FilterEmptyState message={t('noScreenPositiveMatches', 'No patients to display')} />
       )}
       {shown.length > 0 && <Pagination {...paginationProps} />}
     </>

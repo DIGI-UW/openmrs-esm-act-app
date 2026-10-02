@@ -165,7 +165,9 @@ describe('Procedural waiting list filters and CSV', () => {
     render(<WaitingList />);
 
     expect(screen.getByLabelText('Specific procedure')).toHaveValue('Old procedure');
-    expect(screen.getByText('No recommendations match these filters.')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-empty-state')).toHaveTextContent(
+      'No recommendations to displayCheck the filters above',
+    );
   });
 
   it('includes rows past the first page in the CSV', async () => {

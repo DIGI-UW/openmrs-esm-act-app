@@ -144,7 +144,7 @@ describe('Registry', () => {
 
     render(<Registry />);
 
-    expect(screen.getByText('No patients are enrolled in the registry.')).toBeInTheDocument();
+    expect(screen.getByTestId('table-empty-state')).toHaveTextContent('There are no registry patients to display');
   });
 
   it('says so when the report cannot be loaded', () => {

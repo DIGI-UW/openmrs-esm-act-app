@@ -132,7 +132,7 @@ describe('Registry filters', () => {
     render(<Registry />);
 
     expect(screen.getByLabelText('Cardiac clinic')).toHaveValue('Old clinic');
-    expect(screen.getByText('No patients match these filters.')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-empty-state')).toHaveTextContent('No patients to displayCheck the filters above');
     await choose('Cardiac clinic', '');
     expect(matching()).toBe(30);
   });
@@ -197,7 +197,7 @@ describe('Registry filters', () => {
 
     await userEvent.type(screen.getByRole('searchbox'), 'nobody');
 
-    expect(screen.getByText('No patients match these filters.')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-empty-state')).toHaveTextContent('No patients to displayCheck the filters above');
     expect(screen.queryByLabelText(/items per page/i)).not.toBeInTheDocument();
   });
 

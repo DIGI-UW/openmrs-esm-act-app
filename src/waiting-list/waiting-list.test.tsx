@@ -79,7 +79,9 @@ describe('Procedural waiting list', () => {
 
     render(<WaitingList />);
 
-    expect(screen.getByText('No procedural recommendations are waiting.')).toBeInTheDocument();
+    expect(screen.getByTestId('table-empty-state')).toHaveTextContent(
+      'There are no procedural recommendations to display',
+    );
   });
 
   it('says so when the report cannot be loaded', () => {
