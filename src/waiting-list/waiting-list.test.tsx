@@ -49,7 +49,7 @@ describe('Procedural waiting list', () => {
       Age: '10',
       Type: 'Catheterization',
       Procedure: 'Mitral balloon valvuloplasty',
-      Urgency: '3 - within 3 months',
+      Urgency: '3: Elective (180 days)',
       District: 'KITGUM',
       Contraindications: 'Yes',
       'Suitable for repair': 'No',
@@ -79,7 +79,9 @@ describe('Procedural waiting list', () => {
 
     render(<WaitingList />);
 
-    expect(screen.getByText('No procedural recommendations are waiting.')).toBeInTheDocument();
+    expect(screen.getByTestId('table-empty-state')).toHaveTextContent(
+      'There are no procedural recommendations to display',
+    );
   });
 
   it('says so when the report cannot be loaded', () => {

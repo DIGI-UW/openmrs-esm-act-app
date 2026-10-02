@@ -146,7 +146,7 @@ describe('Worklists', () => {
     await userEvent.click(tile('RHD lost to follow-up'));
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByText('No patients are on this list.')).toBeInTheDocument();
+    expect(screen.getByTestId('table-empty-state')).toHaveTextContent('There are no patients on this list to display');
   });
 
   it('evaluates the registry report over every enrolment up to today', () => {

@@ -4,6 +4,8 @@ import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.co
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
 import worklistsDashboardLinkComponent from './worklists/worklists-dashboard-link.component';
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
+import { createChartDashboardLink } from './chart-dashboard-link.component';
+import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 
 const moduleName = '@mherman22/esm-act-app';
@@ -23,6 +25,13 @@ export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/pro
 
 export const prophylaxisStatusTag = getAsyncLifecycle(
   () => import('./prophylaxis/prophylaxis-status-tag.component'),
+  options,
+);
+
+export const cardiacTestsDashboardLink = getSyncLifecycle(createChartDashboardLink(cardiacTestsDashboardMeta), options);
+
+export const cardiacTestsDashboard = getAsyncLifecycle(
+  () => import('./cardiac-tests/cardiac-tests.component'),
   options,
 );
 

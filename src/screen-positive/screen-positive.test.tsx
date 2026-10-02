@@ -129,7 +129,7 @@ describe('Screen positive, pending confirmation', () => {
 
     render(<ScreenPositive />);
 
-    expect(screen.getByText('No patients match these filters.')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-empty-state')).toHaveTextContent('No patients to displayCheck the filters above');
   });
 
   it('shows the patients a page at a time', async () => {
@@ -147,7 +147,9 @@ describe('Screen positive, pending confirmation', () => {
 
     render(<ScreenPositive />);
 
-    expect(screen.getByText('No screen positive patients are waiting for a confirmatory echo.')).toBeInTheDocument();
+    expect(screen.getByTestId('table-empty-state')).toHaveTextContent(
+      'There are no screen positive patients waiting for a confirmatory echo',
+    );
   });
 
   it('says so when the report cannot be loaded', () => {

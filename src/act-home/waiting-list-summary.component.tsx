@@ -14,9 +14,10 @@ import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { ScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
-import { rankWaitingRows, type WaitingRow } from '../waiting-list/urgency';
+import { labelUrgencies, rankWaitingRows, type WaitingRow } from '../waiting-list/urgency';
 import { waitingListDashboardMeta } from '../waiting-list/waiting-list.meta';
 import { ActHomeCard } from './act-home-card.component';
+import { TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './waiting-list-summary.scss';
 
 const shownRows = 5;
@@ -27,7 +28,10 @@ function Summary() {
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error } = useReportDataset(waitingList.report);
   // The page's ranking with no filter applied, so these are its first rows.
-  const mostUrgent = useMemo(() => rankWaitingRows(rows, urgencyBands).slice(0, shownRows), [rows, urgencyBands]);
+  const mostUrgent = useMemo(
+    () => rankWaitingRows(labelUrgencies(rows, urgencyBands, 'shortLabel'), urgencyBands).slice(0, shownRows),
+    [rows, urgencyBands],
+  );
   const text = (column: string) => (waiting: WaitingRow) => String(waiting.row[column] ?? '');
   const columns: Array<{ header: string; text: (waiting: WaitingRow) => string; daysPending?: boolean }> = [
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
@@ -87,7 +91,9 @@ function Summary() {
           </Table>
         </div>
       ) : (
-        <p className={styles.empty}>{t('noWaitingRecommendations', 'No procedural recommendations are waiting.')}</p>
+        <TableEmptyState
+          message={t('noWaitingRecommendations', 'There are no procedural recommendations to display')}
+        />
       )}
     </ActHomeCard>
   );

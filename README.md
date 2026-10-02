@@ -54,12 +54,33 @@ the report set in `waitingList.report`, by default the distro's Procedural Waiti
 recommendations from each RHD Registry patient's latest consultation.
 
 Days pending counts from the report's `date_added`. A row turns red once its days pending pass the deadline of its
-urgency band, set in `urgencyBands` by the Urgency answer's concept; the defaults are the RHD Consultation Visit's
-four answers, due in 7, 30, 90 and 180 days. Overdue rows come first, then the bands in the order they are listed.
+urgency band, set in `urgencyBands` by the Urgency answer's concept. The defaults are ACT 2.0's three urgencies,
+Emergent, Urgent and Elective, due in 1, 60 and 180 days, and the four answers they replaced, due in 7, 30, 90 and
+180 days, for recommendations saved before, all in deadline order. Overdue rows come first, then the bands in the
+order they are listed. The list and its Urgency filter name each band by its `label`, such as "1: Emergent (24
+hours)", and ACT home's widget by its `shortLabel`, such as "1: Emergent", or its `label` without one; an answer no
+band names shows the report's name for it.
 
 Its filters are kept in the URL, and Download CSV saves the filtered rows. Open form opens that consultation for
 editing in a workspace on the list itself, the forms app's `exportedPatientFormEntryWorkspace`, registered in this
 app's own `act-waiting-list` workspace group as Service Queues registers it; saving it evaluates the list again.
+
+## Patient chart pages
+
+Pages for the patient chart's left nav, whose links are registered in no slot so that the distro chooses the chart's
+pages. A distro adds a page's link to the chart's `patient-chart-dashboard-slot` in its frontend config:
+
+```json
+"@openmrs/esm-patient-chart-app": {
+  "extensionSlots": {
+    "patient-chart-dashboard-slot": { "add": ["act-cardiac-tests-dashboard-link"] }
+  }
+}
+```
+
+- **Cardiac tests** (`act-cardiac-tests-dashboard-link`): the patient's echocardiograms, newest first, with the
+  mitral and aortic valve findings and left ventricular ejection fraction; Add opens the echo form, starting a visit
+  when the patient has none. The form, its encounter type and the concepts are in `cardiacTests`.
 
 ## Requirements
 

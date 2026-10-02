@@ -25,6 +25,7 @@ import { useReportDataset, type ReportRow } from '../reports/report-dataset.reso
 import { type RhdFlagList, useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { useUrlFilters } from '../table-filters/url-filters';
+import { TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './worklists.scss';
 
 const filterKeys = ['flag'] as const;
@@ -91,7 +92,7 @@ function WorklistPatients({ list }: { list: RhdFlagList }) {
     );
   }
   if (!shown.length) {
-    return <p className={styles.message}>{t('noWorklistPatients', 'No patients are on this list.')}</p>;
+    return <TableEmptyState message={t('noWorklistPatients', 'There are no patients on this list to display')} />;
   }
   return (
     <>

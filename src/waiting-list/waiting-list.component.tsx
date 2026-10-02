@@ -31,13 +31,14 @@ import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
-import { rankWaitingRows, type WaitingRow } from './urgency';
+import { labelUrgencies, rankWaitingRows, type WaitingRow } from './urgency';
 import {
   filterColumns,
   filterWaitingList,
   type WaitingListFilters,
   useWaitingListFilters,
 } from './waiting-list-filters';
+import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './waiting-list.scss';
 
 const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
@@ -46,7 +47,9 @@ function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
-  const { rows, isLoading, error, mutate } = useReportDataset(waitingList.report);
+  const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
+  // Named by band before anything reads them, so the column, its filter and the CSV agree.
+  const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
   const [filters, setFilters] = useWaitingListFilters();
   const ranked = useMemo(
     () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),
@@ -131,7 +134,7 @@ function WaitingListTable() {
   }
   if (!rows.length) {
     return (
-      <p className={styles.message}>{t('noWaitingRecommendations', 'No procedural recommendations are waiting.')}</p>
+      <TableEmptyState message={t('noWaitingRecommendations', 'There are no procedural recommendations to display')} />
     );
   }
   return (
@@ -189,7 +192,7 @@ function WaitingListTable() {
           </Table>
         </div>
       ) : (
-        <p className={styles.message}>{t('noWaitingListMatches', 'No recommendations match these filters.')}</p>
+        <FilterEmptyState message={t('noWaitingListMatches', 'No recommendations to display')} />
       )}
       {ranked.length > 0 && <Pagination {...paginationProps} />}
     </>

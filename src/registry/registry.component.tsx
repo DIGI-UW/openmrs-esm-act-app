@@ -38,6 +38,7 @@ import { filterRegistry, registryFilterColumns, rowFlags, useRegistryFilters } f
 import { AdherenceRing } from './adherence-ring.component';
 import { BpgStatusTag, bpgStatuses, useBpgStatusLabel } from './bpg-status-tag.component';
 import { RegistryFlags } from './registry-flags.component';
+import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './registry.scss';
 
 const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
@@ -162,7 +163,7 @@ function RegistryTable() {
     );
   }
   if (!rows.length) {
-    return <p className={styles.message}>{t('noRegistryPatients', 'No patients are enrolled in the registry.')}</p>;
+    return <TableEmptyState message={t('noRegistryPatients', 'There are no registry patients to display')} />;
   }
   return (
     <>
@@ -237,7 +238,7 @@ function RegistryTable() {
           </TableBody>
         </Table>
       ) : (
-        <p className={styles.message}>{t('noRegistryMatches', 'No patients match these filters.')}</p>
+        <FilterEmptyState message={t('noRegistryMatches', 'No patients to display')} />
       )}
       {shown.length > 0 && <Pagination {...paginationProps} />}
     </>

@@ -11,11 +11,12 @@ vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn()
 
 const rows = waitingListRows.map((row, i) => ({
   ...row,
-  urgency: ['1 - within 1 week', '2 - within 1 month', '3 - within 3 months'][i % 3],
+  // The answers' names, as the report gives them; the list shows each by its band's label.
+  urgency: ['1: emergent (24 hours)', '2: urgent (60 days/2 months)', '3: elective (180 days/6 months)'][i % 3],
   urgency_concept: [
-    '406285f2-be72-5594-8664-c8568ad9bc88',
-    '82c5209b-c183-5bc9-941c-890eba821a44',
-    '925610f9-1c3c-5396-880f-02a5fe309d53',
+    '1fe15210-4490-58b0-a38c-bb0386e98482',
+    '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
+    '2666bf97-7400-57c7-b535-7903e22ced34',
   ][i % 3],
   date_added: '2026-09-28',
 }));
@@ -71,7 +72,12 @@ describe('Procedural waiting list filters and CSV', () => {
       'Mitral balloon valvuloplasty',
       'Mitral valve repair/replacement',
     ]);
-    expect(options('Urgency')).toEqual(['All', '1 - within 1 week', '2 - within 1 month', '3 - within 3 months']);
+    expect(options('Urgency')).toEqual([
+      'All',
+      '1: Emergent (24 hours)',
+      '2: Urgent (60 days)',
+      '3: Elective (180 days)',
+    ]);
   });
 
   it("keeps offering every recommendation's values once a filter is set, so another can be picked", async () => {
@@ -82,7 +88,12 @@ describe('Procedural waiting list filters and CSV', () => {
 
     expect(options('Cardiac clinic')).toEqual(['All', 'Gulu RRH', 'Lira RRH']);
     expect(options('Procedure type')).toEqual(['All', 'Catheterization', 'Surgery']);
-    expect(options('Urgency')).toEqual(['All', '1 - within 1 week', '2 - within 1 month', '3 - within 3 months']);
+    expect(options('Urgency')).toEqual([
+      'All',
+      '1: Emergent (24 hours)',
+      '2: Urgent (60 days)',
+      '3: Elective (180 days)',
+    ]);
   });
 
   it.each([
@@ -90,7 +101,7 @@ describe('Procedural waiting list filters and CSV', () => {
     ['Primary care clinic', 'Anyeke HCIV', (i: number) => i % 2 === 1],
     ['Procedure type', 'Catheterization', (i: number) => i % 3 === 0],
     ['Specific procedure', 'Mitral valve repair/replacement', (i: number) => i % 3 !== 0],
-    ['Urgency', '2 - within 1 month', (i: number) => i % 3 === 1],
+    ['Urgency', '2: Urgent (60 days)', (i: number) => i % 3 === 1],
   ])('narrows the rows by %s', async (label, option, kept) => {
     render(<WaitingList />);
     await userEvent.selectOptions(screen.getByLabelText(/items per page/i), '50');
@@ -106,7 +117,7 @@ describe('Procedural waiting list filters and CSV', () => {
       {
         ...rows[1],
         recommendation_uuid: 'first',
-        urgency: '1 - within 1 week',
+        urgency: '1: emergent (24 hours)',
         urgency_concept: rows[0].urgency_concept,
       },
       { ...rows[1], recommendation_uuid: 'second' },
@@ -121,7 +132,7 @@ describe('Procedural waiting list filters and CSV', () => {
     });
     render(<WaitingList />);
 
-    await choose('Urgency', '1 - within 1 week');
+    await choose('Urgency', '1: Emergent (24 hours)');
     await choose('Procedure type', 'Catheterization');
     await choose('Procedure type', '');
     await choose('Urgency', '');
@@ -134,15 +145,15 @@ describe('Procedural waiting list filters and CSV', () => {
   it('keeps the filters in the URL and restores them from it', async () => {
     const { unmount } = render(<WaitingList />);
     await choose('Procedure type', 'Surgery');
-    await choose('Urgency', '2 - within 1 month');
-    await waitFor(() => expect(new URLSearchParams(window.location.search).get('urgency')).toBe('2 - within 1 month'));
+    await choose('Urgency', '2: Urgent (60 days)');
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get('urgency')).toBe('2: Urgent (60 days)'));
     expect(new URLSearchParams(window.location.search).get('type')).toBe('Surgery');
     unmount();
 
     render(<WaitingList />);
 
     expect(screen.getByLabelText('Procedure type')).toHaveValue('Surgery');
-    expect(screen.getByLabelText('Urgency')).toHaveValue('2 - within 1 month');
+    expect(screen.getByLabelText('Urgency')).toHaveValue('2: Urgent (60 days)');
     const expected = rows.filter((_, i) => i % 3 === 1).map((row) => row.rhd_id);
     expect(expected.length).toBeGreaterThan(0);
     expect([...shownIds()].sort()).toEqual([...expected].sort());
@@ -154,7 +165,9 @@ describe('Procedural waiting list filters and CSV', () => {
     render(<WaitingList />);
 
     expect(screen.getByLabelText('Specific procedure')).toHaveValue('Old procedure');
-    expect(screen.getByText('No recommendations match these filters.')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-empty-state')).toHaveTextContent(
+      'No recommendations to displayCheck the filters above',
+    );
   });
 
   it('includes rows past the first page in the CSV', async () => {
