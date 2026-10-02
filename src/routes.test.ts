@@ -48,6 +48,20 @@ describe('routes.json', () => {
     );
   });
 
+  it("lists ACT's home nav links in the prototype's order", () => {
+    const links = routes.extensions
+      .filter((extension) => extension.slot === 'homepage-dashboard-slot')
+      .map((extension) => extension.component);
+
+    expect(links).toEqual([
+      'actHomeDashboardLink',
+      'registryDashboardLink',
+      'worklistsDashboardLink',
+      'waitingListDashboardLink',
+      'screenPositiveDashboardLink',
+    ]);
+  });
+
   it('adds the procedural waiting list to the home app under the name and slot its page renders', () => {
     const link = routes.extensions.find((extension) => extension.component === 'waitingListDashboardLink');
     const page = routes.extensions.find((extension) => extension.slot === waitingListDashboardMeta.slot);
