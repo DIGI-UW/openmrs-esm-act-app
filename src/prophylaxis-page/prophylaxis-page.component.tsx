@@ -5,7 +5,7 @@ import { CardHeader, ErrorState, formatDate, isDesktop, parseDate, useLayoutType
 import { useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { RecordProphylaxisButtons } from '../prophylaxis/record-prophylaxis-buttons.component';
-import { type BpgInjection, useBpgInjections, useFacilityName, useOralEntries } from './prophylaxis-page.resource';
+import { type BpgInjection, useBpgInjections, useOralEntries } from './prophylaxis-page.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './prophylaxis-page.scss';
 
@@ -32,11 +32,6 @@ function useTimingTag(patientUuid: string) {
     }
     return null;
   };
-}
-
-function Facility({ injection }: { injection: BpgInjection }) {
-  const name = useFacilityName(injection.facility);
-  return <>{injection.facility ? name : (injection.location ?? '--')}</>;
 }
 
 function BpgInjections({ patientUuid }: { patientUuid: string }) {
@@ -73,9 +68,7 @@ function BpgInjections({ patientUuid }: { patientUuid: string }) {
         {injections.map((injection) => (
           <TableRow key={injection.uuid}>
             <TableCell>{formatDate(parseDate(injection.day), { time: false, noToday: true })}</TableCell>
-            <TableCell>
-              <Facility injection={injection} />
-            </TableCell>
+            <TableCell>{injection.facility ?? injection.location ?? '--'}</TableCell>
             <TableCell>{timingTag(injection)}</TableCell>
           </TableRow>
         ))}

@@ -21,10 +21,11 @@ const [injectionDate, facility, lateReason, weeks, adherence] = [
   '75cd7e15-5f05-58d1-acb1-4a046eb1b437',
   '8edff8dc-4af6-5d0f-bf1d-8e349c7a1b15',
 ];
-const kiswa = '0a1b2c3d-1111-4222-8333-444455556666';
+const kiswa = { uuid: '0a1b2c3d-1111-4222-8333-444455556666', display: 'Kiswa HC III' };
 const obs = (concept: string, value: unknown) => ({ concept: { uuid: concept }, value });
 
-// Shaped as the distro's REST answers: Date as a day, Facility as a location uuid or text, late reasons coded.
+// Shaped as the distro's REST answers: Date as a day, Facility as the location REST resolves its uuid to, or text,
+// late reasons coded.
 const bpg = [
   {
     uuid: 'jul',
@@ -73,9 +74,6 @@ function serve({
   mockOpenmrsFetch.mockImplementation(((url: string) => {
     if (url.includes('/actcore/prophylaxis')) {
       return summary instanceof Error ? Promise.reject(summary) : Promise.resolve({ data: summary });
-    }
-    if (url.includes(`/location/${kiswa}`)) {
-      return Promise.resolve({ data: { display: 'Kiswa HC III' } });
     }
     if (failEncounters || (failOral && url.includes('encounterType=55271793'))) {
       return Promise.reject(new Error('Forbidden'));
@@ -137,28 +135,12 @@ describe('ProphylaxisPage', () => {
     ]);
   });
 
-  it('looks each facility up once, however many injections name it', async () => {
-    serve({
-      injections: [bpg[0], { ...bpg[0], uuid: 'jun', obs: [obs(injectionDate, '2026-06-04'), obs(facility, kiswa)] }],
-    });
-
-    renderPage();
-
-    await waitFor(() => expect(screen.getAllByText('Kiswa HC III')).toHaveLength(2));
-    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).includes(`/location/${kiswa}`))).toHaveLength(1);
-  });
-
-  it('shows the recorded Facility answer when its location cannot be looked up', async () => {
-    const serveEncounters = mockOpenmrsFetch.getMockImplementation();
-    mockOpenmrsFetch.mockImplementation(((url: string, ...rest: Array<unknown>) =>
-      url.includes(`/location/${kiswa}`)
-        ? Promise.reject(new Error('Network error'))
-        : serveEncounters(url, ...(rest as []))) as never);
-
+  it('names the facility REST resolves a location answer to, with no lookup of its own', async () => {
     renderPage();
 
     const table = await screen.findByRole('table', { name: 'BPG injections' });
-    expect(await within(table).findByText(kiswa)).toBeInTheDocument();
+    expect(within(table).getByText('Kiswa HC III')).toBeInTheDocument();
+    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).includes('/location/'))).toHaveLength(0);
   });
 
   it('marks an on time injection green and a late one as late', async () => {
