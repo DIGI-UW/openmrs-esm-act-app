@@ -2,17 +2,25 @@ import React from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type Config } from '../config-schema';
+import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import QuickActions from './quick-actions.component';
 
 const defaultQuickActions: Config['quickActions'] = {
   registerPatientUrl: '${openmrsSpaBase}/patient-registration',
+  enterProphylaxisInFastDataEntry: true,
   enterProphylaxisUrl: '${openmrsSpaBase}/forms',
   prophylaxisForms: [],
   findPatientInPanel: false,
   findPatientUrl: '${openmrsSpaBase}/search?query=',
 };
+
+// Enter prophylaxis switched back to fast data entry, with the default BPG and oral forms.
+async function signInWithFastDataEntry() {
+  const { quickActions } = getDefaultsFromConfigSchema(configSchema) as Config;
+  await signInWith([homePrivilege], { quickActions: { ...quickActions, enterProphylaxisInFastDataEntry: true } });
+}
 
 describe('QuickActions', () => {
   beforeEach(async () => {
@@ -42,7 +50,16 @@ describe('QuickActions', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it("opens Enter prophylaxis's patient search by default", async () => {
+    render(<QuickActions />);
+
+    await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
+
+    expect(screen.getByRole('dialog', { name: 'Enter prophylaxis' })).toHaveTextContent('Which prophylaxis?');
+  });
+
   it('offers BPG and oral prophylaxis as ACT 2.0 did, each opening its form in fast data entry', async () => {
+    await signInWithFastDataEntry();
     render(<QuickActions />);
 
     const enter = screen.getByRole('button', { name: /enter prophylaxis/i });
@@ -60,6 +77,7 @@ describe('QuickActions', () => {
   });
 
   it('hides the choices again when enter prophylaxis is clicked a second time', async () => {
+    await signInWithFastDataEntry();
     render(<QuickActions />);
 
     await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));

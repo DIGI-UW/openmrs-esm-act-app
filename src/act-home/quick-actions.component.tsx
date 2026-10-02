@@ -4,6 +4,7 @@ import { Add, ArrowUpRight, Search } from '@carbon/react/icons';
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { ScreenAccess } from '../access/screen-access.component';
+import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.component';
 import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
 import styles from './quick-actions.scss';
 
@@ -18,13 +19,26 @@ function ActionLabel({ label, Icon }: { label: string; Icon: typeof Add }) {
   );
 }
 
-/** Enter prophylaxis: the configured forms to choose from, as ACT 2.0 offered BPG and oral, else one link. */
+/**
+ * Enter prophylaxis: ACT's patient search, opening the form in the chart; or, configured back to fast data
+ * entry, its forms to choose from, as ACT 2.0 offered BPG and oral, else one link.
+ */
 function EnterProphylaxis() {
   const { t } = useTranslation();
   const { quickActions } = useConfig<Config>();
   const [open, setOpen] = useState(false);
   const label = t('enterProphylaxis', 'Enter prophylaxis');
 
+  if (!quickActions.enterProphylaxisInFastDataEntry) {
+    return (
+      <>
+        <button type="button" className={styles.action} onClick={() => setOpen(true)}>
+          <ActionLabel label={label} Icon={ArrowUpRight} />
+        </button>
+        {open && <EnterProphylaxisSearch onClose={() => setOpen(false)} />}
+      </>
+    );
+  }
   if (!quickActions.prophylaxisForms.length) {
     return (
       <ConfigurableLink to={quickActions.enterProphylaxisUrl} className={styles.action}>

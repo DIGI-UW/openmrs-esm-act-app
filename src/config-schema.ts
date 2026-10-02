@@ -55,6 +55,12 @@ export const configSchema = {
       'Where the Register patient quick action on ACT home leads.',
       '${openmrsSpaBase}/patient-registration',
     ),
+    enterProphylaxisInFastDataEntry: {
+      _type: Type.Boolean,
+      _default: false,
+      _description:
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart.",
+    },
     enterProphylaxisUrl: link(
       'Where the Enter prophylaxis quick action on ACT home leads when prophylaxisForms is empty: the fast data entry app.',
       '${openmrsSpaBase}/forms',
@@ -196,6 +202,7 @@ export interface Config {
   };
   quickActions: {
     registerPatientUrl: string;
+    enterProphylaxisInFastDataEntry: boolean;
     enterProphylaxisUrl: string;
     prophylaxisForms: Array<{ label: string; url: string }>;
     findPatientInPanel: boolean;

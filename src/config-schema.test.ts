@@ -23,6 +23,7 @@ describe('configSchema', () => {
       },
       quickActions: {
         registerPatientUrl: '${openmrsSpaBase}/patient-registration',
+        enterProphylaxisInFastDataEntry: false,
         enterProphylaxisUrl: '${openmrsSpaBase}/forms',
         prophylaxisForms: [
           { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
