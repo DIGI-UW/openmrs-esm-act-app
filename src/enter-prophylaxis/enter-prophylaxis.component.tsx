@@ -68,6 +68,7 @@ export function EnterProphylaxisSearch({ onClose }: { onClose: () => void }) {
           selectedIndex={choices.indexOf(choice)}
           onChange={({ index }) => setChoice(choices[index])}
           size="md"
+          className={styles.switcher}
         >
           {choices.map((key) => (
             <Switch key={key} name={key} text={labels[key]} />

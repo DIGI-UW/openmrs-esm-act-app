@@ -1,4 +1,5 @@
 @use '@carbon/layout';
+@use '@carbon/colors';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
@@ -17,4 +18,25 @@
   @include type.type-style('helper-text-01');
   color: $text-02;
   margin-top: layout.$spacing-03;
+}
+
+// The design draws the choice in black and white; the styleguide's blue override is !important, so these are too.
+.choice .switcher :global(.cds--content-switcher-btn) {
+  background-color: $ui-02 !important;
+  border: 1px solid $ui-05 !important;
+  border-radius: 0;
+  color: $ui-05 !important;
+
+  & + :global(.cds--content-switcher-btn) {
+    border-left: none !important;
+  }
+
+  &:hover {
+    background-color: colors.$gray-10-hover !important;
+  }
+
+  &:global(.cds--content-switcher--selected) {
+    background-color: $ui-05 !important;
+    color: $ui-02 !important;
+  }
 }
