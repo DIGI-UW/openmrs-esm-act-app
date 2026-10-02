@@ -6,6 +6,7 @@ import { registryDashboardMeta } from './registry/registry.meta';
 import { waitingListDashboardMeta } from './waiting-list/waiting-list.meta';
 import { screenPositiveDashboardMeta } from './screen-positive/screen-positive.meta';
 import { worklistsDashboardMeta } from './worklists/worklists.meta';
+import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 
 describe('routes.json', () => {
   it('registers every component it names', () => {
@@ -105,5 +106,16 @@ describe('routes.json', () => {
     expect(card.slot).toBe('patient-chart-summary-dashboard-slot');
     // The summary lays its cards two to a row unless one asks for the whole row.
     expect(card).toMatchObject({ order: 0, meta: { fullWidth: true } });
+  });
+
+  it("registers the chart's Cardiac tests page under the slot and path its link names, for a distro to add to the chart's nav", () => {
+    const link = routes.extensions.find((extension) => extension.component === 'cardiacTestsDashboardLink');
+    const page = routes.extensions.find((extension) => extension.component === 'cardiacTestsDashboard');
+
+    expect(link.meta).toEqual(cardiacTestsDashboardMeta);
+    // The chart's pages are the distro's to choose (DIGI-UW/openmrs-module-actcore#29), so the link names no slot.
+    expect(link).not.toHaveProperty('slot');
+    expect(page.slot).toBe(cardiacTestsDashboardMeta.slot);
+    expect(page.meta).toEqual({ fullWidth: true });
   });
 });

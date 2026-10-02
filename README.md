@@ -65,6 +65,23 @@ Its filters are kept in the URL, and Download CSV saves the filtered rows. Open 
 editing in a workspace on the list itself, the forms app's `exportedPatientFormEntryWorkspace`, registered in this
 app's own `act-waiting-list` workspace group as Service Queues registers it; saving it evaluates the list again.
 
+## Patient chart pages
+
+Pages for the patient chart's left nav, whose links are registered in no slot so that the distro chooses the chart's
+pages. A distro adds a page's link to the chart's `patient-chart-dashboard-slot` in its frontend config:
+
+```json
+"@openmrs/esm-patient-chart-app": {
+  "extensionSlots": {
+    "patient-chart-dashboard-slot": { "add": ["act-cardiac-tests-dashboard-link"] }
+  }
+}
+```
+
+- **Cardiac tests** (`act-cardiac-tests-dashboard-link`): the patient's echocardiograms, newest first, with the
+  mitral and aortic valve findings and left ventricular ejection fraction; Add opens the echo form, starting a visit
+  when the patient has none. The form, its encounter type and the concepts are in `cardiacTests`.
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, ACT Core with the gap look-up, cohort 3.7.3 or later for the RHD flag

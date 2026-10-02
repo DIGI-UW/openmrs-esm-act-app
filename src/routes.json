@@ -112,6 +112,24 @@
       "component": "prophylaxisStatusTag"
     },
     {
+      "name": "act-cardiac-tests-dashboard-link",
+      "component": "cardiacTestsDashboardLink",
+      "meta": {
+        "slot": "act-cardiac-tests-dashboard-slot",
+        "path": "act-cardiac-tests",
+        "title": "Cardiac tests",
+        "icon": "omrs-icon-activity"
+      }
+    },
+    {
+      "name": "act-cardiac-tests-dashboard",
+      "slot": "act-cardiac-tests-dashboard-slot",
+      "component": "cardiacTestsDashboard",
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "act-prophylaxis-card",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "prophylaxisCard",

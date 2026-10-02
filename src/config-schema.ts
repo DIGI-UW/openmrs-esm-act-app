@@ -13,6 +13,12 @@ const locationTags = (clinics: string, defaultTags: Array<string>) => ({
   _description: `Location tags that mark ${clinics}.`,
 });
 
+const concept = (description: string, defaultUuid: string) => ({
+  _type: Type.ConceptUuid,
+  _default: defaultUuid,
+  _description: description,
+});
+
 const link = (description: string, defaultUrl: string) => ({
   _type: Type.String,
   _default: defaultUrl,
@@ -151,6 +157,41 @@ export const configSchema = {
       _description: "The form the screen positive list's Enter echo result opens beside the list.",
     },
   },
+  cardiacTests: {
+    echoForm: {
+      _type: Type.UUID,
+      _default: '88e54fb0-1243-3f7a-b925-f64648ca6635',
+      _description: "The form the chart's Cardiac tests page opens from Add.",
+    },
+    echoEncounterType: {
+      _type: Type.UUID,
+      _default: '730f5ec2-7102-55d0-8602-2d792844f245',
+      _description: "The encounter type of the echocardiograms the Cardiac tests page lists, the echo form's.",
+    },
+    concepts: {
+      date: concept(
+        'Date of Echocardiogram, the date a row shows; without one, the encounter date.',
+        '911be530-9457-54be-8515-4bbcdb832ccb',
+      ),
+      mitralRegurgitation: concept(
+        'Mitral Regurgitation, the Mitral regurgitation column.',
+        'd6ab05e2-1ece-5f8f-893d-74739aa66ce5',
+      ),
+      mitralStenosis: concept(
+        'Mitral stenosis severity, the Mitral stenosis column.',
+        'ed209fc3-0138-516c-a0bd-bcd3b2697a87',
+      ),
+      aorticRegurgitation: concept(
+        'Aortic Regurgitation, the Aortic regurgitation column.',
+        '0bbc510f-1e95-5c74-bbe3-8896907fd6c1',
+      ),
+      aorticStenosis: concept('Aortic Stenosis, the Aortic stenosis column.', '7586c9a6-73db-5ab2-8f23-71a3cc4bae62'),
+      ejectionFraction: concept(
+        'Left Ventricular Ejection Fraction, the Left ventricular ejection fraction column, in %.',
+        'ed630fda-8451-53c0-929e-40eafd9bca9b',
+      ),
+    },
+  },
   prophylaxisCard: {
     bpgForm: {
       _type: Type.UUID,
@@ -220,6 +261,14 @@ export const configSchema = {
   },
 };
 
+export type EchoField =
+  | 'date'
+  | 'mitralRegurgitation'
+  | 'mitralStenosis'
+  | 'aorticRegurgitation'
+  | 'aorticStenosis'
+  | 'ejectionFraction';
+
 export type ActScreen = 'home' | 'registry' | 'worklists' | 'waitingList' | 'screenPositive';
 
 export interface Config {
@@ -242,6 +291,11 @@ export interface Config {
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
   screenPositive: { report: string; echoForm: string };
+  cardiacTests: {
+    echoForm: string;
+    echoEncounterType: string;
+    concepts: Record<EchoField, string>;
+  };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
   visitType: string;

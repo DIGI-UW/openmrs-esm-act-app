@@ -57,6 +57,18 @@ describe('configSchema', () => {
         report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
         echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
       },
+      cardiacTests: {
+        echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
+        echoEncounterType: '730f5ec2-7102-55d0-8602-2d792844f245',
+        concepts: {
+          date: '911be530-9457-54be-8515-4bbcdb832ccb',
+          mitralRegurgitation: 'd6ab05e2-1ece-5f8f-893d-74739aa66ce5',
+          mitralStenosis: 'ed209fc3-0138-516c-a0bd-bcd3b2697a87',
+          aorticRegurgitation: '0bbc510f-1e95-5c74-bbe3-8896907fd6c1',
+          aorticStenosis: '7586c9a6-73db-5ab2-8f23-71a3cc4bae62',
+          ejectionFraction: 'ed630fda-8451-53c0-929e-40eafd9bca9b',
+        },
+      },
       prophylaxisCard: {
         bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
         oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
