@@ -125,12 +125,22 @@
     {
       "name": "act-waiting-list",
       "scopePattern": "/home/act-waiting-list"
+    },
+    {
+      "name": "act-screen-positive",
+      "scopePattern": "/home/act-screen-positive"
     }
   ],
   "workspaceWindows2": [
     {
       "name": "act-waiting-list-form-entry",
       "group": "act-waiting-list",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-screen-positive-form-entry",
+      "group": "act-screen-positive",
       "width": "extra-wide",
       "canMaximize": true
     }
@@ -145,6 +155,11 @@
       "name": "act-waiting-list-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-waiting-list-form-entry"
+    },
+    {
+      "name": "act-screen-positive-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-screen-positive-form-entry"
     }
   ]
 }

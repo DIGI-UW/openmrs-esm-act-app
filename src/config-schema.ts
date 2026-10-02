@@ -142,6 +142,11 @@ export const configSchema = {
       _description:
         'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
     },
+    echoForm: {
+      _type: Type.UUID,
+      _default: '88e54fb0-1243-3f7a-b925-f64648ca6635',
+      _description: "The form the screen positive list's Enter echo result opens beside the list.",
+    },
   },
   prophylaxisCard: {
     bpgForm: {
@@ -211,7 +216,7 @@ export interface Config {
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
-  screenPositive: { report: string };
+  screenPositive: { report: string; echoForm: string };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
   visitType: string;
