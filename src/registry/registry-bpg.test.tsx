@@ -32,7 +32,7 @@ const bpgOn = { registry: { report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890', show
 describe('Registry BPG status and adherence', () => {
   beforeEach(() => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: withBpg,

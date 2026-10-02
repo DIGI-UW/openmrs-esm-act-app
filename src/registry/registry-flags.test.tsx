@@ -41,7 +41,8 @@ const floatingBoxOf = (text: string) => screen.getByText(text).closest('.cds--po
 describe('Registry flags column', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
+    // An explicit All, so every row shows, rather than the opening defaults.
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
     await signInWith(['View Patient Flags']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],

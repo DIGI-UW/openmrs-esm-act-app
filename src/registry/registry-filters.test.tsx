@@ -28,7 +28,7 @@ async function choose(label: string, option: string) {
 describe('Registry filters', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
     await signInWith(['View Patient Flags']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
@@ -137,7 +137,7 @@ describe('Registry filters', () => {
     expect(matching()).toBe(30);
   });
 
-  it('follows the URL when the Registry link resets it', async () => {
+  it('follows the URL when the Registry link resets it, back to the opening defaults', async () => {
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?category=RHD+B');
     render(<Registry />);
     expect(shownNames()).toHaveLength(10);
@@ -148,11 +148,12 @@ describe('Registry filters', () => {
     });
 
     expect(screen.getByLabelText('Category at diagnosis')).toHaveValue('');
-    expect(matching()).toBe(30);
+    // The defaults open on Active, which leaves out Patient 4.
+    expect(matching()).toBe(29);
   });
 
   it('starts again from the first page when the Registry link resets the filters', async () => {
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=Active');
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?category=RHD+A');
     render(<Registry />);
     await userEvent.click(screen.getByRole('button', { name: /next page/i }));
 
@@ -180,10 +181,13 @@ describe('Registry filters', () => {
     render(<Registry />);
 
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'pat' } });
-    act(() => vi.advanceTimersByTime(299));
-    expect(window.location.search).toBe('');
-    act(() => vi.advanceTimersByTime(1));
-    vi.useRealTimers();
+    try {
+      act(() => vi.advanceTimersByTime(299));
+      expect(new URLSearchParams(window.location.search).has('q')).toBe(false);
+      act(() => vi.advanceTimersByTime(1));
+    } finally {
+      vi.useRealTimers();
+    }
 
     expect(new URLSearchParams(window.location.search).get('q')).toBe('pat');
   });

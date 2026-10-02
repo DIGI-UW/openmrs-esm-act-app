@@ -28,6 +28,8 @@ const registryPrivilege = 'View Patient Flags';
 describe('Registry', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    // An explicit All, so every row shows, rather than the opening defaults.
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
     await signInWith([registryPrivilege]);
   });
 

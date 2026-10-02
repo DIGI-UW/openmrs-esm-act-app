@@ -54,7 +54,7 @@ function RegistryTable() {
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
   // Coming back from a chart paints the cached rows, then evaluates the report again for what the chart changed.
   const { rows, isLoading, error } = useReportDataset(registry.report, params);
-  const [filters, setFilters] = useRegistryFilters();
+  const [filters, setFilters, filtersPending] = useRegistryFilters();
   // A BPG status in the URL has no filter to clear it while the setting is off, so it is not applied.
   const shown = useMemo(
     () => filterRegistry(rows, registry.showBpgColumns ? filters : { ...filters, bpg: '' }),
@@ -148,7 +148,7 @@ function RegistryTable() {
       />
     );
   }
-  if (isLoading) {
+  if (isLoading || filtersPending) {
     return (
       <DataTableSkeleton
         role="progressbar"

@@ -13,6 +13,8 @@ async function downloadedCsv() {
   const createObjectURL = vi.fn((blob: Blob) => 'blob:registry');
   window.URL.createObjectURL = createObjectURL as never;
   window.URL.revokeObjectURL = vi.fn();
+  // The test browser would follow the blob link, leaving the next test on a page with no URL to set.
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
   await userEvent.click(screen.getByRole('button', { name: /download csv/i }));
   return (createObjectURL.mock.calls[0][0] as Blob).text();
 }
@@ -20,7 +22,7 @@ async function downloadedCsv() {
 describe('Registry CSV download', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
     await signInWith(['View Patient Flags']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
