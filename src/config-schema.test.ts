@@ -37,9 +37,12 @@ describe('configSchema', () => {
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [
           { step: 'Active', label: 'Active' },
+          { step: 'Prescribed', label: 'Prescribed' },
           { step: 'Prescribed Prophylaxis', label: 'Prescribed' },
+          { step: 'Initiated', label: 'Initiated' },
           { step: 'Initiated BPG', label: 'Initiated' },
           { step: 'Covered today', label: 'Covered today' },
+          { step: 'Adherent (80%+)', label: 'Adherent (80%+)' },
           { step: 'Adherent', label: 'Adherent (80%+)' },
         ],
       },

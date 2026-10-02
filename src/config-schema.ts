@@ -106,13 +106,16 @@ export const configSchema = {
       },
       _default: [
         { step: 'Active', label: 'Active' },
+        { step: 'Prescribed', label: 'Prescribed' },
         { step: 'Prescribed Prophylaxis', label: 'Prescribed' },
+        { step: 'Initiated', label: 'Initiated' },
         { step: 'Initiated BPG', label: 'Initiated' },
         { step: 'Covered today', label: 'Covered today' },
+        { step: 'Adherent (80%+)', label: 'Adherent (80%+)' },
         { step: 'Adherent', label: 'Adherent (80%+)' },
       ],
       _description:
-        "The report's steps the widget draws, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed Prophylaxis, so they are left out by default.",
+        "The report's steps the widget draws, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
     },
   },
   registry: {

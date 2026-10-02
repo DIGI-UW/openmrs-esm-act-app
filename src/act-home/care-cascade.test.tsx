@@ -8,13 +8,15 @@ import CareCascade from './care-cascade.component';
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
 
+// Step names are the report's verbatim; the widget matches on them.
 const cascade = [
   { step_order: 1, step: 'Active', patients: 20 },
-  { step_order: 2, step: 'Prescribed Prophylaxis', patients: 17 },
+  { step_order: 2, step: 'Prescribed', patients: 17 },
   { step_order: 3, step: 'Oral', patients: 2 },
   { step_order: 4, step: 'BPG', patients: 15 },
-  { step_order: 5, step: 'Initiated BPG', patients: 11 },
-  { step_order: 6, step: 'Adherent', patients: 0 },
+  { step_order: 5, step: 'Initiated', patients: 11 },
+  { step_order: 6, step: 'Covered today', patients: 9 },
+  { step_order: 7, step: 'Adherent (80%+)', patients: 0 },
 ];
 
 function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
@@ -34,22 +36,8 @@ describe('CareCascade', () => {
     await signInWith([homePrivilege]);
   });
 
-  it('draws the configured steps of the cascade report, in the configured order, with their labels and counts', () => {
+  it("draws the report's five cascade steps, leaving out its Oral and BPG split", () => {
     dataset({ rows: cascade });
-
-    render(<CareCascade />);
-
-    const steps = screen.getAllByTestId('cascade-step');
-    expect(steps.map((step) => step.textContent)).toEqual([
-      'Active20',
-      'Prescribed17',
-      'Initiated11',
-      'Adherent (80%+)0',
-    ]);
-  });
-
-  it('draws Covered today once the report returns it', () => {
-    dataset({ rows: [...cascade.slice(0, 5), { step_order: 6, step: 'Covered today', patients: 9 }, cascade[5]] });
 
     render(<CareCascade />);
 
@@ -60,6 +48,43 @@ describe('CareCascade', () => {
       'Covered today9',
       'Adherent (80%+)0',
     ]);
+  });
+
+  it('still draws a report that names its steps as the cascade report did before Covered today, while a distro catches up', () => {
+    dataset({
+      rows: [
+        { step_order: 1, step: 'Active', patients: 20 },
+        { step_order: 2, step: 'Prescribed Prophylaxis', patients: 17 },
+        { step_order: 3, step: 'Oral', patients: 2 },
+        { step_order: 4, step: 'BPG', patients: 15 },
+        { step_order: 5, step: 'Initiated BPG', patients: 11 },
+        { step_order: 6, step: 'Adherent', patients: 0 },
+      ],
+    });
+
+    render(<CareCascade />);
+
+    expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual([
+      'Active20',
+      'Prescribed17',
+      'Initiated11',
+      'Adherent (80%+)0',
+    ]);
+  });
+
+  it("draws each step under its configured label, not the report's step name", async () => {
+    await signInWith([homePrivilege], {
+      careCascade: {
+        report: 'r',
+        reportUrl: '${openmrsSpaBase}/reports',
+        steps: [{ step: 'Covered today', label: 'Covered' }],
+      },
+    });
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual(['Covered9']);
   });
 
   it('ends with the screen positive count, opening that list, for a user who may see it', async () => {
@@ -79,7 +104,7 @@ describe('CareCascade', () => {
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [
           { step: 'Active', label: 'Active' },
-          { step: 'Covered today', label: 'Covered today' },
+          { step: 'Retained in care', label: 'Retained in care' },
         ],
       },
     });
@@ -96,7 +121,7 @@ describe('CareCascade', () => {
     render(<CareCascade />);
 
     const widths = screen.getAllByTestId('cascade-bar').map((bar) => bar.style.width);
-    expect(widths).toEqual(['100%', '85%', '55%', '0%']);
+    expect(widths).toEqual(['100%', '85%', '55%', '45%', '0%']);
   });
 
   it('evaluates the configured report up to the start of today, as the reports app runs it for today', () => {
