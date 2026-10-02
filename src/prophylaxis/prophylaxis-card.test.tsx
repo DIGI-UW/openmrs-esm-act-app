@@ -152,10 +152,11 @@ describe('ProphylaxisCard', () => {
     await screen.findByText('BPG · every 4 weeks');
     expect(field('next-due')).toHaveAttribute('data-overdue', 'true');
 
-    respondWith({ ...winnie, lastGiven: '2026-10-02', nextDue: '2026-10-30', status: 'ok' });
+    // A past date, as the framework writes the day the test runs as Today.
+    respondWith({ ...winnie, lastGiven: '2026-09-28', nextDue: '2026-10-26', status: 'ok' });
     await invalidatePatientEncounters('winnie');
 
-    await waitFor(() => expect(field('last-dose')).toHaveTextContent('02-Oct-2026'));
+    await waitFor(() => expect(field('last-dose')).toHaveTextContent(/^28-Sept?-2026$/));
     expect(field('next-due')).toHaveAttribute('data-overdue', 'false');
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
   });
