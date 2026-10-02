@@ -56,7 +56,7 @@ export function useRecentlyViewedPatients() {
   );
 
   const addRecentlyViewed = async (patientUuid: string) => {
-    // The POST replaces every user property, so it waits for the ones it must keep.
+    // The POST replaces every user property, so none is sent before they load.
     if (!user?.uuid || !properties) {
       return;
     }

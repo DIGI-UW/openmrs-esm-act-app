@@ -62,7 +62,7 @@ export const configSchema = {
         "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart.",
     },
     enterProphylaxisUrl: link(
-      'Where the Enter prophylaxis quick action on ACT home leads when prophylaxisForms is empty: the fast data entry app.',
+      'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',
       '${openmrsSpaBase}/forms',
     ),
     prophylaxisForms: {
@@ -76,7 +76,7 @@ export const configSchema = {
         { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
       ],
       _description:
-        'The choices the Enter prophylaxis quick action offers, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
+        'The choices the Enter prophylaxis quick action offers when enterProphylaxisInFastDataEntry is true, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
     },
     findPatientInPanel: {
       _type: Type.Boolean,
@@ -85,7 +85,7 @@ export const configSchema = {
         "Whether Find a patient on ACT home opens ACT's patient search over the page. When false, it leads to findPatientUrl.",
     },
     findPatientUrl: link(
-      'Where the Find a patient quick action on ACT home leads. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
+      'Where the Find a patient quick action on ACT home leads when findPatientInPanel is false. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
       '${openmrsSpaBase}/search?query=',
     ),
   },
