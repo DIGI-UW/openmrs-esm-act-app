@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import ProphylaxisStatusTag from './prophylaxis-status-tag.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -118,4 +118,24 @@ describe('ProphylaxisStatusTag', () => {
       expect(mockOpenmrsFetch).not.toHaveBeenCalled();
     },
   );
+  it('says when the next dose is due once a newer BPG dose is saved, and not for the dose on record', async () => {
+    respondWith('ok');
+    renderTag();
+    await settled();
+    expect(showSnackbar).not.toHaveBeenCalled();
+
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { ...summary('ok'), lastGiven: '2026-10-03', nextDue: '2026-10-24' },
+    } as never);
+    await mutateCache(
+      (key) =>
+        typeof key === 'string' && key.includes(`${restBaseUrl}/encounter`) && key.includes(`patient=${patientUuid}`),
+    );
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'BPG dose recorded', subtitle: 'Next due 24-Oct-2026' }),
+      ),
+    );
+  });
 });

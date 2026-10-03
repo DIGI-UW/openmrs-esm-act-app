@@ -6,6 +6,7 @@ import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
+import { columnHeaders } from '../column-headers.test-helper';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 
@@ -21,7 +22,7 @@ const statuses = [
 const withBpg = registryRows.map((row, i) => ({ ...row, ...statuses[i % statuses.length], adherence: 50 + i }));
 
 function bpgCell(name: string) {
-  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+  const headers = columnHeaders();
   return within(screen.getByRole('row', { name: new RegExp(`${name}\\b`) })).getAllByRole('cell')[
     headers.indexOf('BPG status')
   ];
@@ -47,7 +48,7 @@ describe('Registry BPG status and adherence', () => {
 
     render(<Registry />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     expect(headers).not.toContain('BPG status');
     expect(headers).not.toContain('Adherence');
     expect(screen.queryByLabelText('BPG status')).not.toBeInTheDocument();
@@ -74,7 +75,7 @@ describe('Registry BPG status and adherence', () => {
 
     render(<Registry />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     const row = within(screen.getByRole('row', { name: /Patient 1\b/ })).getAllByRole('cell');
     expect(row[headers.indexOf('Adherence')]).toHaveTextContent(/^$/);
   });
@@ -84,7 +85,7 @@ describe('Registry BPG status and adherence', () => {
 
     render(<Registry />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     const row = within(screen.getByRole('row', { name: /Patient 2\b/ })).getAllByRole('cell');
     expect(within(row[headers.indexOf('Adherence')]).getByRole('img', { name: 'Adherence 51%' })).toHaveTextContent(
       '51%',

@@ -8,6 +8,7 @@ import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
+import { columnHeaders } from '../column-headers.test-helper';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
@@ -38,15 +39,15 @@ describe('Registry', () => {
 
     render(<Registry />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-    expect(headers).toEqual(['Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Flags']);
+    const headers = columnHeaders();
+    expect(headers).toEqual(['', 'Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Flags']);
     const first = screen.getByRole('row', { name: /Patient 1\b/ });
     expect(
       within(first)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['Patient 1rhd00001', '10 F', 'RHD A', 'Q28 day BPG', '']);
-    const [patient] = within(first).getAllByRole('cell');
+    ).toEqual(['', 'Patient 1rhd00001', '10 F', 'RHD A', 'Q28 day BPG', '']);
+    const [, patient] = within(first).getAllByRole('cell');
     expect(within(patient).getByRole('link', { name: 'Patient 1' })).toHaveAttribute(
       'href',
       '/openmrs/spa/patient/patient-1/chart',
@@ -65,7 +66,7 @@ describe('Registry', () => {
 
     render(<Registry />);
 
-    const ageSex = (name: RegExp) => within(screen.getByRole('row', { name })).getAllByRole('cell')[1].textContent;
+    const ageSex = (name: RegExp) => within(screen.getByRole('row', { name })).getAllByRole('cell')[2].textContent;
     expect(ageSex(/Patient 1\b/)).toBe('10');
     expect(ageSex(/Patient 2\b/)).toBe('M');
     expect(ageSex(/Patient 3\b/)).toBe('');

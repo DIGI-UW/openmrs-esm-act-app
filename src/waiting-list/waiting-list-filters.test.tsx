@@ -211,9 +211,9 @@ describe('Procedural waiting list filters and CSV', () => {
     const lines = (await downloadedCsv()).trim().split('\r\n');
 
     expect(lines[0]).toBe(
-      'ACT ID,Sex,Age,Type,Procedure,Urgency,Days pending,District,Contraindications,Suitable for repair',
+      'ACT ID,Sex,Age,Date of birth,Type,Procedure,Urgency,Days pending,District,Contraindications,Suitable for repair',
     );
     expect(lines).toHaveLength(1 + rows.filter((row) => row.procedure_type === 'Surgery').length);
-    expect(lines.slice(1).every((line) => line.split(',')[3] === 'Surgery')).toBe(true);
+    expect(lines.slice(1).every((line) => line.split(',')[4] === 'Surgery')).toBe(true);
   });
 });

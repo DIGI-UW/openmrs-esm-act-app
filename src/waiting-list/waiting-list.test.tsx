@@ -35,7 +35,7 @@ describe('Procedural waiting list', () => {
     render(<WaitingList />);
 
     const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-    expect(headers.slice(0, 6)).toEqual(['ACT ID', 'Sex', 'Age', 'Type', 'Procedure', 'Urgency']);
+    expect(headers.slice(0, 7)).toEqual(['ACT ID', 'Sex', 'Age', 'Date of birth', 'Type', 'Procedure', 'Urgency']);
     expect(headers).toEqual(expect.arrayContaining(['District', 'Contraindications', 'Suitable for repair']));
     const cells = (id: string) =>
       Object.fromEntries(
@@ -47,6 +47,7 @@ describe('Procedural waiting list', () => {
       'ACT ID': 'rhd00001',
       Sex: 'F',
       Age: '10',
+      'Date of birth': '15-Mar-2016',
       Type: 'Catheterization',
       Procedure: 'Mitral balloon valvuloplasty',
       Urgency: '3: Elective (180 days)',
@@ -100,7 +101,7 @@ describe('Procedural waiting list', () => {
       const { rerender } = render(<WaitingList />);
 
       const { skeleton, rows, columns } = tableSkeleton();
-      expect({ rows, columns }).toEqual({ rows: 10, columns: 11 });
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 12 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: waitingListRows });
       rerender(<WaitingList />);

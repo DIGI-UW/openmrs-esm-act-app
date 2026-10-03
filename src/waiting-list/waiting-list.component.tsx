@@ -16,6 +16,7 @@ import {
 import {
   CardiologyPictogram,
   fetchCurrentPatient,
+  formatDate,
   isDesktop,
   launchWorkspace2,
   showSnackbar,
@@ -26,6 +27,7 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { parseReportDate } from '../reports/report-date';
 import { downloadCsv } from '../table-filters/csv';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
@@ -96,6 +98,13 @@ function WaitingListTable() {
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
     { header: t('sex', 'Sex'), text: text('sex') },
     { header: t('age', 'Age'), text: text('age_years') },
+    {
+      header: t('dateOfBirth', 'Date of birth'),
+      text: (waiting) => {
+        const born = parseReportDate(waiting.row.date_of_birth);
+        return born ? formatDate(born, { time: false, noToday: true }) : '';
+      },
+    },
     { header: t('procedureType', 'Type'), text: text('procedure_type') },
     { header: t('procedure', 'Procedure'), text: text('procedure_name') },
     { header: t('urgency', 'Urgency'), text: text('urgency') },

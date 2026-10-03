@@ -52,7 +52,7 @@ export const configSchema = {
     riskFlags: {
       _type: Type.Array,
       _elements: { _type: Type.String },
-      _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up'],
+      _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
       _description: 'The flags, by name, that mark a clinical risk. The lists of every other flag are missing data.',
     },
   },
@@ -189,6 +189,30 @@ export const configSchema = {
       ejectionFraction: concept(
         'Left Ventricular Ejection Fraction, the Left ventricular ejection fraction column, in %.',
         'ed630fda-8451-53c0-929e-40eafd9bca9b',
+      ),
+    },
+    ecgForm: {
+      _type: Type.UUID,
+      _default: '3776bb8d-4741-3741-aeef-d5b760443569',
+      _description: "The form the Cardiac tests page's Electrocardiograms card opens from Add.",
+    },
+    ecgEncounterType: {
+      _type: Type.UUID,
+      _default: '64c3f35f-a3ec-59d6-8178-0ca9f068cda8',
+      _description: "The encounter type of the electrocardiograms the Cardiac tests page lists, the ECG form's.",
+    },
+    ecgConcepts: {
+      date: concept(
+        'Date of Electrocardiogram, the date a row shows; without one, the encounter date.',
+        'a85d4e63-500f-5af9-8ebd-9e1db5ddc3ed',
+      ),
+      result: concept(
+        'Electrocardiogram Result, the Result column, one answer per finding.',
+        '1c5476e4-ff12-5fbd-b2ad-53f66f9006a0',
+      ),
+      otherFinding: concept(
+        'Other Electrocardiogram Finding, the Other finding column.',
+        '67d65827-eea5-57ac-ae8b-77f91d128063',
       ),
     },
   },
@@ -331,6 +355,9 @@ export interface Config {
     echoForm: string;
     echoEncounterType: string;
     concepts: Record<EchoField, string>;
+    ecgForm: string;
+    ecgEncounterType: string;
+    ecgConcepts: Record<'date' | 'result' | 'otherFinding', string>;
   };
   prophylaxisPage: {
     bpgEncounterType: string;

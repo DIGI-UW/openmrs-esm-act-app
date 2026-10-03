@@ -46,6 +46,27 @@ export function WorklistChoice({
   );
 }
 
+/** A tile that chooses every list at once, counting each patient once per list they are on. */
+export function WorklistAllChoice({
+  count,
+  selected,
+  onSelect,
+}: {
+  count: number;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <button type="button" className={styles.choice} aria-pressed={selected} onClick={onSelect}>
+      <div data-testid="worklist-all-tile" className={selected ? `${styles.tile} ${styles.selected}` : styles.tile}>
+        <span className={styles.count}>{count}</span>
+        <span className={styles.name}>{t('allFlags', 'All flags')}</span>
+      </div>
+    </button>
+  );
+}
+
 function WorklistTile({ list }: { list: RhdFlagList }) {
   return list.cohortUuid ? (
     <ConfigurableLink to={worklistsUrl(list.flagName)} className={styles.link}>

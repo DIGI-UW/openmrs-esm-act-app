@@ -61,3 +61,40 @@
   justify-content: flex-end;
   margin-bottom: layout.$spacing-05;
 }
+
+.notConsented {
+  margin-left: layout.$spacing-02;
+  font-weight: 600;
+}
+
+.inactive {
+  margin-left: layout.$spacing-03;
+}
+
+.legend {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-bottom: layout.$spacing-03;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-03 0;
+}
+
+.detailFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: layout.$spacing-03 layout.$spacing-05;
+}
+
+.detailLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.overdue {
+  color: $danger;
+}

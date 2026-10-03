@@ -52,7 +52,7 @@ export function filterRegistry(rows: Array<ReportRow>, filters: RegistryFilters)
       matchesColumns(row, filters, registryFilterColumns) &&
       (!filters.flag || rowFlags(row).includes(filters.flag)) &&
       (!q ||
-        [row.full_name, row.rhd_id].some((value) =>
+        [row.full_name, row.rhd_id, row.external_id].some((value) =>
           String(value ?? '')
             .toLowerCase()
             .includes(q),
