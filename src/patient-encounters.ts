@@ -4,7 +4,7 @@ export interface PatientEncounter {
   uuid: string;
   encounterDatetime: string;
   location?: { display: string } | null;
-  obs: Array<{ concept: { uuid: string }; value: unknown }>;
+  obs: Array<{ concept: { uuid: string; display?: string }; value: unknown }>;
 }
 
 /** A patient's encounters of one type, under their /encounter, which common-lib revalidates after a form is saved. */
