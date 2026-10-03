@@ -3,6 +3,7 @@ export const waitingListRows = Array.from({ length: 30 }, (_, i) => ({
   rhd_id: `rhd${String(i + 1).padStart(5, '0')}`,
   sex: i % 2 ? 'M' : 'F',
   age_years: 10 + i,
+  date_of_birth: i === 0 ? '2016-03-15' : null,
   procedure_type: i % 3 ? 'Surgery' : 'Catheterization',
   procedure_name: i % 3 ? 'Mitral valve repair/replacement' : 'Mitral balloon valvuloplasty',
   urgency: '3: elective (180 days/6 months)',

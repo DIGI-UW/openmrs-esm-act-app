@@ -102,13 +102,13 @@ describe('Worklists', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((h) => h.textContent),
-    ).toEqual(['Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', '']);
+    ).toEqual(['Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Days on list', '']);
     const [first] = within(table).getAllByRole('row').slice(1);
     expect(
       within(first)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['Patient 1rhd00001', '11 M', 'RHD B', 'Q28 day BPG', 'Open chart']);
+    ).toEqual(['Patient 1rhd00001', '11 M', 'RHD B', 'Q28 day BPG', '', 'Open chart']);
   });
 
   it('opens the patient chart from a row', async () => {
@@ -169,7 +169,7 @@ describe('Worklists', () => {
       const { rerender } = render(<Worklists />);
 
       const { skeleton, rows: rowCount, columns } = tableSkeleton();
-      expect({ rows: rowCount, columns }).toEqual({ rows: 10, columns: 5 });
+      expect({ rows: rowCount, columns }).toEqual({ rows: 10, columns: 6 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: rows });
       rerender(<Worklists />);
@@ -209,5 +209,68 @@ describe('Worklists', () => {
 
     expect(screen.getByText('You do not have access to the worklists.')).toBeInTheDocument();
     expect(screen.queryByTestId('worklist-tile')).not.toBeInTheDocument();
+  });
+  it('lists every flag at once from the All flags tile, a row per patient and flag, with the flag named', async () => {
+    render(<Worklists />);
+
+    await userEvent.click(screen.getByRole('button', { name: /All flags/ }));
+
+    expect(screen.getByTestId('worklist-all-tile')).toHaveTextContent('3All flags');
+    expect(screen.getByRole('heading', { name: 'All flags' })).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(
+      within(table)
+        .getAllByRole('row')
+        .slice(1)
+        .map((r) =>
+          within(r)
+            .getAllByRole('cell')
+            .slice(0, 2)
+            .map((cell) => cell.textContent),
+        ),
+    ).toEqual([
+      ['Patient 1rhd00001', 'RHD INR target missing'],
+      ['Patient 1rhd00001', 'RHD prophylaxis overdue'],
+      ['Patient 2rhd00002', 'RHD INR target missing'],
+    ]);
+    await waitFor(() => expect(window.location.search).toBe('?flag=all'));
+  });
+
+  it("counts each patient's days on the chosen list from the day they joined it", () => {
+    vi.useFakeTimers({ now: new Date(2026, 9, 3, 10), shouldAdvanceTime: true });
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
+    dataset({
+      rows: [
+        { ...rows[0], rhd_flag_dates: 'RHD INR target missing=2026-09-23|RHD prophylaxis overdue=2026-10-01' },
+        rows[1],
+      ],
+    });
+
+    render(<Worklists />);
+
+    vi.useRealTimers();
+    const daysOnList = within(screen.getByRole('table'))
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => within(r).getAllByRole('cell')[4].textContent);
+    expect(daysOnList).toEqual(['10', '']);
+  });
+
+  it('narrows the patients by cardiac and primary care clinic', async () => {
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
+    dataset({
+      rows: [
+        { ...rows[0], cardiac_clinic: 'Gulu RRH', primary_care_clinic: 'Anyeke HCIV' },
+        { ...rows[1], cardiac_clinic: 'Lira RRH', primary_care_clinic: 'Anyeke HCIV' },
+      ],
+    });
+    render(<Worklists />);
+
+    await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'Lira RRH');
+    expect(shownNames()).toEqual(['Patient 2rhd00002']);
+
+    await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), '');
+    await userEvent.selectOptions(screen.getByLabelText('Primary care clinic'), 'Anyeke HCIV');
+    expect(shownNames()).toEqual(['Patient 1rhd00001', 'Patient 2rhd00002']);
   });
 });
