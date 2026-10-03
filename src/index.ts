@@ -8,6 +8,7 @@ import { createChartDashboardLink } from './chart-dashboard-link.component';
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
+import { trackActReturn } from './back-to-act/act-return';
 
 const moduleName = '@mherman22/esm-act-app';
 
@@ -20,7 +21,10 @@ export const importTranslation = require.context('../translations', false, /.jso
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+  trackActReturn();
 }
+
+export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);
 
 export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
 

@@ -107,6 +107,11 @@
       "component": "screenPositiveDashboard"
     },
     {
+      "name": "act-back-to-act-link",
+      "slot": "top-of-all-patient-dashboards-slot",
+      "component": "backToActLink"
+    },
+    {
       "name": "act-prophylaxis-status-tag",
       "slot": "patient-banner-tags-slot",
       "component": "prophylaxisStatusTag"
