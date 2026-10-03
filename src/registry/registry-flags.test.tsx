@@ -8,6 +8,7 @@ import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
+import { columnHeaders } from '../column-headers.test-helper';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 
@@ -56,7 +57,7 @@ describe('Registry flags column', () => {
   it("shows a patient's one RHD flag as its tag, a risk flag red and a missing data flag orange", () => {
     render(<Registry />);
 
-    expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toContain('Flags');
+    expect(columnHeaders()).toContain('Flags');
     expect(flagsOf('Patient 2')).toEqual([['RHD prophylaxis overdue', 'risk', true]]);
     expect(flagsOf('Patient 4')).toEqual([['RHD INR target missing', 'dataQuality', false]]);
     expect(flagsOf('Patient 3')).toEqual([]);
