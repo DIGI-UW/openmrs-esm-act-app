@@ -19,7 +19,7 @@ describe('configSchema', () => {
       flagLists: {
         namePrefix: 'RHD ',
         names: [],
-        riskFlags: ['RHD prophylaxis overdue', 'RHD lost to follow-up'],
+        riskFlags: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
       },
       quickActions: {
         registerPatientUrl: '${openmrsSpaBase}/patient-registration',

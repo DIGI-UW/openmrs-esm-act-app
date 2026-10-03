@@ -52,7 +52,7 @@ export const configSchema = {
     riskFlags: {
       _type: Type.Array,
       _elements: { _type: Type.String },
-      _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up'],
+      _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
       _description: 'The flags, by name, that mark a clinical risk. The lists of every other flag are missing data.',
     },
   },
