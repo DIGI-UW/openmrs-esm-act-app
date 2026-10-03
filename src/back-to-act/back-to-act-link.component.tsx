@@ -21,14 +21,10 @@ export default function BackToActLink() {
   }
   return (
     <div className={styles.backLink}>
-      <Button
-        kind="ghost"
-        size="sm"
-        renderIcon={(props) => <ArrowLeftIcon size={16} {...props} />}
-        iconDescription=""
-        onClick={() => navigate({ to: actReturn.path })}
-      >
-        {labels[actReturn.screen]}
+      {/* The arrow leads, as a way back reads; renderIcon would draw it after the label. */}
+      <Button kind="ghost" size="sm" className={styles.button} onClick={() => navigate({ to: actReturn.path })}>
+        <ArrowLeftIcon size={16} />
+        <span>{labels[actReturn.screen]}</span>
       </Button>
     </div>
   );

@@ -44,7 +44,7 @@ describe('Back to the ACT page a chart was opened from', () => {
 
     render(<BackToActLink />);
 
-    await userEvent.click(screen.getByRole('button', { name: /^Back to Registry/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Back to Registry$/ }));
     expect(navigate).toHaveBeenCalledWith({
       to: '/openmrs/spa/home/act-registry?status=Active&cardiac=Lira',
     });
