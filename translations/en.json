@@ -4,6 +4,7 @@
   "actions": "Actions",
   "add": "Add",
   "adherence": "Adherence",
+  "adherenceLastReport": "Adherence (last report)",
   "adherencePercent": "Adherence {{percent}}%",
   "age": "Age",
   "ageSex": "Age, sex",
