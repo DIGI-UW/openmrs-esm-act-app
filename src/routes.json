@@ -4,7 +4,8 @@
     "webservices.rest": ">=2.40.0",
     "actcore": ">=1.0.0-0",
     "cohort": ">=3.7.3",
-    "reportingrest": ">=2.0.0"
+    "reportingrest": ">=2.0.0",
+    "patientflags": ">=3.0.10"
   },
   "extensions": [
     {

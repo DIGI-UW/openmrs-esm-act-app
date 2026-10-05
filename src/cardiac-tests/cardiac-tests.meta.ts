@@ -1,8 +1,7 @@
-import { type ChartDashboardMeta } from '../chart-dashboard-link.component';
-
-export const cardiacTestsDashboardMeta: ChartDashboardMeta = {
+export const cardiacTestsDashboardMeta = {
   slot: 'act-cardiac-tests-dashboard-slot',
   path: 'act-cardiac-tests',
+  // t('Cardiac tests', 'Cardiac tests')
   title: 'Cardiac tests',
   icon: 'omrs-icon-activity',
-};
+} as const;
