@@ -32,7 +32,6 @@ import { PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
-import { useScreenAccess } from '../access/screen-access.component';
 import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
@@ -323,11 +322,6 @@ function RegistryTable() {
 
 export default function Registry() {
   const { t } = useTranslation();
-  const canSeeRegistry = useScreenAccess('registry');
-
-  if (!canSeeRegistry) {
-    return <p className={styles.message}>{t('noAccessToRegistry', 'You do not have access to the registry.')}</p>;
-  }
   return (
     <>
       <ActPageHeader title={t('registry', 'Registry')} illustration={<PatientListsPictogram />} />

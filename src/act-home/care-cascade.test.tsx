@@ -183,13 +183,4 @@ describe('CareCascade', () => {
 
     expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
   });
-
-  it('is hidden from a user without the registry privilege, as programme numbers', async () => {
-    await signInWith([homePrivilege]);
-    dataset({ rows: cascade });
-
-    render(<CareCascade />);
-
-    expect(screen.queryByText('Care cascade')).not.toBeInTheDocument();
-  });
 });

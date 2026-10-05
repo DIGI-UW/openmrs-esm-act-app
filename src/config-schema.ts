@@ -316,8 +316,6 @@ export type EchoField =
   | 'aorticStenosis'
   | 'ejectionFraction';
 
-export type ActScreen = 'home' | 'registry' | 'worklists' | 'waitingList' | 'screenPositive';
-
 export interface Config {
   clinicLocationTags: { cardiac: Array<string>; primaryCare: Array<string> };
   flagLists: {

@@ -25,12 +25,4 @@ describe('ScreenPositiveDashboardLink', () => {
       }),
     );
   });
-
-  it('is hidden from a user without the screen positive privilege', async () => {
-    await signInWith(['Get Patients']);
-
-    render(<ScreenPositiveDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
-  });
 });

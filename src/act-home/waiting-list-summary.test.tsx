@@ -172,13 +172,4 @@ describe('ACT home procedural waiting list summary', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('is hidden from a user without the waiting list privilege', async () => {
-    await signInWith([homePrivilege]);
-    dataset({ rows });
-
-    render(<WaitingListSummary />);
-
-    expect(screen.queryByText(/procedural waiting list/i)).not.toBeInTheDocument();
-  });
 });

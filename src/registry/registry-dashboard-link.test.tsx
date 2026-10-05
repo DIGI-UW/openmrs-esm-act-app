@@ -21,12 +21,4 @@ describe('RegistryDashboardLink', () => {
       expect.objectContaining({ path: 'act-registry', basePath: '/openmrs/spa/home', title: 'registry' }),
     );
   });
-
-  it('is hidden from a user without the registry privilege', async () => {
-    await signInWith(['Get Patients']);
-
-    render(<RegistryDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
-  });
 });

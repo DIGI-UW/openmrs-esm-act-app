@@ -202,14 +202,6 @@ describe('Worklists', () => {
     expect(screen.getByText('No RHD flag lists found')).toBeInTheDocument();
   });
 
-  it('is closed to a user without the worklists privilege', async () => {
-    await signInWith([]);
-
-    render(<Worklists />);
-
-    expect(screen.getByText('You do not have access to the worklists.')).toBeInTheDocument();
-    expect(screen.queryByTestId('worklist-tile')).not.toBeInTheDocument();
-  });
   it('lists every flag at once from the All flags tile, a row per patient and flag, with the flag named', async () => {
     render(<Worklists />);
 

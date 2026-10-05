@@ -12,7 +12,6 @@ import {
 } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { ScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { labelUrgencies, rankWaitingRows, type WaitingRow } from '../waiting-list/urgency';
 import { waitingListDashboardMeta } from '../waiting-list/waiting-list.meta';
@@ -100,9 +99,5 @@ function Summary() {
 }
 
 export default function WaitingListSummary() {
-  return (
-    <ScreenAccess screen="waitingList">
-      <Summary />
-    </ScreenAccess>
-  );
+  return <Summary />;
 }

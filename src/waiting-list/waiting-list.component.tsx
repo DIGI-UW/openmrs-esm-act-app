@@ -27,7 +27,6 @@ import {
 import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
-import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { downloadCsv } from '../table-filters/csv';
@@ -216,15 +215,6 @@ function WaitingListTable() {
 
 export default function WaitingList() {
   const { t } = useTranslation();
-  const canSeeWaitingList = useScreenAccess('waitingList');
-
-  if (!canSeeWaitingList) {
-    return (
-      <p className={styles.message}>
-        {t('noAccessToWaitingList', 'You do not have access to the procedural waiting list.')}
-      </p>
-    );
-  }
   return (
     <>
       <ActPageHeader title={t('waitingList', 'Procedural waiting list')} illustration={<CardiologyPictogram />} />

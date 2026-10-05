@@ -3,5 +3,5 @@ import { ActDashboardLink } from '../access/act-dashboard-link.component';
 import { worklistsDashboardMeta } from './worklists.meta';
 
 export default function WorklistsDashboardLink() {
-  return <ActDashboardLink screen="worklists" meta={worklistsDashboardMeta} />;
+  return <ActDashboardLink meta={worklistsDashboardMeta} />;
 }

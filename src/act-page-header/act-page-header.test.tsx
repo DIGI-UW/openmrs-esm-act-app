@@ -80,15 +80,6 @@ describe('ACT page header', () => {
     },
   );
 
-  it.each(screens)('shows $name no header to a user who may not see it', async ({ Screen, noAccess }) => {
-    await signInWith(['Get Patients']);
-
-    render(<Screen />);
-
-    expect(screen.getByText(noAccess)).toBeInTheDocument();
-    expect(screen.queryByTestId('act-page-header')).not.toBeInTheDocument();
-  });
-
   it('shows actions on the right when given them', () => {
     render(<ActPageHeader title="Title" illustration={<span>Pictogram</span>} actions={<button>Act</button>} />);
 

@@ -21,12 +21,4 @@ describe('WaitingListDashboardLink', () => {
       expect.objectContaining({ path: 'act-waiting-list', basePath: '/openmrs/spa/home', title: 'waitingList' }),
     );
   });
-
-  it('is hidden from a user without the waiting list privilege', async () => {
-    await signInWith(['Get Patients']);
-
-    render(<WaitingListDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
-  });
 });

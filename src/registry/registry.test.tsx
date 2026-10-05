@@ -171,14 +171,4 @@ describe('Registry', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('tells a user without the registry privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients']);
-    dataset({ rows: registryRows });
-
-    render(<Registry />);
-
-    expect(screen.getByText('You do not have access to the registry.')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
 });

@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import routeFile from './routes.json';
-import { screenPrivileges } from './access/screen-access.component';
+import {
+  PRIVILEGE_ACT_HOME,
+  PRIVILEGE_REGISTRY,
+  PRIVILEGE_SCREEN_POSITIVE,
+  PRIVILEGE_WAITING_LIST,
+  PRIVILEGE_WORKLISTS,
+} from './constants';
+
+const screenPrivileges = {
+  home: PRIVILEGE_ACT_HOME,
+  registry: PRIVILEGE_REGISTRY,
+  worklists: PRIVILEGE_WORKLISTS,
+  waitingList: PRIVILEGE_WAITING_LIST,
+  screenPositive: PRIVILEGE_SCREEN_POSITIVE,
+};
 
 const routes = routeFile as { extensions: Array<{ name: string; privileges?: string | Array<string> }> };
 
@@ -20,7 +34,7 @@ describe('routes.json privileges', () => {
     ['act-waiting-list-dashboard', screenPrivileges.waitingList],
     ['act-screen-positive-dashboard-link', screenPrivileges.screenPositive],
     ['act-screen-positive-dashboard', screenPrivileges.screenPositive],
-  ])('declares %s behind the privilege its component checks', (name, privilege) => {
+  ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });
 

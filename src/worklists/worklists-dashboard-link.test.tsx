@@ -21,12 +21,4 @@ describe('WorklistsDashboardLink', () => {
       expect.objectContaining({ path: 'act-worklists', basePath: '/openmrs/spa/home', title: 'worklists' }),
     );
   });
-
-  it('is hidden from a user without the worklists privilege', async () => {
-    await signInWith(['Get Patients']);
-
-    render(<WorklistsDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
-  });
 });

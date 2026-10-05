@@ -108,14 +108,4 @@ describe('Procedural waiting list', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('tells a user without the waiting list privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients']);
-    dataset({ rows: waitingListRows });
-
-    render(<WaitingList />);
-
-    expect(screen.getByText('You do not have access to the procedural waiting list.')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
 });

@@ -175,16 +175,4 @@ describe('Screen positive, pending confirmation', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('tells a user without the screen positive privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients']);
-    dataset({ rows: screenPositiveRows });
-
-    render(<ScreenPositive />);
-
-    expect(
-      screen.getByText('You do not have access to the screen positive, pending confirmation list.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
 });

@@ -30,14 +30,4 @@ describe('ActHomeDashboard', () => {
       expect.objectContaining({ name: 'rhd-home-widgets-slot' }),
     );
   });
-
-  it('tells a user without the ACT home privilege that they cannot see it', async () => {
-    await signInWith(['App: act.registry']);
-    mockUseAssignedExtensions.mockReturnValue([{ id: 'widget' } as AssignedExtension]);
-
-    render(<ActHomeDashboard />);
-
-    expect(screen.queryByTestId('act-page-header')).not.toBeInTheDocument();
-    expect(screen.getByText('You do not have access to ACT home.')).toBeInTheDocument();
-  });
 });

@@ -32,7 +32,6 @@ import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
-import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { FilterSelect } from '../table-filters/filter-select.component';
@@ -202,15 +201,6 @@ function ScreenPositiveTable() {
 
 export default function ScreenPositive() {
   const { t } = useTranslation();
-  const canSeeScreenPositive = useScreenAccess('screenPositive');
-
-  if (!canSeeScreenPositive) {
-    return (
-      <p className={styles.message}>
-        {t('noAccessToScreenPositive', 'You do not have access to the screen positive, pending confirmation list.')}
-      </p>
-    );
-  }
   return (
     <>
       <ActPageHeader
