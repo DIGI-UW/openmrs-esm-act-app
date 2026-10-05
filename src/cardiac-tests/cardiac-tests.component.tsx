@@ -22,10 +22,8 @@ import {
   isDesktop,
   useConfig,
   useLayoutType,
-  userHasAccess,
-  useSession,
 } from '@openmrs/esm-framework';
-import { PRIVILEGE_ADD_ENCOUNTERS } from '../constants';
+import { useMayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import {
@@ -44,8 +42,6 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
   const desktop = isDesktop(useLayoutType());
   const { echocardiograms, error, isLoading } = useEchocardiograms(patientUuid);
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
-  const { user } = useSession();
-  const mayAdd = Boolean(user) && userHasAccess(PRIVILEGE_ADD_ENCOUNTERS, user);
   const columns: Array<{ header: string; text: (echo: Echocardiogram) => string }> = [
     { header: t('date', 'Date'), text: (echo) => formatDate(echo.date, { time: false }) },
     { header: t('mitralRegurgitation', 'Mitral regurgitation'), text: (echo) => coded(echo.mitralRegurgitation) },
@@ -59,6 +55,7 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
   ];
 
   const add = () => openForm(cardiacTests.echoForm);
+  const mayAdd = useMayEnterForm(cardiacTests.echoForm);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (error) {
@@ -151,8 +148,6 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
   const desktop = isDesktop(useLayoutType());
   const { electrocardiograms, error, isLoading } = useElectrocardiograms(patientUuid);
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
-  const { user } = useSession();
-  const mayAdd = Boolean(user) && userHasAccess(PRIVILEGE_ADD_ENCOUNTERS, user);
   const title = t('electrocardiograms', 'Electrocardiograms');
   const columns: Array<{ header: string; text: (ecg: Electrocardiogram) => string }> = [
     { header: t('date', 'Date'), text: (ecg) => formatDate(ecg.date, { time: false }) },
@@ -160,6 +155,7 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
     { header: t('otherFinding', 'Other finding'), text: (ecg) => ecg.otherFinding ?? '--' },
   ];
   const add = () => openForm(cardiacTests.ecgForm);
+  const mayAdd = useMayEnterForm(cardiacTests.ecgForm);
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;

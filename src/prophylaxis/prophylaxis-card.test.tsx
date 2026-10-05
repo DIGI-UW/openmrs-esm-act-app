@@ -9,6 +9,11 @@ import { type Config, configSchema } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import ProphylaxisCard from './prophylaxis-card.component';
 
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
+  useMayEnterForm: () => true,
+}));
 vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);

@@ -24,7 +24,8 @@ import {
   useLayoutType,
   UserHasAccess,
 } from '@openmrs/esm-framework';
-import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_EXPORT_LISTS } from '../constants';
+import { MayEnterForm } from '../access/may-enter-form';
+import { PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -194,11 +195,11 @@ function WaitingListTable() {
                     </TableCell>
                   ))}
                   <TableCell>
-                    <UserHasAccess privilege={PRIVILEGE_ADD_ENCOUNTERS}>
+                    <MayEnterForm formUuid={String(waiting.row.form_uuid)}>
                       <Button kind="ghost" size="sm" onClick={() => openForm(waiting)}>
                         {t('openForm', 'Open form')}
                       </Button>
-                    </UserHasAccess>
+                    </MayEnterForm>
                   </TableCell>
                 </TableRow>
               ))}

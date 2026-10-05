@@ -7,6 +7,11 @@ import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './fl
 import FlagGapsWorkspace, { daysPending, type FlagActionWorkspaceProps } from './flag-gaps.workspace';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
+  useMayEnterForm: () => true,
+}));
 vi.mock('./flag-gaps.resource', () => ({
   usePatientFlagGaps: vi.fn(),
   fetchForm: vi.fn(),

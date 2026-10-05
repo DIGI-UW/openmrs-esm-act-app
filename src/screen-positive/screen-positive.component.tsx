@@ -26,7 +26,7 @@ import {
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
-import { PRIVILEGE_ADD_ENCOUNTERS } from '../constants';
+import { MayEnterForm } from '../access/may-enter-form';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
@@ -180,11 +180,11 @@ function ScreenPositiveTable() {
                     <TableCell key={column.header}>{column.render(row)}</TableCell>
                   ))}
                   <TableCell>
-                    <UserHasAccess privilege={PRIVILEGE_ADD_ENCOUNTERS}>
+                    <MayEnterForm formUuid={screenPositive.echoForm}>
                       <Button kind="ghost" size="sm" onClick={() => enterEcho(row)}>
                         {t('enterEchoResult', 'Enter echo result')}
                       </Button>
-                    </UserHasAccess>
+                    </MayEnterForm>
                   </TableCell>
                 </TableRow>
               ))}
