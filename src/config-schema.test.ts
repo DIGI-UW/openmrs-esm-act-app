@@ -26,6 +26,7 @@ describe('configSchema', () => {
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       careCascade: {
+        report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [
           { step: 'Active', label: 'Active' },
@@ -39,9 +40,14 @@ describe('configSchema', () => {
         ],
       },
       registry: {
+        report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
         showBpgColumns: false,
       },
+      waitingList: {
+        report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
+      },
       screenPositive: {
+        report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
         echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
       },
       cardiacTests: {

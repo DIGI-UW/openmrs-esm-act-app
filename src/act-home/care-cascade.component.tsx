@@ -15,7 +15,7 @@ function Cascade() {
   const { careCascade } = useConfig<Config>();
   // The reports app runs a date as that day's midnight, so the counts match the report run for today.
   const today = useMemo(() => dayjs().startOf('day'), []);
-  const { rows, isLoading, error } = useReportDataset('careCascade', { endDate: toOmrsIsoString(today.toDate()) });
+  const { rows, isLoading, error } = useReportDataset(careCascade.report, { endDate: toOmrsIsoString(today.toDate()) });
   // The cascade descriptor names its columns step and patients, one row per step.
   const byStep = new Map(rows.map((row) => [String(row.step), Number(row.patients)]));
   const steps = careCascade.steps

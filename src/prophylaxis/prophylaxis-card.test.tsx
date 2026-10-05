@@ -57,7 +57,7 @@ const field = (name: string) => screen.getByTestId(`prophylaxis-${name}`);
 
 describe('ProphylaxisCard', () => {
   beforeEach(async () => {
-    await signInWith(['Task: act.recordProphylaxis']);
+    await signInWith(['Add Encounters']);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
   });
 

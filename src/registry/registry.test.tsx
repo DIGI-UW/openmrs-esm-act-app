@@ -72,14 +72,14 @@ describe('Registry', () => {
     expect(ageSex(/Patient 3\b/)).toBe('');
   });
 
-  it('evaluates the registry list over every enrolment up to today', () => {
+  it('evaluates the configured report over every enrolment up to today', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 29, 10) });
     dataset({ rows: registryRows });
 
     render(<Registry />);
 
     vi.useRealTimers();
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('registry', {
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
       startDate: '1900-01-01',
       endDate: '2026-09-29',
     });

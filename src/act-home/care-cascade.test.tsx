@@ -75,6 +75,7 @@ describe('CareCascade', () => {
   it("draws each step under its configured label, not the report's step name", async () => {
     await signInWith(['App: act.registry'], {
       careCascade: {
+        report: 'r',
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [{ step: 'Covered today', label: 'Covered' }],
       },
@@ -99,6 +100,7 @@ describe('CareCascade', () => {
   it('leaves out a configured step the report does not return', async () => {
     await signInWith(['App: act.registry'], {
       careCascade: {
+        report: 'r',
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [
           { step: 'Active', label: 'Active' },
@@ -122,7 +124,7 @@ describe('CareCascade', () => {
     expect(widths).toEqual(['100%', '85%', '55%', '45%', '0%']);
   });
 
-  it('evaluates the care cascade list up to the start of today, as the reports app runs it for today', () => {
+  it('evaluates the configured report up to the start of today, as the reports app runs it for today', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 28, 10, 30) });
     dataset({ rows: cascade });
 
@@ -130,8 +132,23 @@ describe('CareCascade', () => {
 
     vi.useRealTimers();
     const [report, params] = mockUseReportDataset.mock.calls.at(-1);
-    expect(report).toBe('careCascade');
+    expect(report).toBe('9c6751ae-65fc-5f25-9aa6-8c65cb1dff68');
     expect(new Date(params.endDate).getTime()).toBe(new Date(2026, 8, 28).getTime());
+  });
+
+  it('evaluates the report set in the config', async () => {
+    await signInWith(['App: act.registry'], {
+      careCascade: {
+        report: 'RHD Care Cascade',
+        reportUrl: '${openmrsSpaBase}/reports',
+        steps: [{ step: 'Active', label: 'Active' }],
+      },
+    });
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(mockUseReportDataset.mock.calls.at(-1)[0]).toBe('RHD Care Cascade');
   });
 
   it('links to the full report', () => {

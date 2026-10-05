@@ -24,9 +24,9 @@ const shownRows = 5;
 
 function Summary() {
   const { t } = useTranslation();
-  const { urgencyBands } = useConfig<Config>();
+  const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
-  const { rows, isLoading, error } = useReportDataset('waitingList');
+  const { rows, isLoading, error } = useReportDataset(waitingList.report);
   // The page's ranking with no filter applied, so these are its first rows.
   const mostUrgent = useMemo(
     () => rankWaitingRows(labelUrgencies(rows, urgencyBands, 'shortLabel'), urgencyBands).slice(0, shownRows),

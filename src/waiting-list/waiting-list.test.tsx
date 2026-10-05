@@ -57,12 +57,12 @@ describe('Procedural waiting list', () => {
     });
   });
 
-  it('evaluates the waiting list', () => {
+  it('evaluates the configured report', () => {
     dataset({ rows: waitingListRows });
 
     render(<WaitingList />);
 
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('waitingList');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10');
   });
 
   it('shows the recommendations a page at a time', async () => {

@@ -33,7 +33,7 @@ async function enterEcho(actId: string) {
 describe('Screen positive, Enter echo result', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith(['App: act.screenPositive', 'Task: act.enterClinicalForms']);
+    await signInWith(['App: act.screenPositive', 'Add Encounters']);
     vi.mocked(useSession).mockReturnValue({ ...vi.mocked(useSession)(), sessionLocation: { uuid: 'clinic' } } as never);
     vi.mocked(fetchCurrentPatient).mockResolvedValue(fhirPatient as never);
     vi.mocked(saveVisit).mockResolvedValue({

@@ -22,10 +22,12 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  UserHasAccess,
 } from '@openmrs/esm-framework';
+import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
-import { ActionAccess, useScreenAccess } from '../access/screen-access.component';
+import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { downloadCsv } from '../table-filters/csv';
@@ -47,9 +49,9 @@ const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
 
 function WaitingListTable() {
   const { t } = useTranslation();
-  const { urgencyBands } = useConfig<Config>();
+  const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
-  const { rows: reportRows, isLoading, error, mutate } = useReportDataset('waitingList');
+  const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
   const [filters, setFilters] = useWaitingListFilters();
@@ -156,7 +158,7 @@ function WaitingListTable() {
         {filterSelect('urgency', t('urgency', 'Urgency'))}
       </div>
       <div className={styles.actions}>
-        <ActionAccess action="exportData">
+        <UserHasAccess privilege={PRIVILEGE_EXPORT_LISTS}>
           <Button
             kind="tertiary"
             size="sm"
@@ -171,7 +173,7 @@ function WaitingListTable() {
           >
             {t('downloadCsv', 'Download CSV')}
           </Button>
-        </ActionAccess>
+        </UserHasAccess>
       </div>
       {ranked.length ? (
         <div className={styles.tableContainer}>
@@ -193,11 +195,11 @@ function WaitingListTable() {
                     </TableCell>
                   ))}
                   <TableCell>
-                    <ActionAccess action="enterClinicalForms">
+                    <UserHasAccess privilege={PRIVILEGE_ADD_ENCOUNTERS}>
                       <Button kind="ghost" size="sm" onClick={() => openForm(waiting)}>
                         {t('openForm', 'Open form')}
                       </Button>
-                    </ActionAccess>
+                    </UserHasAccess>
                   </TableCell>
                 </TableRow>
               ))}

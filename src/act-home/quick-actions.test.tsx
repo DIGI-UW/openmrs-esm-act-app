@@ -19,7 +19,7 @@ const defaultQuickActions: Config['quickActions'] = {
 // Enter prophylaxis switched back to fast data entry, with the default BPG and oral forms.
 async function signInWithFastDataEntry() {
   const { quickActions } = getDefaultsFromConfigSchema(configSchema) as Config;
-  await signInWith([homePrivilege, 'Add Patients', 'Task: act.recordProphylaxis', 'Get Patients'], {
+  await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'], {
     quickActions: { ...quickActions, enterProphylaxisInFastDataEntry: true },
   });
 }
@@ -27,11 +27,11 @@ async function signInWithFastDataEntry() {
 describe('QuickActions', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith([homePrivilege, 'Add Patients', 'Task: act.recordProphylaxis', 'Get Patients']);
+    await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients']);
   });
 
   it('links register patient and find a patient to their screens', async () => {
-    await signInWith([homePrivilege, 'Add Patients', 'Task: act.recordProphylaxis', 'Get Patients'], {
+    await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'], {
       quickActions: defaultQuickActions,
     });
     render(<QuickActions />);
@@ -91,7 +91,7 @@ describe('QuickActions', () => {
   });
 
   it('links enter prophylaxis straight to its screen when no prophylaxis forms are configured', async () => {
-    await signInWith([homePrivilege, 'Add Patients', 'Task: act.recordProphylaxis', 'Get Patients'], {
+    await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'], {
       quickActions: { ...defaultQuickActions, enterProphylaxisUrl: '${openmrsSpaBase}/forms/prophylaxis' },
     });
 
@@ -114,13 +114,11 @@ describe('QuickActions', () => {
 
   it.each([
     ['Add Patients', /register patient/i],
-    ['Task: act.recordProphylaxis', /enter prophylaxis/i],
+    ['Add Encounters', /enter prophylaxis/i],
     ['Get Patients', /find a patient/i],
   ])('leaves out the action a user without %s may not take', async (privilege, name) => {
     await signInWith(
-      [homePrivilege, 'Add Patients', 'Task: act.recordProphylaxis', 'Get Patients'].filter(
-        (held) => held !== privilege,
-      ),
+      [homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'].filter((held) => held !== privilege),
     );
 
     render(<QuickActions />);

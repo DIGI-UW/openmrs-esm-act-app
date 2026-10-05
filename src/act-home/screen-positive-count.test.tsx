@@ -34,12 +34,12 @@ describe("ACT home's screen positive row, in the care cascade", () => {
     expect(screen.getByTestId('screen-positive-count')).toHaveTextContent('3');
   });
 
-  it('evaluates the list the page uses', () => {
+  it('evaluates the report the list uses', () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositiveRow />);
 
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('screenPositive');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63');
   });
 
   it('shows none when no patient is waiting', () => {

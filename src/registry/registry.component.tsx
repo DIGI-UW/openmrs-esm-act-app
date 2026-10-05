@@ -26,11 +26,13 @@ import {
   PatientListsPictogram,
   useConfig,
   useLayoutType,
+  UserHasAccess,
 } from '@openmrs/esm-framework';
+import { PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
-import { ActionAccess, useScreenAccess } from '../access/screen-access.component';
+import { useScreenAccess } from '../access/screen-access.component';
 import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
@@ -60,7 +62,7 @@ function RegistryTable() {
   const desktop = isDesktop(useLayoutType());
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
   // Coming back from a chart paints the cached rows, then evaluates the report again for what the chart changed.
-  const { rows, isLoading, error } = useReportDataset('registry', params);
+  const { rows, isLoading, error } = useReportDataset(registry.report, params);
   const [filters, setFilters, filtersPending] = useRegistryFilters();
   // A BPG status in the URL has no filter to clear it while the setting is off, so it is not applied.
   const shown = useMemo(
@@ -240,7 +242,7 @@ function RegistryTable() {
         />
       </div>
       <div className={styles.actions}>
-        <ActionAccess action="exportData">
+        <UserHasAccess privilege={PRIVILEGE_EXPORT_LISTS}>
           <Button
             kind="tertiary"
             size="sm"
@@ -255,7 +257,7 @@ function RegistryTable() {
           >
             {t('downloadCsv', 'Download CSV')}
           </Button>
-        </ActionAccess>
+        </UserHasAccess>
       </div>
       {shown.length ? (
         <>

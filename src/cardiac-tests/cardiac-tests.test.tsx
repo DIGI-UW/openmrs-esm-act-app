@@ -106,7 +106,7 @@ function shownRows() {
 
 describe('CardiacTests', () => {
   beforeEach(async () => {
-    await signInWith(['Task: act.enterClinicalForms']);
+    await signInWith(['Add Encounters']);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
     setLayout('small-desktop');
     respondWith(echoes);

@@ -105,12 +105,12 @@ describe('ACT home procedural waiting list summary', () => {
     ).toEqual(['true', 'true', 'false', 'false', 'false']);
   });
 
-  it('evaluates the waiting list the page uses', () => {
+  it('evaluates the waiting list report the page uses', () => {
     dataset({ rows });
 
     render(<WaitingListSummary />);
 
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('waitingList');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10');
   });
 
   it("names a band configured without a short label by its label, and one with neither by the report's name", async () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { DashboardExtension } from '@openmrs/esm-framework';
-import { type ActScreen } from './privileges';
+import { type ActScreen } from '../config-schema';
 import { ScreenAccess } from './screen-access.component';
 
 /** An ACT screen's entry in the home app's left nav, shown only to users who may see that screen. */

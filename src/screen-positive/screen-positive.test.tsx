@@ -40,7 +40,7 @@ describe('Screen positive, pending confirmation', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-screen-positive');
-    await signInWith(['App: act.screenPositive', 'Task: act.enterClinicalForms']);
+    await signInWith(['App: act.screenPositive', 'Add Encounters']);
   });
 
   it("lists each patient's ACT ID, name, age, sex, clinics and date of positive screen", () => {
@@ -85,12 +85,12 @@ describe('Screen positive, pending confirmation', () => {
     );
   });
 
-  it('evaluates the screen positive list', () => {
+  it('evaluates the configured report', () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositive />);
 
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('screenPositive');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63');
   });
 
   it('offers the cardiac clinic and sex filters the values the patients have', () => {

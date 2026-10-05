@@ -28,7 +28,7 @@ describe('Opening a recommendation consultation from the waiting list', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-waiting-list');
-    await signInWith(['App: act.waitingList', 'Task: act.enterClinicalForms']);
+    await signInWith(['App: act.waitingList', 'Add Encounters']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: waitingListRows,

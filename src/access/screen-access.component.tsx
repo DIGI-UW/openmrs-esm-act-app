@@ -1,6 +1,22 @@
 import React from 'react';
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
-import { type ActAction, actionPrivileges, type ActScreen, screenPrivileges } from './privileges';
+import { type ActScreen } from '../config-schema';
+import {
+  PRIVILEGE_ACT_HOME,
+  PRIVILEGE_REGISTRY,
+  PRIVILEGE_SCREEN_POSITIVE,
+  PRIVILEGE_WAITING_LIST,
+  PRIVILEGE_WORKLISTS,
+} from '../constants';
+
+/** Each ACT screen's privilege, the same one its extensions declare in routes.json. */
+export const screenPrivileges: Record<ActScreen, string> = {
+  home: PRIVILEGE_ACT_HOME,
+  registry: PRIVILEGE_REGISTRY,
+  worklists: PRIVILEGE_WORKLISTS,
+  waitingList: PRIVILEGE_WAITING_LIST,
+  screenPositive: PRIVILEGE_SCREEN_POSITIVE,
+};
 
 /** Whether the signed-in user holds the ACT screen's privilege. */
 export function useScreenAccess(screen: ActScreen) {
@@ -11,15 +27,4 @@ export function useScreenAccess(screen: ActScreen) {
 /** Renders an ACT screen, or its menu entry or widget, only for users who may see that screen. */
 export function ScreenAccess({ screen, children }: { screen: ActScreen; children: React.ReactNode }) {
   return useScreenAccess(screen) ? <>{children}</> : null;
-}
-
-/** Whether the signed-in user holds the ACT action's privilege. */
-export function useActionAccess(action: ActAction) {
-  const { user } = useSession();
-  return Boolean(user) && userHasAccess(actionPrivileges[action], user);
-}
-
-/** Renders an ACT action, such as a button, only for users who may take it. */
-export function ActionAccess({ action, children }: { action: ActAction; children: React.ReactNode }) {
-  return useActionAccess(action) ? <>{children}</> : null;
 }

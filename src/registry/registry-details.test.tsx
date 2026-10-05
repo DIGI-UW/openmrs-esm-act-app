@@ -9,7 +9,7 @@ import Registry from './registry.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 
-const waitingListReport = 'registryWaitingList';
+const waitingListReport = '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10';
 const elective = 'c7fd0a5c-4a0f-5a2b-8a8b-5d9e8a0f1b23';
 
 function reports(registry: Array<Record<string, unknown>>, waiting: Array<Record<string, unknown>> = []) {

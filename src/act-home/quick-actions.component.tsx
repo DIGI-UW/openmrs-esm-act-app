@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Add, ArrowUpRight, Search } from '@carbon/react/icons';
-import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, useConfig, UserHasAccess } from '@openmrs/esm-framework';
+import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_ADD_PATIENTS, PRIVILEGE_GET_PATIENTS } from '../constants';
 import { type Config } from '../config-schema';
-import { ActionAccess, ScreenAccess } from '../access/screen-access.component';
+import { ScreenAccess } from '../access/screen-access.component';
 import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.component';
 import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
 import styles from './quick-actions.scss';
@@ -97,17 +98,17 @@ export default function QuickActions() {
   return (
     <ScreenAccess screen="home">
       <div className={styles.actions}>
-        <ActionAccess action="registerPatient">
+        <UserHasAccess privilege={PRIVILEGE_ADD_PATIENTS}>
           <ConfigurableLink to={quickActions.registerPatientUrl} className={styles.action}>
             <ActionLabel label={t('registerPatient', 'Register patient')} Icon={Add} />
           </ConfigurableLink>
-        </ActionAccess>
-        <ActionAccess action="recordProphylaxis">
+        </UserHasAccess>
+        <UserHasAccess privilege={PRIVILEGE_ADD_ENCOUNTERS}>
           <EnterProphylaxis />
-        </ActionAccess>
-        <ActionAccess action="findPatient">
+        </UserHasAccess>
+        <UserHasAccess privilege={PRIVILEGE_GET_PATIENTS}>
           <FindPatient />
-        </ActionAccess>
+        </UserHasAccess>
       </div>
     </ScreenAccess>
   );

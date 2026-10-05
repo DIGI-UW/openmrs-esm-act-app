@@ -149,13 +149,13 @@ describe('Worklists', () => {
     expect(screen.getByTestId('table-empty-state')).toHaveTextContent('There are no patients on this list to display');
   });
 
-  it('evaluates the worklists list over every enrolment up to today', () => {
+  it('evaluates the registry report over every enrolment up to today', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 29, 10) });
 
     render(<Worklists />);
 
     vi.useRealTimers();
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('worklists', {
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
       startDate: '1900-01-01',
       endDate: '2026-09-29',
     });

@@ -83,6 +83,12 @@ export const configSchema = {
     ),
   },
   careCascade: {
+    report: {
+      _type: Type.String,
+      _default: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
+      _description:
+        'The care cascade report, by uuid or name. The ACT home widget draws its rows, one per step, from their step and patients columns.',
+    },
     reportUrl: link("Where the care cascade widget's link to the full report leads.", '${openmrsSpaBase}/reports'),
     steps: {
       _type: Type.Array,
@@ -106,6 +112,11 @@ export const configSchema = {
     },
   },
   registry: {
+    report: {
+      _type: Type.String,
+      _default: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
+      _description: 'The RHD Patient List report, by uuid or name, whose rows the registry lists.',
+    },
     showBpgColumns: {
       _type: Type.Boolean,
       _default: false,
@@ -113,7 +124,20 @@ export const configSchema = {
         "Show the report's bpg_status and adherence columns and a BPG status filter. Turn on once the report returns them.",
     },
   },
+  waitingList: {
+    report: {
+      _type: Type.String,
+      _default: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
+      _description: 'The Procedural Waiting List report, by uuid or name, whose rows the waiting list shows.',
+    },
+  },
   screenPositive: {
+    report: {
+      _type: Type.String,
+      _default: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
+      _description:
+        'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
+    },
     echoForm: {
       _type: Type.UUID,
       _default: '88e54fb0-1243-3f7a-b925-f64648ca6635',
@@ -292,6 +316,8 @@ export type EchoField =
   | 'aorticStenosis'
   | 'ejectionFraction';
 
+export type ActScreen = 'home' | 'registry' | 'worklists' | 'waitingList' | 'screenPositive';
+
 export interface Config {
   clinicLocationTags: { cardiac: Array<string>; primaryCare: Array<string> };
   flagLists: {
@@ -307,9 +333,10 @@ export interface Config {
     findPatientInPanel: boolean;
     findPatientUrl: string;
   };
-  careCascade: { reportUrl: string; steps: Array<{ step: string; label: string }> };
-  registry: { showBpgColumns: boolean };
-  screenPositive: { echoForm: string };
+  careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
+  registry: { report: string; showBpgColumns: boolean };
+  waitingList: { report: string };
+  screenPositive: { report: string; echoForm: string };
   cardiacTests: {
     echoForm: string;
     echoEncounterType: string;

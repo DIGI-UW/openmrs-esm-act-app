@@ -113,7 +113,7 @@ function rows(table: HTMLElement) {
 
 describe('ProphylaxisPage', () => {
   beforeEach(async () => {
-    await signInWith(['Task: act.recordProphylaxis']);
+    await signInWith(['Add Encounters']);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
     setLayout('small-desktop');
     serve();
