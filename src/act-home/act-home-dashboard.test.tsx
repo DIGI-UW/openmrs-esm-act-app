@@ -32,7 +32,7 @@ describe('ActHomeDashboard', () => {
   });
 
   it('tells a user without the ACT home privilege that they cannot see it', async () => {
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
     mockUseAssignedExtensions.mockReturnValue([{ id: 'widget' } as AssignedExtension]);
 
     render(<ActHomeDashboard />);

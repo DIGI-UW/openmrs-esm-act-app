@@ -3,8 +3,7 @@
   "backendDependencies": {
     "webservices.rest": ">=2.40.0",
     "actcore": ">=1.0.0-0",
-    "cohort": ">=3.7.3",
-    "reportingrest": ">=2.0.0"
+    "cohort": ">=3.7.3"
   },
   "extensions": [
     {
@@ -15,36 +14,42 @@
         "name": "act-home",
         "slot": "rhd-home-dashboard-slot",
         "title": "actHome"
-      }
+      },
+      "privileges": "App: act.home"
     },
     {
       "name": "act-home-dashboard",
       "slot": "rhd-home-dashboard-slot",
-      "component": "actHomeDashboard"
+      "component": "actHomeDashboard",
+      "privileges": "App: act.home"
     },
     {
       "name": "act-home-quick-actions",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeQuickActions",
-      "order": 1
+      "order": 1,
+      "privileges": "App: act.home"
     },
     {
       "name": "act-home-worklists",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWorklists",
-      "order": 2
+      "order": 2,
+      "privileges": "App: act.worklists"
     },
     {
       "name": "act-home-waiting-list",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWaitingList",
-      "order": 3
+      "order": 3,
+      "privileges": "App: act.waitingList"
     },
     {
       "name": "act-home-care-cascade",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeCareCascade",
-      "order": 4
+      "order": 4,
+      "privileges": "App: act.registry"
     },
     {
       "name": "act-registry-dashboard-link",
@@ -54,12 +59,14 @@
         "name": "act-registry",
         "slot": "rhd-registry-dashboard-slot",
         "title": "registry"
-      }
+      },
+      "privileges": "App: act.registry"
     },
     {
       "name": "act-registry-dashboard",
       "slot": "rhd-registry-dashboard-slot",
-      "component": "registryDashboard"
+      "component": "registryDashboard",
+      "privileges": "App: act.registry"
     },
     {
       "name": "act-worklists-dashboard-link",
@@ -69,12 +76,14 @@
         "name": "act-worklists",
         "slot": "rhd-worklists-dashboard-slot",
         "title": "worklists"
-      }
+      },
+      "privileges": "App: act.worklists"
     },
     {
       "name": "act-worklists-dashboard",
       "slot": "rhd-worklists-dashboard-slot",
-      "component": "worklistsDashboard"
+      "component": "worklistsDashboard",
+      "privileges": "App: act.worklists"
     },
     {
       "name": "act-waiting-list-dashboard-link",
@@ -84,12 +93,14 @@
         "name": "act-waiting-list",
         "slot": "rhd-waiting-list-dashboard-slot",
         "title": "waitingList"
-      }
+      },
+      "privileges": "App: act.waitingList"
     },
     {
       "name": "act-waiting-list-dashboard",
       "slot": "rhd-waiting-list-dashboard-slot",
-      "component": "waitingListDashboard"
+      "component": "waitingListDashboard",
+      "privileges": "App: act.waitingList"
     },
     {
       "name": "act-screen-positive-dashboard-link",
@@ -99,22 +110,29 @@
         "name": "act-screen-positive",
         "slot": "rhd-screen-positive-dashboard-slot",
         "title": "screenPositive"
-      }
+      },
+      "privileges": "App: act.screenPositive"
     },
     {
       "name": "act-screen-positive-dashboard",
       "slot": "rhd-screen-positive-dashboard-slot",
-      "component": "screenPositiveDashboard"
+      "component": "screenPositiveDashboard",
+      "privileges": "App: act.screenPositive"
     },
     {
       "name": "act-back-to-act-link",
       "slot": "top-of-all-patient-dashboards-slot",
-      "component": "backToActLink"
+      "component": "backToActLink",
+      "privileges": "App: act.home"
     },
     {
       "name": "act-prophylaxis-status-tag",
       "slot": "patient-banner-tags-slot",
-      "component": "prophylaxisStatusTag"
+      "component": "prophylaxisStatusTag",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
     },
     {
       "name": "act-prophylaxis-dashboard-link",
@@ -124,7 +142,11 @@
         "path": "act-prophylaxis",
         "title": "Prophylaxis",
         "icon": "omrs-icon-medication"
-      }
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
     },
     {
       "name": "act-prophylaxis-dashboard",
@@ -132,7 +154,11 @@
       "component": "prophylaxisPageDashboard",
       "meta": {
         "fullWidth": true
-      }
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
     },
     {
       "name": "act-cardiac-tests-dashboard-link",
@@ -142,7 +168,11 @@
         "path": "act-cardiac-tests",
         "title": "Cardiac tests",
         "icon": "omrs-icon-activity"
-      }
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
     },
     {
       "name": "act-cardiac-tests-dashboard",
@@ -150,7 +180,11 @@
       "component": "cardiacTestsDashboard",
       "meta": {
         "fullWidth": true
-      }
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
     },
     {
       "name": "act-prophylaxis-card",
@@ -159,7 +193,11 @@
       "order": 0,
       "meta": {
         "fullWidth": true
-      }
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
     }
   ],
   "workspaceGroups2": [

@@ -51,7 +51,7 @@ describe('Procedural waiting list filters and CSV', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-waiting-list');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.waitingList', 'Task: act.exportData']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows,

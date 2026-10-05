@@ -13,7 +13,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 describe('WaitingListDashboardLink', () => {
   it('links the home left nav to /home/act-waiting-list', async () => {
     window.spaBase = '/openmrs/spa';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.waitingList']);
 
     render(<WaitingListDashboardLink />);
 

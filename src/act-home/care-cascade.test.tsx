@@ -33,7 +33,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
 describe('CareCascade', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith([homePrivilege]);
+    await signInWith(['App: act.registry']);
   });
 
   it("draws the report's five cascade steps, leaving out its Oral and BPG split", () => {
@@ -73,9 +73,8 @@ describe('CareCascade', () => {
   });
 
   it("draws each step under its configured label, not the report's step name", async () => {
-    await signInWith([homePrivilege], {
+    await signInWith(['App: act.registry'], {
       careCascade: {
-        report: 'r',
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [{ step: 'Covered today', label: 'Covered' }],
       },
@@ -88,7 +87,7 @@ describe('CareCascade', () => {
   });
 
   it('ends with the screen positive count, opening that list, for a user who may see it', async () => {
-    await signInWith([homePrivilege, 'View Patient Flags']);
+    await signInWith([homePrivilege, 'App: act.registry', 'App: act.screenPositive']);
     dataset({ rows: cascade });
 
     render(<CareCascade />);
@@ -98,9 +97,8 @@ describe('CareCascade', () => {
   });
 
   it('leaves out a configured step the report does not return', async () => {
-    await signInWith([homePrivilege], {
+    await signInWith(['App: act.registry'], {
       careCascade: {
-        report: 'r',
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [
           { step: 'Active', label: 'Active' },
@@ -124,7 +122,7 @@ describe('CareCascade', () => {
     expect(widths).toEqual(['100%', '85%', '55%', '45%', '0%']);
   });
 
-  it('evaluates the configured report up to the start of today, as the reports app runs it for today', () => {
+  it('evaluates the care cascade list up to the start of today, as the reports app runs it for today', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 28, 10, 30) });
     dataset({ rows: cascade });
 
@@ -132,23 +130,8 @@ describe('CareCascade', () => {
 
     vi.useRealTimers();
     const [report, params] = mockUseReportDataset.mock.calls.at(-1);
-    expect(report).toBe('9c6751ae-65fc-5f25-9aa6-8c65cb1dff68');
+    expect(report).toBe('careCascade');
     expect(new Date(params.endDate).getTime()).toBe(new Date(2026, 8, 28).getTime());
-  });
-
-  it('evaluates the report set in the config', async () => {
-    await signInWith([homePrivilege], {
-      careCascade: {
-        report: 'RHD Care Cascade',
-        reportUrl: '${openmrsSpaBase}/reports',
-        steps: [{ step: 'Active', label: 'Active' }],
-      },
-    });
-    dataset({ rows: cascade });
-
-    render(<CareCascade />);
-
-    expect(mockUseReportDataset.mock.calls.at(-1)[0]).toBe('RHD Care Cascade');
   });
 
   it('links to the full report', () => {
@@ -184,8 +167,8 @@ describe('CareCascade', () => {
     expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
   });
 
-  it('is hidden from a user without the ACT home privilege', async () => {
-    await signInWith(['View Patient Flags']);
+  it('is hidden from a user without the registry privilege, as programme numbers', async () => {
+    await signInWith([homePrivilege]);
     dataset({ rows: cascade });
 
     render(<CareCascade />);

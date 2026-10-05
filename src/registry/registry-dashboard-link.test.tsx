@@ -13,7 +13,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 describe('RegistryDashboardLink', () => {
   it('links the home left nav to /home/act-registry', async () => {
     window.spaBase = '/openmrs/spa';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
 
     render(<RegistryDashboardLink />);
 

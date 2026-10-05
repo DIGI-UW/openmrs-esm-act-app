@@ -1,7 +1,5 @@
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { isUuid } from '../uuid';
-import { fetchAll } from '../fetch-all';
 
 export interface ReportColumn {
   name: string;
@@ -15,35 +13,31 @@ interface EvaluatedReport {
   dataSets: Array<{ metadata: { columns: Array<ReportColumn> }; rows: Array<ReportRow> }>;
 }
 
-/** reportDefinition?q matches names containing the text, so the exact name is picked from its hits. */
-async function findReportUuid(name: string) {
-  const definitions = await fetchAll<{ uuid: string; name: string }>(
-    `${restBaseUrl}/reportingrest/reportDefinition?q=${encodeURIComponent(name)}&v=custom:(uuid,name)`,
-  );
-  const report = definitions.find((definition) => definition.name === name);
-  if (!report) {
-    throw new Error(`No report is named "${name}"`);
-  }
-  return report.uuid;
-}
+/** The ACT lists ACT Core serves, each behind its own privilege. */
+export type ActList =
+  | 'registry'
+  | 'registryWaitingList'
+  | 'careCascade'
+  | 'worklists'
+  | 'waitingList'
+  | 'screenPositive';
 
-async function evaluateReport(reportUuidOrName: string, params: Record<string, string>) {
-  const uuid = isUuid(reportUuidOrName) ? reportUuidOrName : await findReportUuid(reportUuidOrName);
+async function evaluateList(list: ActList, params: Record<string, string>) {
   const { data } = await openmrsFetch<EvaluatedReport>(
-    `${restBaseUrl}/reportingrest/reportdata/${uuid}?${new URLSearchParams(params)}`,
+    `${restBaseUrl}/actcore/list/${list}?${new URLSearchParams(params)}`,
   );
   return data.dataSets[0];
 }
 
 /**
- * Evaluates a report, given by uuid or by name, and returns its first dataset, and `mutate` to evaluate it again.
+ * Evaluates an ACT list's report and returns its first dataset, and `mutate` to evaluate it again.
  * A failure is not retried.
  * The server sends `columns` only with rows, so an empty dataset has none and a screen defines its own headers.
  */
-export function useReportDataset(reportUuidOrName: string | null, params: Record<string, string> = {}) {
+export function useReportDataset(list: ActList | null, params: Record<string, string> = {}) {
   const { data, error, isLoading, mutate } = useSWR(
-    reportUuidOrName ? ['rhd-report-dataset', reportUuidOrName, params] : null,
-    () => evaluateReport(reportUuidOrName, params),
+    list ? ['rhd-report-dataset', list, params] : null,
+    () => evaluateList(list, params),
     { shouldRetryOnError: false },
   );
 

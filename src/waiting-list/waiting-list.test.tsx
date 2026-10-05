@@ -26,7 +26,7 @@ describe('Procedural waiting list', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-waiting-list');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.waitingList']);
   });
 
   it("lists each open recommendation with its patient's ACT ID, sex, age, type, procedure, urgency, district, contraindications and repair suitability", () => {
@@ -57,12 +57,12 @@ describe('Procedural waiting list', () => {
     });
   });
 
-  it('evaluates the configured report', () => {
+  it('evaluates the waiting list', () => {
     dataset({ rows: waitingListRows });
 
     render(<WaitingList />);
 
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('waitingList');
   });
 
   it('shows the recommendations a page at a time', async () => {
@@ -110,15 +110,7 @@ describe('Procedural waiting list', () => {
   );
 
   it('tells a user without the waiting list privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: {
-        home: 'x',
-        registry: 'x',
-        worklists: 'x',
-        waitingList: 'App: act.waitinglist',
-        screenPositive: 'x',
-      },
-    });
+    await signInWith(['Get Patients']);
     dataset({ rows: waitingListRows });
 
     render(<WaitingList />);

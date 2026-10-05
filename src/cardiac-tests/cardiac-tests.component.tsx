@@ -24,6 +24,7 @@ import {
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { useActionAccess } from '../access/screen-access.component';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import {
   type Echocardiogram,
@@ -41,6 +42,7 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
   const desktop = isDesktop(useLayoutType());
   const { echocardiograms, error, isLoading } = useEchocardiograms(patientUuid);
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
+  const mayAdd = useActionAccess('enterClinicalForms');
   const columns: Array<{ header: string; text: (echo: Echocardiogram) => string }> = [
     { header: t('date', 'Date'), text: (echo) => formatDate(echo.date, { time: false }) },
     { header: t('mitralRegurgitation', 'Mitral regurgitation'), text: (echo) => coded(echo.mitralRegurgitation) },
@@ -64,22 +66,24 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
       <EmptyCard
         displayText={t('echocardiogramsLowercase', 'echocardiograms')}
         headerTitle={t('echocardiograms', 'Echocardiograms')}
-        launchForm={add}
+        launchForm={mayAdd ? add : undefined}
       />
     );
   }
   return (
     <div className={styles.card}>
       <CardHeader title={t('echocardiograms', 'Echocardiograms')}>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={(props) => <AddIcon size={16} {...props} />}
-          disabled={isOpening}
-          onClick={add}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {mayAdd && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={(props) => <AddIcon size={16} {...props} />}
+            disabled={isOpening}
+            onClick={add}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       {isLoading ? (
         <DataTableSkeleton
@@ -144,6 +148,7 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
   const desktop = isDesktop(useLayoutType());
   const { electrocardiograms, error, isLoading } = useElectrocardiograms(patientUuid);
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
+  const mayAdd = useActionAccess('enterClinicalForms');
   const title = t('electrocardiograms', 'Electrocardiograms');
   const columns: Array<{ header: string; text: (ecg: Electrocardiogram) => string }> = [
     { header: t('date', 'Date'), text: (ecg) => formatDate(ecg.date, { time: false }) },
@@ -160,22 +165,24 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
       <EmptyCard
         displayText={t('electrocardiogramsLowercase', 'electrocardiograms')}
         headerTitle={title}
-        launchForm={add}
+        launchForm={mayAdd ? add : undefined}
       />
     );
   }
   return (
     <div className={styles.card}>
       <CardHeader title={title}>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={(props) => <AddIcon size={16} {...props} />}
-          disabled={isOpening}
-          onClick={add}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {mayAdd && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={(props) => <AddIcon size={16} {...props} />}
+            disabled={isOpening}
+            onClick={add}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       {isLoading ? (
         <DataTableSkeleton

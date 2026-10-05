@@ -24,7 +24,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
   });
 }
 
-const registryPrivilege = 'View Patient Flags';
+const registryPrivilege = 'App: act.registry';
 
 describe('Registry', () => {
   beforeEach(async () => {
@@ -72,14 +72,14 @@ describe('Registry', () => {
     expect(ageSex(/Patient 3\b/)).toBe('');
   });
 
-  it('evaluates the configured report over every enrolment up to today', () => {
+  it('evaluates the registry list over every enrolment up to today', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 29, 10) });
     dataset({ rows: registryRows });
 
     render(<Registry />);
 
     vi.useRealTimers();
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('registry', {
       startDate: '1900-01-01',
       endDate: '2026-09-29',
     });
@@ -173,15 +173,7 @@ describe('Registry', () => {
   );
 
   it('tells a user without the registry privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: {
-        home: 'x',
-        registry: 'App: act.registry',
-        worklists: 'x',
-        waitingList: 'x',
-        screenPositive: 'x',
-      },
-    });
+    await signInWith(['Get Patients']);
     dataset({ rows: registryRows });
 
     render(<Registry />);

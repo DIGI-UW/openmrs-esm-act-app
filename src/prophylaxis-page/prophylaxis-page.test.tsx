@@ -1,5 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { signInWith } from '../access/sign-in.test-helper';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
@@ -111,8 +112,8 @@ function rows(table: HTMLElement) {
 }
 
 describe('ProphylaxisPage', () => {
-  beforeEach(() => {
-    vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
+  beforeEach(async () => {
+    await signInWith(['Task: act.recordProphylaxis']);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
     setLayout('small-desktop');
     serve();

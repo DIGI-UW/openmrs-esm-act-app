@@ -17,7 +17,7 @@ vi.mock('../rhd-flags/rhd-flag-lists.resource', async (importOriginal) => ({
 const mockUseReportDataset = vi.mocked(useReportDataset);
 const mockUseRhdFlagLists = vi.mocked(useRhdFlagLists);
 
-const worklistsPrivilege = 'View Patient Flags';
+const worklistsPrivilege = 'App: act.worklists';
 
 const list = (flagName: string, memberCount: number, priority: RhdFlagList['priority']): RhdFlagList => ({
   flagName,
@@ -149,13 +149,13 @@ describe('Worklists', () => {
     expect(screen.getByTestId('table-empty-state')).toHaveTextContent('There are no patients on this list to display');
   });
 
-  it('evaluates the registry report over every enrolment up to today', () => {
+  it('evaluates the worklists list over every enrolment up to today', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 29, 10) });
 
     render(<Worklists />);
 
     vi.useRealTimers();
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('worklists', {
       startDate: '1900-01-01',
       endDate: '2026-09-29',
     });
@@ -203,7 +203,7 @@ describe('Worklists', () => {
   });
 
   it('is closed to a user without the worklists privilege', async () => {
-    await signInWith([], { screenPrivileges: { worklists: 'App: act.worklists' } as never });
+    await signInWith([]);
 
     render(<Worklists />);
 

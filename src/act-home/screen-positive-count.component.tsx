@@ -10,9 +10,8 @@ import styles from './screen-positive-count.scss';
 
 function Row() {
   const { t } = useTranslation();
-  const { screenPositive } = useConfig<Config>();
   // The list's own report, one row per patient, so the count is the list's length.
-  const { rows, isLoading, error } = useReportDataset(screenPositive.report);
+  const { rows, isLoading, error } = useReportDataset('screenPositive');
 
   return (
     <ConfigurableLink

@@ -20,8 +20,8 @@ const shortDate = (date: Date) => formatDate(date, { time: false, noToday: true 
 /** What the registry's card showed in ACT 2.0 beyond the table's columns: clinics, visits, doses and procedures. */
 export function RegistryDetails({ row }: { row: ReportRow }) {
   const { t } = useTranslation();
-  const { waitingList, urgencyBands } = useConfig<Config>();
-  const { rows: waitingRows } = useReportDataset(waitingList.report);
+  const { urgencyBands } = useConfig<Config>();
+  const { rows: waitingRows } = useReportDataset('registryWaitingList');
   const interventions = useMemo(
     () =>
       rankWaitingRows(

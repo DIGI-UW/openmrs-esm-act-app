@@ -13,7 +13,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 describe('ScreenPositiveDashboardLink', () => {
   it('links the home left nav to /home/act-screen-positive, as the prototype names it', async () => {
     window.spaBase = '/openmrs/spa';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.screenPositive']);
 
     render(<ScreenPositiveDashboardLink />);
 

@@ -30,7 +30,7 @@ import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
-import { useScreenAccess } from '../access/screen-access.component';
+import { ActionAccess, useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { FilterSelect } from '../table-filters/filter-select.component';
@@ -57,7 +57,7 @@ function ScreenPositiveTable() {
   const { screenPositive, visitType } = useConfig<Config>();
   const { sessionLocation } = useSession();
   const desktop = isDesktop(useLayoutType());
-  const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
+  const { rows, isLoading, error, mutate } = useReportDataset('screenPositive');
   // Same objects on a second click, so the open workspace does not prompt to close the form.
   const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
   const visits = useRef(new Map<string, Visit>());
@@ -179,9 +179,11 @@ function ScreenPositiveTable() {
                     <TableCell key={column.header}>{column.render(row)}</TableCell>
                   ))}
                   <TableCell>
-                    <Button kind="ghost" size="sm" onClick={() => enterEcho(row)}>
-                      {t('enterEchoResult', 'Enter echo result')}
-                    </Button>
+                    <ActionAccess action="enterClinicalForms">
+                      <Button kind="ghost" size="sm" onClick={() => enterEcho(row)}>
+                        {t('enterEchoResult', 'Enter echo result')}
+                      </Button>
+                    </ActionAccess>
                   </TableCell>
                 </TableRow>
               ))}

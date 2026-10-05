@@ -23,7 +23,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
 describe("ACT home's screen positive row, in the care cascade", () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith([homePrivilege, 'View Patient Flags']);
+    await signInWith([homePrivilege, 'App: act.screenPositive']);
   });
 
   it("shows how many patients the list's report returns", () => {
@@ -34,12 +34,12 @@ describe("ACT home's screen positive row, in the care cascade", () => {
     expect(screen.getByTestId('screen-positive-count')).toHaveTextContent('3');
   });
 
-  it('evaluates the report the list uses', () => {
+  it('evaluates the list the page uses', () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositiveRow />);
 
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('screenPositive');
   });
 
   it('shows none when no patient is waiting', () => {
@@ -80,7 +80,7 @@ describe("ACT home's screen positive row, in the care cascade", () => {
   });
 
   it('is hidden from a user without the screen positive privilege', async () => {
-    await signInWith([homePrivilege], { screenPrivileges: { screenPositive: 'App: act.screenpositive' } as never });
+    await signInWith([homePrivilege]);
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositiveRow />);

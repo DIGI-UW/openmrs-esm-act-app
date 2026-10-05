@@ -62,7 +62,13 @@ describe('ACT page header', () => {
   it.each(screens)(
     'starts $name with the framework page header, its title and pictogram',
     async ({ Screen, name, pictogram }) => {
-      await signInWith([homePrivilege, 'View Patient Flags']);
+      await signInWith([
+        homePrivilege,
+        'App: act.registry',
+        'App: act.worklists',
+        'App: act.waitingList',
+        'App: act.screenPositive',
+      ]);
 
       render(<Screen />);
 
@@ -75,9 +81,7 @@ describe('ACT page header', () => {
   );
 
   it.each(screens)('shows $name no header to a user who may not see it', async ({ Screen, noAccess }) => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'x', worklists: 'x', waitingList: 'x', screenPositive: 'x' },
-    });
+    await signInWith(['Get Patients']);
 
     render(<Screen />);
 

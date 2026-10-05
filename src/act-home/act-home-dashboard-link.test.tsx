@@ -23,7 +23,7 @@ describe('ActHomeDashboardLink', () => {
   });
 
   it('is hidden from a user without the ACT home privilege', async () => {
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
 
     render(<ActHomeDashboardLink />);
 

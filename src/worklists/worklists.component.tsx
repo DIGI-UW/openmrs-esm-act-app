@@ -83,10 +83,9 @@ function WorklistPatients({
   setFilters: (changes: Partial<Record<(typeof filterKeys)[number], string>>) => void;
 }) {
   const { t } = useTranslation();
-  const { registry } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
-  const { rows, isLoading, error } = useReportDataset(registry.report, params);
+  const { rows, isLoading, error } = useReportDataset('worklists', params);
   const listed = useMemo(() => entriesFor(rows, flagNames), [rows, flagNames]);
   const shown = useMemo(
     () =>

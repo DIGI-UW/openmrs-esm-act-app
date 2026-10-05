@@ -44,7 +44,7 @@ describe('Registry flags column', () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     // An explicit All, so every row shows, rather than the opening defaults.
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: columnRows,
@@ -137,7 +137,7 @@ describe('Registry flags column', () => {
     ['names', { namePrefix: 'RHD ', names: ['RHD prophylaxis overdue'] }],
     ['namePrefix', { namePrefix: 'RHD prophylaxis', names: [] }],
   ])('shows only the flags the configuration selects by %s', async (_, selection) => {
-    await signInWith(['View Patient Flags'], {
+    await signInWith(['App: act.registry'], {
       flagLists: { riskFlags: ['RHD prophylaxis overdue'], ...selection },
     });
 
@@ -147,7 +147,7 @@ describe('Registry flags column', () => {
   });
 
   it('takes the risk flags from the configuration', async () => {
-    await signInWith(['View Patient Flags'], {
+    await signInWith(['App: act.registry'], {
       flagLists: { namePrefix: 'RHD ', names: [], riskFlags: ['RHD INR target missing'] },
     });
 
@@ -161,7 +161,7 @@ describe('Registry flags column', () => {
 describe('Registry flag filter', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: flaggedRows,
@@ -201,7 +201,7 @@ describe('Registry flag filter', () => {
 
   it('offers only the flags the configuration selects', async () => {
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
-    await signInWith(['View Patient Flags'], {
+    await signInWith(['App: act.registry'], {
       flagLists: { riskFlags: ['RHD prophylaxis overdue'], namePrefix: 'RHD ', names: ['RHD prophylaxis overdue'] },
     });
     render(<Registry />);

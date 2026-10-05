@@ -40,7 +40,7 @@ describe('Screen positive, pending confirmation', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-screen-positive');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.screenPositive', 'Task: act.enterClinicalForms']);
   });
 
   it("lists each patient's ACT ID, name, age, sex, clinics and date of positive screen", () => {
@@ -85,12 +85,12 @@ describe('Screen positive, pending confirmation', () => {
     );
   });
 
-  it('evaluates the configured report', () => {
+  it('evaluates the screen positive list', () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositive />);
 
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('screenPositive');
   });
 
   it('offers the cardiac clinic and sex filters the values the patients have', () => {
@@ -177,15 +177,7 @@ describe('Screen positive, pending confirmation', () => {
   );
 
   it('tells a user without the screen positive privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: {
-        home: 'x',
-        registry: 'x',
-        worklists: 'x',
-        waitingList: 'x',
-        screenPositive: 'App: act.screenpositive',
-      },
-    });
+    await signInWith(['Get Patients']);
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositive />);

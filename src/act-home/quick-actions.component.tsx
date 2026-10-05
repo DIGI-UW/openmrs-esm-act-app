@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Add, ArrowUpRight, Search } from '@carbon/react/icons';
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { ScreenAccess } from '../access/screen-access.component';
+import { ActionAccess, ScreenAccess } from '../access/screen-access.component';
 import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.component';
 import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
 import styles from './quick-actions.scss';
@@ -97,11 +97,17 @@ export default function QuickActions() {
   return (
     <ScreenAccess screen="home">
       <div className={styles.actions}>
-        <ConfigurableLink to={quickActions.registerPatientUrl} className={styles.action}>
-          <ActionLabel label={t('registerPatient', 'Register patient')} Icon={Add} />
-        </ConfigurableLink>
-        <EnterProphylaxis />
-        <FindPatient />
+        <ActionAccess action="registerPatient">
+          <ConfigurableLink to={quickActions.registerPatientUrl} className={styles.action}>
+            <ActionLabel label={t('registerPatient', 'Register patient')} Icon={Add} />
+          </ConfigurableLink>
+        </ActionAccess>
+        <ActionAccess action="recordProphylaxis">
+          <EnterProphylaxis />
+        </ActionAccess>
+        <ActionAccess action="findPatient">
+          <FindPatient />
+        </ActionAccess>
       </div>
     </ScreenAccess>
   );
