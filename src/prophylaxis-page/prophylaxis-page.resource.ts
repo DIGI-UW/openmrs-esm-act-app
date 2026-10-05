@@ -49,11 +49,14 @@ export function useBpgInjections(patientUuid: string) {
   return { injections: data ?? [], error, isLoading };
 }
 
-export function useOralEntries(patientUuid: string) {
+/** The patient's Oral Adherence reports, newest first; a null patient fetches nothing. */
+export function useOralEntries(patientUuid: string | null) {
   const { prophylaxisPage } = useConfig<Config>();
   const { concepts } = prophylaxisPage;
   const url = patientEncountersUrl(patientUuid, prophylaxisPage.oralEncounterType, representation);
-  const { data, error } = useSWR<Array<PatientEncounter>, Error>(url, () => fetchAll<PatientEncounter>(url));
+  const { data, error } = useSWR<Array<PatientEncounter>, Error>(patientUuid ? url : null, () =>
+    fetchAll<PatientEncounter>(url),
+  );
   const number = (encounter: PatientEncounter, concept: string) => {
     const [obs] = answersTo(encounter, concept);
     return obs == null ? null : Number(obs.value);

@@ -19,7 +19,7 @@ describe('configSchema', () => {
       flagLists: {
         namePrefix: 'RHD ',
         names: [],
-        riskFlags: ['RHD prophylaxis overdue', 'RHD lost to follow-up'],
+        riskFlags: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
       },
       quickActions: {
         registerPatientUrl: '${openmrsSpaBase}/patient-registration',
@@ -67,6 +67,13 @@ describe('configSchema', () => {
           aorticRegurgitation: '0bbc510f-1e95-5c74-bbe3-8896907fd6c1',
           aorticStenosis: '7586c9a6-73db-5ab2-8f23-71a3cc4bae62',
           ejectionFraction: 'ed630fda-8451-53c0-929e-40eafd9bca9b',
+        },
+        ecgForm: '3776bb8d-4741-3741-aeef-d5b760443569',
+        ecgEncounterType: '64c3f35f-a3ec-59d6-8178-0ca9f068cda8',
+        ecgConcepts: {
+          date: 'a85d4e63-500f-5af9-8ebd-9e1db5ddc3ed',
+          result: '1c5476e4-ff12-5fbd-b2ad-53f66f9006a0',
+          otherFinding: '67d65827-eea5-57ac-ae8b-77f91d128063',
         },
       },
       prophylaxisPage: {

@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
 import { CardHeader, formatDate, parseDate } from '@openmrs/esm-framework';
+import { useOralEntries } from '../prophylaxis-page/prophylaxis-page.resource';
 import { RecordProphylaxisButtons } from './record-prophylaxis-buttons.component';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
 import styles from '../styles/summary-card.scss';
@@ -14,7 +15,7 @@ function useRegimenLabel() {
   const { t } = useTranslation();
   return (summary: ProphylaxisSummary) => {
     if (summary.type === 'Oral') {
-      return t('oral', 'Oral');
+      return summary.regimen ?? t('oral', 'Oral');
     }
     if (summary.type !== 'BPG' || !summary.intervalDays) {
       return t('noPrescription', 'No prescription');
@@ -32,6 +33,10 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const { t } = useTranslation();
   const { summary, error } = useProphylaxisSummary(patientUuid);
   const regimenLabel = useRegimenLabel();
+  // An oral regimen has no doses to count on time, so the card shows the latest reported adherence instead.
+  const oral = summary?.type === 'Oral';
+  const { entries } = useOralEntries(oral ? patientUuid : null);
+  const latestAdherence = entries.find((entry) => entry.adherence != null)?.adherence;
 
   if (error) {
     return null;
@@ -46,13 +51,19 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
       value: date(summary.nextDue),
       overdue: summary.status === 'overdue',
     },
-    {
-      id: 'on-time',
-      label: t('onTimeSixMonths', 'On-time (6 months)'),
-      value: summary.onTime
-        ? t('onTimeCount', '{{given}} of {{total}}', { given: summary.onTime.given, total: summary.onTime.total })
-        : '--',
-    },
+    oral
+      ? {
+          id: 'on-time',
+          label: t('adherenceLastReport', 'Adherence (last report)'),
+          value: latestAdherence == null ? '--' : `${latestAdherence}%`,
+        }
+      : {
+          id: 'on-time',
+          label: t('onTimeSixMonths', 'On-time (6 months)'),
+          value: summary.onTime
+            ? t('onTimeCount', '{{given}} of {{total}}', { given: summary.onTime.given, total: summary.onTime.total })
+            : '--',
+        },
   ];
 
   return (

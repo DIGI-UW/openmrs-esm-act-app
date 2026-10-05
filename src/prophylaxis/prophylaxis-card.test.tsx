@@ -89,8 +89,47 @@ describe('ProphylaxisCard', () => {
     expect(await screen.findByText('BPG · every 10 days')).toBeInTheDocument();
   });
 
-  it('shows an oral regimen with no on-time count', async () => {
-    respondWith({ ...winnie, type: 'Oral', intervalDays: 0, onTime: null, status: 'ok' });
+  it("names an oral regimen and shows the latest Oral Adherence report's adherence", async () => {
+    const adherence = '3b4d1b4c-3b2a-5b5c-9a3c-0c8c4c5c6c7c';
+    vi.mocked(useConfig<Config>).mockReturnValue({
+      ...(getDefaultsFromConfigSchema(configSchema) as Config),
+      prophylaxisPage: {
+        ...(getDefaultsFromConfigSchema(configSchema) as Config).prophylaxisPage,
+        concepts: {
+          ...(getDefaultsFromConfigSchema(configSchema) as Config).prophylaxisPage.concepts,
+          adherence,
+        },
+      },
+    });
+    const report = (date: string, value: number | null) => ({
+      uuid: date,
+      encounterDatetime: date,
+      obs: value == null ? [] : [{ concept: { uuid: adherence }, value }],
+    });
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('/actcore/prophylaxis')
+          ? { ...winnie, type: 'Oral', regimen: 'Oral penicillin V', intervalDays: 0, onTime: null, status: 'ok' }
+          : {
+              results: [report('2026-08-01', 85), report('2026-09-01', 70), report('2026-09-20', null)],
+              totalCount: 3,
+            },
+      })) as never);
+
+    renderCard();
+
+    expect(await screen.findByText('Oral penicillin V')).toBeInTheDocument();
+    expect(screen.getByText('Adherence (last report)')).toBeInTheDocument();
+    await waitFor(() => expect(field('on-time')).toHaveTextContent('70%'));
+  });
+
+  it('says -- for an oral regimen with no adherence reported', async () => {
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('/actcore/prophylaxis')
+          ? { ...winnie, type: 'Oral', regimen: null, intervalDays: 0, onTime: null, status: 'ok' }
+          : { results: [], totalCount: 0 },
+      })) as never);
 
     renderCard();
 

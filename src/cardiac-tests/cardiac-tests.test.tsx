@@ -64,11 +64,16 @@ const echoes = [
   },
 ];
 
-function respondWith(results: Array<object> | Error) {
-  mockOpenmrsFetch.mockImplementation((() =>
-    results instanceof Error
-      ? Promise.reject(results)
-      : Promise.resolve({ data: { results, totalCount: results.length } })) as never);
+const ecgEncounterType = '64c3f35f-a3ec-59d6-8178-0ca9f068cda8';
+
+/** Answers the echocardiogram search with results, and the electrocardiogram search with ecgs. */
+function respondWith(results: Array<object> | Error, ecgs: Array<object> = []) {
+  mockOpenmrsFetch.mockImplementation(((url: string) => {
+    const answer = url.includes(ecgEncounterType) ? ecgs : results;
+    return answer instanceof Error
+      ? Promise.reject(answer)
+      : Promise.resolve({ data: { results: answer, totalCount: answer.length } });
+  }) as never);
 }
 
 let mutateCache: ScopedMutator;
@@ -112,6 +117,7 @@ describe('CardiacTests', () => {
     await screen.findByText('55%');
     expect(screen.getByText('Echocardiograms')).toBeInTheDocument();
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+      '',
       'Date',
       'Mitral regurgitation',
       'Mitral stenosis',
@@ -120,8 +126,8 @@ describe('CardiacTests', () => {
       'Left ventricular ejection fraction',
     ]);
     expect(shownRows()).toEqual([
-      ['27-Feb-2026', 'Moderate', '--', '--', '--', '48%'],
-      ['02-Sept-2025', 'None', 'Mild', 'Mild', 'Mild', '55%'],
+      ['', '27-Feb-2026', 'Moderate', '--', '--', '--', '48%'],
+      ['', '02-Sept-2025', 'None', 'Mild', 'Mild', 'Mild', '55%'],
     ]);
   });
 
@@ -129,7 +135,9 @@ describe('CardiacTests', () => {
     renderPage();
 
     await screen.findByText('55%');
-    const url = String(mockOpenmrsFetch.mock.calls[0][0]);
+    const url = mockOpenmrsFetch.mock.calls
+      .map(([called]) => String(called))
+      .find((called) => called.includes('730f5ec2'));
     expect(url).toContain(`${restBaseUrl}/encounter?patient=winnie&`);
     expect(url).toContain('encounterType=730f5ec2-7102-55d0-8602-2d792844f245');
   });
@@ -168,12 +176,17 @@ describe('CardiacTests', () => {
     expect(openForm).toHaveBeenCalledWith('88e54fb0-1243-3f7a-b925-f64648ca6635');
   });
 
-  it.each(layouts)('shows a table skeleton sized for a $layout while they load', ({ layout, compact }) => {
+  it.each(layouts)('shows a table skeleton sized for a $layout while they load', async ({ layout, compact }) => {
     setLayout(layout);
-    mockOpenmrsFetch.mockImplementation((() => new Promise(() => undefined)) as never);
+    // The echocardiograms still loading; the electrocardiograms already answered with none.
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      url.includes(ecgEncounterType)
+        ? Promise.resolve({ data: { results: [], totalCount: 0 } })
+        : new Promise(() => undefined)) as never);
 
     renderPage();
 
+    await waitFor(() => expect(screen.getAllByRole('progressbar')).toHaveLength(1));
     const { skeleton, columns } = tableSkeleton();
     expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
     expect(columns).toBe(6);
@@ -193,7 +206,7 @@ describe('CardiacTests', () => {
 
     renderPage();
 
-    expect(await screen.findByTestId('empty-card')).toHaveTextContent('Echocardiograms: no echocardiograms');
+    await screen.findByText('Echocardiograms: no echocardiograms', { exact: false });
     await userEvent.click(screen.getByRole('button', { name: 'Record echocardiograms' }));
     expect(openForm).toHaveBeenCalledWith('88e54fb0-1243-3f7a-b925-f64648ca6635');
   });
@@ -204,7 +217,84 @@ describe('CardiacTests', () => {
 
     renderPage();
 
-    await waitFor(() => expect(ErrorState).toHaveBeenCalled());
-    expect(vi.mocked(ErrorState).mock.calls.at(-1)[0]).toEqual({ error: forbidden, headerTitle: 'Echocardiograms' });
+    await waitFor(() =>
+      expect(vi.mocked(ErrorState).mock.calls.map(([props]) => props)).toContainEqual({
+        error: forbidden,
+        headerTitle: 'Echocardiograms',
+      }),
+    );
+  });
+  it("opens an echocardiogram's row on the findings the table has no column for", async () => {
+    respondWith([
+      {
+        ...echoes[0],
+        obs: [
+          ...echoes[0].obs,
+          { concept: { uuid: 'tr', display: 'Tricuspid Regurgitation' }, value: answer('Moderate') },
+          { concept: { uuid: 'wilkins', display: 'Wilkins Score' }, value: 8 },
+        ],
+      },
+    ]);
+    renderPage();
+    await screen.findByText('55%');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Other findings' }));
+
+    const findings = screen.getByTestId('other-findings');
+    expect(
+      within(findings)
+        .getAllByRole('term')
+        .map((term) => term.textContent),
+    ).toEqual(['Tricuspid Regurgitation', 'Wilkins Score']);
+    expect(
+      within(findings)
+        .getAllByRole('definition')
+        .map((value) => value.textContent),
+    ).toEqual(['Moderate', '8']);
+  });
+
+  it("lists the patient's electrocardiograms newest first, with each result finding", async () => {
+    const [ecgDate, result, other] = [
+      'a85d4e63-500f-5af9-8ebd-9e1db5ddc3ed',
+      '1c5476e4-ff12-5fbd-b2ad-53f66f9006a0',
+      '67d65827-eea5-57ac-ae8b-77f91d128063',
+    ];
+    respondWith(echoes, [
+      {
+        uuid: 'ecg-old',
+        encounterDatetime: '2025-01-10T10:00:00.000+0000',
+        obs: [obs(ecgDate, '2025-01-09'), obs(result, answer('Normal'))],
+      },
+      {
+        uuid: 'ecg-new',
+        encounterDatetime: '2026-05-10T10:00:00.000+0000',
+        obs: [obs(result, answer('Atrial fibrillation')), obs(result, answer('LVH')), obs(other, 'Long QT')],
+      },
+    ]);
+    renderPage();
+
+    const table = await screen.findByRole('table', { name: 'Electrocardiograms' });
+    expect(
+      within(table)
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) =>
+          within(row)
+            .getAllByRole('cell')
+            .map((cell) => cell.textContent),
+        ),
+    ).toEqual([
+      ['10-May-2026', 'Atrial fibrillation, LVH', 'Long QT'],
+      ['09-Jan-2025', 'Normal', '--'],
+    ]);
+  });
+
+  it('opens the electrocardiogram form from its empty card', async () => {
+    renderPage();
+    await screen.findByText('55%');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Record electrocardiograms' }));
+
+    expect(openForm).toHaveBeenCalledWith('3776bb8d-4741-3741-aeef-d5b760443569');
   });
 });

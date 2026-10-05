@@ -10,5 +10,6 @@ export const registryRows = Array.from({ length: 30 }, (_, i) => ({
   next_consultation_date: i === 0 ? '2026-10-15T00:00:00.000+0000' : null,
   cardiac_clinic: i % 2 ? 'Gulu RRH' : 'Lira RRH',
   primary_care_clinic: i % 2 ? 'Anyeke HCIV' : null,
+  consent_given: 'Yes',
   patient_uuid: `patient-${i + 1}`,
 }));

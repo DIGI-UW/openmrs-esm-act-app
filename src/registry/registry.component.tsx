@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,9 +10,13 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
 } from '@carbon/react';
 import {
   ConfigurableLink,
@@ -38,6 +42,8 @@ import { filterRegistry, registryFilterColumns, rowFlags, useRegistryFilters } f
 import { AdherenceRing } from './adherence-ring.component';
 import { BpgStatusTag, bpgStatuses, useBpgStatusLabel } from './bpg-status-tag.component';
 import { RegistryFlags } from './registry-flags.component';
+import { RegistryDetails } from './registry-details.component';
+import { nextSort, type RegistrySort, sortRegistry } from './registry-sort';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './registry.scss';
 
@@ -61,7 +67,18 @@ function RegistryTable() {
     () => filterRegistry(rows, registry.showBpgColumns ? filters : { ...filters, bpg: '' }),
     [rows, filters, registry.showBpgColumns],
   );
-  const { results, paginationProps } = usePagedRows(shown, filters);
+  const [sort, setSort] = useState<RegistrySort | null>(null);
+  const sorted = useMemo(() => sortRegistry(shown, sort), [shown, sort]);
+  const { results, paginationProps } = usePagedRows(sorted, filters);
+  const [expanded, setExpanded] = useState<Set<unknown>>(new Set());
+  const toggle = (uuid: unknown) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (!next.delete(uuid)) {
+        next.add(uuid);
+      }
+      return next;
+    });
   const bpgStatusLabel = useBpgStatusLabel();
   const filterSelect = (key: Exclude<keyof typeof registryFilterColumns, 'bpg'>, label: string) => (
     <FilterSelect
@@ -88,6 +105,11 @@ function RegistryTable() {
     { header: t('diagnosisCategory', 'Diagnosis category'), text: text('diagnosis_category') },
     { header: t('prophylaxisRegimen', 'Prophylaxis regimen'), text: text('prophylaxis_regimen') },
     { header: t('nextConsultation', 'Next consultation'), text: nextConsultation },
+    { header: t('cardiacClinic', 'Cardiac clinic'), text: text('cardiac_clinic') },
+    { header: t('primaryCareClinic', 'Primary care clinic'), text: text('primary_care_clinic') },
+    { header: t('consentGiven', 'Consent given'), text: text('consent_given') },
+    { header: t('lastInjection', 'Last injection'), text: text('last_injection_date') },
+    { header: t('injectionDue', 'Injection due'), text: text('next_due_date') },
     ...(registry.showBpgColumns
       ? [
           { header: t('bpgStatus', 'BPG status'), text: text('bpg_status') },
@@ -105,29 +127,50 @@ function RegistryTable() {
           .join('; '),
     },
   ];
-  const columns: Array<{ header: string; render: (row: ReportRow, index: number) => React.ReactNode }> = [
+  const columns: Array<{
+    header: string;
+    sortKey?: RegistrySort['key'];
+    render: (row: ReportRow, index: number) => React.ReactNode;
+  }> = [
     {
       header: t('patient', 'Patient'),
+      sortKey: 'name',
       render: (row) => (
         <>
           <ConfigurableLink to={chartUrl(row)} className={styles.name}>
             {text('full_name')(row)}
           </ConfigurableLink>
+          {row.consent_given !== 'Yes' && (
+            <span className={styles.notConsented} title={t('notConsented', 'Not consented')}>
+              *
+            </span>
+          )}
+          {row.enrollment_status === 'Completed' && (
+            <Tag as="span" type="gray" size="sm" className={styles.inactive}>
+              {t('inactive', 'Inactive')}
+            </Tag>
+          )}
           <span className={styles.actId}>{text('rhd_id')(row)}</span>
         </>
       ),
     },
     {
       header: t('ageSex', 'Age, sex'),
+      sortKey: 'age',
       render: (row) => [text('age_years')(row), text('sex')(row)].filter(Boolean).join(' '),
     },
     { header: t('diagnosis', 'Diagnosis'), render: text('diagnosis_category') },
     { header: t('prophylaxis', 'Prophylaxis'), render: text('prophylaxis_regimen') },
     ...(registry.showBpgColumns
       ? [
-          { header: t('bpgStatus', 'BPG status'), render: (row: ReportRow) => <BpgStatusTag row={row} /> },
+          {
+            header: t('bpgStatus', 'BPG status'),
+            sortKey: 'bpg' as const,
+            render: (row: ReportRow) => <BpgStatusTag row={row} />,
+          },
           {
             header: t('adherence', 'Adherence'),
+            sortKey: 'adherence' as const,
             render: (row: ReportRow) =>
               row.adherence == null ? null : <AdherenceRing value={Number(row.adherence)} />,
           },
@@ -169,8 +212,8 @@ function RegistryTable() {
     <>
       <div className={styles.filters}>
         <Search
-          labelText={t('searchRegistry', 'Search by name or ACT ID')}
-          placeholder={t('searchRegistry', 'Search by name or ACT ID')}
+          labelText={t('searchRegistryWithAlternateId', 'Search by name, ACT ID or alternate ID')}
+          placeholder={t('searchRegistryWithAlternateId', 'Search by name, ACT ID or alternate ID')}
           value={filters.q}
           onChange={(event) => setFilters({ q: event.target.value })}
         />
@@ -213,30 +256,59 @@ function RegistryTable() {
         </Button>
       </div>
       {shown.length ? (
-        <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHeader key={column.header}>{column.header}</TableHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {results.map((row, index) => (
-              <TableRow
-                key={String(row.patient_uuid)}
-                className={styles.row}
-                onClick={(event) =>
-                  (event.target as HTMLElement).closest('a, .cds--popover-container') || navigate({ to: chartUrl(row) })
-                }
-              >
-                {columns.map((column) => (
-                  <TableCell key={column.header}>{column.render(row, index)}</TableCell>
-                ))}
+        <>
+          <p className={styles.legend}>
+            {t('notConsentedLegend', 'Patients marked with * have not consented to the registry')}
+          </p>
+          <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
+            <TableHead>
+              <TableRow>
+                <TableExpandHeader aria-label={t('details', 'Details')} />
+                {columns.map((column) =>
+                  column.sortKey ? (
+                    <TableHeader
+                      key={column.header}
+                      isSortable
+                      sortDirection={sort?.key === column.sortKey ? sort.direction : 'NONE'}
+                      onClick={() => setSort(nextSort(sort, column.sortKey))}
+                    >
+                      {column.header}
+                    </TableHeader>
+                  ) : (
+                    <TableHeader key={column.header}>{column.header}</TableHeader>
+                  ),
+                )}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {results.map((row, index) => (
+                <React.Fragment key={String(row.patient_uuid)}>
+                  <TableExpandRow
+                    aria-label={t('details', 'Details')}
+                    isExpanded={expanded.has(row.patient_uuid)}
+                    onExpand={() => toggle(row.patient_uuid)}
+                    className={styles.row}
+                    // TableExpandRow passes onClick on to its row, though its props do not declare it.
+                    {...({
+                      onClick: (event) =>
+                        (event.target as HTMLElement).closest('a, button, .cds--popover-container') ||
+                        navigate({ to: chartUrl(row) }),
+                    } as React.HTMLAttributes<HTMLTableRowElement>)}
+                  >
+                    {columns.map((column) => (
+                      <TableCell key={column.header}>{column.render(row, index)}</TableCell>
+                    ))}
+                  </TableExpandRow>
+                  {expanded.has(row.patient_uuid) && (
+                    <TableExpandedRow colSpan={columns.length + 1}>
+                      <RegistryDetails row={row} />
+                    </TableExpandedRow>
+                  )}
+                </React.Fragment>
+              ))}
+            </TableBody>
+          </Table>
+        </>
       ) : (
         <FilterEmptyState message={t('noRegistryMatches', 'No patients to display')} />
       )}
