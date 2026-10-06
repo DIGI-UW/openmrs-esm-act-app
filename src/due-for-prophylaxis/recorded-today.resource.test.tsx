@@ -33,6 +33,7 @@ describe('useRecordedToday', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   it("asks for each patient's encounters since this morning, with each encounter's form", async () => {
@@ -50,7 +51,20 @@ describe('useRecordedToday', () => {
     expect(queries[0].get('v')).toBe('custom:(uuid,form:(uuid))');
   });
 
-  it('counts a patient with a BPG or oral prophylaxis form saved today, and no one else', async () => {
+  it("asks from the clinic's midnight, not UTC's, outside UTC", async () => {
+    vi.stubEnv('TZ', 'Africa/Kampala');
+    expect(new Date(2026, 9, 6).getTimezoneOffset()).toBe(-180);
+    vi.setSystemTime(new Date('2026-10-05T22:00:00.000Z'));
+    encountersByPatient({});
+
+    renderHook(() => useRecordedToday(['patient-a']), { wrapper });
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+    const query = new URL(String(mockOpenmrsFetch.mock.calls[0][0]), 'http://localhost').searchParams;
+    expect(query.get('fromdate')).toBe('2026-10-05T21:00:00.000Z');
+  });
+
+  it('counts a patient with a BPG or oral prophylaxis encounter dated today, and no one else', async () => {
     encountersByPatient({ 'patient-bpg': [bpgForm], 'patient-oral': [oralForm], 'patient-other': ['another-form'] });
 
     const { result } = renderHook(
@@ -62,6 +76,15 @@ describe('useRecordedToday', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect([...result.current.recorded].sort()).toEqual(['patient-bpg', 'patient-oral']);
+  });
+
+  it('returns the error when a lookup fails', async () => {
+    mockOpenmrsFetch.mockRejectedValue(new Error('timeout'));
+
+    const { result } = renderHook(() => useRecordedToday(['patient-a']), { wrapper });
+
+    await waitFor(() => expect(result.current.error).toEqual(new Error('timeout')));
+    expect(result.current.recorded.size).toBe(0);
   });
 
   it('asks nothing when nobody is listed', () => {

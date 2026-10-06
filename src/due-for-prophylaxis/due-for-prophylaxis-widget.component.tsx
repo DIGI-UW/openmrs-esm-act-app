@@ -14,12 +14,12 @@ const shownRows = 5;
 export default function DueForProphylaxisWidget() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { rows, recorded, waiting, isLoading, error } = useDueList();
+  const { rows, recorded, recordedError, waiting, isLoading, error } = useDueList();
 
   return (
     <ActHomeCard
       title={t('dueForProphylaxis', 'Due for prophylaxis')}
-      tag={rows.length ? <Tag type="red">{t('waitingCount', '{{count}} waiting', { count: waiting })}</Tag> : null}
+      tag={waiting ? <Tag type="red">{t('waitingCount', '{{count}} waiting', { count: waiting })}</Tag> : null}
       link={{ label: t('open', 'Open'), to: `\${openmrsSpaBase}/home/${dueForProphylaxisDashboardMeta.name}` }}
     >
       {error ? (
@@ -40,7 +40,7 @@ export default function DueForProphylaxisWidget() {
           showToolbar={false}
         />
       ) : rows.length ? (
-        <DueForProphylaxisTable rows={rows.slice(0, shownRows)} recorded={recorded} />
+        <DueForProphylaxisTable rows={rows.slice(0, shownRows)} recorded={recorded} recordedError={recordedError} />
       ) : (
         <TableEmptyState message={t('nobodyDueForProphylaxis', 'Nobody is due for prophylaxis')} />
       )}

@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
+import {
+  Button,
+  InlineNotification,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tag,
+} from '@carbon/react';
 import { ConfigurableLink, formatDate, isDesktop, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
@@ -16,7 +26,15 @@ function lastDose(row: ReportRow) {
 }
 
 /** The due list's rows, each with the form that records its next dose, or View chart once recorded today. */
-export function DueForProphylaxisTable({ rows, recorded }: { rows: Array<ReportRow>; recorded: Set<string> }) {
+export function DueForProphylaxisTable({
+  rows,
+  recorded,
+  recordedError,
+}: {
+  rows: Array<ReportRow>;
+  recorded: Set<string>;
+  recordedError?: Error;
+}) {
   const { t } = useTranslation();
   const { prophylaxisCard, visitType } = useConfig<Config>();
   const { sessionLocation } = useSession();
@@ -65,35 +83,49 @@ export function DueForProphylaxisTable({ rows, recorded }: { rows: Array<ReportR
   };
 
   return (
-    <div className={styles.tableContainer}>
-      <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
-        <TableHead>
-          <TableRow>
-            <TableHeader>{t('name', 'Name')}</TableHeader>
-            <TableHeader>{t('actId', 'ACT ID')}</TableHeader>
-            <TableHeader>{t('prophylaxisType', 'Type')}</TableHeader>
-            <TableHeader>{t('lastDose', 'Last dose')}</TableHeader>
-            <TableHeader>{t('status', 'Status')}</TableHeader>
-            <TableHeader aria-label={t('actions', 'Actions')} />
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={String(row.patient_uuid)}>
-              <TableCell>
-                <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>
-                  {String(row.full_name ?? '')}
-                </ConfigurableLink>
-              </TableCell>
-              <TableCell>{String(row.rhd_id ?? '')}</TableCell>
-              <TableCell>{String(row.prophylaxis_type ?? '')}</TableCell>
-              <TableCell>{lastDose(row)}</TableCell>
-              <TableCell>{status(row)}</TableCell>
-              <TableCell>{action(row)}</TableCell>
+    <>
+      {recordedError && (
+        <InlineNotification
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          title={t('couldNotCheckRecordedToday', 'Could not check who was recorded today')}
+          subtitle={t(
+            'recordedTodayUnknown',
+            'A patient already recorded today may still show Record. Open their chart before recording.',
+          )}
+        />
+      )}
+      <div className={styles.tableContainer}>
+        <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
+          <TableHead>
+            <TableRow>
+              <TableHeader>{t('name', 'Name')}</TableHeader>
+              <TableHeader>{t('actId', 'ACT ID')}</TableHeader>
+              <TableHeader>{t('prophylaxisType', 'Type')}</TableHeader>
+              <TableHeader>{t('lastDose', 'Last dose')}</TableHeader>
+              <TableHeader>{t('status', 'Status')}</TableHeader>
+              <TableHeader aria-label={t('actions', 'Actions')} />
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHead>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={String(row.patient_uuid)}>
+                <TableCell>
+                  <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>
+                    {String(row.full_name ?? '')}
+                  </ConfigurableLink>
+                </TableCell>
+                <TableCell>{String(row.rhd_id ?? '')}</TableCell>
+                <TableCell>{String(row.prophylaxis_type ?? '')}</TableCell>
+                <TableCell>{lastDose(row)}</TableCell>
+                <TableCell>{status(row)}</TableCell>
+                <TableCell>{action(row)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }

@@ -38,7 +38,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
 }
 
 function recorded(patientUuids: Array<string>) {
-  mockUseRecordedToday.mockReturnValue({ recorded: new Set(patientUuids), isLoading: false });
+  mockUseRecordedToday.mockReturnValue({ recorded: new Set(patientUuids), isLoading: false, error: undefined });
 }
 
 function cells(name: RegExp) {
@@ -137,6 +137,37 @@ describe('Due for prophylaxis page', () => {
     expect(screen.getByText('11 waiting')).toBeInTheDocument();
   });
 
+  it('hides the waiting count once everyone listed was recorded today', () => {
+    dataset({ rows: dueRows });
+    recorded(['patient-overdue', 'patient-oral', 'patient-today']);
+
+    render(<DueForProphylaxis />);
+
+    expect(screen.getAllByText('Recorded today')).toHaveLength(3);
+    expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
+  });
+
+  it('offers no Record button until it knows who was recorded today', () => {
+    dataset({ rows: dueRows });
+    mockUseRecordedToday.mockReturnValue({ recorded: new Set(), isLoading: true, error: undefined });
+
+    render(<DueForProphylaxis />);
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Record/ })).not.toBeInTheDocument();
+  });
+
+  it('warns, and counts no one as waiting, when it cannot tell who was recorded today', () => {
+    dataset({ rows: dueRows });
+    mockUseRecordedToday.mockReturnValue({ recorded: new Set(), isLoading: false, error: new Error('timeout') });
+
+    render(<DueForProphylaxis />);
+
+    expect(screen.getByText('Could not check who was recorded today')).toBeInTheDocument();
+    expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Record/ })).toHaveLength(3);
+  });
+
   it('shows an error when the report cannot be evaluated', () => {
     dataset({ error: new Error('forbidden') });
 
@@ -174,5 +205,27 @@ describe('Due for prophylaxis widget', () => {
       'href',
       '/openmrs/spa/home/act-due-for-prophylaxis',
     );
+  });
+
+  it('keeps the waiting count beside Open, apart from the title', () => {
+    dataset({ rows: manyDueRows(7) });
+
+    render(<DueForProphylaxisWidget />);
+
+    // The header's right-hand group has no role, so it is found as Open's parent.
+    // eslint-disable-next-line testing-library/no-node-access
+    const end = screen.getByRole('link', { name: /Open/ }).parentElement;
+    expect(end).toContainElement(screen.getByText('7 waiting'));
+    expect(end).not.toContainElement(screen.getByRole('heading', { name: 'Due for prophylaxis' }));
+  });
+
+  it('hides the waiting count once everyone listed was recorded today', () => {
+    dataset({ rows: manyDueRows(2) });
+    recorded(['patient-0', 'patient-1']);
+
+    render(<DueForProphylaxisWidget />);
+
+    expect(screen.getAllByText('Recorded today')).toHaveLength(2);
+    expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
   });
 });

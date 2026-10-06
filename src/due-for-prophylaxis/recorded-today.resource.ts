@@ -8,7 +8,7 @@ interface EncounterForm {
 }
 
 /**
- * The listed patients with a BPG or oral prophylaxis form saved since local midnight. The report cannot tell, as
+ * The listed patients with a BPG or oral prophylaxis encounter dated since local midnight. The report cannot tell, as
  * ACT Core rebuilds its due dates overnight.
  */
 export function useRecordedToday(patientUuids: Array<string>) {
@@ -16,7 +16,7 @@ export function useRecordedToday(patientUuids: Array<string>) {
   // Local midnight with its offset, as a bare date is read on the server's clock.
   const since = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
   const forms = [prophylaxisCard.bpgForm, prophylaxisCard.oralForm];
-  const { data, isLoading } = useSWR(
+  const { data, isLoading, error } = useSWR(
     patientUuids.length ? ['act-recorded-today', since, ...forms, ...patientUuids] : null,
     () =>
       Promise.all(
@@ -30,5 +30,5 @@ export function useRecordedToday(patientUuids: Array<string>) {
       ),
   );
 
-  return { recorded: new Set((data ?? []).filter(Boolean)), isLoading };
+  return { recorded: new Set((data ?? []).filter(Boolean)), isLoading, error };
 }
