@@ -13,7 +13,7 @@ interface EncounterForm {
  */
 export function useRecordedToday(patientUuids: Array<string>) {
   const { prophylaxisCard } = useConfig<Config>();
-  // Local midnight with its offset, as a bare date is read on the server's clock.
+  // Local midnight as a UTC instant, as a bare date is read on the server's clock.
   const since = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
   const forms = [prophylaxisCard.bpgForm, prophylaxisCard.oralForm];
   const { data, isLoading, isValidating, error } = useSWR(
