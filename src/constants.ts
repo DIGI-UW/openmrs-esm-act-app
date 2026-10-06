@@ -13,3 +13,5 @@ export const PRIVILEGE_EXPORT_LISTS = 'Task: act.lists.export';
 export const PRIVILEGE_ADD_PATIENTS = 'Add Patients';
 export const PRIVILEGE_GET_PATIENTS = 'Get Patients';
 export const PRIVILEGE_ADD_ENCOUNTERS = 'Add Encounters';
+export const PRIVILEGE_EDIT_USERS = 'Edit Users';
+export const PRIVILEGE_MANAGE_LOCATIONS = 'Manage Locations';

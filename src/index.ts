@@ -95,6 +95,8 @@ export const dueForProphylaxisWidget = getAsyncLifecycle(
 
 export const communityHomeDashboardLink = getSyncLifecycle(communityHomeDashboardLinkComponent, options);
 
+export const adminNav = getAsyncLifecycle(() => import('./admin-nav/admin-nav.component'), options);
+
 export const communityHomeDashboard = getAsyncLifecycle(
   () => import('./community-home/community-home-dashboard.component'),
   options,

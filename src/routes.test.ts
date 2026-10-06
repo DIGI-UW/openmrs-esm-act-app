@@ -54,6 +54,7 @@ describe('routes.json privileges', () => {
     ['act-community-home-find-patient', 'Get Patients'],
     ['act-community-home-facility-report', screenPrivileges.dataClerk],
     ['act-back-to-act-link', 'Get Patients'],
+    ['act-admin-nav', screenPrivileges.home],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });

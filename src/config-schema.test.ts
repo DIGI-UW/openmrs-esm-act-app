@@ -28,6 +28,10 @@ describe('configSchema', () => {
       dataClerkQuickActions: {
         facilityReportUrl: '${openmrsSpaBase}/reports',
       },
+      adminLinks: {
+        usersUrl: '${openmrsBase}/admin/users/users.list',
+        clinicsUrl: '${openmrsBase}/admin/locations/location.list',
+      },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
         reportUrl: '${openmrsSpaBase}/reports',
