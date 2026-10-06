@@ -20,7 +20,9 @@ const screenPrivileges = {
   dataClerk: PRIVILEGE_DATA_CLERK,
 };
 
-const routes = routeFile as { extensions: Array<{ name: string; privileges?: string | Array<string> }> };
+const routes = routeFile as {
+  extensions: Array<{ name: string; slot?: string; order?: number; privileges?: string | Array<string> }>;
+};
 
 describe('routes.json privileges', () => {
   it.each([
@@ -44,6 +46,19 @@ describe('routes.json privileges', () => {
     ['act-home-data-clerk', screenPrivileges.dataClerk],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
+  });
+
+  it("puts the Due for prophylaxis widget on the home, under the data clerk's quick actions", () => {
+    const homeWidgets = routes.extensions
+      .filter((extension) => extension.slot === 'rhd-home-widgets-slot')
+      .sort((a, b) => a.order - b.order)
+      .map(({ name }) => name);
+
+    expect(homeWidgets.slice(0, 3)).toEqual([
+      'act-home-quick-actions',
+      'act-home-data-clerk',
+      'act-due-for-prophylaxis-widget',
+    ]);
   });
 
   it('declares a privilege on every extension, so none shows to every signed-in user', () => {

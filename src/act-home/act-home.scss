@@ -13,7 +13,8 @@
 
   > :global([data-extension-id='act-home-quick-actions']),
   > :global([data-extension-id='act-home-worklists']),
-  > :global([data-extension-id='act-home-data-clerk']) {
+  > :global([data-extension-id='act-home-data-clerk']),
+  > :global([data-extension-id='act-due-for-prophylaxis-widget']) {
     grid-column: 1 / -1;
   }
 
