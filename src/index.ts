@@ -78,3 +78,5 @@ export const screenPositiveDashboard = getAsyncLifecycle(
   () => import('./screen-positive/screen-positive.component'),
   options,
 );
+
+export const dataClerkHome = getAsyncLifecycle(() => import('./data-clerk/data-clerk-home.component'), options);
