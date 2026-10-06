@@ -88,6 +88,16 @@ export const configSchema = {
       '${openmrsSpaBase}/reports',
     ),
   },
+  adminLinks: {
+    usersUrl: link(
+      "Where the left nav's Users and roles leads: OpenMRS's user management, for a user holding Edit Users.",
+      '${openmrsBase}/admin/users/users.list',
+    ),
+    clinicsUrl: link(
+      "Where the left nav's Clinics leads: OpenMRS's locations, for a user holding Manage Locations.",
+      '${openmrsBase}/admin/locations/location.list',
+    ),
+  },
   careCascade: {
     report: {
       _type: Type.String,
@@ -348,6 +358,7 @@ export interface Config {
   dataClerkQuickActions: {
     facilityReportUrl: string;
   };
+  adminLinks: { usersUrl: string; clinicsUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };

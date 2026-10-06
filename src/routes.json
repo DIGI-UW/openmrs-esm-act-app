@@ -192,6 +192,12 @@
       "privileges": "App: act.dueList"
     },
     {
+      "name": "act-admin-nav",
+      "slot": "homepage-dashboard-slot",
+      "component": "adminNav",
+      "privileges": "App: act.home"
+    },
+    {
       "name": "act-due-for-prophylaxis-dashboard",
       "slot": "rhd-due-for-prophylaxis-dashboard-slot",
       "component": "dueForProphylaxisDashboard",
