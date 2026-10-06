@@ -91,3 +91,5 @@ export const dueForProphylaxisWidget = getAsyncLifecycle(
   () => import('./due-for-prophylaxis/due-for-prophylaxis-widget.component'),
   options,
 );
+
+export const dataClerkHome = getAsyncLifecycle(() => import('./data-clerk/data-clerk-home.component'), options);

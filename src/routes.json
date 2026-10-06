@@ -33,24 +33,31 @@
       "privileges": "App: act.home"
     },
     {
+      "name": "data-clerk-home",
+      "slot": "rhd-home-widgets-slot",
+      "component": "dataClerkHome",
+      "order": 2,
+      "privileges": "App: act.dataClerk"
+    },
+    {
       "name": "act-home-worklists",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWorklists",
-      "order": 2,
+      "order": 3,
       "privileges": "App: act.worklists"
     },
     {
       "name": "act-home-waiting-list",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWaitingList",
-      "order": 3,
+      "order": 4,
       "privileges": "App: act.waitingList"
     },
     {
       "name": "act-home-care-cascade",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeCareCascade",
-      "order": 4,
+      "order": 5,
       "privileges": "App: act.registry"
     },
     {

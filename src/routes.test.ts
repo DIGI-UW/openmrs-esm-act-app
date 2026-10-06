@@ -3,6 +3,7 @@ import routeFile from './routes.json';
 import {
   PRIVILEGE_ACT_HOME,
   PRIVILEGE_DUE_LIST,
+  PRIVILEGE_DATA_CLERK,
   PRIVILEGE_REGISTRY,
   PRIVILEGE_SCREEN_POSITIVE,
   PRIVILEGE_WAITING_LIST,
@@ -16,6 +17,7 @@ const screenPrivileges = {
   waitingList: PRIVILEGE_WAITING_LIST,
   screenPositive: PRIVILEGE_SCREEN_POSITIVE,
   dueList: PRIVILEGE_DUE_LIST,
+  dataClerk: PRIVILEGE_DATA_CLERK,
 };
 
 const routes = routeFile as { extensions: Array<{ name: string; privileges?: string | Array<string> }> };
@@ -39,6 +41,7 @@ describe('routes.json privileges', () => {
     ['act-due-for-prophylaxis-dashboard-link', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-dashboard', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-widget', screenPrivileges.dueList],
+    ['data-clerk-home', screenPrivileges.dataClerk],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });

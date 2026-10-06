@@ -82,6 +82,20 @@ export const configSchema = {
       '${openmrsSpaBase}/search?query=',
     ),
   },
+  dataClerkQuickActions: {
+    recordBpgUrl: link(
+      'Where the Record BPG quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d',
+    ),
+    recordOralUrl: link(
+      'Where the Record oral quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465',
+    ),
+    facilityReportUrl: link(
+      'Where the Facility report quick action on the data clerk workspace leads.',
+      '${openmrsSpaBase}/home/reports',
+    ),
+  },
   careCascade: {
     report: {
       _type: Type.String,
@@ -338,6 +352,11 @@ export interface Config {
     prophylaxisForms: Array<{ label: string; url: string }>;
     findPatientInPanel: boolean;
     findPatientUrl: string;
+  };
+  dataClerkQuickActions: {
+    recordBpgUrl: string;
+    recordOralUrl: string;
+    facilityReportUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
