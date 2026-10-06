@@ -25,15 +25,20 @@ function lastDose(row: ReportRow) {
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 }
 
-/** The due list's rows, each with the form that records its next dose, or View chart once recorded today. */
+/**
+ * The due list's rows, each with the form that records its next dose, or View chart once recorded today. Record waits
+ * while `checking`, as a cached answer may predate a dose just recorded.
+ */
 export function DueForProphylaxisTable({
   rows,
   recorded,
   recordedError,
+  checking,
 }: {
   rows: Array<ReportRow>;
   recorded: Set<string>;
   recordedError?: Error;
+  checking?: boolean;
 }) {
   const { t } = useTranslation();
   const { prophylaxisCard, visitType } = useConfig<Config>();
@@ -75,7 +80,7 @@ export function DueForProphylaxisTable({
     const form = oral ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;
     return (
       <MayEnterForm formUuid={form}>
-        <Button kind="primary" size="sm" disabled={opening} onClick={() => record(row, form)}>
+        <Button kind="primary" size="sm" disabled={opening || checking} onClick={() => record(row, form)}>
           {oral ? t('recordOral', 'Record oral') : t('recordBpg', 'Record BPG')}
         </Button>
       </MayEnterForm>

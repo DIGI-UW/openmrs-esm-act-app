@@ -14,7 +14,7 @@ const shownRows = 5;
 export default function DueForProphylaxisWidget() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { rows, recorded, recordedError, waiting, isLoading, error } = useDueList();
+  const { rows, recorded, recordedError, checking, waiting, isLoading, error } = useDueList();
 
   return (
     <ActHomeCard
@@ -40,7 +40,12 @@ export default function DueForProphylaxisWidget() {
           showToolbar={false}
         />
       ) : rows.length ? (
-        <DueForProphylaxisTable rows={rows.slice(0, shownRows)} recorded={recorded} recordedError={recordedError} />
+        <DueForProphylaxisTable
+          rows={rows.slice(0, shownRows)}
+          recorded={recorded}
+          recordedError={recordedError}
+          checking={checking}
+        />
       ) : (
         <TableEmptyState message={t('nobodyDueForProphylaxis', 'Nobody is due for prophylaxis')} />
       )}

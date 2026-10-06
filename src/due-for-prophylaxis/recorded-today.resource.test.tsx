@@ -87,6 +87,16 @@ describe('useRecordedToday', () => {
     expect(result.current.recorded.size).toBe(0);
   });
 
+  it('does not ask again after a failure, as each retry sends every lookup again', async () => {
+    mockOpenmrsFetch.mockRejectedValue(new Error('timeout'));
+
+    const { result } = renderHook(() => useRecordedToday(['patient-a', 'patient-b']), { wrapper });
+
+    await waitFor(() => expect(result.current.error).toEqual(new Error('timeout')));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+  });
+
   it('asks nothing when nobody is listed', () => {
     const { result } = renderHook(() => useRecordedToday([]), { wrapper });
 

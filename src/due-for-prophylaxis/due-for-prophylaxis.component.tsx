@@ -14,7 +14,7 @@ const noFilters = {};
 function DueList() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { rows, recorded, recordedError, waiting, isLoading, error } = useDueList();
+  const { rows, recorded, recordedError, checking, waiting, isLoading, error } = useDueList();
   const { results, paginationProps } = usePagedRows(rows, noFilters);
 
   if (error) {
@@ -49,7 +49,7 @@ function DueList() {
         <h2 className={styles.listTitle}>{t('dueTodayAndOverdue', 'Due today and overdue')}</h2>
         {waiting ? <Tag type="red">{t('waitingCount', '{{count}} waiting', { count: waiting })}</Tag> : null}
       </div>
-      <DueForProphylaxisTable rows={results} recorded={recorded} recordedError={recordedError} />
+      <DueForProphylaxisTable rows={results} recorded={recorded} recordedError={recordedError} checking={checking} />
       <Pagination {...paginationProps} />
     </>
   );

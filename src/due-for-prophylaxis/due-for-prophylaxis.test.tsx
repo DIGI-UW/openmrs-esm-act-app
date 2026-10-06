@@ -1,8 +1,9 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useSession } from '@openmrs/esm-framework';
+import { SWRConfig } from 'swr';
+import { openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { openFormInChart } from '../visits/open-form-in-chart';
@@ -22,6 +23,7 @@ vi.mock('./recorded-today.resource', () => ({ useRecordedToday: vi.fn() }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
 const mockOpenFormInChart = vi.mocked(openFormInChart);
 const mockUseRecordedToday = vi.mocked(useRecordedToday);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const bpgForm = '0119d2e6-e2e1-391c-9b88-d59a10b0780d';
 const oralForm = 'ba29e982-ce18-302a-9fc4-d4b2c3983465';
@@ -38,7 +40,12 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
 }
 
 function recorded(patientUuids: Array<string>) {
-  mockUseRecordedToday.mockReturnValue({ recorded: new Set(patientUuids), isLoading: false, error: undefined });
+  mockUseRecordedToday.mockReturnValue({
+    recorded: new Set(patientUuids),
+    isLoading: false,
+    isValidating: false,
+    error: undefined,
+  });
 }
 
 function cells(name: RegExp) {
@@ -149,7 +156,12 @@ describe('Due for prophylaxis page', () => {
 
   it('offers no Record button until it knows who was recorded today', () => {
     dataset({ rows: dueRows });
-    mockUseRecordedToday.mockReturnValue({ recorded: new Set(), isLoading: true, error: undefined });
+    mockUseRecordedToday.mockReturnValue({
+      recorded: new Set(),
+      isLoading: true,
+      isValidating: true,
+      error: undefined,
+    });
 
     render(<DueForProphylaxis />);
 
@@ -157,9 +169,41 @@ describe('Due for prophylaxis page', () => {
     expect(screen.queryByRole('button', { name: /Record/ })).not.toBeInTheDocument();
   });
 
+  it('holds Record while it checks again, as the answer it remembers may predate a dose just recorded', async () => {
+    const actual = await vi.importActual<typeof import('./recorded-today.resource')>('./recorded-today.resource');
+    mockUseRecordedToday.mockImplementation(actual.useRecordedToday);
+    dataset({ rows: [dueRows[0]] });
+    // One cache across both visits, as the app keeps one.
+    const cache = new Map();
+    const page = () => (
+      <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>
+        <DueForProphylaxis />
+      </SWRConfig>
+    );
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as never);
+    const { unmount } = render(page());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Record BPG' })).toBeEnabled());
+    unmount();
+
+    let answer: (response: unknown) => void;
+    mockOpenmrsFetch.mockReturnValue(new Promise((resolve) => (answer = resolve)) as never);
+    render(page());
+
+    // SWR starts checking again a frame after the list mounts.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Record BPG' })).toBeDisabled());
+    answer({ data: { results: [{ uuid: 'dose', form: { uuid: bpgForm } }] } });
+    expect(await screen.findByText('Recorded today')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record BPG' })).not.toBeInTheDocument();
+  });
+
   it('warns, and counts no one as waiting, when it cannot tell who was recorded today', () => {
     dataset({ rows: dueRows });
-    mockUseRecordedToday.mockReturnValue({ recorded: new Set(), isLoading: false, error: new Error('timeout') });
+    mockUseRecordedToday.mockReturnValue({
+      recorded: new Set(),
+      isLoading: false,
+      isValidating: false,
+      error: new Error('timeout'),
+    });
 
     render(<DueForProphylaxis />);
 
@@ -217,6 +261,37 @@ describe('Due for prophylaxis widget', () => {
     const end = screen.getByRole('link', { name: /Open/ }).parentElement;
     expect(end).toContainElement(screen.getByText('7 waiting'));
     expect(end).not.toContainElement(screen.getByRole('heading', { name: 'Due for prophylaxis' }));
+  });
+
+  it('counts no one as waiting until it knows who was recorded today', () => {
+    dataset({ rows: manyDueRows(7) });
+    mockUseRecordedToday.mockReturnValue({
+      recorded: new Set(),
+      isLoading: true,
+      isValidating: true,
+      error: undefined,
+    });
+
+    render(<DueForProphylaxisWidget />);
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
+  });
+
+  it('holds Record while it checks again who was recorded today', () => {
+    dataset({ rows: manyDueRows(2) });
+    mockUseRecordedToday.mockReturnValue({
+      recorded: new Set(),
+      isLoading: false,
+      isValidating: true,
+      error: undefined,
+    });
+
+    render(<DueForProphylaxisWidget />);
+
+    expect(
+      screen.getAllByRole('button', { name: 'Record BPG' }).map((button) => button.hasAttribute('disabled')),
+    ).toEqual([true, true]);
   });
 
   it('hides the waiting count once everyone listed was recorded today', () => {
