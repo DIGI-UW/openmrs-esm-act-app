@@ -19,17 +19,21 @@ const defaultQuickActions: Config['quickActions'] = {
 // Enter prophylaxis switched back to fast data entry, with the default BPG and oral forms.
 async function signInWithFastDataEntry() {
   const { quickActions } = getDefaultsFromConfigSchema(configSchema) as Config;
-  await signInWith([homePrivilege], { quickActions: { ...quickActions, enterProphylaxisInFastDataEntry: true } });
+  await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'], {
+    quickActions: { ...quickActions, enterProphylaxisInFastDataEntry: true },
+  });
 }
 
 describe('QuickActions', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith([homePrivilege]);
+    await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients']);
   });
 
   it('links register patient and find a patient to their screens', async () => {
-    await signInWith([homePrivilege], { quickActions: defaultQuickActions });
+    await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'], {
+      quickActions: defaultQuickActions,
+    });
     render(<QuickActions />);
 
     expect(screen.getByRole('link', { name: /register patient/i })).toHaveAttribute(
@@ -87,7 +91,7 @@ describe('QuickActions', () => {
   });
 
   it('links enter prophylaxis straight to its screen when no prophylaxis forms are configured', async () => {
-    await signInWith([homePrivilege], {
+    await signInWith([homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'], {
       quickActions: { ...defaultQuickActions, enterProphylaxisUrl: '${openmrsSpaBase}/forms/prophylaxis' },
     });
 
@@ -106,5 +110,19 @@ describe('QuickActions', () => {
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['Add Patients', /register patient/i],
+    ['Add Encounters', /enter prophylaxis/i],
+    ['Get Patients', /find a patient/i],
+  ])('leaves out the action a user without %s may not take', async (privilege, name) => {
+    await signInWith(
+      [homePrivilege, 'Add Patients', 'Add Encounters', 'Get Patients'].filter((held) => held !== privilege),
+    );
+
+    render(<QuickActions />);
+
+    expect(screen.queryByText(name)).not.toBeInTheDocument();
   });
 });

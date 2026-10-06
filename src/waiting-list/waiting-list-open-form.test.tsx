@@ -8,6 +8,11 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
 import WaitingList from './waiting-list.component';
 
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
+  useMayEnterForm: () => true,
+}));
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchCurrentPatient: vi.fn(),
@@ -28,7 +33,7 @@ describe('Opening a recommendation consultation from the waiting list', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-waiting-list');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.waitingList', 'Add Encounters']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: waitingListRows,

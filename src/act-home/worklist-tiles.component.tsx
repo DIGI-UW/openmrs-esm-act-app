@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { ConfigurableLink } from '@openmrs/esm-framework';
-import { ScreenAccess } from '../access/screen-access.component';
 import { ActHomeCard } from './act-home-card.component';
 import { type RhdFlagList, useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
 import { worklistsUrl } from '../worklists/worklists.meta';
@@ -108,9 +107,5 @@ function Worklists() {
 }
 
 export default function WorklistTiles() {
-  return (
-    <ScreenAccess screen="home">
-      <Worklists />
-    </ScreenAccess>
-  );
+  return <Worklists />;
 }

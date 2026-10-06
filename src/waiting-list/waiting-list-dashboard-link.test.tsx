@@ -13,20 +13,12 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 describe('WaitingListDashboardLink', () => {
   it('links the home left nav to /home/act-waiting-list', async () => {
     window.spaBase = '/openmrs/spa';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.waitingList']);
 
     render(<WaitingListDashboardLink />);
 
     expect(vi.mocked(DashboardExtension).mock.calls[0][0]).toEqual(
       expect.objectContaining({ path: 'act-waiting-list', basePath: '/openmrs/spa/home', title: 'waitingList' }),
     );
-  });
-
-  it('is hidden from a user without the waiting list privilege', async () => {
-    await signInWith(['Get Patients']);
-
-    render(<WaitingListDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
   });
 });

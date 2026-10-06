@@ -1,10 +1,9 @@
-import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { createDashboard, defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
 import worklistsDashboardLinkComponent from './worklists/worklists-dashboard-link.component';
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
-import { createChartDashboardLink } from './chart-dashboard-link.component';
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
@@ -13,7 +12,7 @@ import { trackActReturn } from './back-to-act/act-return';
 const moduleName = '@mherman22/esm-act-app';
 
 const options = {
-  featureName: 'rhd-flag-gaps',
+  featureName: 'act',
   moduleName,
 };
 
@@ -33,17 +32,14 @@ export const prophylaxisStatusTag = getAsyncLifecycle(
   options,
 );
 
-export const prophylaxisPageDashboardLink = getSyncLifecycle(
-  createChartDashboardLink(prophylaxisPageDashboardMeta),
-  options,
-);
+export const prophylaxisPageDashboardLink = getSyncLifecycle(createDashboard(prophylaxisPageDashboardMeta), options);
 
 export const prophylaxisPageDashboard = getAsyncLifecycle(
   () => import('./prophylaxis-page/prophylaxis-page.component'),
   options,
 );
 
-export const cardiacTestsDashboardLink = getSyncLifecycle(createChartDashboardLink(cardiacTestsDashboardMeta), options);
+export const cardiacTestsDashboardLink = getSyncLifecycle(createDashboard(cardiacTestsDashboardMeta), options);
 
 export const cardiacTestsDashboard = getAsyncLifecycle(
   () => import('./cardiac-tests/cardiac-tests.component'),

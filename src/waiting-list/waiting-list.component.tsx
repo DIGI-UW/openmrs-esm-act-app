@@ -22,10 +22,12 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  UserHasAccess,
 } from '@openmrs/esm-framework';
+import { MayEnterForm } from '../access/may-enter-form';
+import { PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
-import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { downloadCsv } from '../table-filters/csv';
@@ -156,20 +158,22 @@ function WaitingListTable() {
         {filterSelect('urgency', t('urgency', 'Urgency'))}
       </div>
       <div className={styles.actions}>
-        <Button
-          kind="tertiary"
-          size="sm"
-          disabled={!ranked.length}
-          onClick={() =>
-            downloadCsv(
-              `waiting-list-${dayjs().format('YYYY-MM-DD')}.csv`,
-              columns.map((column) => column.header),
-              ranked.map((waiting) => columns.map((column) => column.text(waiting))),
-            )
-          }
-        >
-          {t('downloadCsv', 'Download CSV')}
-        </Button>
+        <UserHasAccess privilege={PRIVILEGE_EXPORT_LISTS}>
+          <Button
+            kind="tertiary"
+            size="sm"
+            disabled={!ranked.length}
+            onClick={() =>
+              downloadCsv(
+                `waiting-list-${dayjs().format('YYYY-MM-DD')}.csv`,
+                columns.map((column) => column.header),
+                ranked.map((waiting) => columns.map((column) => column.text(waiting))),
+              )
+            }
+          >
+            {t('downloadCsv', 'Download CSV')}
+          </Button>
+        </UserHasAccess>
       </div>
       {ranked.length ? (
         <div className={styles.tableContainer}>
@@ -191,9 +195,11 @@ function WaitingListTable() {
                     </TableCell>
                   ))}
                   <TableCell>
-                    <Button kind="ghost" size="sm" onClick={() => openForm(waiting)}>
-                      {t('openForm', 'Open form')}
-                    </Button>
+                    <MayEnterForm formUuid={String(waiting.row.form_uuid)}>
+                      <Button kind="ghost" size="sm" onClick={() => openForm(waiting)}>
+                        {t('openForm', 'Open form')}
+                      </Button>
+                    </MayEnterForm>
                   </TableCell>
                 </TableRow>
               ))}
@@ -210,15 +216,6 @@ function WaitingListTable() {
 
 export default function WaitingList() {
   const { t } = useTranslation();
-  const canSeeWaitingList = useScreenAccess('waitingList');
-
-  if (!canSeeWaitingList) {
-    return (
-      <p className={styles.message}>
-        {t('noAccessToWaitingList', 'You do not have access to the procedural waiting list.')}
-      </p>
-    );
-  }
   return (
     <>
       <ActPageHeader title={t('waitingList', 'Procedural waiting list')} illustration={<CardiologyPictogram />} />

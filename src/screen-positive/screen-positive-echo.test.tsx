@@ -9,6 +9,11 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveRows } from './screen-positive.fixture';
 import ScreenPositive from './screen-positive.component';
 
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
+  useMayEnterForm: () => true,
+}));
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchCurrentPatient: vi.fn(),
@@ -33,7 +38,7 @@ async function enterEcho(actId: string) {
 describe('Screen positive, Enter echo result', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.screenPositive', 'Add Encounters']);
     vi.mocked(useSession).mockReturnValue({ ...vi.mocked(useSession)(), sessionLocation: { uuid: 'clinic' } } as never);
     vi.mocked(fetchCurrentPatient).mockResolvedValue(fhirPatient as never);
     vi.mocked(saveVisit).mockResolvedValue({

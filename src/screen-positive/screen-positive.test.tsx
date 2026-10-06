@@ -8,6 +8,11 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveRows } from './screen-positive.fixture';
 import ScreenPositive from './screen-positive.component';
 
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
+  useMayEnterForm: () => true,
+}));
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
 
@@ -40,7 +45,7 @@ describe('Screen positive, pending confirmation', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-screen-positive');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.screenPositive', 'Add Encounters']);
   });
 
   it("lists each patient's ACT ID, name, age, sex, clinics and date of positive screen", () => {
@@ -175,24 +180,4 @@ describe('Screen positive, pending confirmation', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('tells a user without the screen positive privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: {
-        home: 'x',
-        registry: 'x',
-        worklists: 'x',
-        waitingList: 'x',
-        screenPositive: 'App: act.screenpositive',
-      },
-    });
-    dataset({ rows: screenPositiveRows });
-
-    render(<ScreenPositive />);
-
-    expect(
-      screen.getByText('You do not have access to the screen positive, pending confirmation list.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
 });

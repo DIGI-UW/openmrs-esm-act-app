@@ -1,11 +1,5 @@
 import { Type, validator } from '@openmrs/esm-framework';
 
-const screenPrivilege = (screen: string) => ({
-  _type: Type.String,
-  _default: 'View Patient Flags',
-  _description: `The privilege a user needs to see ${screen}, its menu entry and its widgets.`,
-});
-
 const locationTags = (clinics: string, defaultTags: Array<string>) => ({
   _type: Type.Array,
   _elements: { _type: Type.String },
@@ -26,13 +20,6 @@ const link = (description: string, defaultUrl: string) => ({
 });
 
 export const configSchema = {
-  screenPrivileges: {
-    home: screenPrivilege('the ACT home page'),
-    registry: screenPrivilege('the registry list'),
-    worklists: screenPrivilege('the worklists page'),
-    waitingList: screenPrivilege('the procedural waiting list'),
-    screenPositive: screenPrivilege('the screen positive, pending confirmation page'),
-  },
   clinicLocationTags: {
     cardiac: locationTags('cardiac clinics', ['RHD Tertiary', 'RHD District']),
     primaryCare: locationTags('primary care clinics', ['RHD Community']),
@@ -329,10 +316,7 @@ export type EchoField =
   | 'aorticStenosis'
   | 'ejectionFraction';
 
-export type ActScreen = 'home' | 'registry' | 'worklists' | 'waitingList' | 'screenPositive';
-
 export interface Config {
-  screenPrivileges: Record<ActScreen, string>;
   clinicLocationTags: { cardiac: Array<string>; primaryCare: Array<string> };
   flagLists: {
     namePrefix: string;

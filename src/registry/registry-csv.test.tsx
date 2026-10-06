@@ -23,7 +23,7 @@ describe('Registry CSV download', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry', 'Task: act.lists.export']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: registryRows,

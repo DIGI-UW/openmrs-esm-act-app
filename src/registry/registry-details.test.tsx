@@ -38,7 +38,7 @@ describe('Registry details, markers, sorting and search', () => {
     vi.useFakeTimers({ now: new Date(2026, 9, 3, 10), shouldAdvanceTime: true });
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
-    await signInWith(['View Patient Flags'], {
+    await signInWith(['App: act.registry'], {
       urgencyBands: [{ label: '3: Elective (180 days)', concept: elective, deadlineDays: 180 }],
     });
   });

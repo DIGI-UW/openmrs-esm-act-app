@@ -13,20 +13,12 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 describe('RegistryDashboardLink', () => {
   it('links the home left nav to /home/act-registry', async () => {
     window.spaBase = '/openmrs/spa';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
 
     render(<RegistryDashboardLink />);
 
     expect(vi.mocked(DashboardExtension).mock.calls[0][0]).toEqual(
       expect.objectContaining({ path: 'act-registry', basePath: '/openmrs/spa/home', title: 'registry' }),
     );
-  });
-
-  it('is hidden from a user without the registry privilege', async () => {
-    await signInWith(['Get Patients']);
-
-    render(<RegistryDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
   });
 });

@@ -48,7 +48,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 29, 10), toFake: ['Date'] });
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-waiting-list');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.waitingList']);
   });
 
   afterEach(() => vi.useRealTimers());

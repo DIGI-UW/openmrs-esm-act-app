@@ -128,13 +128,4 @@ describe('WorklistTiles', () => {
 
     expect(screen.getByTestId('worklists-loading')).toBeInTheDocument();
   });
-
-  it('is hidden from a user without the ACT home privilege', async () => {
-    await signInWith(['View Patient Flags']);
-    lists({ lists: demoLists });
-
-    render(<WorklistTiles />);
-
-    expect(screen.queryByText('Worklists')).not.toBeInTheDocument();
-  });
 });

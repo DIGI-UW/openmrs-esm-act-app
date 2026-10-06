@@ -62,7 +62,13 @@ describe('ACT page header', () => {
   it.each(screens)(
     'starts $name with the framework page header, its title and pictogram',
     async ({ Screen, name, pictogram }) => {
-      await signInWith([homePrivilege, 'View Patient Flags']);
+      await signInWith([
+        homePrivilege,
+        'App: act.registry',
+        'App: act.worklists',
+        'App: act.waitingList',
+        'App: act.screenPositive',
+      ]);
 
       render(<Screen />);
 
@@ -73,17 +79,6 @@ describe('ACT page header', () => {
       expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
     },
   );
-
-  it.each(screens)('shows $name no header to a user who may not see it', async ({ Screen, noAccess }) => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: { home: 'x', registry: 'x', worklists: 'x', waitingList: 'x', screenPositive: 'x' },
-    });
-
-    render(<Screen />);
-
-    expect(screen.getByText(noAccess)).toBeInTheDocument();
-    expect(screen.queryByTestId('act-page-header')).not.toBeInTheDocument();
-  });
 
   it('shows actions on the right when given them', () => {
     render(<ActPageHeader title="Title" illustration={<span>Pictogram</span>} actions={<button>Act</button>} />);

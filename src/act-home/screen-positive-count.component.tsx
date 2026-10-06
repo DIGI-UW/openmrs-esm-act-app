@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
-import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, useConfig, UserHasAccess } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { ScreenAccess } from '../access/screen-access.component';
+import { PRIVILEGE_SCREEN_POSITIVE } from '../constants';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveDashboardMeta } from '../screen-positive/screen-positive.meta';
 import styles from './screen-positive-count.scss';
@@ -40,8 +40,8 @@ function Row() {
 
 export default function ScreenPositiveRow() {
   return (
-    <ScreenAccess screen="screenPositive">
+    <UserHasAccess privilege={PRIVILEGE_SCREEN_POSITIVE}>
       <Row />
-    </ScreenAccess>
+    </UserHasAccess>
   );
 }

@@ -61,7 +61,7 @@ describe('ACT home procedural waiting list summary', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 29, 10), toFake: ['Date'] });
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-home');
-    await signInWith([homePrivilege, 'View Patient Flags']);
+    await signInWith([homePrivilege, 'App: act.waitingList']);
   });
 
   afterEach(() => vi.useRealTimers());
@@ -114,7 +114,7 @@ describe('ACT home procedural waiting list summary', () => {
   });
 
   it("names a band configured without a short label by its label, and one with neither by the report's name", async () => {
-    await signInWith([homePrivilege, 'View Patient Flags'], {
+    await signInWith([homePrivilege, 'App: act.waitingList'], {
       urgencyBands: [
         { label: 'Emergent', concept: emergent, deadlineDays: 1 },
         { concept: urgent, deadlineDays: 60 },
@@ -172,13 +172,4 @@ describe('ACT home procedural waiting list summary', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('is hidden from a user without the waiting list privilege', async () => {
-    await signInWith([homePrivilege], { screenPrivileges: { waitingList: 'App: act.waitingList' } as never });
-    dataset({ rows });
-
-    render(<WaitingListSummary />);
-
-    expect(screen.queryByText(/procedural waiting list/i)).not.toBeInTheDocument();
-  });
 });

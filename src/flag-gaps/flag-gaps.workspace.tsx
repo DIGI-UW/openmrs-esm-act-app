@@ -20,6 +20,7 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
+import { MayEnterForm } from '../access/may-enter-form';
 import { openEncounterForm } from './open-encounter-form';
 import styles from './flag-gaps.scss';
 
@@ -135,9 +136,11 @@ const FlagGapsWorkspace: React.FC<
               <TableCell>{daysPending(gap.encounterDatetime)}</TableCell>
               <TableCell>
                 {gap.form ? (
-                  <Button kind="ghost" size="sm" onClick={() => openGap(gap)}>
-                    {t('openForm', 'Open form')}
-                  </Button>
+                  <MayEnterForm formUuid={gap.form.uuid}>
+                    <Button kind="ghost" size="sm" onClick={() => openGap(gap)}>
+                      {t('openForm', 'Open form')}
+                    </Button>
+                  </MayEnterForm>
                 ) : null}
               </TableCell>
             </TableRow>

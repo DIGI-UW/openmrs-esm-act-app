@@ -1,8 +1,7 @@
-import { type ChartDashboardMeta } from '../chart-dashboard-link.component';
-
-export const prophylaxisPageDashboardMeta: ChartDashboardMeta = {
+export const prophylaxisPageDashboardMeta = {
   slot: 'act-prophylaxis-dashboard-slot',
   path: 'act-prophylaxis',
+  // t('Prophylaxis', 'Prophylaxis')
   title: 'Prophylaxis',
   icon: 'omrs-icon-medication',
-};
+} as const;

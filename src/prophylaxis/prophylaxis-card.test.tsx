@@ -1,5 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { signInWith } from '../access/sign-in.test-helper';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
@@ -8,6 +9,11 @@ import { type Config, configSchema } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import ProphylaxisCard from './prophylaxis-card.component';
 
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
+  useMayEnterForm: () => true,
+}));
 vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -55,8 +61,8 @@ const invalidatePatientEncounters = (patientUuid: string) =>
 const field = (name: string) => screen.getByTestId(`prophylaxis-${name}`);
 
 describe('ProphylaxisCard', () => {
-  beforeEach(() => {
-    vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
+  beforeEach(async () => {
+    await signInWith(['Add Encounters']);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
   });
 

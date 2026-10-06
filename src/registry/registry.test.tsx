@@ -24,7 +24,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
   });
 }
 
-const registryPrivilege = 'View Patient Flags';
+const registryPrivilege = 'App: act.registry';
 
 describe('Registry', () => {
   beforeEach(async () => {
@@ -171,22 +171,4 @@ describe('Registry', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('tells a user without the registry privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: {
-        home: 'x',
-        registry: 'App: act.registry',
-        worklists: 'x',
-        waitingList: 'x',
-        screenPositive: 'x',
-      },
-    });
-    dataset({ rows: registryRows });
-
-    render(<Registry />);
-
-    expect(screen.getByText('You do not have access to the registry.')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
 });

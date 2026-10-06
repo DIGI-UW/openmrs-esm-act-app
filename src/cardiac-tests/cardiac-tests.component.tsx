@@ -23,6 +23,7 @@ import {
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { useMayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import {
@@ -54,6 +55,7 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
   ];
 
   const add = () => openForm(cardiacTests.echoForm);
+  const mayAdd = useMayEnterForm(cardiacTests.echoForm);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (error) {
@@ -64,22 +66,24 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
       <EmptyCard
         displayText={t('echocardiogramsLowercase', 'echocardiograms')}
         headerTitle={t('echocardiograms', 'Echocardiograms')}
-        launchForm={add}
+        launchForm={mayAdd ? add : undefined}
       />
     );
   }
   return (
     <div className={styles.card}>
       <CardHeader title={t('echocardiograms', 'Echocardiograms')}>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={(props) => <AddIcon size={16} {...props} />}
-          disabled={isOpening}
-          onClick={add}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {mayAdd && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={(props) => <AddIcon size={16} {...props} />}
+            disabled={isOpening}
+            onClick={add}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       {isLoading ? (
         <DataTableSkeleton
@@ -151,6 +155,7 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
     { header: t('otherFinding', 'Other finding'), text: (ecg) => ecg.otherFinding ?? '--' },
   ];
   const add = () => openForm(cardiacTests.ecgForm);
+  const mayAdd = useMayEnterForm(cardiacTests.ecgForm);
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
@@ -160,22 +165,24 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
       <EmptyCard
         displayText={t('electrocardiogramsLowercase', 'electrocardiograms')}
         headerTitle={title}
-        launchForm={add}
+        launchForm={mayAdd ? add : undefined}
       />
     );
   }
   return (
     <div className={styles.card}>
       <CardHeader title={title}>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={(props) => <AddIcon size={16} {...props} />}
-          disabled={isOpening}
-          onClick={add}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {mayAdd && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={(props) => <AddIcon size={16} {...props} />}
+            disabled={isOpening}
+            onClick={add}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       {isLoading ? (
         <DataTableSkeleton

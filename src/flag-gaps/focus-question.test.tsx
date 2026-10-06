@@ -6,6 +6,11 @@ import { openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
 import { fetchForm, type FlagGap, usePatientFlagGaps } from './flag-gaps.resource';
 import FlagGapsWorkspace from './flag-gaps.workspace';
 
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
+  useMayEnterForm: () => true,
+}));
 vi.mock('./flag-gaps.resource', () => ({
   usePatientFlagGaps: vi.fn(),
   fetchForm: vi.fn(),

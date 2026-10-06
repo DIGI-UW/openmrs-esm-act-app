@@ -44,7 +44,7 @@ describe('Registry BPG status and adherence', () => {
   });
 
   it('leaves the columns and the filter out while the setting is off', async () => {
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
 
     render(<Registry />);
 
@@ -56,7 +56,7 @@ describe('Registry BPG status and adherence', () => {
 
   it('ignores a BPG status in the URL while the setting is off', async () => {
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?bpg=Covered');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
 
     render(<Registry />);
 
@@ -64,7 +64,7 @@ describe('Registry BPG status and adherence', () => {
   });
 
   it('leaves the adherence empty for a patient who has none', async () => {
-    await signInWith(['View Patient Flags'], bpgOn);
+    await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: [{ ...withBpg[0], adherence: null }],
@@ -81,7 +81,7 @@ describe('Registry BPG status and adherence', () => {
   });
 
   it('shows each patient’s adherence once turned on', async () => {
-    await signInWith(['View Patient Flags'], bpgOn);
+    await signInWith(['App: act.registry'], bpgOn);
 
     render(<Registry />);
 
@@ -98,7 +98,7 @@ describe('Registry BPG status and adherence', () => {
     ['Patient 3', 'Due in 5 days', 'cds--tag--blue'],
     ['Patient 4', 'No prescription', 'cds--tag--warm-gray'],
   ])('shows %s’s BPG status as a %s tag', async (name, text, colour) => {
-    await signInWith(['View Patient Flags'], bpgOn);
+    await signInWith(['App: act.registry'], bpgOn);
 
     render(<Registry />);
 
@@ -108,7 +108,7 @@ describe('Registry BPG status and adherence', () => {
   });
 
   it('shows no BPG status tag for a patient the report gives none', async () => {
-    await signInWith(['View Patient Flags'], bpgOn);
+    await signInWith(['App: act.registry'], bpgOn);
 
     render(<Registry />);
 
@@ -120,7 +120,7 @@ describe('Registry BPG status and adherence', () => {
     [0, 'Due today'],
     [null, 'Due within 7 days'],
   ])('words a dose due in %s days as %s', async (days, text) => {
-    await signInWith(['View Patient Flags'], bpgOn);
+    await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: [{ ...withBpg[2], days_until_due: days }],
@@ -135,7 +135,7 @@ describe('Registry BPG status and adherence', () => {
   });
 
   it('offers the four statuses as the tags word them, whichever the rows have', async () => {
-    await signInWith(['View Patient Flags'], bpgOn);
+    await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: [withBpg[0]],
@@ -162,7 +162,7 @@ describe('Registry BPG status and adherence', () => {
     ['Not covered', 'Not covered'],
     ['No prescription', 'No prescription'],
   ])('narrows the rows to %s', async (option, tag) => {
-    await signInWith(['View Patient Flags'], bpgOn);
+    await signInWith(['App: act.registry'], bpgOn);
 
     render(<Registry />);
 

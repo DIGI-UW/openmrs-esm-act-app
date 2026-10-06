@@ -22,15 +22,16 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  UserHasAccess,
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
+import { MayEnterForm } from '../access/may-enter-form';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
-import { useScreenAccess } from '../access/screen-access.component';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { FilterSelect } from '../table-filters/filter-select.component';
@@ -179,9 +180,11 @@ function ScreenPositiveTable() {
                     <TableCell key={column.header}>{column.render(row)}</TableCell>
                   ))}
                   <TableCell>
-                    <Button kind="ghost" size="sm" onClick={() => enterEcho(row)}>
-                      {t('enterEchoResult', 'Enter echo result')}
-                    </Button>
+                    <MayEnterForm formUuid={screenPositive.echoForm}>
+                      <Button kind="ghost" size="sm" onClick={() => enterEcho(row)}>
+                        {t('enterEchoResult', 'Enter echo result')}
+                      </Button>
+                    </MayEnterForm>
                   </TableCell>
                 </TableRow>
               ))}
@@ -198,15 +201,6 @@ function ScreenPositiveTable() {
 
 export default function ScreenPositive() {
   const { t } = useTranslation();
-  const canSeeScreenPositive = useScreenAccess('screenPositive');
-
-  if (!canSeeScreenPositive) {
-    return (
-      <p className={styles.message}>
-        {t('noAccessToScreenPositive', 'You do not have access to the screen positive, pending confirmation list.')}
-      </p>
-    );
-  }
   return (
     <>
       <ActPageHeader

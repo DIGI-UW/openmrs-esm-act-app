@@ -29,7 +29,7 @@ describe('Registry filters', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.registry']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: registryRows,

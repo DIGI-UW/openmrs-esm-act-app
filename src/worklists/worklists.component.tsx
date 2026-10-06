@@ -19,7 +19,6 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { riskFirst, WorklistAllChoice, WorklistChoice, WorklistTileGrid } from '../act-home/worklist-tiles.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
-import { useScreenAccess } from '../access/screen-access.component';
 import { rowFlags } from '../registry/registry-filters';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
@@ -276,11 +275,6 @@ function WorklistsContent() {
 
 export default function Worklists() {
   const { t } = useTranslation();
-  const canSeeWorklists = useScreenAccess('worklists');
-
-  if (!canSeeWorklists) {
-    return <p className={styles.message}>{t('noAccessToWorklists', 'You do not have access to the worklists.')}</p>;
-  }
   return (
     <>
       <ActPageHeader title={t('worklists', 'Worklists')} illustration={<PatientListsPictogram />} />

@@ -14,7 +14,7 @@ vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn()
 const registryUrl = '/openmrs/spa/home/act-registry';
 
 async function atLocation(display: string | null, tags: Array<string> = []) {
-  await signInWith(['View Patient Flags']);
+  await signInWith(['App: act.registry']);
   const session = vi.mocked(useSession).getMockImplementation()?.() ?? vi.mocked(useSession)();
   vi.mocked(useSession).mockReturnValue({
     ...session,

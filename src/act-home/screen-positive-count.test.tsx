@@ -23,7 +23,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
 describe("ACT home's screen positive row, in the care cascade", () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith([homePrivilege, 'View Patient Flags']);
+    await signInWith([homePrivilege, 'App: act.screenPositive']);
   });
 
   it("shows how many patients the list's report returns", () => {
@@ -80,7 +80,7 @@ describe("ACT home's screen positive row, in the care cascade", () => {
   });
 
   it('is hidden from a user without the screen positive privilege', async () => {
-    await signInWith([homePrivilege], { screenPrivileges: { screenPositive: 'App: act.screenpositive' } as never });
+    await signInWith([homePrivilege]);
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositiveRow />);

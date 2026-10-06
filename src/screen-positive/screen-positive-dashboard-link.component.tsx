@@ -8,7 +8,6 @@ export default function ScreenPositiveDashboardLink() {
   // The left nav takes the prototype's name; the page and its ACT home card keep the full name.
   return (
     <ActDashboardLink
-      screen="screenPositive"
       meta={{ ...screenPositiveDashboardMeta, title: t('screenPositiveNav', 'Screen positive pending') }}
     />
   );

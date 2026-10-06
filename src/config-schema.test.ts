@@ -3,15 +3,8 @@ import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 
 describe('configSchema', () => {
-  it("defaults to the ACT privilege, clinic tags, RHD flags and the consultation form's urgency bands", () => {
+  it("defaults to the clinic tags, RHD flags and the consultation form's urgency bands", () => {
     expect(getDefaultsFromConfigSchema(configSchema)).toEqual({
-      screenPrivileges: {
-        home: 'View Patient Flags',
-        registry: 'View Patient Flags',
-        worklists: 'View Patient Flags',
-        waitingList: 'View Patient Flags',
-        screenPositive: 'View Patient Flags',
-      },
       clinicLocationTags: {
         cardiac: ['RHD Tertiary', 'RHD District'],
         primaryCare: ['RHD Community'],

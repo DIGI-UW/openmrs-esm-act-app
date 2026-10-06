@@ -13,7 +13,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 describe('ScreenPositiveDashboardLink', () => {
   it('links the home left nav to /home/act-screen-positive, as the prototype names it', async () => {
     window.spaBase = '/openmrs/spa';
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.screenPositive']);
 
     render(<ScreenPositiveDashboardLink />);
 
@@ -24,13 +24,5 @@ describe('ScreenPositiveDashboardLink', () => {
         title: 'Screen positive pending',
       }),
     );
-  });
-
-  it('is hidden from a user without the screen positive privilege', async () => {
-    await signInWith(['Get Patients']);
-
-    render(<ScreenPositiveDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
   });
 });

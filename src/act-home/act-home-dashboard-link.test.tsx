@@ -21,12 +21,4 @@ describe('ActHomeDashboardLink', () => {
       expect.objectContaining({ path: 'act-home', basePath: '/openmrs/spa/home', title: 'actHome' }),
     );
   });
-
-  it('is hidden from a user without the ACT home privilege', async () => {
-    await signInWith(['View Patient Flags']);
-
-    render(<ActHomeDashboardLink />);
-
-    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
-  });
 });

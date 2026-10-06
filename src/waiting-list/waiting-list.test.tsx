@@ -26,7 +26,7 @@ describe('Procedural waiting list', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-waiting-list');
-    await signInWith(['View Patient Flags']);
+    await signInWith(['App: act.waitingList']);
   });
 
   it("lists each open recommendation with its patient's ACT ID, sex, age, type, procedure, urgency, district, contraindications and repair suitability", () => {
@@ -108,22 +108,4 @@ describe('Procedural waiting list', () => {
       expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
     },
   );
-
-  it('tells a user without the waiting list privilege that they cannot see it', async () => {
-    await signInWith(['Get Patients'], {
-      screenPrivileges: {
-        home: 'x',
-        registry: 'x',
-        worklists: 'x',
-        waitingList: 'App: act.waitinglist',
-        screenPositive: 'x',
-      },
-    });
-    dataset({ rows: waitingListRows });
-
-    render(<WaitingList />);
-
-    expect(screen.getByText('You do not have access to the procedural waiting list.')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
 });

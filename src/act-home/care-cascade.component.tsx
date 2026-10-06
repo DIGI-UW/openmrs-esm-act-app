@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { formatDate, toOmrsIsoString, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { ScreenAccess } from '../access/screen-access.component';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { ActHomeCard } from './act-home-card.component';
 import ScreenPositiveRow from './screen-positive-count.component';
@@ -71,9 +70,5 @@ function Cascade() {
 }
 
 export default function CareCascade() {
-  return (
-    <ScreenAccess screen="home">
-      <Cascade />
-    </ScreenAccess>
-  );
+  return <Cascade />;
 }

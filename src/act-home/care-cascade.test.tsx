@@ -33,7 +33,7 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
 describe('CareCascade', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith([homePrivilege]);
+    await signInWith(['App: act.registry']);
   });
 
   it("draws the report's five cascade steps, leaving out its Oral and BPG split", () => {
@@ -73,7 +73,7 @@ describe('CareCascade', () => {
   });
 
   it("draws each step under its configured label, not the report's step name", async () => {
-    await signInWith([homePrivilege], {
+    await signInWith(['App: act.registry'], {
       careCascade: {
         report: 'r',
         reportUrl: '${openmrsSpaBase}/reports',
@@ -88,7 +88,7 @@ describe('CareCascade', () => {
   });
 
   it('ends with the screen positive count, opening that list, for a user who may see it', async () => {
-    await signInWith([homePrivilege, 'View Patient Flags']);
+    await signInWith([homePrivilege, 'App: act.registry', 'App: act.screenPositive']);
     dataset({ rows: cascade });
 
     render(<CareCascade />);
@@ -98,7 +98,7 @@ describe('CareCascade', () => {
   });
 
   it('leaves out a configured step the report does not return', async () => {
-    await signInWith([homePrivilege], {
+    await signInWith(['App: act.registry'], {
       careCascade: {
         report: 'r',
         reportUrl: '${openmrsSpaBase}/reports',
@@ -137,7 +137,7 @@ describe('CareCascade', () => {
   });
 
   it('evaluates the report set in the config', async () => {
-    await signInWith([homePrivilege], {
+    await signInWith(['App: act.registry'], {
       careCascade: {
         report: 'RHD Care Cascade',
         reportUrl: '${openmrsSpaBase}/reports',
@@ -182,14 +182,5 @@ describe('CareCascade', () => {
     render(<CareCascade />);
 
     expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
-  });
-
-  it('is hidden from a user without the ACT home privilege', async () => {
-    await signInWith(['View Patient Flags']);
-    dataset({ rows: cascade });
-
-    render(<CareCascade />);
-
-    expect(screen.queryByText('Care cascade')).not.toBeInTheDocument();
   });
 });
