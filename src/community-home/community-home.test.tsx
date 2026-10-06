@@ -62,7 +62,15 @@ describe('Community home', () => {
     expect(within(header).getByText('28-Sept-2026')).toBeInTheDocument();
   });
 
-  it('shows its own widgets, the quick actions and then who is due', () => {
+  it('says so while no widget is assigned to Home', () => {
+    mockUseAssignedExtensions.mockReturnValue([]);
+
+    render(<CommunityHomeDashboard />);
+
+    expect(screen.getByText('No widgets have been added to Home yet.')).toBeInTheDocument();
+  });
+
+  it("renders the widgets assigned to Home's own slot", () => {
     mockUseAssignedExtensions.mockReturnValue([{ id: 'widget' } as AssignedExtension]);
 
     render(<CommunityHomeDashboard />);
@@ -110,12 +118,12 @@ describe('Community home quick action tiles', () => {
   });
 
   it.each([
-    [RecordBpgAction, 'Record BPG injection', 'Benzathine penicillin G'],
-    [RecordOralAction, 'Record oral prophylaxis', 'Oral adherence'],
-    [RegisterPatientAction, 'Register patient', 'Start someone on care'],
-    [FindPatientAction, 'Find a patient', 'Name or ACT ID'],
-    [FacilityReportAction, 'Facility report', 'Monthly, quarterly'],
-  ])('labels its tile %#, %s, with what it is for', (Tile, label, subtitle) => {
+    { Tile: RecordBpgAction, label: 'Record BPG injection', subtitle: 'Benzathine penicillin G' },
+    { Tile: RecordOralAction, label: 'Record oral prophylaxis', subtitle: 'Oral adherence' },
+    { Tile: RegisterPatientAction, label: 'Register patient', subtitle: 'Start someone on care' },
+    { Tile: FindPatientAction, label: 'Find a patient', subtitle: 'Name or ACT ID' },
+    { Tile: FacilityReportAction, label: 'Facility report', subtitle: 'Monthly · quarterly' },
+  ])('labels $label with $subtitle', ({ Tile, label, subtitle }) => {
     render(<Tile />);
 
     expect(screen.getByText(label)).toBeInTheDocument();
@@ -123,11 +131,11 @@ describe('Community home quick action tiles', () => {
   });
 
   it.each([
-    [RecordBpgAction, 'Record BPG injection', bpgForm],
-    [RecordOralAction, 'Record oral prophylaxis', oralForm],
+    { Tile: RecordBpgAction, label: 'Record BPG injection', formUuid: bpgForm },
+    { Tile: RecordOralAction, label: 'Record oral prophylaxis', formUuid: oralForm },
   ])(
-    "opens the patient search for %#, and the chosen patient's chart with that form",
-    async (Tile, label, formUuid) => {
+    "opens $label's patient search, then the chosen patient's chart with its form",
+    async ({ Tile, label, formUuid }) => {
       render(
         <SWRConfig value={{ provider: () => new Map() }}>
           <Tile />
@@ -161,7 +169,7 @@ describe('Community home quick action tiles', () => {
       'href',
       '/openmrs/spa/patient-registration',
     );
-    expect(screen.getByRole('link', { name: /Facility report/ })).toHaveAttribute('href', '/openmrs/spa/home/reports');
+    expect(screen.getByRole('link', { name: /Facility report/ })).toHaveAttribute('href', '/openmrs/spa/reports');
   });
 
   it("opens ACT's patient search from Find a patient", async () => {

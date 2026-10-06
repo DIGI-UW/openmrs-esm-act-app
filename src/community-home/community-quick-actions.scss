@@ -1,0 +1,14 @@
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+// Five tiles across, as the mockup lays them out; fewer leave the rest of the row empty.
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  background-color: $ui-03;
+  border: 1px solid $ui-03;
+
+  @media (max-width: $breakpoint-tablet-max) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

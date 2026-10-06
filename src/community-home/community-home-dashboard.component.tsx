@@ -4,9 +4,9 @@ import { Calendar, Location } from '@carbon/react/icons';
 import { formatDate, useSession } from '@openmrs/esm-framework';
 import { HomeDashboard } from '../act-home/act-home-dashboard.component';
 import { communityHomeWidgetsSlot } from './community-home.meta';
-import styles from './community-home.scss';
+import styles from './community-home-dashboard.scss';
 
-/** Home for community clinicians and data clerks: recording prophylaxis first, then who is due. */
+/** Home: its header with the session location and today's date, then the widgets assigned to its slot. */
 export default function CommunityHomeDashboard() {
   const { t } = useTranslation();
   const { sessionLocation } = useSession();

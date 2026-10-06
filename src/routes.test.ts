@@ -45,11 +45,6 @@ describe('routes.json privileges', () => {
     ['act-due-for-prophylaxis-dashboard-link', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-dashboard', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-widget', screenPrivileges.dueList],
-  ])("declares %s behind its screen's privilege", (name, privilege) => {
-    expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
-  });
-
-  it.each([
     ['act-community-home-dashboard-link', screenPrivileges.communityHome],
     ['act-community-home-dashboard', screenPrivileges.communityHome],
     ['act-community-home-quick-actions', screenPrivileges.communityHome],
@@ -59,7 +54,7 @@ describe('routes.json privileges', () => {
     ['act-community-home-find-patient', 'Get Patients'],
     ['act-community-home-facility-report', screenPrivileges.dataClerk],
     ['act-back-to-act-link', 'Get Patients'],
-  ])('declares %s behind %s', (name, privilege) => {
+  ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });
 
