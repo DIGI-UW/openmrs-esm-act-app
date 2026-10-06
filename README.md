@@ -42,8 +42,9 @@ which the home app reads that map.
 ## ACT home
 
 An ACT home dashboard in the home app's left nav, at `/home/act-home`. Its widgets go in
-`rhd-home-widgets-slot`; until one is added it says so. To make it the page ACT users land on, set the home
-app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT role, and send the login app's
+`rhd-home-widgets-slot`; until one is added it says so. To make it the page its users land on, set the home
+app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT role that lands there (the clinician
+and the administrators; community clinicians and data clerks land on Home), and send the login app's
 `loginSuccess` to `/home`, the only route on which the home app reads that map:
 
 ```json
