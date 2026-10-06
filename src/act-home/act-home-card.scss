@@ -18,6 +18,12 @@
   @include type.type-style('heading-compact-02');
 }
 
+.end {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+}
+
 // The home app's dashboard container gives every link width: 100%, which would squeeze the title.
 .header .link {
   width: auto;

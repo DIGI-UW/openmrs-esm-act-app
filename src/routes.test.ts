@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import routeFile from './routes.json';
 import {
   PRIVILEGE_ACT_HOME,
+  PRIVILEGE_DUE_LIST,
   PRIVILEGE_DATA_CLERK,
   PRIVILEGE_REGISTRY,
   PRIVILEGE_SCREEN_POSITIVE,
@@ -15,10 +16,13 @@ const screenPrivileges = {
   worklists: PRIVILEGE_WORKLISTS,
   waitingList: PRIVILEGE_WAITING_LIST,
   screenPositive: PRIVILEGE_SCREEN_POSITIVE,
+  dueList: PRIVILEGE_DUE_LIST,
   dataClerk: PRIVILEGE_DATA_CLERK,
 };
 
-const routes = routeFile as { extensions: Array<{ name: string; privileges?: string | Array<string> }> };
+const routes = routeFile as {
+  extensions: Array<{ name: string; slot?: string; order?: number; privileges?: string | Array<string> }>;
+};
 
 describe('routes.json privileges', () => {
   it.each([
@@ -36,9 +40,25 @@ describe('routes.json privileges', () => {
     ['act-waiting-list-dashboard', screenPrivileges.waitingList],
     ['act-screen-positive-dashboard-link', screenPrivileges.screenPositive],
     ['act-screen-positive-dashboard', screenPrivileges.screenPositive],
-    ['data-clerk-home', screenPrivileges.dataClerk],
+    ['act-due-for-prophylaxis-dashboard-link', screenPrivileges.dueList],
+    ['act-due-for-prophylaxis-dashboard', screenPrivileges.dueList],
+    ['act-due-for-prophylaxis-widget', screenPrivileges.dueList],
+    ['act-home-data-clerk', screenPrivileges.dataClerk],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
+  });
+
+  it("puts the Due for prophylaxis widget on the home, under the data clerk's quick actions", () => {
+    const homeWidgets = routes.extensions
+      .filter((extension) => extension.slot === 'rhd-home-widgets-slot')
+      .sort((a, b) => a.order - b.order)
+      .map(({ name }) => name);
+
+    expect(homeWidgets.slice(0, 3)).toEqual([
+      'act-home-quick-actions',
+      'act-home-data-clerk',
+      'act-due-for-prophylaxis-widget',
+    ]);
   });
 
   it('declares a privilege on every extension, so none shows to every signed-in user', () => {

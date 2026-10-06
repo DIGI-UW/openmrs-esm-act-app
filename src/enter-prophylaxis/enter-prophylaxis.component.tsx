@@ -11,12 +11,21 @@ import styles from './enter-prophylaxis.scss';
 const choices = ['asPrescribed', 'bpg', 'oral'] as const;
 type Choice = (typeof choices)[number];
 
-/** Enter prophylaxis: pick the patient and which prophylaxis, and the form opens in their chart. */
-export function EnterProphylaxisSearch({ onClose }: { onClose: () => void }) {
+/**
+ * Enter prophylaxis: pick the patient and which prophylaxis, and the form opens in their chart. Given a
+ * prophylaxis, it records that one, with no choice offered.
+ */
+export function EnterProphylaxisSearch({
+  onClose,
+  prophylaxis,
+}: {
+  onClose: () => void;
+  prophylaxis?: 'bpg' | 'oral';
+}) {
   const { t } = useTranslation();
   const { prophylaxisCard, visitType } = useConfig<Config>();
   const { sessionLocation } = useSession();
-  const [choice, setChoice] = useState<Choice>('asPrescribed');
+  const [choice, setChoice] = useState<Choice>(prophylaxis ?? 'asPrescribed');
   const labels: Record<Choice, string> = {
     asPrescribed: t('asPrescribed', 'As prescribed'),
     bpg: t('bpgInjection', 'BPG injection'),
@@ -39,10 +48,16 @@ export function EnterProphylaxisSearch({ onClose }: { onClose: () => void }) {
     return summary?.type === 'Oral' ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;
   };
 
+  const label = !prophylaxis
+    ? t('enterProphylaxis', 'Enter prophylaxis')
+    : prophylaxis === 'oral'
+      ? t('recordOral', 'Record oral')
+      : t('recordBpg', 'Record BPG');
+
   return (
     <PatientSearchPanel
       onClose={onClose}
-      label={t('enterProphylaxis', 'Enter prophylaxis')}
+      label={label}
       onSelect={async (patient) =>
         openFormInChart(t, {
           patientUuid: patient.uuid,
@@ -56,25 +71,27 @@ export function EnterProphylaxisSearch({ onClose }: { onClose: () => void }) {
         kind="info"
         lowContrast
         hideCloseButton
-        title={t('enterProphylaxis', 'Enter prophylaxis')}
+        title={label}
         subtitle={t(
           'enterProphylaxisBanner',
           'Choose the patient. The form opens in their chart and a visit starts automatically.',
         )}
       />
-      <div className={styles.choice}>
-        <p className={styles.label}>{t('whichProphylaxis', 'Which prophylaxis?')}</p>
-        <ContentSwitcher
-          selectedIndex={choices.indexOf(choice)}
-          onChange={({ index }) => setChoice(choices[index])}
-          size="md"
-        >
-          {choices.map((key) => (
-            <Switch key={key} name={key} text={labels[key]} />
-          ))}
-        </ContentSwitcher>
-        <p className={styles.helper}>{helpers[choice]}</p>
-      </div>
+      {!prophylaxis && (
+        <div className={styles.choice}>
+          <p className={styles.label}>{t('whichProphylaxis', 'Which prophylaxis?')}</p>
+          <ContentSwitcher
+            selectedIndex={choices.indexOf(choice)}
+            onChange={({ index }) => setChoice(choices[index])}
+            size="md"
+          >
+            {choices.map((key) => (
+              <Switch key={key} name={key} text={labels[key]} />
+            ))}
+          </ContentSwitcher>
+          <p className={styles.helper}>{helpers[choice]}</p>
+        </div>
+      )}
     </PatientSearchPanel>
   );
 }

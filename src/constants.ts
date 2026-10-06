@@ -4,6 +4,7 @@ export const PRIVILEGE_REGISTRY = 'App: act.registry';
 export const PRIVILEGE_WORKLISTS = 'App: act.worklists';
 export const PRIVILEGE_WAITING_LIST = 'App: act.waitingList';
 export const PRIVILEGE_SCREEN_POSITIVE = 'App: act.screenPositive';
+export const PRIVILEGE_DUE_LIST = 'App: act.dueList';
 export const PRIVILEGE_DATA_CLERK = 'App: act.dataClerk';
 export const PRIVILEGE_EXPORT_LISTS = 'Task: act.lists.export';
 
