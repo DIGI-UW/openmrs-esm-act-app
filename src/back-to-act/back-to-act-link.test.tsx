@@ -50,6 +50,18 @@ describe('Back to the ACT page a chart was opened from', () => {
     });
   });
 
+  it.each([
+    ['act-community-home', 'Back to Home'],
+    ['act-due-for-prophylaxis', 'Back to Due for prophylaxis'],
+  ])("shows %s's way back in a chart opened from it", (screenName, label) => {
+    trackActReturn();
+    route(`${base}/home/${screenName}`, chart);
+
+    render(<BackToActLink />);
+
+    expect(screen.getByRole('button', { name: new RegExp(`${label}$`) })).toBeInTheDocument();
+  });
+
   it('shows nothing in a chart opened from anywhere else', () => {
     trackActReturn();
     route(`${base}/home/service-queues`, chart);

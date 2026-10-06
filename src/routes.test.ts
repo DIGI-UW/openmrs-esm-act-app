@@ -3,6 +3,7 @@ import routeFile from './routes.json';
 import {
   PRIVILEGE_ACT_HOME,
   PRIVILEGE_DUE_LIST,
+  PRIVILEGE_COMMUNITY_HOME,
   PRIVILEGE_DATA_CLERK,
   PRIVILEGE_REGISTRY,
   PRIVILEGE_SCREEN_POSITIVE,
@@ -18,6 +19,7 @@ const screenPrivileges = {
   screenPositive: PRIVILEGE_SCREEN_POSITIVE,
   dueList: PRIVILEGE_DUE_LIST,
   dataClerk: PRIVILEGE_DATA_CLERK,
+  communityHome: PRIVILEGE_COMMUNITY_HOME,
 };
 
 const routes = routeFile as {
@@ -43,22 +45,47 @@ describe('routes.json privileges', () => {
     ['act-due-for-prophylaxis-dashboard-link', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-dashboard', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-widget', screenPrivileges.dueList],
-    ['act-home-data-clerk', screenPrivileges.dataClerk],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });
 
-  it("puts the Due for prophylaxis widget on the home, under the data clerk's quick actions", () => {
-    const homeWidgets = routes.extensions
-      .filter((extension) => extension.slot === 'rhd-home-widgets-slot')
-      .sort((a, b) => a.order - b.order)
-      .map(({ name }) => name);
+  it.each([
+    ['act-community-home-dashboard-link', screenPrivileges.communityHome],
+    ['act-community-home-dashboard', screenPrivileges.communityHome],
+    ['act-community-home-quick-actions', screenPrivileges.communityHome],
+    ['act-community-home-record-bpg', 'Add Encounters'],
+    ['act-community-home-record-oral', 'Add Encounters'],
+    ['act-community-home-register-patient', 'Add Patients'],
+    ['act-community-home-find-patient', 'Get Patients'],
+    ['act-community-home-facility-report', screenPrivileges.dataClerk],
+    ['act-back-to-act-link', 'Get Patients'],
+  ])('declares %s behind %s', (name, privilege) => {
+    expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
+  });
 
-    expect(homeWidgets.slice(0, 3)).toEqual([
-      'act-home-quick-actions',
-      'act-home-data-clerk',
-      'act-due-for-prophylaxis-widget',
-    ]);
+  it.each([
+    ['act-community-home-widgets-slot', ['act-community-home-quick-actions', 'act-due-for-prophylaxis-widget']],
+    [
+      'act-community-home-quick-actions-slot',
+      [
+        'act-community-home-record-bpg',
+        'act-community-home-record-oral',
+        'act-community-home-register-patient',
+        'act-community-home-find-patient',
+        'act-community-home-facility-report',
+      ],
+    ],
+    [
+      'rhd-home-widgets-slot',
+      ['act-home-quick-actions', 'act-home-worklists', 'act-home-waiting-list', 'act-home-care-cascade'],
+    ],
+  ])("fills %s in the mockup's order", (slot, names) => {
+    expect(
+      routes.extensions
+        .filter((extension) => extension.slot === slot)
+        .sort((a, b) => a.order - b.order)
+        .map(({ name }) => name),
+    ).toEqual(names);
   });
 
   it('declares a privilege on every extension, so none shows to every signed-in user', () => {

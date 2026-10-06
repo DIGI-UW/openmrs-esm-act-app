@@ -66,23 +66,29 @@ function EnterProphylaxis() {
   );
 }
 
-/** Find a patient: ACT's patient search over the page, or the configured page. */
-function FindPatient() {
+/** Find a patient: ACT's patient search over the page, or the configured page. Its tile is ACT home's unless given. */
+export function FindPatient({
+  className = styles.action,
+  children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
   const { t } = useTranslation();
   const { quickActions } = useConfig<Config>();
   const [open, setOpen] = useState(false);
-  const label = <ActionLabel label={t('findPatient', 'Find a patient')} Icon={Search} />;
+  const label = children ?? <ActionLabel label={t('findPatient', 'Find a patient')} Icon={Search} />;
 
   if (!quickActions.findPatientInPanel) {
     return (
-      <ConfigurableLink to={quickActions.findPatientUrl} className={styles.action}>
+      <ConfigurableLink to={quickActions.findPatientUrl} className={className}>
         {label}
       </ConfigurableLink>
     );
   }
   return (
     <>
-      <button type="button" className={styles.action} onClick={() => setOpen(true)}>
+      <button type="button" className={className} onClick={() => setOpen(true)}>
         {label}
       </button>
       {open && <PatientSearchPanel onClose={() => setOpen(false)} />}

@@ -51,8 +51,8 @@ export function EnterProphylaxisSearch({
   const label = !prophylaxis
     ? t('enterProphylaxis', 'Enter prophylaxis')
     : prophylaxis === 'oral'
-      ? t('recordOral', 'Record oral')
-      : t('recordBpg', 'Record BPG');
+      ? t('recordOralProphylaxis', 'Record oral prophylaxis')
+      : t('recordBpgInjection', 'Record BPG injection');
 
   return (
     <PatientSearchPanel

@@ -52,7 +52,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: false,
       _description:
-        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: the data clerk's Record BPG and Record oral always open the patient search.",
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: Home's Record BPG injection and Record oral prophylaxis always open the patient search.",
     },
     enterProphylaxisUrl: link(
       'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',
@@ -84,7 +84,7 @@ export const configSchema = {
   },
   dataClerkQuickActions: {
     facilityReportUrl: link(
-      'Where the Facility report quick action on the data clerk workspace leads.',
+      'Where the Facility report quick action on Home leads, for a user holding App: act.dataClerk.',
       '${openmrsSpaBase}/home/reports',
     ),
   },
