@@ -12,7 +12,8 @@
   gap: layout.$spacing-06;
 
   > :global([data-extension-id='act-home-quick-actions']),
-  > :global([data-extension-id='act-home-worklists']) {
+  > :global([data-extension-id='act-home-worklists']),
+  > :global([data-extension-id='data-clerk-home']) {
     grid-column: 1 / -1;
   }
 
