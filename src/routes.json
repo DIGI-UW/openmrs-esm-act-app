@@ -33,9 +33,9 @@
       "privileges": "App: act.home"
     },
     {
-      "name": "data-clerk-home",
+      "name": "act-home-data-clerk",
       "slot": "rhd-home-widgets-slot",
-      "component": "dataClerkHome",
+      "component": "actHomeDataClerk",
       "order": 2,
       "privileges": "App: act.dataClerk"
     },
@@ -43,21 +43,21 @@
       "name": "act-home-worklists",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWorklists",
-      "order": 3,
+      "order": 4,
       "privileges": "App: act.worklists"
     },
     {
       "name": "act-home-waiting-list",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWaitingList",
-      "order": 4,
+      "order": 5,
       "privileges": "App: act.waitingList"
     },
     {
       "name": "act-home-care-cascade",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeCareCascade",
-      "order": 5,
+      "order": 6,
       "privileges": "App: act.registry"
     },
     {
@@ -127,6 +127,30 @@
       "slot": "rhd-screen-positive-dashboard-slot",
       "component": "screenPositiveDashboard",
       "privileges": "App: act.screenPositive"
+    },
+    {
+      "name": "act-due-for-prophylaxis-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "dueForProphylaxisDashboardLink",
+      "meta": {
+        "name": "act-due-for-prophylaxis",
+        "slot": "rhd-due-for-prophylaxis-dashboard-slot",
+        "title": "dueForProphylaxis"
+      },
+      "privileges": "App: act.dueList"
+    },
+    {
+      "name": "act-due-for-prophylaxis-dashboard",
+      "slot": "rhd-due-for-prophylaxis-dashboard-slot",
+      "component": "dueForProphylaxisDashboard",
+      "privileges": "App: act.dueList"
+    },
+    {
+      "name": "act-due-for-prophylaxis-widget",
+      "slot": "rhd-home-widgets-slot",
+      "component": "dueForProphylaxisWidget",
+      "order": 3,
+      "privileges": "App: act.dueList"
     },
     {
       "name": "act-back-to-act-link",

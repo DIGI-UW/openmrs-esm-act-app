@@ -40,10 +40,10 @@ function serve() {
   }) as never);
 }
 
-async function pick(name: string) {
+async function pick(name: string, prophylaxis?: 'bpg' | 'oral') {
   render(
     <SWRConfig value={{ provider: () => new Map() }}>
-      <EnterProphylaxisSearch onClose={vi.fn()} />
+      <EnterProphylaxisSearch onClose={vi.fn()} prophylaxis={prophylaxis} />
     </SWRConfig>,
   );
   return async (choice?: string) => {
@@ -100,6 +100,24 @@ describe('EnterProphylaxisSearch', () => {
       }),
     );
   });
+
+  it.each([
+    ['bpg', 'Record BPG', 'Emmanuel Wanyama', bpgForm],
+    ['oral', 'Record oral', 'Grace Achieng', oralForm],
+  ] as const)(
+    'given %s, records it with no choice offered, whatever the prescription',
+    async (prophylaxis, label, name, formUuid) => {
+      const choose = await pick(name, prophylaxis);
+
+      expect(screen.getByRole('dialog', { name: label })).toBeInTheDocument();
+      expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+      await choose();
+
+      await vi.waitFor(() =>
+        expect(openFormInChart).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ formUuid })),
+      );
+    },
+  );
 
   it('opens the BPG form As prescribed when the summary cannot be read', async () => {
     const serveDefault = vi.mocked(openmrsFetch).getMockImplementation();

@@ -26,8 +26,6 @@ describe('configSchema', () => {
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       dataClerkQuickActions: {
-        recordBpgUrl: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d',
-        recordOralUrl: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465',
         facilityReportUrl: '${openmrsSpaBase}/home/reports',
       },
       careCascade: {
@@ -50,6 +48,9 @@ describe('configSchema', () => {
       },
       waitingList: {
         report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
+      },
+      dueForProphylaxis: {
+        report: 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8',
       },
       screenPositive: {
         report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',

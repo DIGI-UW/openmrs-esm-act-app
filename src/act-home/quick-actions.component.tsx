@@ -8,7 +8,7 @@ import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.c
 import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
 import styles from './quick-actions.scss';
 
-function ActionLabel({ label, Icon }: { label: string; Icon: typeof Add }) {
+export function ActionLabel({ label, Icon }: { label: string; Icon: typeof Add }) {
   return (
     <>
       <span className={styles.icon}>

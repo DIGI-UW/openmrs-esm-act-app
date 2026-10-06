@@ -52,7 +52,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: false,
       _description:
-        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart.",
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: the data clerk's Record BPG and Record oral always open the patient search.",
     },
     enterProphylaxisUrl: link(
       'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',
@@ -83,14 +83,6 @@ export const configSchema = {
     ),
   },
   dataClerkQuickActions: {
-    recordBpgUrl: link(
-      'Where the Record BPG quick action on the data clerk workspace leads.',
-      '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d',
-    ),
-    recordOralUrl: link(
-      'Where the Record oral quick action on the data clerk workspace leads.',
-      '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465',
-    ),
     facilityReportUrl: link(
       'Where the Facility report quick action on the data clerk workspace leads.',
       '${openmrsSpaBase}/home/reports',
@@ -143,6 +135,14 @@ export const configSchema = {
       _type: Type.String,
       _default: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
       _description: 'The Procedural Waiting List report, by uuid or name, whose rows the waiting list shows.',
+    },
+  },
+  dueForProphylaxis: {
+    report: {
+      _type: Type.String,
+      _default: 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8',
+      _description:
+        'The Due for Prophylaxis report, by uuid or name, whose rows the Due for prophylaxis page and widget list.',
     },
   },
   screenPositive: {
@@ -346,13 +346,12 @@ export interface Config {
     findPatientUrl: string;
   };
   dataClerkQuickActions: {
-    recordBpgUrl: string;
-    recordOralUrl: string;
     facilityReportUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
+  dueForProphylaxis: { report: string };
   screenPositive: { report: string; echoForm: string };
   cardiacTests: {
     echoForm: string;
