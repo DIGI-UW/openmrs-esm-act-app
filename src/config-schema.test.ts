@@ -26,8 +26,6 @@ describe('configSchema', () => {
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       dataClerkQuickActions: {
-        recordBpgUrl: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d',
-        recordOralUrl: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465',
         facilityReportUrl: '${openmrsSpaBase}/home/reports',
       },
       careCascade: {

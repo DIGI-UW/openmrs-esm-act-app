@@ -1,35 +1,45 @@
 import React from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { PRIVILEGE_DATA_CLERK } from '../constants';
+import userEvent from '@testing-library/user-event';
+import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_DATA_CLERK } from '../constants';
 import { signInWith } from '../access/sign-in.test-helper';
 import DataClerkHome from './data-clerk-home.component';
+
+// Which form each search opens is enter-prophylaxis's own test; here it shows which prophylaxis it was given.
+vi.mock('../enter-prophylaxis/enter-prophylaxis.component', () => ({
+  EnterProphylaxisSearch: ({ prophylaxis }: { prophylaxis: string }) => <div role="dialog" aria-label={prophylaxis} />,
+}));
 
 describe('DataClerkHome', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith([PRIVILEGE_DATA_CLERK]);
+    await signInWith([PRIVILEGE_DATA_CLERK, PRIVILEGE_ADD_ENCOUNTERS]);
   });
 
-  it('links each quick action to its configured target', () => {
+  it.each([
+    ['Record BPG', 'bpg'],
+    ['Record oral', 'oral'],
+  ])("opens ACT's patient search for that prophylaxis from %s", async (name, prophylaxis) => {
     render(<DataClerkHome />);
 
-    expect(screen.getByRole('link', { name: /record bpg/i })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d',
-    );
-    expect(screen.getByRole('link', { name: /record oral/i })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465',
-    );
+    await userEvent.click(screen.getByRole('button', { name }));
+
+    expect(screen.getByRole('dialog', { name: prophylaxis })).toBeInTheDocument();
+  });
+
+  it('links Facility report to its configured target', () => {
+    render(<DataClerkHome />);
+
     expect(screen.getByRole('link', { name: /facility report/i })).toHaveAttribute('href', '/openmrs/spa/home/reports');
   });
 
-  it('is hidden from a user without the data clerk privilege', async () => {
-    await signInWith(['View Patient Flags']);
+  it('offers no Record action to a user who cannot add encounters', async () => {
+    await signInWith([PRIVILEGE_DATA_CLERK]);
 
     render(<DataClerkHome />);
 
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /record/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /facility report/i })).toBeInTheDocument();
   });
 });

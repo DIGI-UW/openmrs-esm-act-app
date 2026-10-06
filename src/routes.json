@@ -33,9 +33,9 @@
       "privileges": "App: act.home"
     },
     {
-      "name": "data-clerk-home",
+      "name": "act-home-data-clerk",
       "slot": "rhd-home-widgets-slot",
-      "component": "dataClerkHome",
+      "component": "actHomeDataClerk",
       "order": 2,
       "privileges": "App: act.dataClerk"
     },

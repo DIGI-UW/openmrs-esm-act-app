@@ -92,4 +92,4 @@ export const dueForProphylaxisWidget = getAsyncLifecycle(
   options,
 );
 
-export const dataClerkHome = getAsyncLifecycle(() => import('./data-clerk/data-clerk-home.component'), options);
+export const actHomeDataClerk = getAsyncLifecycle(() => import('./data-clerk/data-clerk-home.component'), options);

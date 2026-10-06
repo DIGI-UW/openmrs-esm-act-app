@@ -41,7 +41,7 @@ describe('routes.json privileges', () => {
     ['act-due-for-prophylaxis-dashboard-link', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-dashboard', screenPrivileges.dueList],
     ['act-due-for-prophylaxis-widget', screenPrivileges.dueList],
-    ['data-clerk-home', screenPrivileges.dataClerk],
+    ['act-home-data-clerk', screenPrivileges.dataClerk],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });
