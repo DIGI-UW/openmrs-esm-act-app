@@ -4,7 +4,7 @@ import { ArrowRight } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import styles from './act-home-card.scss';
 
-/** An ACT home widget's frame: its title, then on the right a tag and a link to the full screen when given, then its content. */
+/** A home page widget's frame, on ACT home or Home: its title, then on the right a tag and a link to the full screen when given, then its content. */
 export function ActHomeCard({
   title,
   tag,
