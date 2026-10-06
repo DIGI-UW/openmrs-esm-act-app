@@ -1,6 +1,6 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
-// Five tiles across, as the mockup lays them out; fewer leave the rest of the row empty.
+// Five tiles across, as the mockup lays them out; with fewer, the rest of the row shows the grid's grey, as the mockup's does.
 .tiles {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
