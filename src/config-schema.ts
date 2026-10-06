@@ -131,6 +131,14 @@ export const configSchema = {
       _description: 'The Procedural Waiting List report, by uuid or name, whose rows the waiting list shows.',
     },
   },
+  dueForProphylaxis: {
+    report: {
+      _type: Type.String,
+      _default: 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8',
+      _description:
+        'The Due for Prophylaxis report, by uuid or name, whose rows the Due for prophylaxis page and widget list.',
+    },
+  },
   screenPositive: {
     report: {
       _type: Type.String,
@@ -334,6 +342,7 @@ export interface Config {
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
+  dueForProphylaxis: { report: string };
   screenPositive: { report: string; echoForm: string };
   cardiacTests: {
     echoForm: string;

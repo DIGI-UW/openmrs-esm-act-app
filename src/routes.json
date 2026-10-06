@@ -122,6 +122,28 @@
       "privileges": "App: act.screenPositive"
     },
     {
+      "name": "act-due-for-prophylaxis-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "dueForProphylaxisDashboardLink",
+      "meta": {
+        "name": "act-due-for-prophylaxis",
+        "slot": "rhd-due-for-prophylaxis-dashboard-slot",
+        "title": "dueForProphylaxis"
+      },
+      "privileges": "App: act.dueList"
+    },
+    {
+      "name": "act-due-for-prophylaxis-dashboard",
+      "slot": "rhd-due-for-prophylaxis-dashboard-slot",
+      "component": "dueForProphylaxisDashboard",
+      "privileges": "App: act.dueList"
+    },
+    {
+      "name": "act-due-for-prophylaxis-widget",
+      "component": "dueForProphylaxisWidget",
+      "privileges": "App: act.dueList"
+    },
+    {
       "name": "act-back-to-act-link",
       "slot": "top-of-all-patient-dashboards-slot",
       "component": "backToActLink",

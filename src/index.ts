@@ -7,6 +7,7 @@ import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashb
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
+import dueForProphylaxisDashboardLinkComponent from './due-for-prophylaxis/due-for-prophylaxis-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
 
 const moduleName = '@mherman22/esm-act-app';
@@ -76,5 +77,17 @@ export const screenPositiveDashboardLink = getSyncLifecycle(screenPositiveDashbo
 
 export const screenPositiveDashboard = getAsyncLifecycle(
   () => import('./screen-positive/screen-positive.component'),
+  options,
+);
+
+export const dueForProphylaxisDashboardLink = getSyncLifecycle(dueForProphylaxisDashboardLinkComponent, options);
+
+export const dueForProphylaxisDashboard = getAsyncLifecycle(
+  () => import('./due-for-prophylaxis/due-for-prophylaxis.component'),
+  options,
+);
+
+export const dueForProphylaxisWidget = getAsyncLifecycle(
+  () => import('./due-for-prophylaxis/due-for-prophylaxis-widget.component'),
   options,
 );

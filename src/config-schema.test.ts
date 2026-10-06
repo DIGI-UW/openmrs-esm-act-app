@@ -46,6 +46,9 @@ describe('configSchema', () => {
       waitingList: {
         report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
       },
+      dueForProphylaxis: {
+        report: 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8',
+      },
       screenPositive: {
         report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
         echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
