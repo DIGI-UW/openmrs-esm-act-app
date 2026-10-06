@@ -52,7 +52,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: false,
       _description:
-        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart.",
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: the data clerk's Record BPG and Record oral always open the patient search.",
     },
     enterProphylaxisUrl: link(
       'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',
