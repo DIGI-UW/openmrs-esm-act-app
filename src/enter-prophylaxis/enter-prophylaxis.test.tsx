@@ -102,8 +102,8 @@ describe('EnterProphylaxisSearch', () => {
   });
 
   it.each([
-    ['bpg', 'Record BPG', 'Emmanuel Wanyama', bpgForm],
-    ['oral', 'Record oral', 'Grace Achieng', oralForm],
+    ['bpg', 'Record BPG injection', 'Emmanuel Wanyama', bpgForm],
+    ['oral', 'Record oral prophylaxis', 'Grace Achieng', oralForm],
   ] as const)(
     'given %s, records it with no choice offered, whatever the prescription',
     async (prophylaxis, label, name, formUuid) => {

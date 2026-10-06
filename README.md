@@ -28,11 +28,24 @@ from the patient chart:
 A flags app that passes the clicked flag as the workspace's props (`patientUuid`, `patientFlagUuid`,
 `flagUuid`, `flagName`) narrows the workspace to that flag.
 
+## Home
+
+The community clinician's and data clerk's home, at `/home/act-community-home` behind `App: act.communityHome`:
+the session location and today's date, then Quick actions and Due for prophylaxis in
+`act-community-home-widgets-slot`. Each quick action is its own extension in
+`act-community-home-quick-actions-slot`, behind the privilege its action needs, so a distro can reorder or remove
+them in that slot's config; Facility report shows only with `App: act.dataClerk`. Register patient and Find a patient
+read ACT home's `quickActions` settings, so a change there changes both homes. To land these roles on it, map
+them to `act-community-home` in `defaultDashboardPerRole`, and send `loginSuccess` to `/home`, the only route on
+which the home app reads that map.
+
 ## ACT home
 
 An ACT home dashboard in the home app's left nav, at `/home/act-home`. Its widgets go in
-`rhd-home-widgets-slot`; until one is added it says so. To make it the page ACT users land on, set the home
-app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT role:
+`rhd-home-widgets-slot`; until one is added it says so. To make it the page its users land on, set the home
+app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT role that lands there (the clinician
+and the administrators; community clinicians and data clerks land on Home), and send the login app's
+`loginSuccess` to `/home`, the only route on which the home app reads that map:
 
 ```json
 "@openmrs/esm-home-app": {

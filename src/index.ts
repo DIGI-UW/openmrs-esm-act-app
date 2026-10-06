@@ -8,6 +8,7 @@ import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 import dueForProphylaxisDashboardLinkComponent from './due-for-prophylaxis/due-for-prophylaxis-dashboard-link.component';
+import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
 
 const moduleName = '@mherman22/esm-act-app';
@@ -92,4 +93,41 @@ export const dueForProphylaxisWidget = getAsyncLifecycle(
   options,
 );
 
-export const actHomeDataClerk = getAsyncLifecycle(() => import('./data-clerk/data-clerk-home.component'), options);
+export const communityHomeDashboardLink = getSyncLifecycle(communityHomeDashboardLinkComponent, options);
+
+export const communityHomeDashboard = getAsyncLifecycle(
+  () => import('./community-home/community-home-dashboard.component'),
+  options,
+);
+
+export const communityHomeQuickActions = getAsyncLifecycle(
+  () => import('./community-home/community-quick-actions.component'),
+  options,
+);
+
+const tiles = () => import('./community-home/community-quick-action-tiles.component');
+
+export const communityHomeRecordBpg = getAsyncLifecycle(
+  () => tiles().then(({ RecordBpgAction }) => ({ default: RecordBpgAction })),
+  options,
+);
+
+export const communityHomeRecordOral = getAsyncLifecycle(
+  () => tiles().then(({ RecordOralAction }) => ({ default: RecordOralAction })),
+  options,
+);
+
+export const communityHomeRegisterPatient = getAsyncLifecycle(
+  () => tiles().then(({ RegisterPatientAction }) => ({ default: RegisterPatientAction })),
+  options,
+);
+
+export const communityHomeFindPatient = getAsyncLifecycle(
+  () => tiles().then(({ FindPatientAction }) => ({ default: FindPatientAction })),
+  options,
+);
+
+export const communityHomeFacilityReport = getAsyncLifecycle(
+  () => tiles().then(({ FacilityReportAction }) => ({ default: FacilityReportAction })),
+  options,
+);

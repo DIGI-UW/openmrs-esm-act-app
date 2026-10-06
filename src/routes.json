@@ -33,13 +33,6 @@
       "privileges": "App: act.home"
     },
     {
-      "name": "act-home-data-clerk",
-      "slot": "rhd-home-widgets-slot",
-      "component": "actHomeDataClerk",
-      "order": 2,
-      "privileges": "App: act.dataClerk"
-    },
-    {
       "name": "act-home-worklists",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWorklists",
@@ -129,6 +122,65 @@
       "privileges": "App: act.screenPositive"
     },
     {
+      "name": "act-community-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "communityHomeDashboardLink",
+      "meta": {
+        "name": "act-community-home",
+        "slot": "act-community-home-dashboard-slot",
+        "title": "home"
+      },
+      "privileges": "App: act.communityHome"
+    },
+    {
+      "name": "act-community-home-dashboard",
+      "slot": "act-community-home-dashboard-slot",
+      "component": "communityHomeDashboard",
+      "privileges": "App: act.communityHome"
+    },
+    {
+      "name": "act-community-home-quick-actions",
+      "slot": "act-community-home-widgets-slot",
+      "component": "communityHomeQuickActions",
+      "order": 1,
+      "privileges": "App: act.communityHome"
+    },
+    {
+      "name": "act-community-home-record-bpg",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "communityHomeRecordBpg",
+      "order": 1,
+      "privileges": "Add Encounters"
+    },
+    {
+      "name": "act-community-home-record-oral",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "communityHomeRecordOral",
+      "order": 2,
+      "privileges": "Add Encounters"
+    },
+    {
+      "name": "act-community-home-register-patient",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "communityHomeRegisterPatient",
+      "order": 3,
+      "privileges": "Add Patients"
+    },
+    {
+      "name": "act-community-home-find-patient",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "communityHomeFindPatient",
+      "order": 4,
+      "privileges": "Get Patients"
+    },
+    {
+      "name": "act-community-home-facility-report",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "communityHomeFacilityReport",
+      "order": 5,
+      "privileges": "App: act.dataClerk"
+    },
+    {
       "name": "act-due-for-prophylaxis-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "dueForProphylaxisDashboardLink",
@@ -147,16 +199,16 @@
     },
     {
       "name": "act-due-for-prophylaxis-widget",
-      "slot": "rhd-home-widgets-slot",
+      "slot": "act-community-home-widgets-slot",
       "component": "dueForProphylaxisWidget",
-      "order": 3,
+      "order": 2,
       "privileges": "App: act.dueList"
     },
     {
       "name": "act-back-to-act-link",
       "slot": "top-of-all-patient-dashboards-slot",
       "component": "backToActLink",
-      "privileges": "App: act.home"
+      "privileges": "Get Patients"
     },
     {
       "name": "act-prophylaxis-status-tag",

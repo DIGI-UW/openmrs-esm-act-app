@@ -45,14 +45,14 @@ export const configSchema = {
   },
   quickActions: {
     registerPatientUrl: link(
-      'Where the Register patient quick action on ACT home leads.',
+      'Where the Register patient quick action on ACT home and on Home leads.',
       '${openmrsSpaBase}/patient-registration',
     ),
     enterProphylaxisInFastDataEntry: {
       _type: Type.Boolean,
       _default: false,
       _description:
-        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: the data clerk's Record BPG and Record oral always open the patient search.",
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: Home's Record BPG injection and Record oral prophylaxis always open the patient search.",
     },
     enterProphylaxisUrl: link(
       'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',
@@ -75,17 +75,17 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        "Whether Find a patient on ACT home opens ACT's patient search over the page. When false, it leads to findPatientUrl.",
+        "Whether Find a patient on ACT home and on Home opens ACT's patient search over the page. When false, it leads to findPatientUrl.",
     },
     findPatientUrl: link(
-      'Where the Find a patient quick action on ACT home leads when findPatientInPanel is false. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
+      'Where the Find a patient quick action on ACT home and on Home leads when findPatientInPanel is false. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
       '${openmrsSpaBase}/search?query=',
     ),
   },
   dataClerkQuickActions: {
     facilityReportUrl: link(
-      'Where the Facility report quick action on the data clerk workspace leads.',
-      '${openmrsSpaBase}/home/reports',
+      'Where the Facility report quick action on Home leads, for a user holding App: act.dataClerk.',
+      '${openmrsSpaBase}/reports',
     ),
   },
   careCascade: {

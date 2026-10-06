@@ -1,4 +1,6 @@
 import { actHomeDashboardMeta } from '../act-home/act-home.meta';
+import { communityHomeDashboardMeta } from '../community-home/community-home.meta';
+import { dueForProphylaxisDashboardMeta } from '../due-for-prophylaxis/due-for-prophylaxis.meta';
 import { registryDashboardMeta } from '../registry/registry.meta';
 import { screenPositiveDashboardMeta } from '../screen-positive/screen-positive.meta';
 import { waitingListDashboardMeta } from '../waiting-list/waiting-list.meta';
@@ -13,6 +15,8 @@ export const actScreens = [
   worklistsDashboardMeta.name,
   waitingListDashboardMeta.name,
   screenPositiveDashboardMeta.name,
+  communityHomeDashboardMeta.name,
+  dueForProphylaxisDashboardMeta.name,
 ] as const;
 
 export type ActScreenName = (typeof actScreens)[number];

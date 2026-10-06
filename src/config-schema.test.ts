@@ -26,7 +26,7 @@ describe('configSchema', () => {
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       dataClerkQuickActions: {
-        facilityReportUrl: '${openmrsSpaBase}/home/reports',
+        facilityReportUrl: '${openmrsSpaBase}/reports',
       },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
