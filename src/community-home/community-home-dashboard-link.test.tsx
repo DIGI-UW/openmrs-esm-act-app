@@ -26,11 +26,19 @@ describe('CommunityHomeDashboardLink', () => {
     );
   });
 
-  it('is left out for a user whose home is ACT home, such as a site administrator', async () => {
-    await signInWith(['App: act.communityHome', homePrivilege]);
+  it('is left out for an administrator who works from ACT home and manages users', async () => {
+    await signInWith(['App: act.communityHome', homePrivilege, 'Edit Users']);
 
     render(<CommunityHomeDashboardLink />);
 
     expect(DashboardExtension).not.toHaveBeenCalled();
+  });
+
+  it('stays for a user who also works from ACT home but manages no users, as a clinician who is also a community clinician', async () => {
+    await signInWith(['App: act.communityHome', homePrivilege]);
+
+    render(<CommunityHomeDashboardLink />);
+
+    expect(DashboardExtension).toHaveBeenCalled();
   });
 });

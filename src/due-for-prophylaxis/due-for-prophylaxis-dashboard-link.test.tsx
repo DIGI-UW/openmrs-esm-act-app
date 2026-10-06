@@ -30,11 +30,19 @@ describe('DueForProphylaxisDashboardLink', () => {
     );
   });
 
-  it('is left out for a user whose home is ACT home, where the registry shows who is due', async () => {
-    await signInWith(['App: act.dueList', homePrivilege]);
+  it('is left out for an administrator who works from ACT home and manages users', async () => {
+    await signInWith(['App: act.dueList', homePrivilege, 'Edit Users']);
 
     render(<DueForProphylaxisDashboardLink />);
 
     expect(DashboardExtension).not.toHaveBeenCalled();
+  });
+
+  it('stays for a user who also works from ACT home but manages no users, as a clinician who is also a community clinician', async () => {
+    await signInWith(['App: act.dueList', homePrivilege]);
+
+    render(<DueForProphylaxisDashboardLink />);
+
+    expect(DashboardExtension).toHaveBeenCalled();
   });
 });

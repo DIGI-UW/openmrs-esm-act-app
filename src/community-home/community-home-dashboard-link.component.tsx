@@ -1,9 +1,9 @@
 import React from 'react';
 import { ActDashboardLink } from '../access/act-dashboard-link.component';
-import { useHoldsActHome } from '../access/holds-act-home';
+import { useAdministersFromActHome } from '../access/administers-from-act-home';
 import { communityHomeDashboardMeta } from './community-home.meta';
 
-/** Home's entry in the left nav, left out for a user whose home is ACT home. */
+/** Home's entry in the left nav, left out for an administrator who works from ACT home. */
 export default function CommunityHomeDashboardLink() {
-  return useHoldsActHome() ? null : <ActDashboardLink meta={communityHomeDashboardMeta} />;
+  return useAdministersFromActHome() ? null : <ActDashboardLink meta={communityHomeDashboardMeta} />;
 }
