@@ -21,6 +21,7 @@ import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { rowFlags } from '../registry/registry-filters';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { diagnosis } from '../reports/diagnosis';
 import { useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
 import { parseReportDate } from '../reports/report-date';
 import { distinctValues } from '../table-filters/distinct-values';
@@ -116,7 +117,7 @@ function WorklistPatients({
       header: t('ageSex', 'Age, sex'),
       render: ({ row }) => `${text('age_years')(row)} ${text('sex')(row)}`,
     },
-    { key: 'diagnosis', header: t('diagnosis', 'Diagnosis'), render: ({ row }) => text('diagnosis_category')(row) },
+    { key: 'diagnosis', header: t('diagnosis', 'Diagnosis'), render: ({ row }) => diagnosis(row) },
     {
       key: 'prophylaxis',
       header: t('prophylaxis', 'Prophylaxis'),

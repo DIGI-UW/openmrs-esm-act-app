@@ -34,6 +34,7 @@ import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { diagnosis } from '../reports/diagnosis';
 import { parseReportDate } from '../reports/report-date';
 import { downloadCsv } from '../table-filters/csv';
 import { FilterSelect } from '../table-filters/filter-select.component';
@@ -104,6 +105,7 @@ function RegistryTable() {
     { header: t('age', 'Age'), text: text('age_years') },
     { header: t('sex', 'Sex'), text: text('sex') },
     { header: t('diagnosisCategory', 'Diagnosis category'), text: text('diagnosis_category') },
+    { header: t('diagnosisDetails', 'Diagnosis details'), text: text('diagnosis_details') },
     { header: t('prophylaxisRegimen', 'Prophylaxis regimen'), text: text('prophylaxis_regimen') },
     { header: t('nextConsultation', 'Next consultation'), text: nextConsultation },
     { header: t('cardiacClinic', 'Cardiac clinic'), text: text('cardiac_clinic') },
@@ -160,7 +162,7 @@ function RegistryTable() {
       sortKey: 'age',
       render: (row) => [text('age_years')(row), text('sex')(row)].filter(Boolean).join(' '),
     },
-    { header: t('diagnosis', 'Diagnosis'), render: text('diagnosis_category') },
+    { header: t('diagnosis', 'Diagnosis'), render: diagnosis },
     { header: t('prophylaxis', 'Prophylaxis'), render: text('prophylaxis_regimen') },
     ...(registry.showBpgColumns
       ? [
