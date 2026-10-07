@@ -1,6 +1,5 @@
-import useSWR from 'swr';
-import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
-import { type Config } from '../config-schema';
+import { useSession } from '@openmrs/esm-framework';
+import { useSessionClinicKind } from '../session-clinic';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { matchesColumns } from '../table-filters/distinct-values';
 import { type FilterDefaults, useUrlFilters } from '../table-filters/url-filters';
@@ -20,17 +19,12 @@ export const registryFilterColumns = {
 
 /** Active patients, at the session location when it is a cardiac clinic, as the report names its clinics. */
 function useRegistryDefaults(): FilterDefaults<(typeof keys)[number]> {
-  const { clinicLocationTags } = useConfig<Config>();
   const { sessionLocation } = useSession();
-  const { data, error } = useSWR<FetchResponse<{ tags: Array<{ display: string }> }>, Error>(
-    sessionLocation?.uuid ? `${restBaseUrl}/location/${sessionLocation.uuid}?v=custom:(tags:(display))` : null,
-    openmrsFetch,
-  );
-  if (sessionLocation?.uuid && !data && !error) {
+  const kind = useSessionClinicKind();
+  if (kind === 'pending') {
     return 'pending';
   }
-  const cardiac = data?.data?.tags?.some((tag) => clinicLocationTags.cardiac.includes(tag.display));
-  return cardiac ? { status: 'Active', cardiac: sessionLocation.display } : { status: 'Active' };
+  return kind === 'cardiac' ? { status: 'Active', cardiac: sessionLocation.display } : { status: 'Active' };
 }
 
 /** The registry's filters, kept in the page's URL so a view can be bookmarked. */

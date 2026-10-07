@@ -26,7 +26,7 @@ describe('configSchema', () => {
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       dataClerkQuickActions: {
-        facilityReportUrl: '${openmrsSpaBase}/reports',
+        facilityReportUrl: '${openmrsSpaBase}/home/act-facility-reports',
       },
       adminLinks: {
         usersUrl: '${openmrsBase}/admin/users/users.list',
@@ -58,6 +58,9 @@ describe('configSchema', () => {
       },
       screenPositive: {
         report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
+      },
+      programmeReport: {
+        report: 'c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31',
       },
       cardiacTests: {
         echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
