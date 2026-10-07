@@ -58,7 +58,6 @@ describe('configSchema', () => {
       },
       screenPositive: {
         report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
-        echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
       },
       cardiacTests: {
         echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
