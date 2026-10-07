@@ -138,7 +138,7 @@ describe('Registry flags column', () => {
     ['namePrefix', { namePrefix: 'RHD prophylaxis', names: [] }],
   ])('shows only the flags the configuration selects by %s', async (_, selection) => {
     await signInWith(['App: act.registry'], {
-      flagLists: { riskFlags: ['RHD prophylaxis overdue'], ...selection },
+      flagLists: { riskFlags: ['RHD prophylaxis overdue'], flagForms: [], ...selection },
     });
 
     render(<Registry />);
@@ -148,7 +148,7 @@ describe('Registry flags column', () => {
 
   it('takes the risk flags from the configuration', async () => {
     await signInWith(['App: act.registry'], {
-      flagLists: { namePrefix: 'RHD ', names: [], riskFlags: ['RHD INR target missing'] },
+      flagLists: { namePrefix: 'RHD ', names: [], riskFlags: ['RHD INR target missing'], flagForms: [] },
     });
 
     render(<Registry />);
@@ -202,7 +202,12 @@ describe('Registry flag filter', () => {
   it('offers only the flags the configuration selects', async () => {
     window.history.replaceState(null, '', '/openmrs/spa/home/act-registry');
     await signInWith(['App: act.registry'], {
-      flagLists: { riskFlags: ['RHD prophylaxis overdue'], namePrefix: 'RHD ', names: ['RHD prophylaxis overdue'] },
+      flagLists: {
+        riskFlags: ['RHD prophylaxis overdue'],
+        namePrefix: 'RHD ',
+        names: ['RHD prophylaxis overdue'],
+        flagForms: [],
+      },
     });
     render(<Registry />);
 

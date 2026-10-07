@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWRImmutable from 'swr/immutable';
 import {
   Button,
   DataTableSkeleton,
@@ -15,12 +16,15 @@ import {
   formatDate,
   isDesktop,
   showSnackbar,
+  useConfig,
   useLayoutType,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import { type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
+import { type Config } from '../config-schema';
+import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
 import { MayEnterForm } from '../access/may-enter-form';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { openEncounterForm } from './open-encounter-form';
 import styles from './flag-gaps.scss';
 
@@ -43,11 +47,26 @@ export function daysPending(encounterDatetime: string, now = new Date()) {
   return Math.floor((now.getTime() - new Date(encounterDatetime).getTime()) / DAY_MS);
 }
 
+/** Opens the form configured for a flag as a new form, in the patient's visit, named after the form. */
+function NewFormButton({ patientUuid, formUuid, concept }: { patientUuid: string; formUuid: string; concept: string }) {
+  const { t } = useTranslation();
+  const { data: form } = useSWRImmutable(['act-form', formUuid], () => fetchForm(formUuid));
+  const { open, isOpening } = useOpenFormInVisit(patientUuid);
+  return (
+    <MayEnterForm formUuid={formUuid}>
+      <Button kind="ghost" size="sm" disabled={isOpening} onClick={() => open(formUuid, concept || undefined)}>
+        {form?.display ? t('openNamedForm', 'Open {{form}}', { form: form.display }) : t('openForm', 'Open form')}
+      </Button>
+    </MayEnterForm>
+  );
+}
+
 const FlagGapsWorkspace: React.FC<
   Workspace2DefinitionProps<Partial<FlagActionWorkspaceProps>, object, PatientChartGroupProps>
 > = ({ workspaceProps, groupProps, launchChildWorkspace }) => {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
+  const { flagForms } = useConfig<Config>().flagLists;
   const patientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid;
   const clickedFlag = workspaceProps?.flagUuid
     ? { uuid: workspaceProps.flagUuid, name: workspaceProps.flagName }
@@ -102,17 +121,23 @@ const FlagGapsWorkspace: React.FC<
     ));
   };
 
-  const renderGaps = ({ gaps }: FlagGaps) => {
+  const renderGaps = ({ flagUuid, gaps }: FlagGaps) => {
     if (gaps.length === 0) {
-      // The flag is raised but the data has no saved form to go on yet, so it needs a new one.
+      // The flag is raised but the data has no saved form to go on yet, so it needs a new one: the form configured
+      // for the flag, or else one picked from the clinical forms list.
+      const flagForm = flagForms.find((entry) => entry.flag === flagUuid);
       return (
         <>
           <p className={styles.message}>
             {t('noSavedForm', 'No saved form is waiting to be completed. Record the missing data on a new form.')}
           </p>
-          <Button kind="ghost" size="sm" onClick={() => launchChildWorkspace('clinical-forms-workspace')}>
-            {t('openClinicalForms', 'Open clinical forms')}
-          </Button>
+          {flagForm ? (
+            <NewFormButton patientUuid={patientUuid} formUuid={flagForm.form} concept={flagForm.concept} />
+          ) : (
+            <Button kind="ghost" size="sm" onClick={() => launchChildWorkspace('clinical-forms-workspace')}>
+              {t('openClinicalForms', 'Open clinical forms')}
+            </Button>
+          )}
         </>
       );
     }

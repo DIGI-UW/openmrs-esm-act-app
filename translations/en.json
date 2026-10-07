@@ -154,6 +154,7 @@
   "openChart": "Open chart",
   "openClinicalForms": "Open clinical forms",
   "openForm": "Open form",
+  "openNamedForm": "Open {{form}}",
   "openFormFromClinicalForms": "Open the form from Clinical forms.",
   "openFromClinicalForms": "The visit has started. Open the form from Clinical forms.",
   "openingChart": "Opening their chart",
