@@ -155,9 +155,7 @@ describe('Reports', () => {
     await waitFor(() =>
       expect(vi.mocked(useReportDataset).mock.calls.at(-1)[0]).toBe('c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31'),
     );
-    const params = lastParams();
-    expect('cardiacClinic' in params || 'primaryCareClinic' in params ? params : {}).toMatchObject(scope);
-    expect(Object.keys(params).filter((key) => key.endsWith('Clinic'))).toEqual(Object.keys(scope));
+    expect(lastParams()).toEqual({ startDate: expect.any(String), endDate: expect.any(String), ...scope });
   });
 
   it('runs the report over this month, then over the quarter chosen', async () => {
@@ -210,6 +208,46 @@ describe('Reports', () => {
     await waitFor(() => expect(lastParams()).toHaveProperty('primaryCareClinic', 'session-location'));
     expect(screen.queryByRole('combobox', { name: 'Cardiac clinic' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Primary care clinic' })).not.toBeInTheDocument();
+  });
+
+  it("keeps Facility reports at a location that is no RHD clinic, so it never shows other clinics' numbers", async () => {
+    await atLocation(['Visit Location'], ['App: act.dataClerk']);
+
+    renderPage(FacilityReports);
+
+    await waitFor(() =>
+      expect(lastParams()).toEqual({
+        startDate: expect.any(String),
+        endDate: expect.any(String),
+        primaryCareClinic: 'session-location',
+      }),
+    );
+  });
+
+  it.each([
+    ['Reports', Reports],
+    ['Facility reports', FacilityReports],
+  ])("%s says so, and runs no report, when the session location's clinic cannot be looked up", async (_, Page) => {
+    await atLocation(['RHD Community'], ['App: act.reports', 'App: act.dataClerk']);
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('timeout'));
+
+    renderPage(Page);
+
+    expect(await screen.findByText('Could not load the report')).toBeInTheDocument();
+    expect(vi.mocked(useReportDataset).mock.calls.every(([report]) => report === null)).toBe(true);
+  });
+
+  it("names the session's clinic in its filter while the clinic list loads, rather than All", async () => {
+    await atLocation(['RHD Tertiary']);
+    const tagsOnly = vi.mocked(openmrsFetch).getMockImplementation();
+    vi.mocked(openmrsFetch).mockImplementation(((url: string) =>
+      url.includes('/location?tag=') ? new Promise(() => undefined) : tagsOnly(url)) as never);
+
+    renderPage();
+
+    const cardiac = await screen.findByRole('combobox', { name: 'Cardiac clinic' });
+    expect(cardiac).toHaveValue('session-location');
+    expect(within(cardiac).getByRole('option', { selected: true })).toHaveTextContent('Gulu RRH');
   });
 
   it('is the same page as Facility reports, under its own title', async () => {

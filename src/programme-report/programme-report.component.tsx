@@ -17,7 +17,8 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { FacilityPictogram, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { FacilityPictogram, isDesktop, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { ActHomeCard } from '../act-home/act-home-card.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { type Config } from '../config-schema';
@@ -46,6 +47,7 @@ function ClinicFilters({
 }) {
   const { t } = useTranslation();
   const { clinicLocationTags } = useConfig<Config>();
+  const { sessionLocation } = useSession();
   const clinics = {
     cardiacClinic: useClinics(clinicLocationTags.cardiac),
     primaryCareClinic: useClinics(clinicLocationTags.primaryCare),
@@ -70,6 +72,10 @@ function ClinicFilters({
           }}
         >
           <SelectItem value="" text={t('all', 'All')} />
+          {/* The session's clinic while the list loads, or if it fails, so the choice never reads All when it is not. */}
+          {scope[key] && !clinics[key].some((clinic) => clinic.uuid === scope[key]) && (
+            <SelectItem value={scope[key]} text={sessionLocation?.display ?? scope[key]} />
+          )}
           {clinics[key].map((clinic) => (
             <SelectItem key={clinic.uuid} value={clinic.uuid} text={clinic.display} />
           ))}
@@ -83,10 +89,10 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   const { t } = useTranslation();
   const { programmeReport } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
-  const sessionScope = useProgrammeScope();
+  const sessionScope = useProgrammeScope(!clinicFilters);
   // The session location's clinic until a filter is changed.
   const [chosenScope, setChosenScope] = useState<Record<string, string>>();
-  const scope = chosenScope ?? sessionScope;
+  const scope = chosenScope ?? (sessionScope.status === 'ready' ? sessionScope.params : undefined);
   const [kind, setKind] = useState<PeriodKind>('month');
   const choices = useMemo(() => periods(kind), [kind]);
   const [chosen, setChosen] = useState<string>(choices[0].key);
@@ -124,6 +130,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
     <>
       <div className={styles.period}>
         <ContentSwitcher
+          aria-label={t('periodLength', 'Period length')}
           size="sm"
           selectedIndex={kind === 'month' ? 0 : 1}
           onChange={({ name }: { name: PeriodKind }) => {
@@ -153,7 +160,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
           <ClinicFilters scope={scope} onChange={setChosenScope} />
         </div>
       )}
-      {error ? (
+      {error || sessionScope.status === 'error' ? (
         <InlineNotification
           kind="error"
           lowContrast
@@ -175,8 +182,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
               </Tile>
             ))}
           </div>
-          <Tile className={styles.byFacility}>
-            <h2 className={styles.byFacilityTitle}>{t('byFacility', 'By facility')}</h2>
+          <ActHomeCard title={t('byFacility', 'By facility')}>
             {isLoading || !scope ? (
               <DataTableSkeleton
                 role="progressbar"
@@ -222,7 +228,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
             ) : (
               <TableEmptyState message={t('noActivePatients', 'There are no active patients')} />
             )}
-          </Tile>
+          </ActHomeCard>
         </>
       )}
     </>

@@ -72,16 +72,6 @@
   color: colors.$green-60;
 }
 
-.byFacility {
-  background-color: $ui-02;
-  border: 1px solid $ui-03;
-}
-
-.byFacilityTitle {
-  @include type.type-style('heading-compact-02');
-  margin-bottom: layout.$spacing-05;
-}
-
 .tableContainer {
   overflow-x: auto;
 }

@@ -1,28 +1,30 @@
-import useSWR from 'swr';
-import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
-import { type Config } from '../config-schema';
+import { useSession } from '@openmrs/esm-framework';
+import { useSessionClinicKind } from '../session-clinic';
+
+export type ProgrammeScope =
+  | { status: 'pending' }
+  | { status: 'error' }
+  | { status: 'ready'; params: Record<string, string> };
 
 /**
- * The report's clinic parameter for the session location, decided by its tags as the registry decides its
- * default: a cardiac clinic's patients, a primary care clinic's, or everyone's at a location that is neither.
- * Undefined while the location's tags load.
+ * The report's clinic parameter for the session location: its patients as a cardiac clinic, or as a primary
+ * care clinic. At a location that is neither, Reports starts at every clinic, which its filters show as All;
+ * Facility reports, which has no filters, stays at the location itself, so it never shows other clinics' numbers.
  */
-export function useProgrammeScope(): Record<string, string> | undefined {
-  const { clinicLocationTags } = useConfig<Config>();
+export function useProgrammeScope(fixed: boolean): ProgrammeScope {
   const { sessionLocation } = useSession();
-  const { data, error } = useSWR<FetchResponse<{ tags: Array<{ display: string }> }>, Error>(
-    sessionLocation?.uuid ? `${restBaseUrl}/location/${sessionLocation.uuid}?v=custom:(tags:(display))` : null,
-    openmrsFetch,
-  );
-  if (sessionLocation?.uuid && !data && !error) {
-    return undefined;
+  const kind = useSessionClinicKind();
+  if (kind === 'pending' || kind === 'error') {
+    return { status: kind };
   }
-  const tags = data?.data?.tags?.map((tag) => tag.display) ?? [];
-  if (tags.some((tag) => clinicLocationTags.cardiac.includes(tag))) {
-    return { cardiacClinic: sessionLocation.uuid };
+  if (fixed && !sessionLocation?.uuid) {
+    return { status: 'error' };
   }
-  if (tags.some((tag) => clinicLocationTags.primaryCare.includes(tag))) {
-    return { primaryCareClinic: sessionLocation.uuid };
+  if (kind === 'cardiac') {
+    return { status: 'ready', params: { cardiacClinic: sessionLocation.uuid } };
   }
-  return {};
+  if (kind === 'primaryCare' || fixed) {
+    return { status: 'ready', params: { primaryCareClinic: sessionLocation.uuid } };
+  }
+  return { status: 'ready', params: {} };
 }

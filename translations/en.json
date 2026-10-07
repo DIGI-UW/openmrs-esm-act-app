@@ -166,6 +166,7 @@
   "patient": "Patient",
   "patients": "Patients",
   "period": "Period",
+  "periodLength": "Period length",
   "primaryCareClinic": "Primary care clinic",
   "procedure": "Procedure",
   "procedureType": "Type",
