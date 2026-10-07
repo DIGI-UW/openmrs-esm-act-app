@@ -37,7 +37,8 @@ const row = (i: number, flags: string) => ({
   full_name: `Patient ${i}`,
   sex: i % 2 ? 'M' : 'F',
   age_years: 10 + i,
-  diagnosis_category: 'RHD B',
+  diagnosis_category: 'Rheumatic Heart Disease/Rheumatic Fever',
+  diagnosis_details: 'RHD B',
   prophylaxis_regimen: 'Q28 day BPG',
   patient_uuid: `patient-${i}`,
   rhd_flags: flags,
@@ -92,7 +93,7 @@ describe('Worklists', () => {
     expect(shownNames()).toEqual(['Patient 1rhd00001', 'Patient 2rhd00002']);
   });
 
-  it("lists the chosen list's patients with their ACT ID, age and sex, diagnosis and prophylaxis", () => {
+  it("lists the chosen list's patients with their ACT ID, age and sex, diagnosis details and prophylaxis", () => {
     window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
 
     render(<Worklists />);
