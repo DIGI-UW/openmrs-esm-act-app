@@ -61,17 +61,22 @@
   color: $text-02;
 }
 
-// Enter prophylaxis's forms open under its tile.
+// Enter prophylaxis's forms open over the page under its tile, so the tiles beside it keep their height.
 .choice {
-  display: flex;
-  flex-direction: column;
-  background-color: $ui-01;
+  position: relative;
+  height: 100%;
 }
 
 .choices {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid $ui-03;
+  border: 1px solid $ui-03;
+  background-color: $ui-01;
 }
 
 .choiceLink {

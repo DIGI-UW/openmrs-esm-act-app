@@ -1,26 +1,11 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { SWRConfig } from 'swr';
-import {
-  type AssignedExtension,
-  age,
-  ExtensionSlot,
-  openmrsFetch,
-  useAssignedExtensions,
-  useDebounce,
-  useSession,
-} from '@openmrs/esm-framework';
+import { type AssignedExtension, ExtensionSlot, useAssignedExtensions, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
-import { openFormInChart } from '../visits/open-form-in-chart';
 import CommunityHomeDashboard from './community-home-dashboard.component';
 import { CommunityHomeQuickActions } from '../quick-actions/quick-actions.component';
 
-vi.mock('../visits/open-form-in-chart', () => ({ openFormInChart: vi.fn() }));
-
-const bpgForm = '0119d2e6-e2e1-391c-9b88-d59a10b0780d';
-const oralForm = 'ba29e982-ce18-302a-9fc4-d4b2c3983465';
 const mockUseAssignedExtensions = vi.mocked(useAssignedExtensions);
 
 function session() {

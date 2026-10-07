@@ -6,3 +6,5 @@ export const actHomeDashboardMeta = {
 };
 
 export const actHomeWidgetsSlot = 'rhd-home-widgets-slot';
+
+export const actHomeQuickActionsSlot = 'act-home-quick-actions-slot';
