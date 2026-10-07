@@ -1,10 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag, Tile } from '@carbon/react';
+import { SkeletonText, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag, Tile } from '@carbon/react';
 import { FacilityPictogram, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
+import { useActivePatientCount } from './active-patients.resource';
 import styles from './studies.scss';
 
 type DataStatus = 'Complete' | 'Review' | 'Duplicates';
@@ -30,11 +31,13 @@ const rows: Array<StudyRow> = [
   { facility: 'Wakiso HC IV', patients: 121, adherence: 72, dataStatus: 'Duplicates' },
 ];
 
-const kpis = { activePatients: 911, dueThisWeek: 64, overdue: 41, bpgOnTimeRate: 86 };
+// Placeholders for KPIs the backend module does not expose yet.
+const kpis = { dueThisWeek: 64, overdue: 41, bpgOnTimeRate: 86 };
 
 export default function Studies() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
+  const { count: activePatients, isLoading: isLoadingActive, error: activeError } = useActivePatientCount();
 
   const tagLabels: Record<DataStatus, string> = {
     Complete: t('dataComplete', 'Complete'),
@@ -43,7 +46,11 @@ export default function Studies() {
   };
 
   const tiles = [
-    { label: t('activePatients', 'Active patients'), value: kpis.activePatients.toLocaleString() },
+    {
+      label: t('activePatients', 'Active patients'),
+      value: activeError ? '–' : (activePatients ?? 0).toLocaleString(),
+      loading: isLoadingActive,
+    },
     { label: t('dueThisWeek', 'Due this week'), value: kpis.dueThisWeek.toLocaleString(), tone: styles.blue },
     { label: t('overdue', 'Overdue'), value: kpis.overdue.toLocaleString(), tone: styles.red },
     { label: t('bpgOnTimeRate', 'BPG on-time rate'), value: `${kpis.bpgOnTimeRate}%`, tone: styles.green },
@@ -61,7 +68,11 @@ export default function Studies() {
           {tiles.map((tile) => (
             <Tile key={tile.label} className={styles.tile} data-testid="studies-tile">
               <span className={styles.tileLabel}>{tile.label}</span>
-              <span className={`${styles.tileValue} ${tile.tone ?? ''}`}>{tile.value}</span>
+              {tile.loading ? (
+                <SkeletonText heading width="40%" />
+              ) : (
+                <span className={`${styles.tileValue} ${tile.tone ?? ''}`}>{tile.value}</span>
+              )}
             </Tile>
           ))}
         </div>
