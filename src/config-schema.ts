@@ -50,7 +50,7 @@ export const configSchema = {
         concept: {
           _type: Type.UUID,
           _default: '',
-          _description: 'The question to open the form at, by concept uuid; empty opens it at the top.',
+          _description: 'The question to open the form at, by concept uuid; leave it out to open the form at the top.',
         },
       },
       _default: [
