@@ -56,7 +56,13 @@ export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkCompone
 
 export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-home-dashboard.component'), options);
 
-export const actHomeQuickActions = getAsyncLifecycle(() => import('./act-home/quick-actions.component'), options);
+export const actHomeQuickActions = getAsyncLifecycle(
+  () =>
+    import('./quick-actions/quick-actions.component').then(({ ActHomeQuickActions }) => ({
+      default: ActHomeQuickActions,
+    })),
+  options,
+);
 
 export const actHomeWorklists = getAsyncLifecycle(() => import('./act-home/worklist-tiles.component'), options);
 
@@ -115,34 +121,41 @@ export const communityHomeDashboard = getAsyncLifecycle(
   options,
 );
 
+const quickActions = () => import('./quick-actions/quick-actions.component');
+
 export const communityHomeQuickActions = getAsyncLifecycle(
-  () => import('./community-home/community-quick-actions.component'),
+  () => quickActions().then(({ CommunityHomeQuickActions }) => ({ default: CommunityHomeQuickActions })),
   options,
 );
 
-const tiles = () => import('./community-home/community-quick-action-tiles.component');
+const quickActionTiles = () => import('./quick-actions/quick-action-tiles.component');
 
-export const communityHomeRecordBpg = getAsyncLifecycle(
-  () => tiles().then(({ RecordBpgAction }) => ({ default: RecordBpgAction })),
+export const registerPatientQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ RegisterPatientAction }) => ({ default: RegisterPatientAction })),
   options,
 );
 
-export const communityHomeRecordOral = getAsyncLifecycle(
-  () => tiles().then(({ RecordOralAction }) => ({ default: RecordOralAction })),
+export const enterProphylaxisQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ EnterProphylaxisAction }) => ({ default: EnterProphylaxisAction })),
   options,
 );
 
-export const communityHomeRegisterPatient = getAsyncLifecycle(
-  () => tiles().then(({ RegisterPatientAction }) => ({ default: RegisterPatientAction })),
+export const recordBpgQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ RecordBpgAction }) => ({ default: RecordBpgAction })),
   options,
 );
 
-export const communityHomeFindPatient = getAsyncLifecycle(
-  () => tiles().then(({ FindPatientAction }) => ({ default: FindPatientAction })),
+export const recordOralQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ RecordOralAction }) => ({ default: RecordOralAction })),
   options,
 );
 
-export const communityHomeFacilityReport = getAsyncLifecycle(
-  () => tiles().then(({ FacilityReportAction }) => ({ default: FacilityReportAction })),
+export const findPatientQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ FindPatientAction }) => ({ default: FindPatientAction })),
+  options,
+);
+
+export const facilityReportQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ FacilityReportAction }) => ({ default: FacilityReportAction })),
   options,
 );

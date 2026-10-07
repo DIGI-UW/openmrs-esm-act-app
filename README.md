@@ -28,14 +28,32 @@ from the patient chart:
 A flags app that passes the clicked flag as the workspace's props (`patientUuid`, `patientFlagUuid`,
 `flagUuid`, `flagName`) narrows the workspace to that flag.
 
+## Quick actions
+
+Each home has a Quick actions card that draws whatever extensions are in its slot: `act-home-quick-actions-slot`
+on ACT home, `act-community-home-quick-actions-slot` on Home. Every action is one shared component, a tile with an
+icon, a label and a subtitle, registered in `routes.json` once per home it belongs on, with the privilege its action
+needs. So what each user sees follows their privileges, and a distro plugs actions into a home in its frontend
+config, the O3 way, without code:
+
+```json
+"@mherman22/esm-act-app": {
+  "extensionSlots": {
+    "act-home-quick-actions-slot": { "add": ["act-community-home-record-bpg"], "order": ["act-home-register-patient"] }
+  }
+}
+```
+
+The actions: Register patient, Enter prophylaxis (BPG or oral), Record BPG injection, Record oral prophylaxis, Find a
+patient and Facility report. Register patient, Enter prophylaxis and Find a patient read `quickActions`, so a change
+there changes every home; Facility report reads `dataClerkQuickActions`.
+
 ## Home
 
 The community clinician's and data clerk's home, at `/home/act-community-home` behind `App: act.communityHome`:
 the session location and today's date, then Quick actions and Due for prophylaxis in
-`act-community-home-widgets-slot`. Each quick action is its own extension in
-`act-community-home-quick-actions-slot`, behind the privilege its action needs, so a distro can reorder or remove
-them in that slot's config; Facility report shows only with `App: act.dataClerk`. Register patient and Find a patient
-read ACT home's `quickActions` settings, so a change there changes both homes. To land these roles on it, map
+`act-community-home-widgets-slot`. Its quick actions (see Quick actions) are Record BPG injection, Record oral
+prophylaxis, Register patient, Find a patient and, with `App: act.dataClerk`, Facility report. To land these roles on it, map
 them to `act-community-home` in `defaultDashboardPerRole`, and send `loginSuccess` to `/home`, the only route on
 which the home app reads that map.
 
@@ -53,8 +71,9 @@ and the administrators; community clinicians and data clerks land on Home), and 
 }
 ```
 
-Its quick actions open registration, Enter prophylaxis and patient search; their links are in `quickActions`.
-Enter prophylaxis offers the choices in `quickActions.prophylaxisForms`, as ACT 2.0 offered BPG and oral
+Its quick actions (see Quick actions) are Register patient, Enter prophylaxis and Find a patient.
+Enter prophylaxis opens ACT's patient search, which asks BPG or oral and opens the form in the chart. With
+`quickActions.enterProphylaxisInFastDataEntry`, it offers the choices in `quickActions.prophylaxisForms`, as ACT 2.0 offered BPG and oral
 prophylaxis: by default Enter BPG and Enter oral prophylaxis, which open the RHD BPG Delivery and RHD Oral
 Adherence forms in fast data entry, where the patient is picked. Each choice has a `label` and a `url`; with
 none, Enter prophylaxis links to `enterProphylaxisUrl`. Fast data entry always opens on all forms, so a
