@@ -82,6 +82,23 @@ describe('Screen positive, Enter diagnosis', () => {
     expect(vi.mocked(fetchCurrentPatient)).toHaveBeenCalledTimes(2);
   });
 
+  it('offers no action for a Screen + recorded without a form', () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [{ ...screenPositiveRows[1], form_uuid: null }],
+      isLoading: false,
+      error: undefined,
+      mutate,
+    });
+
+    render(<ScreenPositive />);
+
+    expect(
+      within(screen.getByRole('row', { name: /rhd00002\b/ })).queryByRole('button', { name: 'Enter diagnosis' }),
+    ).not.toBeInTheDocument();
+    expect(openmrsFetch).not.toHaveBeenCalled();
+  });
+
   it("is the screen positive list's own workspace, scoped to its page", () => {
     const group = routes.workspaceGroups2.find((g) => g.name === 'act-screen-positive');
     const window = routes.workspaceWindows2.find((w) => w.name === 'act-screen-positive-form-entry');

@@ -55,8 +55,7 @@ function ScreenPositiveTable() {
   const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
-  // Opening a row again passes the same objects, which the open workspace takes as the same form rather than
-  // prompting to close it.
+  // Same objects on a second click, so the open workspace does not prompt to close the form.
   const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
   // Opens the form that recorded the Screen + to edit, where its Diagnosis Details take the patient off the list,
   // as ACT 2.0's row opened the patient form.
@@ -71,8 +70,8 @@ function ScreenPositiveTable() {
     }
     try {
       const [form, patient] = await loaded.current.get(encounterUuid);
-      // An edit loads its encounter's own visit, so the list passes none. Both form engines report a save
-      // through mutateVisitContext, which evaluates the list again.
+      // An edit loads its encounter's own visit, so the list passes none.
+      // Both form engines report a save through mutateVisitContext, which evaluates the list again.
       launchWorkspace2(
         screenPositiveFormEntryWorkspace,
         { form, encounterUuid },
@@ -165,11 +164,13 @@ function ScreenPositiveTable() {
                     <TableCell key={column.header}>{column.render(row)}</TableCell>
                   ))}
                   <TableCell>
-                    <MayEnterForm formUuid={String(row.form_uuid)}>
-                      <Button kind="ghost" size="sm" onClick={() => enterDiagnosis(row)}>
-                        {t('enterDiagnosis', 'Enter diagnosis')}
-                      </Button>
-                    </MayEnterForm>
+                    {row.form_uuid && (
+                      <MayEnterForm formUuid={String(row.form_uuid)}>
+                        <Button kind="ghost" size="sm" onClick={() => enterDiagnosis(row)}>
+                          {t('enterDiagnosis', 'Enter diagnosis')}
+                        </Button>
+                      </MayEnterForm>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
