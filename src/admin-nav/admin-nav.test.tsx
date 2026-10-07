@@ -10,7 +10,7 @@ describe('AdminNav', () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
   });
 
-  it('offers Users and roles, and Clinics, under Admin to a user who may manage both', async () => {
+  it('offers Users and roles, Clinics, and Studies under Admin to a user who may manage them all', async () => {
     await signInWith([homePrivilege, 'Edit Users', 'Manage Locations']);
 
     render(<AdminNav />);
@@ -24,18 +24,19 @@ describe('AdminNav', () => {
       'href',
       '/openmrs/admin/locations/location.list',
     );
+    expect(screen.getByRole('link', { name: 'Studies' })).toHaveAttribute('href', '/openmrs/spa/home/act-studies');
   });
 
   it.each([
-    { privilege: 'Edit Users', shown: 'Users and roles', hidden: 'Clinics' },
-    { privilege: 'Manage Locations', shown: 'Clinics', hidden: 'Users and roles' },
+    { privilege: 'Edit Users', shown: ['Users and roles'], hidden: ['Clinics', 'Studies'] },
+    { privilege: 'Manage Locations', shown: ['Clinics', 'Studies'], hidden: ['Users and roles'] },
   ])('offers only $shown to a user holding $privilege', async ({ privilege, shown, hidden }) => {
     await signInWith([homePrivilege, privilege]);
 
     render(<AdminNav />);
 
-    expect(screen.getByRole('link', { name: shown })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: hidden })).not.toBeInTheDocument();
+    shown.forEach((name) => expect(screen.getByRole('link', { name })).toBeInTheDocument());
+    hidden.forEach((name) => expect(screen.queryByRole('link', { name })).not.toBeInTheDocument());
   });
 
   it('shows nothing, not even its heading, to a user who may manage neither', async () => {

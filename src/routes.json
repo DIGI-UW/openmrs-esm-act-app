@@ -177,6 +177,23 @@
       "privileges": "App: act.dataClerk"
     },
     {
+      "name": "act-studies-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "studiesDashboardLink",
+      "meta": {
+        "name": "act-studies",
+        "slot": "act-studies-dashboard-slot",
+        "title": "studies"
+      },
+      "privileges": "Manage Locations"
+    },
+    {
+      "name": "act-studies-dashboard",
+      "slot": "act-studies-dashboard-slot",
+      "component": "studiesDashboard",
+      "privileges": "Manage Locations"
+    },
+    {
       "name": "act-community-home-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "communityHomeDashboardLink",
