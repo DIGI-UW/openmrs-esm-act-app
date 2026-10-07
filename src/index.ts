@@ -9,6 +9,8 @@ import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-pag
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 import dueForProphylaxisDashboardLinkComponent from './due-for-prophylaxis/due-for-prophylaxis-dashboard-link.component';
 import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
+import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
+import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
 
 const moduleName = '@mherman22/esm-act-app';
@@ -78,6 +80,17 @@ export const screenPositiveDashboardLink = getSyncLifecycle(screenPositiveDashbo
 
 export const screenPositiveDashboard = getAsyncLifecycle(
   () => import('./screen-positive/screen-positive.component'),
+  options,
+);
+
+export const reportsDashboardLink = getSyncLifecycle(reportsDashboardLinkComponent, options);
+
+export const reportsDashboard = getAsyncLifecycle(() => import('./programme-report/reports.component'), options);
+
+export const facilityReportsDashboardLink = getSyncLifecycle(facilityReportsDashboardLinkComponent, options);
+
+export const facilityReportsDashboard = getAsyncLifecycle(
+  () => import('./programme-report/facility-reports.component'),
   options,
 );
 

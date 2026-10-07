@@ -122,6 +122,40 @@
       "privileges": "App: act.screenPositive"
     },
     {
+      "name": "act-reports-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "reportsDashboardLink",
+      "meta": {
+        "name": "act-reports",
+        "slot": "act-reports-dashboard-slot",
+        "title": "reports"
+      },
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-reports-dashboard",
+      "slot": "act-reports-dashboard-slot",
+      "component": "reportsDashboard",
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-facility-reports-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "facilityReportsDashboardLink",
+      "meta": {
+        "name": "act-facility-reports",
+        "slot": "act-facility-reports-dashboard-slot",
+        "title": "facilityReports"
+      },
+      "privileges": "App: act.dataClerk"
+    },
+    {
+      "name": "act-facility-reports-dashboard",
+      "slot": "act-facility-reports-dashboard-slot",
+      "component": "facilityReportsDashboard",
+      "privileges": "App: act.dataClerk"
+    },
+    {
       "name": "act-community-home-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "communityHomeDashboardLink",

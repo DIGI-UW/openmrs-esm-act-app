@@ -84,8 +84,8 @@ export const configSchema = {
   },
   dataClerkQuickActions: {
     facilityReportUrl: link(
-      'Where the Facility report quick action on Home leads, for a user holding App: act.dataClerk.',
-      '${openmrsSpaBase}/reports',
+      'Where the Facility report quick action on Home leads, for a user holding App: act.dataClerk: Facility reports.',
+      '${openmrsSpaBase}/home/act-facility-reports',
     ),
   },
   adminLinks: {
@@ -161,6 +161,14 @@ export const configSchema = {
       _default: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
       _description:
         'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
+    },
+  },
+  programmeReport: {
+    report: {
+      _type: Type.String,
+      _default: 'c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31',
+      _description:
+        'The RHD Programme Report, by uuid or name, whose rows (one per primary care clinic) the Reports and Facility reports pages show.',
     },
   },
   cardiacTests: {
@@ -359,6 +367,7 @@ export interface Config {
   waitingList: { report: string };
   dueForProphylaxis: { report: string };
   screenPositive: { report: string };
+  programmeReport: { report: string };
   cardiacTests: {
     echoForm: string;
     echoEncounterType: string;

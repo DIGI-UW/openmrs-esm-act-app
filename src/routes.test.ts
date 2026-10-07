@@ -6,6 +6,7 @@ import {
   PRIVILEGE_COMMUNITY_HOME,
   PRIVILEGE_DATA_CLERK,
   PRIVILEGE_REGISTRY,
+  PRIVILEGE_REPORTS,
   PRIVILEGE_SCREEN_POSITIVE,
   PRIVILEGE_WAITING_LIST,
   PRIVILEGE_WORKLISTS,
@@ -20,6 +21,7 @@ const screenPrivileges = {
   dueList: PRIVILEGE_DUE_LIST,
   dataClerk: PRIVILEGE_DATA_CLERK,
   communityHome: PRIVILEGE_COMMUNITY_HOME,
+  reports: PRIVILEGE_REPORTS,
 };
 
 const routes = routeFile as {
@@ -55,6 +57,10 @@ describe('routes.json privileges', () => {
     ['act-community-home-facility-report', screenPrivileges.dataClerk],
     ['act-back-to-act-link', 'Get Patients'],
     ['act-admin-nav', screenPrivileges.home],
+    ['act-reports-dashboard-link', screenPrivileges.reports],
+    ['act-reports-dashboard', screenPrivileges.reports],
+    ['act-facility-reports-dashboard-link', screenPrivileges.dataClerk],
+    ['act-facility-reports-dashboard', screenPrivileges.dataClerk],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });

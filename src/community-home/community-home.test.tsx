@@ -169,7 +169,10 @@ describe('Community home quick action tiles', () => {
       'href',
       '/openmrs/spa/patient-registration',
     );
-    expect(screen.getByRole('link', { name: /Facility report/ })).toHaveAttribute('href', '/openmrs/spa/reports');
+    expect(screen.getByRole('link', { name: /Facility report/ })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/home/act-facility-reports',
+    );
   });
 
   it("opens ACT's patient search from Find a patient", async () => {
