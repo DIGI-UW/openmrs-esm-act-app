@@ -40,10 +40,10 @@ describe('Registry CSV download', () => {
     const lines = (await downloadedCsv()).trim().split('\r\n');
 
     expect(lines[0]).toBe(
-      'Name,ACT ID,Age,Sex,Diagnosis category,Prophylaxis regimen,Next consultation,Cardiac clinic,Primary care clinic,Consent given,Last injection,Injection due,Flags',
+      'Name,ACT ID,Age,Sex,Diagnosis category,Diagnosis details,Prophylaxis regimen,Next consultation,Cardiac clinic,Primary care clinic,Consent given,Last injection,Injection due,Flags',
     );
     expect(lines).toHaveLength(1 + 10);
-    expect(lines[1]).toBe('Patient 1,rhd00001,10,F,RHD A,Q28 day BPG,15-Oct-2026,Lira RRH,,Yes,,,');
+    expect(lines[1]).toBe('Patient 1,rhd00001,10,F,RHD A,,Q28 day BPG,15-Oct-2026,Lira RRH,,Yes,,,');
   });
 
   it('includes rows past the first page', async () => {

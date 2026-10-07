@@ -23,12 +23,9 @@ import {
   useConfig,
   useLayoutType,
   UserHasAccess,
-  useSession,
-  type Visit,
 } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
-import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -55,47 +52,34 @@ const screenPositiveFormEntryWorkspace = 'act-screen-positive-form-entry-workspa
 
 function ScreenPositiveTable() {
   const { t } = useTranslation();
-  const { screenPositive, visitType } = useConfig<Config>();
-  const { sessionLocation } = useSession();
+  const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
   // Same objects on a second click, so the open workspace does not prompt to close the form.
   const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
-  const visits = useRef(new Map<string, Visit>());
-  // A click while the row is still opening is ignored, as it would start a second visit.
-  const opening = useRef(new Set<string>());
-  const enterEcho = async (row: ReportRow) => {
+  // Opens the form that recorded the Screen + to edit, where its Diagnosis Details take the patient off the list,
+  // as ACT 2.0's row opened the patient form.
+  const enterDiagnosis = async (row: ReportRow) => {
     const patientUuid = String(row.patient_uuid);
-    if (opening.current.has(patientUuid)) {
-      return;
-    }
-    opening.current.add(patientUuid);
-    if (!loaded.current.has(patientUuid)) {
+    const encounterUuid = String(row.encounter_uuid);
+    if (!loaded.current.has(encounterUuid)) {
       loaded.current.set(
-        patientUuid,
-        Promise.all([fetchForm(screenPositive.echoForm), fetchCurrentPatient(patientUuid)]),
+        encounterUuid,
+        Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]),
       );
     }
     try {
-      const [form, patient] = await loaded.current.get(patientUuid);
-      // Asked again on each click, as the visit may have ended since; the same visit keeps the same object.
-      const active = await findActiveVisit(patientUuid);
-      const visit =
-        active && visits.current.get(patientUuid)?.uuid === active.uuid
-          ? visits.current.get(patientUuid)
-          : (active ?? (await startVisit(t, patientUuid, visitType, sessionLocation?.uuid)));
-      visits.current.set(patientUuid, visit);
+      const [form, patient] = await loaded.current.get(encounterUuid);
+      // An edit loads its encounter's own visit, so the list passes none.
       // Both form engines report a save through mutateVisitContext, which evaluates the list again.
       launchWorkspace2(
         screenPositiveFormEntryWorkspace,
-        { form, encounterUuid: '' },
-        { patient, patientUuid, visitContext: visit, mutateVisitContext: mutate },
+        { form, encounterUuid },
+        { patient, patientUuid, visitContext: null, mutateVisitContext: mutate },
       );
     } catch (e) {
-      loaded.current.delete(patientUuid);
+      loaded.current.delete(encounterUuid);
       showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
-    } finally {
-      opening.current.delete(patientUuid);
     }
   };
   const [filters, setFilters] = useScreenPositiveFilters();
@@ -152,7 +136,7 @@ function ScreenPositiveTable() {
   if (!rows.length) {
     return (
       <TableEmptyState
-        message={t('noScreenPositivePatients', 'There are no screen positive patients waiting for a confirmatory echo')}
+        message={t('noScreenPositivePatients', 'There are no screen positive patients waiting for a diagnosis')}
       />
     );
   }
@@ -180,11 +164,13 @@ function ScreenPositiveTable() {
                     <TableCell key={column.header}>{column.render(row)}</TableCell>
                   ))}
                   <TableCell>
-                    <MayEnterForm formUuid={screenPositive.echoForm}>
-                      <Button kind="ghost" size="sm" onClick={() => enterEcho(row)}>
-                        {t('enterEchoResult', 'Enter echo result')}
-                      </Button>
-                    </MayEnterForm>
+                    {row.form_uuid && (
+                      <MayEnterForm formUuid={String(row.form_uuid)}>
+                        <Button kind="ghost" size="sm" onClick={() => enterDiagnosis(row)}>
+                          {t('enterDiagnosis', 'Enter diagnosis')}
+                        </Button>
+                      </MayEnterForm>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -209,7 +195,7 @@ export default function ScreenPositive() {
       />
       <div className={styles.screenPositive}>
         <p className={styles.description}>
-          {t('screenPositiveDescription', 'Registry patients who screened positive and wait for a confirmatory echo')}
+          {t('screenPositiveDescription', 'Registry patients who screened positive and have no diagnosis details yet')}
         </p>
         <ScreenPositiveTable />
       </div>

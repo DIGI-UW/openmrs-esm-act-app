@@ -75,7 +75,7 @@ describe('Screen positive, pending confirmation', () => {
       'Gulu RRH',
       'Anyeke HCIV',
       '17-Sept-2026',
-      'Enter echo result',
+      'Enter diagnosis',
     ]);
   });
 
@@ -147,13 +147,13 @@ describe('Screen positive, pending confirmation', () => {
     expect(screen.getByText(/11–20 of 30 items/)).toBeInTheDocument();
   });
 
-  it('says so when no patient is waiting for a confirmatory echo', () => {
+  it('says so when no patient is waiting for a diagnosis', () => {
     dataset({ rows: [] });
 
     render(<ScreenPositive />);
 
     expect(screen.getByTestId('table-empty-state')).toHaveTextContent(
-      'There are no screen positive patients waiting for a confirmatory echo',
+      'There are no screen positive patients waiting for a diagnosis',
     );
   });
 
