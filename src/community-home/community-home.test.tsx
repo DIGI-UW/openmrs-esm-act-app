@@ -15,14 +15,7 @@ import {
 import { signInWith } from '../access/sign-in.test-helper';
 import { openFormInChart } from '../visits/open-form-in-chart';
 import CommunityHomeDashboard from './community-home-dashboard.component';
-import CommunityQuickActions from './community-quick-actions.component';
-import {
-  FacilityReportAction,
-  FindPatientAction,
-  RecordBpgAction,
-  RecordOralAction,
-  RegisterPatientAction,
-} from './community-quick-action-tiles.component';
+import { CommunityHomeQuickActions } from '../quick-actions/quick-actions.component';
 
 vi.mock('../visits/open-form-in-chart', () => ({ openFormInChart: vi.fn() }));
 
@@ -82,104 +75,11 @@ describe('Community home', () => {
   });
 
   it('frames the quick action tiles, which come from their own slot', () => {
-    render(<CommunityQuickActions />);
+    render(<CommunityHomeQuickActions />);
 
     expect(screen.getByRole('heading', { name: 'Quick actions' })).toBeInTheDocument();
     expect(vi.mocked(ExtensionSlot).mock.lastCall[0]).toEqual(
       expect.objectContaining({ name: 'act-community-home-quick-actions-slot' }),
     );
-  });
-});
-
-describe('Community home quick action tiles', () => {
-  beforeEach(async () => {
-    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    await signInWith(['App: act.communityHome']);
-    session();
-    vi.mocked(useDebounce).mockImplementation((value) => value);
-    vi.mocked(age).mockImplementation(() => '15 yrs');
-    vi.mocked(openFormInChart).mockReset();
-    vi.mocked(openmrsFetch).mockImplementation(((url: string) => {
-      if (url.includes('/user/')) {
-        return Promise.resolve({ data: { userProperties: {} } });
-      }
-      return Promise.resolve({
-        data: {
-          results: [
-            {
-              uuid: 'grace',
-              person: { display: 'Grace Achieng', gender: 'F', age: 15, birthdate: '2011-03-14T00:00:00.000+0000' },
-              identifiers: [],
-            },
-          ],
-        },
-      });
-    }) as never);
-  });
-
-  it.each([
-    { Tile: RecordBpgAction, label: 'Record BPG injection', subtitle: 'Benzathine penicillin G' },
-    { Tile: RecordOralAction, label: 'Record oral prophylaxis', subtitle: 'Oral adherence' },
-    { Tile: RegisterPatientAction, label: 'Register patient', subtitle: 'Start someone on care' },
-    { Tile: FindPatientAction, label: 'Find a patient', subtitle: 'Name or ACT ID' },
-    { Tile: FacilityReportAction, label: 'Facility report', subtitle: 'Monthly · quarterly' },
-  ])('labels $label with $subtitle', ({ Tile, label, subtitle }) => {
-    render(<Tile />);
-
-    expect(screen.getByText(label)).toBeInTheDocument();
-    expect(screen.getByText(subtitle)).toBeInTheDocument();
-  });
-
-  it.each([
-    { Tile: RecordBpgAction, label: 'Record BPG injection', formUuid: bpgForm },
-    { Tile: RecordOralAction, label: 'Record oral prophylaxis', formUuid: oralForm },
-  ])(
-    "opens $label's patient search, then the chosen patient's chart with its form",
-    async ({ Tile, label, formUuid }) => {
-      render(
-        <SWRConfig value={{ provider: () => new Map() }}>
-          <Tile />
-        </SWRConfig>,
-      );
-
-      await userEvent.click(screen.getByRole('button', { name: new RegExp(label) }));
-      const search = screen.getByRole('dialog', { name: label });
-      expect(within(search).queryByRole('tab')).not.toBeInTheDocument();
-      await userEvent.type(within(search).getByRole('searchbox'), 'Grace');
-      await userEvent.click(await within(search).findByRole('button', { name: /Grace Achieng/ }));
-
-      await vi.waitFor(() =>
-        expect(openFormInChart).toHaveBeenCalledWith(
-          expect.anything(),
-          expect.objectContaining({ patientUuid: 'grace', formUuid, location: 'clinic' }),
-        ),
-      );
-    },
-  );
-
-  it('links Register patient and Facility report to their configured screens', () => {
-    render(
-      <>
-        <RegisterPatientAction />
-        <FacilityReportAction />
-      </>,
-    );
-
-    expect(screen.getByRole('link', { name: /Register patient/ })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/patient-registration',
-    );
-    expect(screen.getByRole('link', { name: /Facility report/ })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-facility-reports',
-    );
-  });
-
-  it("opens ACT's patient search from Find a patient", async () => {
-    render(<FindPatientAction />);
-
-    await userEvent.click(screen.getByRole('button', { name: /Find a patient/ }));
-
-    expect(screen.getByRole('dialog', { name: 'Find a patient' })).toBeInTheDocument();
   });
 });

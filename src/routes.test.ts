@@ -55,6 +55,9 @@ describe('routes.json privileges', () => {
     ['act-community-home-register-patient', 'Add Patients'],
     ['act-community-home-find-patient', 'Get Patients'],
     ['act-community-home-facility-report', screenPrivileges.dataClerk],
+    ['act-home-register-patient', 'Add Patients'],
+    ['act-home-enter-prophylaxis', 'Add Encounters'],
+    ['act-home-find-patient', 'Get Patients'],
     ['act-back-to-act-link', 'Get Patients'],
     ['act-admin-nav', screenPrivileges.home],
     ['act-reports-dashboard-link', screenPrivileges.reports],
@@ -76,6 +79,10 @@ describe('routes.json privileges', () => {
         'act-community-home-find-patient',
         'act-community-home-facility-report',
       ],
+    ],
+    [
+      'act-home-quick-actions-slot',
+      ['act-home-register-patient', 'act-home-enter-prophylaxis', 'act-home-find-patient'],
     ],
     [
       'rhd-home-widgets-slot',

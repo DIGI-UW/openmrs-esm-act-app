@@ -3,24 +3,33 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 @use '../styles/act-colours' as *;
 
-.actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: layout.$spacing-05;
-  // The prophylaxis choices open under their tile without stretching the tiles beside it.
-  align-items: start;
+// The tiles share each row, so a home with fewer of them, or a row that wraps, leaves no empty cell.
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  background-color: $ui-03;
+  border: 1px solid $ui-03;
+
+  > * {
+    flex: 1 1 10rem;
+  }
 }
 
-.action {
-  @include type.type-style('heading-compact-02');
+.tile {
   display: flex;
-  align-items: center;
-  gap: layout.$spacing-05;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: layout.$spacing-02;
+  width: 100%;
+  height: 100%;
   padding: layout.$spacing-05;
   background-color: $ui-01;
-  border: 1px solid $ui-03;
+  border: none;
   color: $ui-05;
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
 
   &:hover {
     background-color: $ui-02;
@@ -37,22 +46,14 @@
 
 .icon {
   display: flex;
+  margin-bottom: layout.$spacing-03;
   padding: layout.$spacing-03;
   @include brand-01(background-color);
   color: $ui-01;
 }
 
-// A tile with its label over a subtitle, as Home's quick actions are drawn; their grid draws the borders.
-.stacked {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: layout.$spacing-02;
-  height: 100%;
-  border: none;
-
-  .icon {
-    margin-bottom: layout.$spacing-03;
-  }
+.label {
+  @include type.type-style('heading-compact-02');
 }
 
 .subtitle {
@@ -60,24 +61,17 @@
   color: $text-02;
 }
 
-// A button tile looks like the link tiles beside it.
-button.action {
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-}
-
+// Enter prophylaxis's forms open under its tile.
 .choice {
   display: flex;
   flex-direction: column;
+  background-color: $ui-01;
 }
 
 .choices {
   display: flex;
   flex-direction: column;
-  border: 1px solid $ui-03;
-  border-top: none;
-  background-color: $ui-01;
+  border-top: 1px solid $ui-03;
 }
 
 .choiceLink {

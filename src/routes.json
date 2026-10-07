@@ -33,6 +33,27 @@
       "privileges": "App: act.home"
     },
     {
+      "name": "act-home-register-patient",
+      "slot": "act-home-quick-actions-slot",
+      "component": "registerPatientQuickAction",
+      "order": 1,
+      "privileges": "Add Patients"
+    },
+    {
+      "name": "act-home-enter-prophylaxis",
+      "slot": "act-home-quick-actions-slot",
+      "component": "enterProphylaxisQuickAction",
+      "order": 2,
+      "privileges": "Add Encounters"
+    },
+    {
+      "name": "act-home-find-patient",
+      "slot": "act-home-quick-actions-slot",
+      "component": "findPatientQuickAction",
+      "order": 3,
+      "privileges": "Get Patients"
+    },
+    {
       "name": "act-home-worklists",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWorklists",
@@ -182,35 +203,35 @@
     {
       "name": "act-community-home-record-bpg",
       "slot": "act-community-home-quick-actions-slot",
-      "component": "communityHomeRecordBpg",
+      "component": "recordBpgQuickAction",
       "order": 1,
       "privileges": "Add Encounters"
     },
     {
       "name": "act-community-home-record-oral",
       "slot": "act-community-home-quick-actions-slot",
-      "component": "communityHomeRecordOral",
+      "component": "recordOralQuickAction",
       "order": 2,
       "privileges": "Add Encounters"
     },
     {
       "name": "act-community-home-register-patient",
       "slot": "act-community-home-quick-actions-slot",
-      "component": "communityHomeRegisterPatient",
+      "component": "registerPatientQuickAction",
       "order": 3,
       "privileges": "Add Patients"
     },
     {
       "name": "act-community-home-find-patient",
       "slot": "act-community-home-quick-actions-slot",
-      "component": "communityHomeFindPatient",
+      "component": "findPatientQuickAction",
       "order": 4,
       "privileges": "Get Patients"
     },
     {
       "name": "act-community-home-facility-report",
       "slot": "act-community-home-quick-actions-slot",
-      "component": "communityHomeFacilityReport",
+      "component": "facilityReportQuickAction",
       "order": 5,
       "privileges": "App: act.dataClerk"
     },
