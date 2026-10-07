@@ -1,9 +1,9 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SWRConfig } from 'swr';
+import { SWRConfig, useSWRConfig } from 'swr';
 import { DashboardExtension, openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -222,6 +222,42 @@ describe('Reports', () => {
         primaryCareClinic: 'session-location',
       }),
     );
+  });
+
+  it('with no session location, starts Reports at every clinic and gives Facility reports none', async () => {
+    await atLocation(null, ['App: act.reports', 'App: act.dataClerk']);
+
+    const { unmount } = renderPage();
+    await waitFor(() => expect(lastParams()).toEqual({ startDate: expect.any(String), endDate: expect.any(String) }));
+    unmount();
+    vi.mocked(useReportDataset).mockClear();
+
+    renderPage(FacilityReports);
+
+    expect(await screen.findByText('Could not load the report')).toBeInTheDocument();
+    expect(vi.mocked(useReportDataset).mock.calls.every(([report]) => report === null)).toBe(true);
+  });
+
+  it("keeps the session location's clinic when a later lookup of it fails", async () => {
+    await atLocation(['RHD Community'], ['App: act.dataClerk']);
+    let revalidate: ReturnType<typeof useSWRConfig>['mutate'];
+    function Revalidator() {
+      revalidate = useSWRConfig().mutate;
+      return null;
+    }
+    render(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <FacilityReports />
+        <Revalidator />
+      </SWRConfig>,
+    );
+    await waitFor(() => expect(lastParams()).toHaveProperty('primaryCareClinic', 'session-location'));
+
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('timeout'));
+    await act(() => revalidate(() => true));
+
+    expect(screen.queryByText('Could not load the report')).not.toBeInTheDocument();
+    expect(lastParams()).toHaveProperty('primaryCareClinic', 'session-location');
   });
 
   it.each([

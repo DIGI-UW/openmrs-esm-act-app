@@ -84,7 +84,7 @@ export const configSchema = {
   },
   dataClerkQuickActions: {
     facilityReportUrl: link(
-      'Where the Facility report quick action on Home leads, for a user holding App: act.dataClerk: Facility reports.',
+      'Where the Facility report quick action on Home leads (Facility reports), for a user holding App: act.dataClerk.',
       '${openmrsSpaBase}/home/act-facility-reports',
     ),
   },

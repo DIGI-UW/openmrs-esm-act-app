@@ -18,11 +18,9 @@ export function useSessionClinicKind(): SessionClinicKind {
   if (!sessionLocation?.uuid) {
     return 'none';
   }
-  if (error) {
-    return 'error';
-  }
+  // A failed refresh keeps the kind already known, as SWR keeps its data.
   if (!data) {
-    return 'pending';
+    return error ? 'error' : 'pending';
   }
   const tags = data.data?.tags?.map((tag) => tag.display) ?? [];
   if (tags.some((tag) => clinicLocationTags.cardiac.includes(tag))) {
