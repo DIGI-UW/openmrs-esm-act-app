@@ -13,6 +13,7 @@ export default function AdminNav() {
   const links = [
     { privilege: PRIVILEGE_EDIT_USERS, to: adminLinks.usersUrl, label: t('usersAndRoles', 'Users and roles') },
     { privilege: PRIVILEGE_MANAGE_LOCATIONS, to: adminLinks.clinicsUrl, label: t('clinics', 'Clinics') },
+    { privilege: PRIVILEGE_MANAGE_LOCATIONS, to: adminLinks.studiesUrl, label: t('studies', 'Studies') },
   ].filter(({ privilege }) => user && userHasAccess(privilege, user));
 
   if (!links.length) {

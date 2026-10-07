@@ -97,6 +97,10 @@ export const configSchema = {
       "Where the left nav's Clinics leads: OpenMRS's locations, for a user holding Manage Locations.",
       '${openmrsBase}/admin/locations/location.list',
     ),
+    studiesUrl: link(
+      "Where the left nav's Studies leads: the Studies dashboard in this app, for a user holding Manage Locations.",
+      '${openmrsSpaBase}/home/act-studies',
+    ),
   },
   careCascade: {
     report: {
@@ -361,7 +365,7 @@ export interface Config {
   dataClerkQuickActions: {
     facilityReportUrl: string;
   };
-  adminLinks: { usersUrl: string; clinicsUrl: string };
+  adminLinks: { usersUrl: string; clinicsUrl: string; studiesUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };

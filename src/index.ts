@@ -100,6 +100,13 @@ export const facilityReportsDashboard = getAsyncLifecycle(
   options,
 );
 
+export const studiesDashboardLink = getAsyncLifecycle(
+  () => import('./studies/studies-dashboard-link.component'),
+  options,
+);
+
+export const studiesDashboard = getAsyncLifecycle(() => import('./studies/studies.component'), options);
+
 export const dueForProphylaxisDashboardLink = getSyncLifecycle(dueForProphylaxisDashboardLinkComponent, options);
 
 export const dueForProphylaxisDashboard = getAsyncLifecycle(

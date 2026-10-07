@@ -1,0 +1,47 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.studies {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: layout.$spacing-05;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+}
+
+.tileLabel {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.tileValue {
+  @include type.type-style('heading-05');
+}
+
+.blue { color: colors.$blue-60; }
+.red { color: colors.$red-60; }
+.green { color: colors.$green-60; }
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.review {
+  background-color: colors.$yellow-20;
+  color: colors.$gray-100;
+}
