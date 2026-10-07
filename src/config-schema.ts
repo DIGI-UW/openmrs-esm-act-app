@@ -42,6 +42,27 @@ export const configSchema = {
       _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
       _description: 'The flags, by name, that mark a clinical risk. The lists of every other flag are missing data.',
     },
+    flagForms: {
+      _type: Type.Array,
+      _elements: {
+        flag: { _type: Type.UUID, _description: 'The flag, by uuid.' },
+        form: { _type: Type.UUID, _description: 'The form to record the missing data on, by uuid.' },
+        concept: {
+          _type: Type.UUID,
+          _default: '',
+          _description: 'The question to open the form at, by concept uuid; empty opens it at the top.',
+        },
+      },
+      _default: [
+        {
+          flag: 'b1f7a2c0-0005-4a00-9000-000000000005',
+          form: '4b063fc7-996f-3001-8500-8940e201be8f',
+          concept: '668e0221-8b41-5669-9ad8-78e193d42494',
+        },
+      ],
+      _description:
+        "The form a flag's missing data is recorded on when the patient has no saved form to complete. The flag's workspace offers it as a new form; a flag not listed here offers the clinical forms list.",
+    },
   },
   quickActions: {
     registerPatientUrl: link(
@@ -322,6 +343,7 @@ export interface Config {
     namePrefix: string;
     names: Array<string>;
     riskFlags: Array<string>;
+    flagForms: Array<{ flag: string; form: string; concept: string }>;
   };
   quickActions: {
     registerPatientUrl: string;

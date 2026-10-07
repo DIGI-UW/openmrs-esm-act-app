@@ -2,10 +2,12 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
 import FlagGapsWorkspace, { daysPending, type FlagActionWorkspaceProps } from './flag-gaps.workspace';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 
 // Who may record a form is may-enter-form's own test; here every form may be recorded.
 vi.mock('../access/may-enter-form', () => ({
@@ -16,9 +18,16 @@ vi.mock('./flag-gaps.resource', () => ({
   usePatientFlagGaps: vi.fn(),
   fetchForm: vi.fn(),
 }));
+// Starting a visit for a new form is open-form-in-visit's own test; here the opener is watched.
+vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }));
 
 const mockUsePatientFlagGaps = vi.mocked(usePatientFlagGaps);
 const mockFetchForm = vi.mocked(fetchForm);
+const openNewForm = vi.fn();
+
+// The flag the default configuration maps to a form, and that form.
+const prophylaxisFlag = 'b1f7a2c0-0005-4a00-9000-000000000005';
+const consultationForm = { uuid: '4b063fc7-996f-3001-8500-8940e201be8f', display: 'RHD Consultation Visit' };
 
 const workspaceProps: FlagActionWorkspaceProps = {
   patientUuid: 'patient-uuid',
@@ -76,6 +85,11 @@ function gapsReturned({
 }) {
   flagsReturned(error ? [] : [flagWith(gaps, { configured })], { error });
 }
+
+beforeEach(() => {
+  vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
+  vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openNewForm, isOpening: false });
+});
 
 describe('flag gaps workspace', () => {
   beforeEach(() => {
@@ -167,6 +181,38 @@ describe('flag gaps workspace', () => {
     await user.click(screen.getByRole('button', { name: /open clinical forms/i }));
 
     expect(launchChildWorkspace).toHaveBeenCalledWith('clinical-forms-workspace');
+  });
+
+  it('offers the form configured for the flag as a new form, in the visit, at the missing question', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockFetchForm.mockResolvedValue(consultationForm);
+    flagsReturned([flagWith([], { flagUuid: prophylaxisFlag, flagName: 'RHD prophylaxis not prescribed' })]);
+
+    const launchChildWorkspace = showWorkspace(vi.fn(), { ...workspaceProps, flagUuid: prophylaxisFlag });
+    await user.click(await screen.findByRole('button', { name: 'Open RHD Consultation Visit' }));
+
+    expect(useOpenFormInVisit).toHaveBeenCalledWith('patient-uuid');
+    expect(openNewForm).toHaveBeenCalledWith(consultationForm.uuid, '668e0221-8b41-5669-9ad8-78e193d42494');
+    expect(launchChildWorkspace).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /open clinical forms/i })).not.toBeInTheDocument();
+  });
+
+  it('opens a configured form without a question at the top, and names it Open form until it loads', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockFetchForm.mockReturnValue(new Promise(() => undefined));
+    vi.mocked(useConfig<Config>).mockReturnValue({
+      ...(getDefaultsFromConfigSchema(configSchema) as Config),
+      flagLists: {
+        ...(getDefaultsFromConfigSchema(configSchema) as Config).flagLists,
+        flagForms: [{ flag: 'flag-uuid', form: 'form-uuid', concept: '' }],
+      },
+    });
+    gapsReturned({ gaps: [] });
+
+    showWorkspace();
+    await user.click(screen.getByRole('button', { name: 'Open form' }));
+
+    expect(openNewForm).toHaveBeenCalledWith('form-uuid', undefined);
   });
 
   it("lists the gaps behind each of the patient's flags when not told which flag was clicked", () => {

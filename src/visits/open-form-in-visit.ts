@@ -11,6 +11,7 @@ import {
 } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
+import { focusFormQuestion } from '../flag-gaps/focus-question';
 import { startVisit } from './start-visit';
 
 /** How long to wait for the patient chart to take a visit just started, before giving up on the form. */
@@ -42,7 +43,8 @@ function chartTakes(visitUuid: string) {
 }
 
 /**
- * Opens a form in the patient chart's form entry workspace, first starting a visit when the patient has none.
+ * Opens a form in the patient chart's form entry workspace, first starting a visit when the patient has none, and
+ * when a concept is given, at the question that records it.
  * Inside the patient chart only, as it waits for the chart's workspace group to take the new visit.
  */
 export function useOpenFormInVisit(patientUuid: string) {
@@ -55,7 +57,7 @@ export function useOpenFormInVisit(patientUuid: string) {
   const opening = useRef(false);
 
   const open = useCallback(
-    async (formUuid: string) => {
+    async (formUuid: string, focusConcept?: string) => {
       // A second click while a visit is starting would start a second visit.
       if (opening.current) {
         return;
@@ -91,6 +93,10 @@ export function useOpenFormInVisit(patientUuid: string) {
           encounterUuid: '',
           additionalProps: { mode: 'enter', openClinicalFormsWorkspaceOnFormClose: false },
         });
+        if (focusConcept) {
+          // A question the form never renders leaves it at the top.
+          focusFormQuestion(form, focusConcept).catch(() => undefined);
+        }
       } catch (e) {
         showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
       } finally {

@@ -12,7 +12,10 @@ import {
   useVisit,
 } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
+import { focusFormQuestion } from '../flag-gaps/focus-question';
 import { useOpenFormInVisit, visitWaitMs } from './open-form-in-visit';
+
+vi.mock('../flag-gaps/focus-question', () => ({ focusFormQuestion: vi.fn() }));
 
 const bpgForm = { uuid: '0119d2e6-e2e1-391c-9b88-d59a10b0780d', name: 'RHD BPG Delivery', display: 'RHD BPG Delivery' };
 const newVisit = { uuid: 'new-visit', visitType: { display: 'RHD Clinic Visit' } };
@@ -56,6 +59,26 @@ describe('useOpenFormInVisit', () => {
         }),
       ],
     ]);
+  });
+
+  it('scrolls the opened form to the question for a concept when given one', async () => {
+    chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
+    vi.mocked(focusFormQuestion).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useOpenFormInVisit('winnie'));
+
+    await act(() => result.current.open(bpgForm.uuid, 'injection-date-uuid'));
+
+    expect(openedForms()).toHaveLength(1);
+    expect(focusFormQuestion).toHaveBeenCalledWith(bpgForm, 'injection-date-uuid');
+  });
+
+  it('leaves the form at the top when no concept is given', async () => {
+    chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
+    const { result } = renderHook(() => useOpenFormInVisit('winnie'));
+
+    await act(() => result.current.open(bpgForm.uuid));
+
+    expect(focusFormQuestion).not.toHaveBeenCalled();
   });
 
   it('starts a visit for a patient with none, then opens the form once the chart has relaunched with it', async () => {

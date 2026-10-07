@@ -13,6 +13,13 @@ describe('configSchema', () => {
         namePrefix: 'RHD ',
         names: [],
         riskFlags: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
+        flagForms: [
+          {
+            flag: 'b1f7a2c0-0005-4a00-9000-000000000005',
+            form: '4b063fc7-996f-3001-8500-8940e201be8f',
+            concept: '668e0221-8b41-5669-9ad8-78e193d42494',
+          },
+        ],
       },
       quickActions: {
         registerPatientUrl: '${openmrsSpaBase}/patient-registration',

@@ -2,7 +2,8 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { fetchForm, type FlagGap, usePatientFlagGaps } from './flag-gaps.resource';
 import FlagGapsWorkspace from './flag-gaps.workspace';
 
@@ -106,6 +107,7 @@ describe('flag gaps workspace opening the form at the missing question', () => {
     // Where the question sits; a test moves it to stand for the form filling in above it.
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(() => ({ top: questionTop }) as DOMRect);
     vi.mocked(fetchForm).mockResolvedValue(form);
+    vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
     vi.mocked(openmrsFetch).mockImplementation(async (url: string) => {
       if (url.endsWith('/clobdata/schema-clob')) {
         return { data: schema } as never;
