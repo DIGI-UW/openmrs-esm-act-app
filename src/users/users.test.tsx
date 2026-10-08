@@ -59,6 +59,9 @@ const siteAdminView: ClinicUsers = {
 
 let districtClinics: Array<{ uuid: string; display: string }> = [];
 
+/** The people with a provider; everyone in the fixture by default. */
+let providerPeople = ['p-sarah', 'p-peter', 'p-lydia', 'p-new'];
+
 type Call = { url: string; method: string; body?: unknown };
 
 function backend(view: ClinicUsers, refuse?: { url: RegExp; message: string }) {
@@ -84,6 +87,10 @@ function backend(view: ClinicUsers, refuse?: { url: RegExp; message: string }) {
     if (url.includes('/location?tag=')) {
       return { data: { results: [] } } as never;
     }
+    if (method === 'GET' && url.includes('/provider?')) {
+      const results = providerPeople.map((uuid) => ({ person: { uuid } }));
+      return { data: { results, totalCount: results.length } } as never;
+    }
     if (url.endsWith('?v=custom:(userProperties)')) {
       return { data: { userProperties: { defaultLocation: 'gulu', 'act.clinics': 'gulu,kiswa' } } } as never;
     }
@@ -107,6 +114,7 @@ describe('Users and roles', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     districtClinics = [];
+    providerPeople = ['p-sarah', 'p-peter', 'p-lydia', 'p-new'];
     await signInWith(['Edit Users']);
   });
 
@@ -249,5 +257,79 @@ describe('Users and roles', () => {
         name: 'Actions for Sarah Namusoke',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('shows an administrator of every clinic who has no clinic, and only them when asked', async () => {
+    const noClinic = { ...siteAdminView.users[0], uuid: 'u-ruth', display: 'Ruth Apio', person: 'p-ruth', clinics: [] };
+    providerPeople = [...providerPeople, 'p-ruth'];
+    backend({ ...siteAdminView, clinicLimited: false, clinics: null, users: [...siteAdminView.users, noClinic] });
+    renderPage();
+
+    expect(
+      await screen.findByText(/Users without a clinic: 1\. No site administrator sees them\./),
+    ).toBeInTheDocument();
+    expect(within(screen.getByRole('row', { name: /Ruth Apio/ })).getByText('No clinic')).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Only users without a clinic'));
+
+    expect(screen.getByRole('row', { name: /Ruth Apio/ })).toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: /Sarah Namusoke/ })).not.toBeInTheDocument();
+  });
+
+  it('marks a user without a provider, and adds one', async () => {
+    providerPeople = ['p-sarah', 'p-lydia'];
+    const calls = backend(siteAdminView);
+    renderPage();
+    const peter = await screen.findByRole('row', { name: /Peter Okot/ });
+    await waitFor(() => expect(within(peter).getByText('No provider')).toBeInTheDocument());
+    expect(
+      within(screen.getByRole('row', { name: /Sarah Namusoke/ })).queryByText('No provider'),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(within(peter).getByRole('button', { name: 'Actions for Peter Okot' }));
+    await userEvent.click(await screen.findByText('Add provider'));
+
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'POST' && c.url.endsWith('/provider'))?.body).toEqual({
+        person: 'p-peter',
+        identifier: 'peter',
+      }),
+    );
+  });
+
+  it('keeps a new user whose provider was refused, and says how to add it', async () => {
+    backend(siteAdminView, { url: /\/provider$/, message: 'Could not save the provider' });
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Add user' }));
+    await userEvent.type(screen.getByLabelText('Given name'), 'Ruth');
+    await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
+    await userEvent.click(screen.getByLabelText('Female'));
+    await userEvent.type(screen.getByLabelText('Username'), 'ruth');
+    await userEvent.type(screen.getByLabelText('Password', { selector: 'input' }), 'Ruth12345');
+    await userEvent.click(screen.getByLabelText('Clinician'));
+    await userEvent.click(screen.getByLabelText('Gulu RRH'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'warning', title: 'User saved without a provider' }),
+      ),
+    );
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  });
+
+  it('shows the users a page at a time', async () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({
+      ...siteAdminView.users[0],
+      uuid: `u-${i}`,
+      display: `User ${String(i).padStart(2, '0')}`,
+      person: `p-${i}`,
+    }));
+    providerPeople = many.map((user) => user.person);
+    backend({ ...siteAdminView, users: many });
+    renderPage();
+
+    await screen.findByRole('row', { name: /User 00/ });
+    expect(screen.getAllByRole('row', { name: /User \d+/ })).toHaveLength(10);
+    expect(screen.queryByRole('row', { name: /User 11/ })).not.toBeInTheDocument();
   });
 });

@@ -2,11 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
+  Checkbox,
   DataTableSkeleton,
   InlineNotification,
   Modal,
   OverflowMenu,
   OverflowMenuItem,
+  Pagination,
   PasswordInput,
   Search,
   Table,
@@ -21,8 +23,10 @@ import { DigitalTrustPictogram, showSnackbar, useConfig } from '@openmrs/esm-fra
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { type Config } from '../config-schema';
+import { usePagedRows } from '../table-filters/paged-rows';
 import { refusalMessage, UserForm, type UserFormValues } from './user-form.component';
 import {
+  addProvider,
   type ClinicUser,
   createUser,
   type NamedRole,
@@ -31,6 +35,7 @@ import {
   updateUser,
   useClinics,
   useClinicUsers,
+  useProviderPeople,
 } from './users.resource';
 import styles from './users.scss';
 
@@ -59,7 +64,9 @@ function UsersTable() {
   const { users: usersConfig } = useConfig<Config>();
   const { data, error, isLoading, mutate } = useClinicUsers();
   const { clinics: allClinics, isLoading: clinicsLoading } = useClinics();
+  const { providerPeople, mutate: mutateProviders } = useProviderPeople();
   const [query, setQuery] = useState('');
+  const [withoutClinic, setWithoutClinic] = useState(false);
   const [editing, setEditing] = useState<ClinicUser | 'new' | null>(null);
   const [resetting, setResetting] = useState<ClinicUser | null>(null);
 
@@ -73,8 +80,12 @@ function UsersTable() {
     const words = query.trim().toLowerCase();
     return (data?.users ?? [])
       .filter((user) => !words || `${user.display} ${user.username ?? ''}`.toLowerCase().includes(words))
+      .filter((user) => !withoutClinic || !user.clinics.length)
       .sort((a, b) => a.display.localeCompare(b.display));
-  }, [data, query]);
+  }, [data, query, withoutClinic]);
+  const filters = useMemo(() => ({ query, withoutClinic }), [query, withoutClinic]);
+  const { results, paginationProps } = usePagedRows(shown, filters);
+  const hasProvider = (user: ClinicUser) => !providerPeople || providerPeople.has(user.person);
 
   const run = async (action: () => Promise<void>, done: string) => {
     try {
@@ -92,12 +103,27 @@ function UsersTable() {
 
   const save = async (values: UserFormValues) => {
     if (editing === 'new') {
-      await createUser(values);
+      const { providerError } = await createUser(values);
+      await Promise.all([mutate(), mutateProviders()]);
+      setEditing(null);
+      if (providerError) {
+        // The user exists, so saving the form again would only be refused: the row offers Add provider.
+        showSnackbar({
+          kind: 'warning',
+          title: t('userSavedWithoutProvider', 'User saved without a provider'),
+          subtitle: t(
+            'addProviderToSaveForms',
+            'They cannot save forms until they have one. Choose Add provider on their row. {{reason}}',
+            { reason: refusalMessage(providerError) },
+          ),
+        });
+        return;
+      }
     } else {
       await updateUser(editing.uuid, values.roles, values.clinics);
+      await mutate();
+      setEditing(null);
     }
-    await mutate();
-    setEditing(null);
     showSnackbar({ kind: 'success', title: t('userSaved', 'User saved') });
   };
 
@@ -134,6 +160,11 @@ function UsersTable() {
           : t('manageAllUsers', 'You manage the users at every clinic. You can give: {{roles}}.', {
               roles: roles.map(roleLabel).join(', '),
             })}
+        {!data.clinicLimited &&
+          data.users.some((user) => !user.clinics.length) &&
+          ` ${t('usersWithoutClinic', 'Users without a clinic: {{count}}. No site administrator sees them.', {
+            count: data.users.filter((user) => !user.clinics.length).length,
+          })}`}
       </p>
       <div className={styles.toolbar}>
         <Search
@@ -143,6 +174,14 @@ function UsersTable() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {!data.clinicLimited && (
+          <Checkbox
+            id="users-without-clinic"
+            labelText={t('onlyWithoutClinic', 'Only users without a clinic')}
+            checked={withoutClinic}
+            onChange={(_, { checked }) => setWithoutClinic(checked)}
+          />
+        )}
         <Button kind="primary" onClick={() => setEditing('new')}>
           {t('addUser', 'Add user')}
         </Button>
@@ -157,18 +196,25 @@ function UsersTable() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {shown.map((user) => (
+          {results.map((user) => (
             <TableRow key={user.uuid}>
               <TableCell>{user.display}</TableCell>
               <TableCell>{user.username || user.systemId}</TableCell>
               <TableCell>{user.roles.map(roleLabel).join(', ')}</TableCell>
-              <TableCell>{user.clinics.map(clinicName).join(', ')}</TableCell>
+              <TableCell>
+                {user.clinics.length ? (
+                  user.clinics.map(clinicName).join(', ')
+                ) : (
+                  <Tag type="red">{t('noClinic', 'No clinic')}</Tag>
+                )}
+              </TableCell>
               <TableCell>
                 {user.retired ? (
                   <Tag type="gray">{t('disabled', 'Disabled')}</Tag>
                 ) : (
                   <Tag type="green">{t('active', 'Active')}</Tag>
                 )}
+                {!hasProvider(user) && <Tag type="red">{t('noProvider', 'No provider')}</Tag>}
               </TableCell>
               <TableCell className={styles.actions}>
                 {user.editable && (
@@ -178,6 +224,20 @@ function UsersTable() {
                     flipped
                   >
                     <OverflowMenuItem itemText={t('edit', 'Edit')} onClick={() => setEditing(user)} />
+                    {!hasProvider(user) && (
+                      <OverflowMenuItem
+                        itemText={t('addProvider', 'Add provider')}
+                        onClick={() =>
+                          run(
+                            async () => {
+                              await addProvider(user.person, user.username || user.systemId);
+                              await mutateProviders();
+                            },
+                            t('providerAdded', 'Provider added'),
+                          )
+                        }
+                      />
+                    )}
                     <OverflowMenuItem
                       itemText={t('resetPassword', 'Reset password')}
                       onClick={() => setResetting(user)}
@@ -199,6 +259,7 @@ function UsersTable() {
           ))}
         </TableBody>
       </Table>
+      {shown.length > paginationProps.pageSizes[0] && <Pagination {...paginationProps} />}
       {!shown.length && <p className={styles.empty}>{t('noUsers', 'There are no users to display')}</p>}
       {editing && (
         <UserForm

@@ -1,6 +1,7 @@
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { fetchAll } from '../fetch-all';
 
 /** ACT Core keeps a user's clinics, as location uuids, in this user property. */
 export const CLINICS_PROPERTY = 'act.clinics';
@@ -79,11 +80,32 @@ export interface NewUser {
   clinics: Array<string>;
 }
 
+/** The people with a provider record: a user without one cannot save forms. */
+export function useProviderPeople() {
+  const { data, error, isLoading, mutate } = useSWR<Set<string>, Error>('act-provider-people', async () => {
+    const providers = await fetchAll<{ person: { uuid: string } | null }>(
+      `${restBaseUrl}/provider?v=custom:(person:(uuid))`,
+    );
+    return new Set(providers.map((provider) => provider.person?.uuid).filter(Boolean));
+  });
+  return { providerPeople: data, error, isLoading, mutate };
+}
+
+/** The provider a user's forms are saved under, identified by its username. */
+export async function addProvider(person: string, identifier: string) {
+  await openmrsFetch(`${restBaseUrl}/provider`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { person, identifier },
+  });
+}
+
 /**
  * Creates the user with its person in one request, so a refused user leaves no person behind, then
- * the provider its forms are saved under.
+ * the provider its forms are saved under. The user is kept when only the provider fails, and the
+ * answer says why, so the page can offer to add the provider again.
  */
-export async function createUser(user: NewUser) {
+export async function createUser(user: NewUser): Promise<{ providerError?: unknown }> {
   const { data } = await openmrsFetch<{ uuid: string; person: { uuid: string } }>(`${restBaseUrl}/user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -95,11 +117,12 @@ export async function createUser(user: NewUser) {
       userProperties: { [CLINICS_PROPERTY]: user.clinics.join(',') },
     },
   });
-  await openmrsFetch(`${restBaseUrl}/provider`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: { person: data.person.uuid, identifier: user.username },
-  });
+  try {
+    await addProvider(data.person.uuid, user.username);
+    return {};
+  } catch (providerError) {
+    return { providerError };
+  }
 }
 
 /** Saves the user's roles and clinics, keeping its other properties, such as its login location. */
