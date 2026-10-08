@@ -19,6 +19,8 @@ export interface ClinicUser {
   roles: Array<NamedRole>;
   clinics: Array<string>;
   retired: boolean;
+  /** Whether this administrator may change the user, as ACT Core decides: not its own account, for one. */
+  editable: boolean;
 }
 
 export interface ClinicUsers {

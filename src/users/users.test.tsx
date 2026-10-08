@@ -30,6 +30,7 @@ const siteAdminView: ClinicUsers = {
       roles: [clinician],
       clinics: ['gulu', 'kiswa'],
       retired: false,
+      editable: true,
     },
     {
       uuid: 'u-peter',
@@ -40,6 +41,18 @@ const siteAdminView: ClinicUsers = {
       roles: [clerk],
       clinics: ['gulu'],
       retired: true,
+      editable: true,
+    },
+    {
+      uuid: 'u-lydia',
+      username: 'lydia',
+      systemId: '7-8',
+      display: 'Lydia Atwine',
+      person: 'p-lydia',
+      roles: [{ uuid: 'role-site-admin', name: 'Organizational: ACT Site Administrator' }],
+      clinics: ['gulu'],
+      retired: false,
+      editable: false,
     },
   ],
 };
@@ -223,5 +236,18 @@ describe('Users and roles', () => {
 
     expect(screen.getByLabelText('Gulu RRH')).toBeChecked();
     expect(screen.queryByLabelText('District 3 Hospital')).not.toBeInTheDocument();
+  });
+
+  it('offers no actions on a user the administrator may not change, such as itself', async () => {
+    backend(siteAdminView);
+    renderPage();
+
+    const lydia = await screen.findByRole('row', { name: /Lydia Atwine/ });
+    expect(within(lydia).queryByRole('button')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('row', { name: /Sarah Namusoke/ })).getByRole('button', {
+        name: 'Actions for Sarah Namusoke',
+      }),
+    ).toBeInTheDocument();
   });
 });

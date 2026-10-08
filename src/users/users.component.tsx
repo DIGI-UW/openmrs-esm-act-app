@@ -171,27 +171,29 @@ function UsersTable() {
                 )}
               </TableCell>
               <TableCell className={styles.actions}>
-                <OverflowMenu
-                  aria-label={t('userActions', 'Actions for {{name}}', { name: user.display })}
-                  iconDescription={t('userActions', 'Actions for {{name}}', { name: user.display })}
-                  flipped
-                >
-                  <OverflowMenuItem itemText={t('edit', 'Edit')} onClick={() => setEditing(user)} />
-                  <OverflowMenuItem
-                    itemText={t('resetPassword', 'Reset password')}
-                    onClick={() => setResetting(user)}
-                  />
-                  <OverflowMenuItem
-                    itemText={user.retired ? t('enable', 'Enable') : t('disable', 'Disable')}
-                    isDelete={!user.retired}
-                    onClick={() =>
-                      run(
-                        () => setDisabled(user.uuid, !user.retired),
-                        user.retired ? t('userEnabled', 'User enabled') : t('userDisabled', 'User disabled'),
-                      )
-                    }
-                  />
-                </OverflowMenu>
+                {user.editable && (
+                  <OverflowMenu
+                    aria-label={t('userActions', 'Actions for {{name}}', { name: user.display })}
+                    iconDescription={t('userActions', 'Actions for {{name}}', { name: user.display })}
+                    flipped
+                  >
+                    <OverflowMenuItem itemText={t('edit', 'Edit')} onClick={() => setEditing(user)} />
+                    <OverflowMenuItem
+                      itemText={t('resetPassword', 'Reset password')}
+                      onClick={() => setResetting(user)}
+                    />
+                    <OverflowMenuItem
+                      itemText={user.retired ? t('enable', 'Enable') : t('disable', 'Disable')}
+                      isDelete={!user.retired}
+                      onClick={() =>
+                        run(
+                          () => setDisabled(user.uuid, !user.retired),
+                          user.retired ? t('userEnabled', 'User enabled') : t('userDisabled', 'User disabled'),
+                        )
+                      }
+                    />
+                  </OverflowMenu>
+                )}
               </TableCell>
             </TableRow>
           ))}
