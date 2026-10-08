@@ -1,56 +1,100 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { signInWith } from '../access/sign-in.test-helper';
-import { useActivePatientCount } from './active-patients.resource';
+import { useReportDataset } from '../reports/report-dataset.resource';
 import Studies from './studies.component';
 
-vi.mock('./active-patients.resource', () => ({ useActivePatientCount: vi.fn() }));
+vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+
+const rows = [
+  {
+    facility: 'Akunalaber HCIII',
+    facility_uuid: 'akunalaber',
+    active_patients: 12,
+    due_this_week: 3,
+    overdue: 2,
+    bpg_on_time: 8,
+    bpg_timed: 10,
+  },
+  {
+    facility: 'Anyeke HCIV',
+    facility_uuid: 'anyeke',
+    active_patients: 5,
+    due_this_week: 1,
+    overdue: 4,
+    bpg_on_time: 1,
+    bpg_timed: 2,
+  },
+];
+
+function dataset(value: Partial<ReturnType<typeof useReportDataset>> = {}) {
+  vi.mocked(useReportDataset).mockReturnValue({
+    columns: [],
+    rows,
+    isLoading: false,
+    error: undefined,
+    mutate: vi.fn(),
+    ...value,
+  });
+}
+
+const tile = (label: string) => screen.getAllByTestId('studies-tile').find((t) => t.textContent.startsWith(label));
 
 describe('Studies', () => {
   beforeEach(async () => {
     await signInWith(['Manage Locations']);
-    vi.mocked(useActivePatientCount).mockReturnValue({ count: 911, isLoading: false, error: undefined });
+    vi.mocked(useReportDataset).mockReset();
+    dataset();
   });
 
-  it("shows the page title and the active patient count from actcore's registry endpoint", () => {
+  it("totals the facilities' rows from the programme report in the KPI tiles", () => {
     render(<Studies />);
 
     expect(screen.getByRole('heading', { name: 'Studies' })).toBeInTheDocument();
 
     const tiles = screen.getAllByTestId('studies-tile');
     expect(tiles).toHaveLength(4);
-    expect(within(tiles[0]).getByText('Active patients')).toBeInTheDocument();
-    expect(within(tiles[0]).getByText('911')).toBeInTheDocument();
-    expect(within(tiles[1]).getByText('Due this week')).toBeInTheDocument();
-    expect(within(tiles[1]).getByText('64')).toBeInTheDocument();
-    expect(within(tiles[2]).getByText('Overdue')).toBeInTheDocument();
-    expect(within(tiles[2]).getByText('41')).toBeInTheDocument();
-    expect(within(tiles[3]).getByText('BPG on-time rate')).toBeInTheDocument();
-    expect(within(tiles[3]).getByText('86%')).toBeInTheDocument();
+    expect(tile('Active patients')).toHaveTextContent('Active patients17');
+    expect(tile('Due this week')).toHaveTextContent('Due this week4');
+    expect(tile('Overdue')).toHaveTextContent('Overdue6');
+    // 9 of 12 timed injections on time.
+    expect(tile('BPG on-time rate')).toHaveTextContent('BPG on-time rate75%');
   });
 
-  it('shows a loading skeleton while the active patient count is loading', () => {
-    vi.mocked(useActivePatientCount).mockReturnValue({ count: undefined, isLoading: true, error: undefined });
+  it('shows no rate when no injection in the period was timed', () => {
+    dataset({ rows: [{ ...rows[0], bpg_on_time: 0, bpg_timed: 0 }, { ...rows[1], bpg_on_time: 0, bpg_timed: 0 }] });
+
+    render(<Studies />);
+
+    expect(tile('BPG on-time rate')).toHaveTextContent('BPG on-time rate–');
+  });
+
+  it('shows loading skeletons in every tile while the report is loading', () => {
+    dataset({ rows: [], isLoading: true });
 
     render(<Studies />);
 
     const tiles = screen.getAllByTestId('studies-tile');
-    expect(within(tiles[0]).queryByText(/^\d/)).not.toBeInTheDocument();
-    expect(within(tiles[0]).getByText('Active patients')).toBeInTheDocument();
+    tiles.forEach((t) => expect(within(t).queryByText(/^\d/)).not.toBeInTheDocument());
   });
 
-  it('falls back to a dash when the active patient count cannot be loaded', () => {
-    vi.mocked(useActivePatientCount).mockReturnValue({
-      count: undefined,
-      isLoading: false,
-      error: new Error('boom'),
-    });
+  it('shows an error notification when the report cannot be loaded', () => {
+    dataset({ rows: [], error: new Error('boom') });
 
     render(<Studies />);
 
-    const tiles = screen.getAllByTestId('studies-tile');
-    expect(within(tiles[0]).getByText('–')).toBeInTheDocument();
+    expect(screen.getByText('Could not load the report')).toBeInTheDocument();
+    expect(screen.queryAllByTestId('studies-tile')).toHaveLength(0);
+  });
+
+  it('runs the programme report over the current month', () => {
+    render(<Studies />);
+
+    const [, params] = vi.mocked(useReportDataset).mock.calls.at(-1);
+    expect(params.startDate).toBe(dayjs().startOf('month').format('YYYY-MM-DD'));
+    expect(params.endDate).toBe(dayjs().endOf('month').format('YYYY-MM-DD'));
   });
 
   it('shows a By facility table with a row per dummy facility and a status tag', () => {
@@ -58,14 +102,14 @@ describe('Studies', () => {
 
     expect(screen.getByText('By facility')).toBeInTheDocument();
     const table = screen.getByRole('table');
-    const rows = within(table).getAllByRole('row');
+    const tableRows = within(table).getAllByRole('row');
     // One header row + four data rows.
-    expect(rows).toHaveLength(5);
-    expect(within(rows[1]).getByText('Kiswa HC III')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('142 active')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('91%')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('Complete')).toBeInTheDocument();
-    expect(within(rows[4]).getByText('Wakiso HC IV')).toBeInTheDocument();
-    expect(within(rows[4]).getByText('Duplicates')).toBeInTheDocument();
+    expect(tableRows).toHaveLength(5);
+    expect(within(tableRows[1]).getByText('Kiswa HC III')).toBeInTheDocument();
+    expect(within(tableRows[1]).getByText('142 active')).toBeInTheDocument();
+    expect(within(tableRows[1]).getByText('91%')).toBeInTheDocument();
+    expect(within(tableRows[1]).getByText('Complete')).toBeInTheDocument();
+    expect(within(tableRows[4]).getByText('Wakiso HC IV')).toBeInTheDocument();
+    expect(within(tableRows[4]).getByText('Duplicates')).toBeInTheDocument();
   });
 });
