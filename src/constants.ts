@@ -9,6 +9,7 @@ export const PRIVILEGE_DATA_CLERK = 'App: act.dataClerk';
 export const PRIVILEGE_COMMUNITY_HOME = 'App: act.communityHome';
 export const PRIVILEGE_REPORTS = 'App: act.reports';
 export const PRIVILEGE_EXPORT_LISTS = 'Task: act.lists.export';
+export const PRIVILEGE_REFRESH_FLAGS = 'Task: act.refreshFlags';
 
 // OpenMRS core privileges for the actions ACT offers, as the services that carry them out require.
 export const PRIVILEGE_ADD_PATIENTS = 'Add Patients';

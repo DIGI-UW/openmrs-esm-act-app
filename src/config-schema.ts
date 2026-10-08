@@ -122,6 +122,10 @@ export const configSchema = {
       "Where the left nav's Studies leads: the Studies dashboard in this app, for a user holding Manage Locations.",
       '${openmrsSpaBase}/home/act-studies',
     ),
+    refreshFlagsUrl: link(
+      "Where the left nav's Flags and adherence leads: the page that refreshes them now, for a user holding Task: act.refreshFlags.",
+      '${openmrsSpaBase}/home/act-refresh-flags',
+    ),
   },
   careCascade: {
     report: {
@@ -387,7 +391,7 @@ export interface Config {
   dataClerkQuickActions: {
     facilityReportUrl: string;
   };
-  adminLinks: { usersUrl: string; clinicsUrl: string; studiesUrl: string };
+  adminLinks: { usersUrl: string; clinicsUrl: string; studiesUrl: string; refreshFlagsUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConfigurableLink, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { PRIVILEGE_EDIT_USERS, PRIVILEGE_MANAGE_LOCATIONS } from '../constants';
+import { PRIVILEGE_EDIT_USERS, PRIVILEGE_MANAGE_LOCATIONS, PRIVILEGE_REFRESH_FLAGS } from '../constants';
 import styles from './admin-nav.scss';
 
 /** The left nav's Admin section: each page for a user who may use it, and no heading when there is none. */
@@ -14,6 +14,11 @@ export default function AdminNav() {
     { privilege: PRIVILEGE_EDIT_USERS, to: adminLinks.usersUrl, label: t('usersAndRoles', 'Users and roles') },
     { privilege: PRIVILEGE_MANAGE_LOCATIONS, to: adminLinks.clinicsUrl, label: t('clinics', 'Clinics') },
     { privilege: PRIVILEGE_MANAGE_LOCATIONS, to: adminLinks.studiesUrl, label: t('studies', 'Studies') },
+    {
+      privilege: PRIVILEGE_REFRESH_FLAGS,
+      to: adminLinks.refreshFlagsUrl,
+      label: t('flagsAndAdherence', 'Flags and adherence'),
+    },
   ].filter(({ privilege }) => user && userHasAccess(privilege, user));
 
   if (!links.length) {

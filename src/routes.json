@@ -194,6 +194,23 @@
       "privileges": "Manage Locations"
     },
     {
+      "name": "act-refresh-flags-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "refreshFlagsDashboardLink",
+      "meta": {
+        "name": "act-refresh-flags",
+        "slot": "act-refresh-flags-dashboard-slot",
+        "title": "flagsAndAdherence"
+      },
+      "privileges": "Task: act.refreshFlags"
+    },
+    {
+      "name": "act-refresh-flags-dashboard",
+      "slot": "act-refresh-flags-dashboard-slot",
+      "component": "refreshFlagsDashboard",
+      "privileges": "Task: act.refreshFlags"
+    },
+    {
       "name": "act-community-home-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "communityHomeDashboardLink",
