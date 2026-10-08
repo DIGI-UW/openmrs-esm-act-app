@@ -61,6 +61,20 @@ describe('useOpenFormInVisit', () => {
     ]);
   });
 
+  it('opens the form through the launcher given, as a child of a workspace that shares the window', async () => {
+    chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
+    const launchChildWorkspace = vi.fn();
+    const { result } = renderHook(() => useOpenFormInVisit('winnie', launchChildWorkspace));
+
+    await act(() => result.current.open(bpgForm.uuid));
+
+    expect(openedForms()).toEqual([]);
+    expect(launchChildWorkspace).toHaveBeenCalledWith(
+      'patient-form-entry-workspace',
+      expect.objectContaining({ form: bpgForm, encounterUuid: '' }),
+    );
+  });
+
   it('scrolls the opened form to the question for a concept when given one', async () => {
     chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
     vi.mocked(focusFormQuestion).mockResolvedValue(undefined);

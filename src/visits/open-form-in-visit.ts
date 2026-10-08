@@ -42,12 +42,17 @@ function chartTakes(visitUuid: string) {
   });
 }
 
+/** Launches the form entry workspace; a workspace that is already open in that window passes its launchChildWorkspace. */
+export type FormLauncher = (workspaceName: string, workspaceProps: object) => unknown;
+
 /**
  * Opens a form in the patient chart's form entry workspace, first starting a visit when the patient has none, and
  * when a concept is given, at the question that records it.
  * Inside the patient chart only, as it waits for the chart's workspace group to take the new visit.
+ * From a workspace that shares the form entry window, pass its launchChildWorkspace: launching the form as a new
+ * root workspace there closes the window and reopens it, and the reopened window comes up hidden.
  */
-export function useOpenFormInVisit(patientUuid: string) {
+export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = launchWorkspace2) {
   const { t } = useTranslation();
   const { visitType } = useConfig<Config>();
   const { sessionLocation } = useSession();
@@ -87,7 +92,7 @@ export function useOpenFormInVisit(patientUuid: string) {
             return;
           }
         }
-        launchWorkspace2('patient-form-entry-workspace', {
+        launch('patient-form-entry-workspace', {
           workspaceTitle: form.display,
           form,
           encounterUuid: '',
@@ -104,7 +109,7 @@ export function useOpenFormInVisit(patientUuid: string) {
         setIsOpening(false);
       }
     },
-    [activeVisit, mutate, patientUuid, sessionLocation?.uuid, t, visitType],
+    [activeVisit, launch, mutate, patientUuid, sessionLocation?.uuid, t, visitType],
   );
 
   return { open, isOpening: isOpening || isLoading };

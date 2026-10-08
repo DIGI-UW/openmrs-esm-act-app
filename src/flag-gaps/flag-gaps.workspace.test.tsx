@@ -172,6 +172,25 @@ describe('flag gaps workspace', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
+  it('offers the form configured for a flag that does not list its missing data, such as a risk flag', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockFetchForm.mockReturnValue(new Promise(() => undefined));
+    vi.mocked(useConfig<Config>).mockReturnValue({
+      ...(getDefaultsFromConfigSchema(configSchema) as Config),
+      flagLists: {
+        ...(getDefaultsFromConfigSchema(configSchema) as Config).flagLists,
+        flagForms: [{ flag: 'overdue-uuid', form: 'bpg-form-uuid', concept: 'injection-date-uuid' }],
+      },
+    });
+    flagsReturned([flagWith([], { flagUuid: 'overdue-uuid', flagName: 'RHD prophylaxis overdue', configured: false })]);
+
+    showWorkspace(vi.fn(), { ...workspaceProps, flagUuid: 'overdue-uuid', flagName: 'RHD prophylaxis overdue' });
+    expect(screen.queryByText(/does not list its missing data/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Open form' }));
+
+    expect(openNewForm).toHaveBeenCalledWith('bpg-form-uuid', 'injection-date-uuid');
+  });
+
   it('offers a new form when no saved form is waiting to be completed', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     gapsReturned({ gaps: [] });
@@ -191,7 +210,7 @@ describe('flag gaps workspace', () => {
     const launchChildWorkspace = showWorkspace(vi.fn(), { ...workspaceProps, flagUuid: prophylaxisFlag });
     await user.click(await screen.findByRole('button', { name: 'Open RHD Consultation Visit' }));
 
-    expect(useOpenFormInVisit).toHaveBeenCalledWith('patient-uuid');
+    expect(useOpenFormInVisit).toHaveBeenCalledWith('patient-uuid', launchChildWorkspace);
     expect(openNewForm).toHaveBeenCalledWith(consultationForm.uuid, '668e0221-8b41-5669-9ad8-78e193d42494');
     expect(launchChildWorkspace).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /open clinical forms/i })).not.toBeInTheDocument();
