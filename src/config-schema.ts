@@ -61,7 +61,7 @@ export const configSchema = {
         },
       ],
       _description:
-        "The form a flag's missing data is recorded on when the patient has no saved form to complete. The flag's workspace offers it as a new form; a flag not listed here offers the clinical forms list.",
+        "The form a flag's missing data is recorded on when the patient has no saved form to complete. The flag's workspace offers it as a new form, also for a flag whose criteria list no missing data, such as a risk flag; a flag not listed here offers the clinical forms list.",
     },
   },
   quickActions: {

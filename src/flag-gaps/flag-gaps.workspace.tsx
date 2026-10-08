@@ -24,7 +24,7 @@ import {
 import { type Config } from '../config-schema';
 import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
 import { MayEnterForm } from '../access/may-enter-form';
-import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+import { type FormLauncher, useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { openEncounterForm } from './open-encounter-form';
 import styles from './flag-gaps.scss';
 
@@ -47,11 +47,24 @@ export function daysPending(encounterDatetime: string, now = new Date()) {
   return Math.floor((now.getTime() - new Date(encounterDatetime).getTime()) / DAY_MS);
 }
 
-/** Opens the form configured for a flag as a new form, in the patient's visit, named after the form. */
-function NewFormButton({ patientUuid, formUuid, concept }: { patientUuid: string; formUuid: string; concept: string }) {
+/**
+ * Opens the form configured for a flag as a new form, in the patient's visit, named after the form. As a child of this
+ * workspace, since both share the clinical forms window.
+ */
+function NewFormButton({
+  patientUuid,
+  formUuid,
+  concept,
+  launch,
+}: {
+  patientUuid: string;
+  formUuid: string;
+  concept: string;
+  launch: FormLauncher;
+}) {
   const { t } = useTranslation();
   const { data: form } = useSWRImmutable(['act-form', formUuid], () => fetchForm(formUuid));
-  const { open, isOpening } = useOpenFormInVisit(patientUuid);
+  const { open, isOpening } = useOpenFormInVisit(patientUuid, launch);
   return (
     <MayEnterForm formUuid={formUuid}>
       <Button kind="ghost" size="sm" disabled={isOpening} onClick={() => open(formUuid, concept || undefined)}>
@@ -72,7 +85,11 @@ const FlagGapsWorkspace: React.FC<
     ? { uuid: workspaceProps.flagUuid, name: workspaceProps.flagName }
     : undefined;
   const { flagGaps, isLoading, error } = usePatientFlagGaps(patientUuid, clickedFlag);
-  const listed = flagGaps.filter((flag) => flag.configured);
+  // A flag whose criteria name no form rows, such as a risk flag over the adherence table, still opens the form
+  // configured for it.
+  const listed = flagGaps.filter(
+    (flag) => flag.configured || flagForms.some((entry) => entry.flag === flag.flagUuid),
+  );
 
   const openGap = useCallback(
     async (gap: FlagGap) => {
@@ -132,7 +149,12 @@ const FlagGapsWorkspace: React.FC<
             {t('noSavedForm', 'No saved form is waiting to be completed. Record the missing data on a new form.')}
           </p>
           {flagForm ? (
-            <NewFormButton patientUuid={patientUuid} formUuid={flagForm.form} concept={flagForm.concept} />
+            <NewFormButton
+              patientUuid={patientUuid}
+              formUuid={flagForm.form}
+              concept={flagForm.concept}
+              launch={launchChildWorkspace}
+            />
           ) : (
             <Button kind="ghost" size="sm" onClick={() => launchChildWorkspace('clinical-forms-workspace')}>
               {t('openClinicalForms', 'Open clinical forms')}
