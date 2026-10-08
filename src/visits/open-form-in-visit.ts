@@ -50,7 +50,8 @@ export type FormLauncher = (workspaceName: string, workspaceProps: object) => un
  * when a concept is given, at the question that records it.
  * Inside the patient chart only, as it waits for the chart's workspace group to take the new visit.
  * From a workspace that shares the form entry window, pass its launchChildWorkspace: launching the form as a new
- * root workspace there closes the window and reopens it, and the reopened window comes up hidden.
+ * root workspace there closes the window and reopens it, and the reopened window comes up hidden. It is not used after
+ * starting a visit, as the chart has closed that workspace by then.
  */
 export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = launchWorkspace2) {
   const { t } = useTranslation();
@@ -92,7 +93,8 @@ export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = l
             return;
           }
         }
-        launch('patient-form-entry-workspace', {
+        // Starting a visit relaunches the chart's workspace group, which closes any window the launcher belonged to.
+        await (hasVisit ? launch : launchWorkspace2)('patient-form-entry-workspace', {
           workspaceTitle: form.display,
           form,
           encounterUuid: '',

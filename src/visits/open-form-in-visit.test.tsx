@@ -132,6 +132,22 @@ describe('useOpenFormInVisit', () => {
     expect(openedForms()).toHaveLength(1);
   });
 
+  it('opens the form as a new workspace after starting a visit, as the chart has closed the launcher’s workspace', async () => {
+    const launchChildWorkspace = vi.fn();
+    const { result } = renderHook(() => useOpenFormInVisit('winnie', launchChildWorkspace));
+
+    let opening: Promise<void>;
+    act(() => {
+      opening = result.current.open(bpgForm.uuid);
+    });
+    await vi.waitFor(() => expect(mutateVisit).toHaveBeenCalled());
+    act(() => chart.setState({ workspaceGroupVisitUuid: 'new-visit' }));
+    await act(() => opening);
+
+    expect(launchChildWorkspace).not.toHaveBeenCalled();
+    expect(openedForms()).toHaveLength(1);
+  });
+
   it('starts a visit when the chart holds another patient’s visit', async () => {
     chart.setState({ visitContext: { uuid: 'their-visit', patient: { uuid: 'someone-else' } } });
     const { result } = renderHook(() => useOpenFormInVisit('winnie'));
