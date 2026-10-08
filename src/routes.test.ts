@@ -66,6 +66,8 @@ describe('routes.json privileges', () => {
     ['act-facility-reports-dashboard', screenPrivileges.dataClerk],
     ['act-studies-dashboard-link', 'Manage Locations'],
     ['act-studies-dashboard', 'Manage Locations'],
+    ['act-refresh-flags-dashboard-link', 'Task: act.refreshFlags'],
+    ['act-refresh-flags-dashboard', 'Task: act.refreshFlags'],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });

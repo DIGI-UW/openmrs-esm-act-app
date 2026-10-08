@@ -39,6 +39,7 @@ describe('configSchema', () => {
         usersUrl: '${openmrsBase}/admin/users/users.list',
         clinicsUrl: '${openmrsBase}/admin/locations/location.list',
         studiesUrl: '${openmrsSpaBase}/home/act-studies',
+        refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',
       },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',

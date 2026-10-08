@@ -10,8 +10,8 @@ describe('AdminNav', () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
   });
 
-  it('offers Users and roles, Clinics, and Studies under Admin to a user who may manage them all', async () => {
-    await signInWith([homePrivilege, 'Edit Users', 'Manage Locations']);
+  it('offers Users and roles, Clinics, Studies, and Flags and adherence under Admin to a user who may use them all', async () => {
+    await signInWith([homePrivilege, 'Edit Users', 'Manage Locations', 'Task: act.refreshFlags']);
 
     render(<AdminNav />);
 
@@ -25,11 +25,20 @@ describe('AdminNav', () => {
       '/openmrs/admin/locations/location.list',
     );
     expect(screen.getByRole('link', { name: 'Studies' })).toHaveAttribute('href', '/openmrs/spa/home/act-studies');
+    expect(screen.getByRole('link', { name: 'Flags and adherence' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/home/act-refresh-flags',
+    );
   });
 
   it.each([
-    { privilege: 'Edit Users', shown: ['Users and roles'], hidden: ['Clinics', 'Studies'] },
-    { privilege: 'Manage Locations', shown: ['Clinics', 'Studies'], hidden: ['Users and roles'] },
+    { privilege: 'Edit Users', shown: ['Users and roles'], hidden: ['Clinics', 'Studies', 'Flags and adherence'] },
+    { privilege: 'Manage Locations', shown: ['Clinics', 'Studies'], hidden: ['Users and roles', 'Flags and adherence'] },
+    {
+      privilege: 'Task: act.refreshFlags',
+      shown: ['Flags and adherence'],
+      hidden: ['Users and roles', 'Clinics', 'Studies'],
+    },
   ])('offers only $shown to a user holding $privilege', async ({ privilege, shown, hidden }) => {
     await signInWith([homePrivilege, privilege]);
 
