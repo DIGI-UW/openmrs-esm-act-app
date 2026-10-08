@@ -54,11 +54,14 @@ export default function RefreshFlags() {
       );
     }
     return (
-      <p className={styles.lastRefreshed}>
-        {status?.lastRefreshed
-          ? t('lastRefreshedAt', 'Last refreshed {{when}}', { when: formatDatetime(new Date(status.lastRefreshed)) })
-          : t('notRefreshedYet', 'Not refreshed yet')}
-      </p>
+      <>
+        <p className={styles.lastRefreshed}>
+          {status?.lastRefreshed
+            ? t('lastRefreshedAt', 'Last refreshed {{when}}', { when: formatDatetime(new Date(status.lastRefreshed)) })
+            : t('notRefreshedYet', 'Not refreshed yet')}
+        </p>
+        {status?.running && <p>{t('refreshAlreadyRunning', 'A refresh is already running')}</p>}
+      </>
     );
   };
 

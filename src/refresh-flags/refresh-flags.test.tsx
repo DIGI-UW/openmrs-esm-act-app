@@ -37,13 +37,21 @@ describe('Flags and adherence', () => {
     await signInWith(['Task: act.refreshFlags']);
   });
 
-  it('says when the refresh last finished', async () => {
-    backendAnswers({ lastRefreshed: earlier, running: false }, vi.fn());
+  it('says when the refresh last finished, and does not poll while none is running', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      backendAnswers({ lastRefreshed: earlier, running: false }, vi.fn());
 
-    renderPage();
+      renderPage();
 
-    expect(await screen.findByText(`Last refreshed ${formatDatetime(new Date(earlier))}`)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Refresh now' })).toBeEnabled();
+      expect(await screen.findByText(`Last refreshed ${formatDatetime(new Date(earlier))}`)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Refresh now' })).toBeEnabled();
+      expect(screen.queryByText('A refresh is already running')).not.toBeInTheDocument();
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('says so when no refresh has finished yet', async () => {
@@ -100,6 +108,28 @@ describe('Flags and adherence', () => {
     );
   });
 
+  it('shows the already running refresh once it finishes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      backendAnswers({ lastRefreshed: earlier, running: false }, async () => ({
+        lastRefreshed: earlier,
+        running: true,
+        refreshed: false,
+      }));
+      renderPage();
+      await userEvent.click(await screen.findByRole('button', { name: 'Refresh now' }));
+      expect(await screen.findByText('A refresh is already running')).toBeInTheDocument();
+
+      backendAnswers({ lastRefreshed: now, running: false }, vi.fn());
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(await screen.findByText(`Last refreshed ${formatDatetime(new Date(now))}`)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Refresh now' })).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('reports a failed refresh and lets the user try again', async () => {
     backendAnswers({ lastRefreshed: earlier, running: false }, async () => {
       throw Object.assign(new Error(serverError), {
@@ -122,21 +152,27 @@ describe('Flags and adherence', () => {
     renderPage();
 
     await screen.findByText(`Last refreshed ${formatDatetime(new Date(earlier))}`);
+    expect(screen.getByText('A refresh is already running')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Refresh now' })).toBeDisabled();
   });
 
-  it('shows the running refresh once it finishes', async () => {
+  it('shows the running refresh once it finishes, checking every 5 seconds until then', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       backendAnswers({ lastRefreshed: earlier, running: true }, vi.fn());
       renderPage();
       await screen.findByText(`Last refreshed ${formatDatetime(new Date(earlier))}`);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
 
       backendAnswers({ lastRefreshed: now, running: false }, vi.fn());
       await vi.advanceTimersByTimeAsync(5000);
 
       expect(await screen.findByText(`Last refreshed ${formatDatetime(new Date(now))}`)).toBeInTheDocument();
+      expect(screen.queryByText('A refresh is already running')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Refresh now' })).toBeEnabled();
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
     } finally {
       vi.useRealTimers();
     }
