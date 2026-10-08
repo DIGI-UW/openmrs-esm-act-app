@@ -12,6 +12,8 @@ const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const earlier = '2026-10-07T20:37:04Z';
 const now = '2026-10-08T07:30:00Z';
+const serverError =
+  'Server responded with 500 (Internal Server Error) for url /ws/rest/v1/actcore/refresh. Check err.responseBody or network tab in dev tools for more info';
 
 function backendAnswers(status: RefreshStatus, refresh: () => Promise<RefreshStatus>) {
   mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string }) => {
@@ -66,6 +68,21 @@ describe('Flags and adherence', () => {
     );
   });
 
+  it('cannot start another refresh while its own is in flight', async () => {
+    let finish: (status: RefreshStatus) => void;
+    backendAnswers(
+      { lastRefreshed: earlier, running: false },
+      () => new Promise<RefreshStatus>((resolve) => (finish = resolve)),
+    );
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Refresh now' }));
+
+    expect(await screen.findByRole('button', { name: /Refreshing/ })).toBeDisabled();
+    finish({ lastRefreshed: now, running: false, refreshed: true });
+    expect(await screen.findByRole('button', { name: 'Refresh now' })).toBeEnabled();
+  });
+
   it('tells the user when another refresh was already running', async () => {
     backendAnswers({ lastRefreshed: earlier, running: false }, async () => ({
       lastRefreshed: earlier,
@@ -85,16 +102,16 @@ describe('Flags and adherence', () => {
 
   it('reports a failed refresh and lets the user try again', async () => {
     backendAnswers({ lastRefreshed: earlier, running: false }, async () => {
-      throw new Error('The patient flag refresh failed');
+      throw Object.assign(new Error(serverError), {
+        responseBody: { error: { message: 'The patient flag refresh failed' } },
+      });
     });
     renderPage();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Refresh now' }));
 
     await waitFor(() =>
-      expect(showSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'error', subtitle: 'The patient flag refresh failed' }),
-      ),
+      expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error', subtitle: serverError })),
     );
     expect(screen.getByRole('button', { name: 'Refresh now' })).toBeEnabled();
   });
@@ -106,5 +123,22 @@ describe('Flags and adherence', () => {
 
     await screen.findByText(`Last refreshed ${formatDatetime(new Date(earlier))}`);
     expect(screen.getByRole('button', { name: 'Refresh now' })).toBeDisabled();
+  });
+
+  it('shows the running refresh once it finishes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      backendAnswers({ lastRefreshed: earlier, running: true }, vi.fn());
+      renderPage();
+      await screen.findByText(`Last refreshed ${formatDatetime(new Date(earlier))}`);
+
+      backendAnswers({ lastRefreshed: now, running: false }, vi.fn());
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(await screen.findByText(`Last refreshed ${formatDatetime(new Date(now))}`)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Refresh now' })).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

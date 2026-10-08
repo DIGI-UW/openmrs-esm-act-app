@@ -15,6 +15,7 @@ export function useRefreshStatus() {
   const { data, error, isLoading, mutate } = useSWR<RefreshStatus, Error>(
     refreshUrl,
     async () => (await openmrsFetch<RefreshStatus>(refreshUrl)).data,
+    { refreshInterval: (status) => (status?.running ? 5000 : 0) },
   );
   return { status: data, error, isLoading, mutate };
 }
