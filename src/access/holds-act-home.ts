@@ -2,9 +2,8 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { PRIVILEGE_ACT_HOME } from '../constants';
 
 /**
- * Whether ACT home is the user's home, as for the clinician and the administrators. They hold Home's and the due
- * list's privileges only so they may give out the community clinician's and data clerk's roles, which OpenMRS
- * allows only to a user holding every privilege of the role.
+ * Whether ACT home is the user's home, as for the clinicians and the administrators. Such a user may also hold Home's
+ * or the due list's privilege, as an administrator holds both to give out the data clerk's role.
  */
 export function useHoldsActHome() {
   const { user } = useSession();

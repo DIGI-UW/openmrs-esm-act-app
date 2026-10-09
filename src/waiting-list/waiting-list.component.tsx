@@ -1,5 +1,4 @@
 import React, { useMemo, useRef } from 'react';
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -22,15 +21,13 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
-  UserHasAccess,
 } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
-import { PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
-import { downloadCsv } from '../table-filters/csv';
+import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
@@ -158,22 +155,12 @@ function WaitingListTable() {
         {filterSelect('urgency', t('urgency', 'Urgency'))}
       </div>
       <div className={styles.actions}>
-        <UserHasAccess privilege={PRIVILEGE_EXPORT_LISTS}>
-          <Button
-            kind="tertiary"
-            size="sm"
-            disabled={!ranked.length}
-            onClick={() =>
-              downloadCsv(
-                `waiting-list-${dayjs().format('YYYY-MM-DD')}.csv`,
-                columns.map((column) => column.header),
-                ranked.map((waiting) => columns.map((column) => column.text(waiting))),
-              )
-            }
-          >
-            {t('downloadCsv', 'Download CSV')}
-          </Button>
-        </UserHasAccess>
+        <DownloadCsvButton
+          name="waiting-list"
+          headers={columns.map((column) => column.header)}
+          rows={() => ranked.map((waiting) => columns.map((column) => column.text(waiting)))}
+          disabled={!ranked.length}
+        />
       </div>
       {ranked.length ? (
         <div className={styles.tableContainer}>

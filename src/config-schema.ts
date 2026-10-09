@@ -28,13 +28,15 @@ export const configSchema = {
     namePrefix: {
       _type: Type.String,
       _default: 'RHD ',
-      _description: 'The worklist tiles show the lists of the flags whose names start with this, unless names is set.',
+      _description:
+        "The registry's Flags column and filter show the flags whose names start with this, unless names is set. Each worklist names its own flag in its extension's config.",
     },
     names: {
       _type: Type.Array,
       _elements: { _type: Type.String },
       _default: [],
-      _description: 'The flags whose lists the worklist tiles show, by name. When set, namePrefix is not used.',
+      _description:
+        "The flags, by name, that the registry's Flags column and filter show. When set, namePrefix is not used.",
     },
     riskFlags: {
       _type: Type.Array,
@@ -73,7 +75,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: false,
       _description:
-        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: Home's Record BPG injection and Record oral prophylaxis always open the patient search.",
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens Enter prophylaxis, the registry's patients on prophylaxis with Record BPG or Record oral on each. It covers Enter prophylaxis only: Record BPG injection and Record oral prophylaxis always open the patient search.",
     },
     enterProphylaxisUrl: link(
       'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',

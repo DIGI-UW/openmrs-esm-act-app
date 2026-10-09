@@ -1,29 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Button,
-  InlineNotification,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tag,
-} from '@carbon/react';
-import { ConfigurableLink, formatDate, isDesktop, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
-import { MayEnterForm } from '../access/may-enter-form';
-import { type Config } from '../config-schema';
+import { InlineNotification, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
+import { ConfigurableLink, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { patientChartUrl } from '../patient-chart-url';
 import { type ReportRow } from '../reports/report-dataset.resource';
-import { parseReportDate } from '../reports/report-date';
-import { openFormInChart } from '../visits/open-form-in-chart';
+import { adherence, type DueColumn, dueColumns, lowAdherence } from './due-list';
+import { RecordDoseAction, useRecordDose } from './record-dose.component';
 import styles from './due-for-prophylaxis.scss';
-
-function lastDose(row: ReportRow) {
-  const date = parseReportDate(row.last_given);
-  return date ? formatDate(date, { time: false, noToday: true }) : '';
-}
 
 /**
  * The due list's rows, each with the form that records its next dose, or View chart once recorded today. Record waits
@@ -41,50 +24,37 @@ export function DueForProphylaxisTable({
   checking?: boolean;
 }) {
   const { t } = useTranslation();
-  const { prophylaxisCard, visitType } = useConfig<Config>();
-  const { sessionLocation } = useSession();
   const desktop = isDesktop(useLayoutType());
-  // One form at a time, as a second click while a visit is starting would start a second visit.
-  const [opening, setOpening] = useState(false);
+  const { opening, record } = useRecordDose();
 
-  const record = async (row: ReportRow, formUuid: string) => {
-    setOpening(true);
-    try {
-      await openFormInChart(t, {
-        patientUuid: String(row.patient_uuid),
-        formUuid,
-        visitType,
-        location: sessionLocation?.uuid,
-      });
-    } finally {
-      setOpening(false);
-    }
-  };
+  const columns = dueColumns(t, recorded);
 
-  const status = (row: ReportRow) => {
-    if (recorded.has(String(row.patient_uuid))) {
-      return <Tag type="green">{t('recordedToday', 'Recorded today')}</Tag>;
+  /** A column's text, as the CSV holds it, with the chart link, the status tag and the adherence colour on screen. */
+  const cell = (column: DueColumn, row: ReportRow) => {
+    const text = column.text(row);
+    if (column.key === 'patient') {
+      return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{text}</ConfigurableLink>;
     }
-    return row.status === 'due_today' ? (
-      <Tag type="blue">{t('dueToday', 'Due today')}</Tag>
-    ) : (
-      <Tag type="red">{t('overdue', 'Overdue')}</Tag>
-    );
-  };
-
-  const action = (row: ReportRow) => {
-    if (recorded.has(String(row.patient_uuid))) {
-      return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{t('viewChart', 'View chart')}</ConfigurableLink>;
+    if (column.key === 'status') {
+      if (!text) {
+        return null;
+      }
+      const recordedToday = recorded.has(String(row.patient_uuid));
+      const dueNow = !recordedToday && (row.status === 'due_today' || row.status === 'due_soon');
+      return (
+        <Tag
+          type={recordedToday ? 'green' : row.status === 'overdue' ? 'red' : 'warm-gray'}
+          className={dueNow ? styles.dueTag : undefined}
+        >
+          {text}
+        </Tag>
+      );
     }
-    const oral = row.prophylaxis_type === 'Oral';
-    const form = oral ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;
-    return (
-      <MayEnterForm formUuid={form}>
-        <Button kind="primary" size="sm" disabled={opening || checking} onClick={() => record(row, form)}>
-          {oral ? t('recordOral', 'Record oral') : t('recordBpg', 'Record BPG')}
-        </Button>
-      </MayEnterForm>
-    );
+    const percent = adherence(row);
+    if (column.key === 'adherence' && percent !== null) {
+      return <span className={lowAdherence(percent) ? styles.lowAdherence : styles.goodAdherence}>{text}</span>;
+    }
+    return text;
   };
 
   return (
@@ -105,27 +75,26 @@ export function DueForProphylaxisTable({
         <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
           <TableHead>
             <TableRow>
-              <TableHeader>{t('name', 'Name')}</TableHeader>
-              <TableHeader>{t('actId', 'ACT ID')}</TableHeader>
-              <TableHeader>{t('prophylaxisType', 'Type')}</TableHeader>
-              <TableHeader>{t('lastDose', 'Last dose')}</TableHeader>
-              <TableHeader>{t('status', 'Status')}</TableHeader>
+              {columns.map((column) => (
+                <TableHeader key={column.key}>{column.header}</TableHeader>
+              ))}
               <TableHeader aria-label={t('actions', 'Actions')} />
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map((row) => (
               <TableRow key={String(row.patient_uuid)}>
+                {columns.map((column) => (
+                  <TableCell key={column.key}>{cell(column, row)}</TableCell>
+                ))}
                 <TableCell>
-                  <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>
-                    {String(row.full_name ?? '')}
-                  </ConfigurableLink>
+                  <RecordDoseAction
+                    row={row}
+                    recordedToday={recorded.has(String(row.patient_uuid))}
+                    disabled={opening || checking}
+                    onRecord={record}
+                  />
                 </TableCell>
-                <TableCell>{String(row.rhd_id ?? '')}</TableCell>
-                <TableCell>{String(row.prophylaxis_type ?? '')}</TableCell>
-                <TableCell>{lastDose(row)}</TableCell>
-                <TableCell>{status(row)}</TableCell>
-                <TableCell>{action(row)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -6,7 +6,6 @@ import { formatDate, toOmrsIsoString, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { ActHomeCard } from './act-home-card.component';
-import ScreenPositiveRow from './screen-positive-count.component';
 import styles from './care-cascade.scss';
 
 function Cascade() {
@@ -64,7 +63,6 @@ function Cascade() {
       ) : (
         <p className={styles.empty}>{t('noCareCascadeData', 'No care cascade data')}</p>
       )}
-      <ScreenPositiveRow />
     </ActHomeCard>
   );
 }

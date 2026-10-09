@@ -5,6 +5,8 @@ import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { DueForProphylaxisTable } from './due-for-prophylaxis-table.component';
+import { DueListToolbar } from './due-list-toolbar.component';
+import { useDueFilter } from './due-list';
 import { dueForProphylaxisDashboardMeta } from './due-for-prophylaxis.meta';
 import { useDueList } from './due-for-prophylaxis.resource';
 
@@ -15,6 +17,7 @@ export default function DueForProphylaxisWidget() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { rows, recorded, recordedError, checking, waiting, isLoading, error } = useDueList();
+  const { filter, setFilter, counts, filtered } = useDueFilter(rows);
 
   return (
     <ActHomeCard
@@ -40,12 +43,26 @@ export default function DueForProphylaxisWidget() {
           showToolbar={false}
         />
       ) : rows.length ? (
-        <DueForProphylaxisTable
-          rows={rows.slice(0, shownRows)}
-          recorded={recorded}
-          recordedError={recordedError}
-          checking={checking}
-        />
+        <>
+          <DueListToolbar
+            description={t('dueWithinTwoDays', 'Due in the next 48 hours, due today or overdue')}
+            filter={filter}
+            counts={counts}
+            onFilter={setFilter}
+            rows={filtered}
+            recorded={recorded}
+          />
+          {filtered.length ? (
+            <DueForProphylaxisTable
+              rows={filtered.slice(0, shownRows)}
+              recorded={recorded}
+              recordedError={recordedError}
+              checking={checking}
+            />
+          ) : (
+            <TableEmptyState message={t('nobodyDueInThisList', 'No patients in this list')} />
+          )}
+        </>
       ) : (
         <TableEmptyState message={t('nobodyDueForProphylaxis', 'Nobody is due for prophylaxis')} />
       )}

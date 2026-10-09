@@ -1,4 +1,10 @@
-import { createDashboard, defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import {
+  createDashboard,
+  defineConfigSchema,
+  defineExtensionConfigSchema,
+  getAsyncLifecycle,
+  getSyncLifecycle,
+} from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
@@ -8,10 +14,12 @@ import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 import dueForProphylaxisDashboardLinkComponent from './due-for-prophylaxis/due-for-prophylaxis-dashboard-link.component';
+import patientsOnProphylaxisDashboardLinkComponent from './enter-prophylaxis/patients-on-prophylaxis-dashboard-link.component';
 import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
+import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
 const moduleName = '@mherman22/esm-act-app';
 
@@ -24,6 +32,9 @@ export const importTranslation = require.context('../translations', false, /.jso
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+  Object.entries(flagWorklists).forEach(([name, defaults]) =>
+    defineExtensionConfigSchema(name, flagWorklistConfigSchema(defaults)),
+  );
   trackActReturn();
 }
 
@@ -66,7 +77,10 @@ export const actHomeQuickActions = getAsyncLifecycle(
 
 export const actHomeWorklists = getAsyncLifecycle(() => import('./act-home/worklist-tiles.component'), options);
 
-export const actHomeWaitingList = getAsyncLifecycle(() => import('./act-home/waiting-list-summary.component'), options);
+export const actHomeOverdueConsultation = getAsyncLifecycle(
+  () => import('./act-home/overdue-consultation.component'),
+  options,
+);
 
 export const actHomeCareCascade = getAsyncLifecycle(() => import('./act-home/care-cascade.component'), options);
 
@@ -77,6 +91,23 @@ export const registryDashboard = getAsyncLifecycle(() => import('./registry/regi
 export const worklistsDashboardLink = getSyncLifecycle(worklistsDashboardLinkComponent, options);
 
 export const worklistsDashboard = getAsyncLifecycle(() => import('./worklists/worklists.component'), options);
+
+export const dueForProphylaxisWorklist = getAsyncLifecycle(
+  () => import('./worklists/due-for-prophylaxis-worklist.component'),
+  options,
+);
+
+export const confirmatoryEchoWorklist = getAsyncLifecycle(
+  () => import('./worklists/confirmatory-echo-worklist.component'),
+  options,
+);
+
+export const flagWorklist = getAsyncLifecycle(() => import('./worklists/flag-worklist.component'), options);
+
+export const waitingListWorklist = getAsyncLifecycle(
+  () => import('./worklists/waiting-list-worklist.component'),
+  options,
+);
 
 export const waitingListDashboardLink = getSyncLifecycle(waitingListDashboardLinkComponent, options);
 
@@ -114,6 +145,16 @@ export const refreshFlagsDashboardLink = getAsyncLifecycle(
 
 export const refreshFlagsDashboard = getAsyncLifecycle(
   () => import('./refresh-flags/refresh-flags.component'),
+  options,
+);
+
+export const patientsOnProphylaxisDashboardLink = getSyncLifecycle(
+  patientsOnProphylaxisDashboardLinkComponent,
+  options,
+);
+
+export const patientsOnProphylaxisDashboard = getAsyncLifecycle(
+  () => import('./enter-prophylaxis/patients-on-prophylaxis.component'),
   options,
 );
 

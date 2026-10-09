@@ -4,6 +4,7 @@ import { ArrowUpRight, ChartLine, Medication, Pills, Search, UserFollow } from '
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.component';
+import { patientsOnProphylaxisDashboardMeta } from '../enter-prophylaxis/patients-on-prophylaxis.meta';
 import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
 import { QuickActionTile } from './quick-action-tile.component';
 import styles from './quick-actions.scss';
@@ -83,8 +84,8 @@ export function RecordOralAction() {
 }
 
 /**
- * Enter prophylaxis: ACT's patient search, asking which prophylaxis, then opening the form in the chart; or,
- * configured back to fast data entry, its forms to choose from, as ACT 2.0 offered BPG and oral, else one link.
+ * Enter prophylaxis: the registry's patients on prophylaxis, to record what each was given; or, configured back to fast
+ * data entry, its forms to choose from, as ACT 2.0 offered BPG and oral, else one link.
  */
 export function EnterProphylaxisAction() {
   const { t } = useTranslation();
@@ -97,12 +98,7 @@ export function EnterProphylaxisAction() {
   };
 
   if (!quickActions.enterProphylaxisInFastDataEntry) {
-    return (
-      <>
-        <QuickActionTile {...tile} onClick={() => setOpen(true)} />
-        {open && <EnterProphylaxisSearch onClose={() => setOpen(false)} />}
-      </>
-    );
+    return <QuickActionTile {...tile} to={`\${openmrsSpaBase}/home/${patientsOnProphylaxisDashboardMeta.name}`} />;
   }
   if (!quickActions.prophylaxisForms.length) {
     return <QuickActionTile {...tile} to={quickActions.enterProphylaxisUrl} />;

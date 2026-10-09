@@ -18,7 +18,10 @@ export function useDueList() {
     isValidating: checking,
     error: recordedError,
   } = useRecordedToday(patientUuids);
+  // Waiting means due now: a dose due in the next two days is listed, but nobody is waiting for it yet.
   const waiting =
-    recordedError || recordedLoading ? undefined : patientUuids.filter((uuid) => !recorded.has(uuid)).length;
+    recordedError || recordedLoading
+      ? undefined
+      : rows.filter((row) => row.status !== 'due_soon' && !recorded.has(String(row.patient_uuid))).length;
   return { rows, recorded, recordedError, checking, waiting, isLoading: isLoading || recordedLoading, error };
 }
