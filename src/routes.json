@@ -60,7 +60,10 @@
       "slot": "act-home-quick-actions-slot",
       "component": "enterProphylaxisQuickAction",
       "order": 4,
-      "privileges": "Add Encounters",
+      "privileges": [
+        "Add Encounters",
+        "App: act.registry"
+      ],
       "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
@@ -363,6 +366,23 @@
       "component": "facilityReportQuickAction",
       "order": 5,
       "privileges": "App: act.dataClerk"
+    },
+    {
+      "name": "act-enter-prophylaxis-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "patientsOnProphylaxisDashboardLink",
+      "meta": {
+        "name": "act-enter-prophylaxis",
+        "slot": "act-enter-prophylaxis-dashboard-slot",
+        "title": "enterProphylaxis"
+      },
+      "privileges": "App: act.registry"
+    },
+    {
+      "name": "act-enter-prophylaxis-dashboard",
+      "slot": "act-enter-prophylaxis-dashboard-slot",
+      "component": "patientsOnProphylaxisDashboard",
+      "privileges": "App: act.registry"
     },
     {
       "name": "act-due-for-prophylaxis-dashboard-link",

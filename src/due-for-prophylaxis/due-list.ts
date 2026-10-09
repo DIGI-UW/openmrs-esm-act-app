@@ -9,8 +9,8 @@ export type DueFilter = 'bpg' | 'oral' | 'all';
 export const isOral = (row: ReportRow) => row.prophylaxis_type === 'Oral';
 
 /** The rows the BPG, Oral or All filter shows, and how many each would show. */
-export function useDueFilter(rows: Array<ReportRow>) {
-  const [filter, setFilter] = useState<DueFilter>('bpg');
+export function useDueFilter(rows: Array<ReportRow>, initial: DueFilter = 'bpg') {
+  const [filter, setFilter] = useState<DueFilter>(initial);
   const counts = useMemo(
     () => ({ bpg: rows.filter((row) => !isOral(row)).length, oral: rows.filter(isOral).length, all: rows.length }),
     [rows],
@@ -22,12 +22,15 @@ export function useDueFilter(rows: Array<ReportRow>) {
   return { filter, setFilter, counts, filtered };
 }
 
-/** How the patient takes prophylaxis: "BPG · every 28 days", or the oral regimen's name. */
+/** How the patient takes prophylaxis: "BPG · every 28 days", else the regimen's name, or None without a prescription. */
 export function prescription(t: TFunction, row: ReportRow) {
-  if (!isOral(row)) {
+  if (row.status === 'no_prescription') {
+    return t('none', 'None');
+  }
+  if (!isOral(row) && row.injection_interval_days) {
     return t('bpgEveryDays', 'BPG · every {{days}} days', { days: row.injection_interval_days });
   }
-  return row.regimen ? String(row.regimen) : t('oral', 'Oral');
+  return row.regimen ? String(row.regimen) : isOral(row) ? t('oral', 'Oral') : '';
 }
 
 export function lastDose(row: ReportRow) {
@@ -72,6 +75,15 @@ export function dueColumns(t: TFunction, recorded: Set<string>): Array<DueColumn
 export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean) {
   if (recordedToday) {
     return t('recordedToday', 'Recorded today');
+  }
+  if (row.status === 'up_to_date') {
+    return t('upToDate', 'Up to date');
+  }
+  if (row.status === 'no_prescription') {
+    return t('noPrescription', 'No prescription');
+  }
+  if (!row.status) {
+    return '';
   }
   if (row.status === 'due_soon') {
     return t('dueIn48Hours', 'Due in 48 h');

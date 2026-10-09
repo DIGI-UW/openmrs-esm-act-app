@@ -8,6 +8,7 @@ import { patientChartUrl } from '../patient-chart-url';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { openFormInChart } from '../visits/open-form-in-chart';
 import { isOral } from './due-list';
+import styles from './due-for-prophylaxis.scss';
 
 /**
  * Opens a due row's next dose form in the patient's chart, one form at a time, as a second click while a visit is
@@ -35,7 +36,7 @@ export function useRecordDose() {
   return { opening, record };
 }
 
-/** A due row's Record BPG or Record oral, or View chart once recorded today. */
+/** A due row's Record BPG or Record oral, View chart once recorded today, or Needs prescription without one. */
 export function RecordDoseAction({
   row,
   recordedToday,
@@ -49,6 +50,9 @@ export function RecordDoseAction({
 }) {
   const { t } = useTranslation();
   const { prophylaxisCard } = useConfig<Config>();
+  if (row.status === 'no_prescription') {
+    return <span className={styles.needsPrescription}>{t('needsPrescription', 'Needs prescription')}</span>;
+  }
   if (recordedToday) {
     return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{t('viewChart', 'View chart')}</ConfigurableLink>;
   }

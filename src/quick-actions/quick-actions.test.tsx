@@ -68,11 +68,12 @@ describe('Quick actions card', () => {
   });
 
   it('draws a tile with its subtitle under its label', async () => {
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     await signInWith([homePrivilege, 'Add Encounters']);
 
     render(<EnterProphylaxisAction />);
 
-    expect(screen.getByRole('button', { name: 'Enter prophylaxis BPG or oral' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Enter prophylaxis BPG or oral' })).toBeInTheDocument();
   });
 });
 
@@ -111,12 +112,13 @@ describe('ACT home quick actions', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it("opens Enter prophylaxis's patient search by default", async () => {
+  it('opens the patients on prophylaxis by default', () => {
     render(<EnterProphylaxisAction />);
 
-    await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
-
-    expect(screen.getByRole('dialog', { name: 'Enter prophylaxis' })).toHaveTextContent('Which prophylaxis?');
+    expect(screen.getByRole('link', { name: /enter prophylaxis/i })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/home/act-enter-prophylaxis',
+    );
   });
 
   it('offers BPG and oral prophylaxis as ACT 2.0 did, each opening its form in fast data entry', async () => {

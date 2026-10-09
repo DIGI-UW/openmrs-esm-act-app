@@ -14,6 +14,7 @@ import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 import dueForProphylaxisDashboardLinkComponent from './due-for-prophylaxis/due-for-prophylaxis-dashboard-link.component';
+import patientsOnProphylaxisDashboardLinkComponent from './enter-prophylaxis/patients-on-prophylaxis-dashboard-link.component';
 import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
@@ -144,6 +145,16 @@ export const refreshFlagsDashboardLink = getAsyncLifecycle(
 
 export const refreshFlagsDashboard = getAsyncLifecycle(
   () => import('./refresh-flags/refresh-flags.component'),
+  options,
+);
+
+export const patientsOnProphylaxisDashboardLink = getSyncLifecycle(
+  patientsOnProphylaxisDashboardLinkComponent,
+  options,
+);
+
+export const patientsOnProphylaxisDashboard = getAsyncLifecycle(
+  () => import('./enter-prophylaxis/patients-on-prophylaxis.component'),
   options,
 );
 

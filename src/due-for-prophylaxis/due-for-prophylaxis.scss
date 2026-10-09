@@ -66,3 +66,8 @@
   font-weight: 600;
   color: colors.$green-60;
 }
+
+.needsPrescription {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+}

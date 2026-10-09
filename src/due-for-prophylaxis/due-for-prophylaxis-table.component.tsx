@@ -36,11 +36,14 @@ export function DueForProphylaxisTable({
       return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{text}</ConfigurableLink>;
     }
     if (column.key === 'status') {
+      if (!text) {
+        return null;
+      }
       const recordedToday = recorded.has(String(row.patient_uuid));
-      const dueNow = !recordedToday && row.status !== 'overdue';
+      const dueNow = !recordedToday && (row.status === 'due_today' || row.status === 'due_soon');
       return (
         <Tag
-          type={recordedToday ? 'green' : dueNow ? 'warm-gray' : 'red'}
+          type={recordedToday ? 'green' : row.status === 'overdue' ? 'red' : 'warm-gray'}
           className={dueNow ? styles.dueTag : undefined}
         >
           {text}

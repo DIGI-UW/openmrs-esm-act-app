@@ -10,6 +10,7 @@ const filters: Array<DueFilter> = ['bpg', 'oral', 'all'];
 
 /** The due list's description, its BPG, Oral and All filter with counts, and Download CSV of the filtered rows. */
 export function DueListToolbar({
+  csvName = 'due-for-prophylaxis',
   description,
   filter,
   counts,
@@ -17,6 +18,7 @@ export function DueListToolbar({
   rows,
   recorded,
 }: {
+  csvName?: string;
   description?: string;
   filter: DueFilter;
   counts: Record<DueFilter, number>;
@@ -43,7 +45,7 @@ export function DueListToolbar({
           ))}
         </ContentSwitcher>
         <DownloadCsvButton
-          name={`due-for-prophylaxis-${filter}`}
+          name={`${csvName}-${filter}`}
           headers={columns.map((column) => column.header)}
           rows={() => rows.map((row) => columns.map((column) => column.text(row)))}
           disabled={!rows.length}
