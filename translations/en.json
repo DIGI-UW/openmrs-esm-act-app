@@ -88,6 +88,7 @@
   "dueIn48Hours": "Due in 48 h",
   "dueInDays": "Due in {{days}} days",
   "dueInOneDay": "Due in 1 day",
+  "dueOn": "Due {{date}}",
   "dueThisWeek": "Due this week",
   "dueToday": "Due today",
   "dueWithinSevenDays": "Due within 7 days",

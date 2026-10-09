@@ -237,6 +237,35 @@ describe('Flag worklist', () => {
   });
 });
 
+describe('Cardiology follow-up worklist', () => {
+  it('says each patient is overdue since, or due by, their next review date', async () => {
+    await signInWith(
+      [worklistsPrivilege],
+      flagWorklists['act-worklist-cardiology-follow-up'] as unknown as Partial<Config>,
+    );
+    const flag = 'RHD cardiology follow-up due';
+    vi.mocked(useRhdFlagList).mockReturnValue({
+      list: { cohortUuid: 'cohort', memberCount: 2 },
+      isLoading: false,
+      error: undefined,
+    });
+    reports({
+      registry: [
+        { ...registryRow(1, flag), next_consultation_date: dayjs().subtract(9, 'day').format('YYYY-MM-DD') },
+        { ...registryRow(2, flag), next_consultation_date: dayjs().add(5, 'day').format('YYYY-MM-DD') },
+      ],
+    });
+
+    render(<FlagWorklist {...list} />);
+
+    expect(vi.mocked(useRhdFlagList)).toHaveBeenCalledWith(flag);
+    expect(tableRows().map((row) => row[4])).toEqual([
+      expect.stringMatching(/^Overdue · was due \S/),
+      expect.stringMatching(/^Due \S/),
+    ]);
+  });
+});
+
 describe('Due for prophylaxis worklist', () => {
   const dueRow = (i: number, status: string, nextDue: string, type = 'BPG') => ({
     patient_uuid: `patient-${i}`,

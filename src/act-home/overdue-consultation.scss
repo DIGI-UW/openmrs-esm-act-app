@@ -10,9 +10,15 @@
   margin-bottom: layout.$spacing-05;
 }
 
-// A table wider than the card scrolls inside it rather than widening the page.
+// A table wider than the card scrolls inside it rather than widening the page; dates keep to one line.
 .tableContainer {
   overflow-x: auto;
+
+  th,
+  td {
+    padding-inline: layout.$spacing-03;
+    white-space: nowrap;
+  }
 }
 
 .name {
@@ -26,7 +32,8 @@
   color: $text-02;
 }
 
-.days {
+// Carbon colours its cells, so the days overdue need the table's specificity to read red.
+.tableContainer td.days {
   @include type.type-style('heading-compact-01');
   color: $act-risk;
 }

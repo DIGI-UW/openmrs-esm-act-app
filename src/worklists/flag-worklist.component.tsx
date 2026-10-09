@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { type TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { rowFlags } from '../registry/registry-filters';
 import { useRegistryReport } from '../registry/registry.resource';
 import { type ReportRow } from '../reports/report-dataset.resource';
@@ -28,19 +28,48 @@ function onListSince(t: TFunction, row: ReportRow, flag: string) {
   });
 }
 
-function FlagPatients({ flag, title, csvName }: { flag: string; title: string; csvName: string }) {
+/** The date the patient is due by: "Overdue · was due …" once it has passed, else "Due …". */
+function dueBy(t: TFunction, value: unknown) {
+  const due = parseReportDate(value);
+  if (!due) {
+    return '';
+  }
+  const now = new Date();
+  const date = formatDate(due, { time: false, noToday: true });
+  return due < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    ? t('overdueWasDue', 'Overdue · was due {{date}}', { date })
+    : t('dueOn', 'Due {{date}}', { date });
+}
+
+function FlagPatients({
+  flag,
+  dueDateColumn,
+  title,
+  csvName,
+}: {
+  flag: string;
+  dueDateColumn: string;
+  title: string;
+  csvName: string;
+}) {
   const { t } = useTranslation();
   const { rows, isLoading, error } = useRegistryReport();
   const entries = useMemo(
-    () => rows.filter((row) => rowFlags(row).includes(flag)).map((row) => ({ row, why: onListSince(t, row, flag) })),
-    [rows, flag, t],
+    () =>
+      rows
+        .filter((row) => rowFlags(row).includes(flag))
+        .map((row) => ({
+          row,
+          why: dueDateColumn ? dueBy(t, row[dueDateColumn]) : onListSince(t, row, flag),
+        })),
+    [rows, flag, dueDateColumn, t],
   );
   return <WorklistTable title={title} csvName={csvName} entries={entries} isLoading={isLoading} error={error} />;
 }
 
 /** A worklist of the patients on one flag's list, as its extension's config names the flag; nothing where it has no list. */
 export default function FlagWorklist(state: WorklistState) {
-  const { flag, title, tone } = useConfig<FlagWorklistConfig>();
+  const { flag, title, tone, dueDateColumn } = useConfig<FlagWorklistConfig>();
   const { list, isLoading, error } = useRhdFlagList(flag);
   if (!isLoading && !error && !list) {
     return null;
@@ -52,7 +81,14 @@ export default function FlagWorklist(state: WorklistState) {
       tone={tone}
       count={list?.memberCount}
       error={error}
-      list={<FlagPatients flag={flag} title={title} csvName={flag.toLowerCase().replace(/\W+/g, '-')} />}
+      list={
+        <FlagPatients
+          flag={flag}
+          dueDateColumn={dueDateColumn}
+          title={title}
+          csvName={flag.toLowerCase().replace(/\W+/g, '-')}
+        />
+      }
     />
   );
 }
