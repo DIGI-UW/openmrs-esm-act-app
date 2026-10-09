@@ -76,7 +76,10 @@ export const actHomeQuickActions = getAsyncLifecycle(
 
 export const actHomeWorklists = getAsyncLifecycle(() => import('./act-home/worklist-tiles.component'), options);
 
-export const actHomeWaitingList = getAsyncLifecycle(() => import('./act-home/waiting-list-summary.component'), options);
+export const actHomeOverdueConsultation = getAsyncLifecycle(
+  () => import('./act-home/overdue-consultation.component'),
+  options,
+);
 
 export const actHomeCareCascade = getAsyncLifecycle(() => import('./act-home/care-cascade.component'), options);
 

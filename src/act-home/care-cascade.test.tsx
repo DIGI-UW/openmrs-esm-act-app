@@ -87,16 +87,6 @@ describe('CareCascade', () => {
     expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual(['Covered9']);
   });
 
-  it('ends with the screen positive count, opening that list, for a user who may see it', async () => {
-    await signInWith([homePrivilege, 'App: act.registry', 'App: act.screenPositive']);
-    dataset({ rows: cascade });
-
-    render(<CareCascade />);
-
-    expect(screen.getByTestId('screen-positive-row')).toHaveTextContent('Screen positive, pending confirmation');
-    expect(screen.getByTestId('screen-positive-row')).toHaveAttribute('href', '/openmrs/spa/home/act-screen-positive');
-  });
-
   it('leaves out a configured step the report does not return', async () => {
     await signInWith(['App: act.registry'], {
       careCascade: {

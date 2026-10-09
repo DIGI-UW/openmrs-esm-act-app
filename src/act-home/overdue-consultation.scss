@@ -1,0 +1,32 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
+
+.description {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-top: -(layout.$spacing-04);
+  margin-bottom: layout.$spacing-05;
+}
+
+// A table wider than the card scrolls inside it rather than widening the page.
+.tableContainer {
+  overflow-x: auto;
+}
+
+.name {
+  display: block;
+  @include type.type-style('heading-compact-01');
+}
+
+.actId {
+  display: block;
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.days {
+  @include type.type-style('heading-compact-01');
+  color: $act-risk;
+}

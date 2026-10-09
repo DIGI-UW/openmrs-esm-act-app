@@ -14,7 +14,7 @@ export default function BackToActLink() {
     'act-registry': t('backToRegistry', 'Back to Registry'),
     'act-worklists': t('backToWorklists', 'Back to Worklists'),
     'act-waiting-list': t('backToWaitingList', 'Back to Procedural waiting list'),
-    'act-screen-positive': t('backToScreenPositive', 'Back to Screen positive pending'),
+    'act-screen-positive': t('backToConfirmatoryEchoDue', 'Back to Confirmatory echo due'),
     'act-community-home': t('backToHome', 'Back to Home'),
     'act-due-for-prophylaxis': t('backToDueForProphylaxis', 'Back to Due for prophylaxis'),
   };

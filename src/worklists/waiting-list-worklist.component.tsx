@@ -4,9 +4,10 @@ import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { labelUrgencies, rankWaitingRows } from '../waiting-list/urgency';
+import { waitingListDashboardMeta } from '../waiting-list/waiting-list.meta';
 import { Worklist, type WorklistState, WorklistTable } from './worklist.component';
 
-/** The patients waiting for a procedure, most urgent first, as the Procedural waiting list ranks them. */
+/** The patients waiting for a procedure, most urgent first, as the Procedural waiting list ranks them; its tile opens that page. */
 export default function WaitingListWorklist(state: WorklistState) {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
@@ -27,6 +28,7 @@ export default function WaitingListWorklist(state: WorklistState) {
       tone="red"
       count={isLoading ? undefined : rows.length}
       error={error}
+      page={`\${openmrsSpaBase}/home/${waitingListDashboardMeta.name}`}
       list={
         <WorklistTable
           title={title}

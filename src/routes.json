@@ -95,11 +95,12 @@
       "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
-      "name": "act-home-waiting-list",
+      "name": "act-home-overdue-consultation",
       "slot": "rhd-home-widgets-slot",
-      "component": "actHomeWaitingList",
+      "component": "actHomeOverdueConsultation",
       "order": 5,
-      "privileges": "App: act.waitingList"
+      "privileges": "App: act.registry",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
       "name": "act-home-care-cascade",

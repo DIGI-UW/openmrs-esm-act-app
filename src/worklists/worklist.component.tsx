@@ -41,7 +41,8 @@ export type WorklistTone = 'red' | 'orange';
 
 /**
  * A worklist in the view its slot asks for. `count` is unknown while it loads; `error` shows on the tile, and `list`
- * is rendered only when the list is shown.
+ * is rendered only when the list is shown. A worklist with a `page` of its own opens it from its tile, on ACT home and
+ * on the Worklists page alike.
  */
 export function Worklist({
   state,
@@ -50,6 +51,7 @@ export function Worklist({
   count,
   error,
   list,
+  page,
 }: {
   state: WorklistState;
   title: string;
@@ -57,6 +59,7 @@ export function Worklist({
   count?: number;
   error?: Error;
   list: React.ReactNode;
+  page?: string;
 }) {
   const { t } = useTranslation();
   if (state.view === 'list') {
@@ -81,7 +84,7 @@ export function Worklist({
       <span className={styles.name}>{title}</span>
     </div>
   );
-  if (state.view === 'choice') {
+  if (state.view === 'choice' && !page) {
     return (
       <button type="button" className={styles.choice} aria-pressed={!!state.selected} onClick={state.onSelect}>
         {tile}
@@ -89,7 +92,7 @@ export function Worklist({
     );
   }
   return (
-    <ConfigurableLink to={state.to} className={styles.link}>
+    <ConfigurableLink to={page ?? state.to} className={styles.link}>
       {tile}
     </ConfigurableLink>
   );

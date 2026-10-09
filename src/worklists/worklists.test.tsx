@@ -302,6 +302,19 @@ describe('Confirmatory echo worklist', () => {
     expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'orange');
   });
 
+  it('opens Confirmatory echo due from its tile for a user who has that page, else chooses its list', async () => {
+    const { unmount } = render(<ConfirmatoryEchoWorklist view="choice" onSelect={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /Confirmatory echo due/ })).toBeInTheDocument();
+    unmount();
+
+    await signInWith([worklistsPrivilege, 'App: act.screenPositive']);
+    render(<ConfirmatoryEchoWorklist view="choice" onSelect={vi.fn()} />);
+    expect(screen.getByRole('link', { name: /Confirmatory echo due/ })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/home/act-screen-positive',
+    );
+  });
+
   it('lists them with when they screened positive', () => {
     render(<ConfirmatoryEchoWorklist {...list} />);
 
@@ -321,5 +334,17 @@ describe('Procedural waiting list worklist', () => {
     render(<WaitingListWorklist {...list} />);
 
     expect(tableRows()).toEqual([['Patient 5rhd00005', '15 M', 'RHD B', 'Q28 day BPG', 'Mitral valve repair']]);
+  });
+
+  it('opens the waiting list page from its tile, on ACT home and on the Worklists page', async () => {
+    await signInWith([worklistsPrivilege, 'App: act.waitingList']);
+    reports({});
+
+    render(<WaitingListWorklist view="choice" onSelect={vi.fn()} />);
+
+    expect(screen.getByRole('link', { name: /Procedural waiting list/ })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/home/act-waiting-list',
+    );
   });
 });

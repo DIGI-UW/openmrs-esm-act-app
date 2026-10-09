@@ -41,7 +41,7 @@ function options(label: string) {
     .map((option) => option.textContent);
 }
 
-describe('Screen positive, pending confirmation', () => {
+describe('Confirmatory echo due', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-screen-positive');
