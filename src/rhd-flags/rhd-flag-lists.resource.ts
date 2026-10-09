@@ -3,12 +3,10 @@ import { restBaseUrl } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
 
-/** The patient list ACT Core keeps for one flag, with the patients on it now. */
+/** One of the configured RHD flags, and whether it is a risk or a data quality flag. */
 export interface RhdFlagList {
-  cohortUuid: string | null;
   flagName: string;
   priority: 'risk' | 'dataQuality';
-  memberCount: number;
 }
 
 /** Lists are read as cohorts: the flags themselves are readable only with privileges that run SQL. */

@@ -30,7 +30,7 @@ describe('DueForProphylaxisDashboardLink', () => {
     );
   });
 
-  it('is left out for a user whose home is ACT home, where the registry shows who is due', async () => {
+  it('is left out for a user whose home is ACT home, where a worklist shows who is due', async () => {
     await signInWith(['App: act.dueList', homePrivilege]);
 
     render(<DueForProphylaxisDashboardLink />);

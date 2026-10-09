@@ -22,6 +22,9 @@ vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn()
 vi.mock('../visits/open-form-in-chart', () => ({ openFormInChart: vi.fn() }));
 vi.mock('./recorded-today.resource', () => ({ useRecordedToday: vi.fn() }));
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
+vi.mock('./due-for-prophylaxis.scss', () => ({
+  default: { dueTag: 'dueTag', lowAdherence: 'lowAdherence', goodAdherence: 'goodAdherence' },
+}));
 const mockUseReportDataset = vi.mocked(useReportDataset);
 const mockOpenFormInChart = vi.mocked(openFormInChart);
 const mockUseRecordedToday = vi.mocked(useRecordedToday);
@@ -59,6 +62,19 @@ function cells(name: RegExp) {
   return within(screen.getByRole('row', { name }))
     .getAllByRole('cell')
     .map((cell) => cell.textContent);
+}
+
+/** The status tag in the patient's row: its text, its Carbon colour and whether it is drawn yellow. */
+function statusTag(name: RegExp) {
+  const status = within(screen.getByRole('row', { name })).getAllByRole('cell')[4];
+  // The tag has no role, so it is found around its label.
+  // eslint-disable-next-line testing-library/no-node-access
+  const tag = within(status).getByTitle(/./).parentElement;
+  return [
+    tag.textContent,
+    tag.className.match(/cds--tag--(red|green|warm-gray)/)?.[0],
+    tag.classList.contains('dueTag'),
+  ];
 }
 
 describe('Due for prophylaxis page', () => {
@@ -112,6 +128,35 @@ describe('Due for prophylaxis page', () => {
       'href',
       '/openmrs/spa/patient/patient-overdue/chart',
     );
+  });
+
+  it('tags Overdue red, Due today and Due in 48 h yellow, and Recorded today green', async () => {
+    dataset({ rows: dueRows });
+    recorded(['patient-today']);
+
+    render(<DueForProphylaxis />);
+    await showAll();
+
+    expect([/rhd00012/, /rhd00021/, /rhd00003/, /rhd00052/].map(statusTag)).toEqual([
+      ['Overdue', 'cds--tag--red', false],
+      ['Due today', 'cds--tag--warm-gray', true],
+      ['Recorded today', 'cds--tag--green', false],
+      ['Due in 48 h', 'cds--tag--warm-gray', true],
+    ]);
+  });
+
+  it('shows adherence red below 80% and green from 80%', () => {
+    dataset({
+      rows: [
+        { ...dueRows[0], adherence: 79 },
+        { ...dueRows[2], adherence: 80 },
+      ],
+    });
+
+    render(<DueForProphylaxis />);
+
+    expect(screen.getByText('79%')).toHaveClass('lowAdherence');
+    expect(screen.getByText('80%')).toHaveClass('goodAdherence');
   });
 
   it('opens the BPG form in the chart from Record BPG, and the oral form from Record oral', async () => {
@@ -370,6 +415,20 @@ describe('Due for prophylaxis widget', () => {
     expect(
       screen.getAllByRole('button', { name: 'Record BPG' }).map((button) => button.hasAttribute('disabled')),
     ).toEqual([true, true]);
+  });
+
+  it('downloads the patients the filter shows as CSV', async () => {
+    await signInWith(['App: act.dueList', 'Add Encounters', 'Task: act.lists.export']);
+    dataset({ rows: dueRows });
+    render(<DueForProphylaxisWidget />);
+    const csvNames = () => vi.mocked(downloadCsv).mock.lastCall[2].map((row) => row[0]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    expect(csvNames()).toEqual(['Amina Nakato', 'Abebe Zeleke', 'Peter Mugisha']);
+
+    await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    expect(csvNames()).toEqual(['Joan Apio']);
   });
 
   it('hides the waiting count once everyone listed was recorded today', () => {

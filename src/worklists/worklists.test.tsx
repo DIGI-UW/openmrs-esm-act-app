@@ -248,7 +248,7 @@ describe('Flag worklist', () => {
 });
 
 describe('Cardiology follow-up worklist', () => {
-  it('says each patient is overdue since, or due by, their next review date', async () => {
+  it('says each patient is overdue since, or due by, their next review date, a patient due today not yet overdue', async () => {
     await signInWith(
       [worklistsPrivilege],
       flagWorklists['act-worklist-cardiology-follow-up'] as unknown as Partial<Config>,
@@ -263,6 +263,7 @@ describe('Cardiology follow-up worklist', () => {
       registry: [
         { ...registryRow(1, flag), next_consultation_date: dayjs().subtract(9, 'day').format('YYYY-MM-DD') },
         { ...registryRow(2, flag), next_consultation_date: dayjs().add(5, 'day').format('YYYY-MM-DD') },
+        { ...registryRow(3, flag), next_consultation_date: dayjs().format('YYYY-MM-DD') },
       ],
     });
 
@@ -271,6 +272,7 @@ describe('Cardiology follow-up worklist', () => {
     expect(vi.mocked(useRhdFlagList)).toHaveBeenCalledWith(flag);
     expect(tableRows().map((row) => row[4])).toEqual([
       expect.stringMatching(/^Overdue · was due \S/),
+      expect.stringMatching(/^Due \S/),
       expect.stringMatching(/^Due \S/),
     ]);
   });
