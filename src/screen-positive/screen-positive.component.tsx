@@ -50,7 +50,7 @@ function screenDate(row: ReportRow) {
 
 const screenPositiveFormEntryWorkspace = 'act-screen-positive-form-entry-workspace';
 
-function ScreenPositiveTable() {
+export function ScreenPositiveTable() {
   const { t } = useTranslation();
   const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());

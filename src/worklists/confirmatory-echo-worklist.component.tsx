@@ -5,12 +5,12 @@ import { PRIVILEGE_SCREEN_POSITIVE } from '../constants';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
-import { screenPositiveDashboardMeta } from '../screen-positive/screen-positive.meta';
-import { Worklist, type WorklistState, WorklistTable } from './worklist.component';
+import { ScreenPositiveTable } from '../screen-positive/screen-positive.component';
+import { Worklist, type WorklistState, WorklistSection, WorklistTable } from './worklist.component';
 
 /**
- * The patients who screened positive and are waiting for a confirmatory echo. Its tile opens Confirmatory echo due,
- * where the echo is entered, for a user who has that page.
+ * The patients who screened positive and are waiting for a confirmatory echo. A user who has Confirmatory echo due
+ * gets its table here, with its filters and Enter diagnosis; anyone else sees the worklist's own columns.
  */
 export default function ConfirmatoryEchoWorklist(state: WorklistState) {
   const { t } = useTranslation();
@@ -37,15 +37,20 @@ export default function ConfirmatoryEchoWorklist(state: WorklistState) {
       tone="orange"
       count={isLoading ? undefined : rows.length}
       error={error}
-      page={hasPage ? `\${openmrsSpaBase}/home/${screenPositiveDashboardMeta.name}` : undefined}
       list={
-        <WorklistTable
-          title={title}
-          csvName="confirmatory-echo-due"
-          entries={entries}
-          isLoading={isLoading}
-          error={error}
-        />
+        hasPage ? (
+          <WorklistSection title={title}>
+            <ScreenPositiveTable />
+          </WorklistSection>
+        ) : (
+          <WorklistTable
+            title={title}
+            csvName="confirmatory-echo-due"
+            entries={entries}
+            isLoading={isLoading}
+            error={error}
+          />
+        )
       }
     />
   );

@@ -41,8 +41,8 @@ export type WorklistTone = 'red' | 'orange';
 
 /**
  * A worklist in the view its slot asks for. `count` is unknown while it loads; `error` shows on the tile, and `list`
- * is rendered only when the list is shown. A worklist with a `page` of its own opens it from its tile, on ACT home and
- * on the Worklists page alike.
+ * is rendered only when the list is shown. Every tile opens its list on the Worklists page, so the user stays among
+ * the lists, a list that has a page of its own included.
  */
 export function Worklist({
   state,
@@ -51,7 +51,6 @@ export function Worklist({
   count,
   error,
   list,
-  page,
 }: {
   state: WorklistState;
   title: string;
@@ -59,7 +58,6 @@ export function Worklist({
   count?: number;
   error?: Error;
   list: React.ReactNode;
-  page?: string;
 }) {
   const { t } = useTranslation();
   if (state.view === 'list') {
@@ -84,7 +82,7 @@ export function Worklist({
       <span className={styles.name}>{title}</span>
     </div>
   );
-  if (state.view === 'choice' && !page) {
+  if (state.view === 'choice') {
     return (
       <button type="button" className={styles.choice} aria-pressed={!!state.selected} onClick={state.onSelect}>
         {tile}
@@ -92,7 +90,7 @@ export function Worklist({
     );
   }
   return (
-    <ConfigurableLink to={page ?? state.to} className={styles.link}>
+    <ConfigurableLink to={state.to} className={styles.link}>
       {tile}
     </ConfigurableLink>
   );
@@ -233,9 +231,9 @@ export function WorklistTable({
   };
 
   return (
-    <section className={styles.patients}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>{title}</h2>
+    <WorklistSection
+      title={title}
+      actions={
         <DownloadCsvButton
           name={csvName}
           headers={columns.map((column) => column.header)}
@@ -243,8 +241,30 @@ export function WorklistTable({
           disabled={!entries.length}
           size="md"
         />
-      </div>
+      }
+    >
       {body()}
+    </WorklistSection>
+  );
+}
+
+/** A worklist's patients on the Worklists page: its title, any actions beside it, then the list. */
+export function WorklistSection({
+  title,
+  actions,
+  children,
+}: {
+  title: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={styles.patients}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>{title}</h2>
+        {actions}
+      </div>
+      {children}
     </section>
   );
 }
