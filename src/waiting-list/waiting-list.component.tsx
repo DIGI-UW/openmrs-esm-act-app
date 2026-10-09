@@ -44,7 +44,7 @@ import styles from './waiting-list.scss';
 
 const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
 
-function WaitingListTable() {
+export function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());

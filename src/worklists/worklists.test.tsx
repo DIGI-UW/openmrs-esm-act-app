@@ -31,6 +31,13 @@ vi.mock('../access/may-enter-form', () => ({
   MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+// The two pages' own tables are their pages' tests; here it matters only that the worklist shows them.
+vi.mock('../waiting-list/waiting-list.component', () => ({
+  WaitingListTable: () => <div data-testid="waiting-list-table" />,
+}));
+vi.mock('../screen-positive/screen-positive.component', () => ({
+  ScreenPositiveTable: () => <div data-testid="screen-positive-table" />,
+}));
 vi.mock('../rhd-flags/rhd-flag-lists.resource', () => ({ useRhdFlagList: vi.fn() }));
 vi.mock('../due-for-prophylaxis/due-for-prophylaxis.resource', () => ({ useDueList: vi.fn() }));
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
@@ -343,17 +350,20 @@ describe('Confirmatory echo worklist', () => {
     expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'orange');
   });
 
-  it('opens Confirmatory echo due from its tile for a user who has that page, else chooses its list', async () => {
-    const { unmount } = render(<ConfirmatoryEchoWorklist view="choice" onSelect={vi.fn()} />);
-    expect(screen.getByRole('button', { name: /Confirmatory echo due/ })).toBeInTheDocument();
-    unmount();
-
+  it('chooses its list on the Worklists page for every user, rather than leaving it', async () => {
     await signInWith([worklistsPrivilege, 'App: act.screenPositive']);
     render(<ConfirmatoryEchoWorklist view="choice" onSelect={vi.fn()} />);
-    expect(screen.getByRole('link', { name: /Confirmatory echo due/ })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-screen-positive',
-    );
+
+    expect(screen.getByRole('button', { name: /Confirmatory echo due/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('shows Confirmatory echo due itself, with Enter diagnosis, to a user who has that page', async () => {
+    await signInWith([worklistsPrivilege, 'App: act.screenPositive']);
+    render(<ConfirmatoryEchoWorklist {...list} />);
+
+    expect(screen.getByRole('heading', { name: 'Confirmatory echo due' })).toBeInTheDocument();
+    expect(screen.getByTestId('screen-positive-table')).toBeInTheDocument();
   });
 
   it('lists them with when they screened positive', () => {
@@ -365,27 +375,25 @@ describe('Confirmatory echo worklist', () => {
 });
 
 describe('Procedural waiting list worklist', () => {
-  it('lists the waiting patients with their procedure', async () => {
+  beforeEach(async () => {
     await signInWith([worklistsPrivilege, 'App: act.waitingList']);
-    reports({
-      registry: [registryRow(5)],
-      waitingList: [{ patient_uuid: 'patient-5', rhd_id: 'rhd00005', procedure_name: 'Mitral valve repair' }],
-    });
-
-    render(<WaitingListWorklist {...list} />);
-
-    expect(tableRows()).toEqual([['Patient 5rhd00005', '15 M', 'RHD B', 'Q28 day BPG', 'Mitral valve repair']]);
+    reports({ waitingList: [{ patient_uuid: 'patient-5' }, { patient_uuid: 'patient-6' }] });
   });
 
-  it('opens the waiting list page from its tile, on ACT home and on the Worklists page', async () => {
-    await signInWith([worklistsPrivilege, 'App: act.waitingList']);
-    reports({});
+  it('shows the waiting list itself, with its filters and ranking, under its title', () => {
+    render(<WaitingListWorklist {...list} />);
 
-    render(<WaitingListWorklist view="choice" onSelect={vi.fn()} />);
+    expect(screen.getByRole('heading', { name: 'Procedural waiting list' })).toBeInTheDocument();
+    expect(screen.getByTestId('waiting-list-table')).toBeInTheDocument();
+  });
 
-    expect(screen.getByRole('link', { name: /Procedural waiting list/ })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-waiting-list',
-    );
+  it('chooses its list on the Worklists page, rather than leaving it', async () => {
+    const onSelect = vi.fn();
+    render(<WaitingListWorklist view="choice" onSelect={onSelect} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /2\s*Procedural waiting list/ }));
+
+    expect(onSelect).toHaveBeenCalled();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

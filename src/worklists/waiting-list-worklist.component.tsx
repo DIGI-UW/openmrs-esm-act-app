@@ -1,26 +1,17 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
-import { labelUrgencies, rankWaitingRows } from '../waiting-list/urgency';
-import { waitingListDashboardMeta } from '../waiting-list/waiting-list.meta';
-import { Worklist, type WorklistState, WorklistTable } from './worklist.component';
+import { WaitingListTable } from '../waiting-list/waiting-list.component';
+import { Worklist, type WorklistState, WorklistSection } from './worklist.component';
 
-/** The patients waiting for a procedure, most urgent first, as the Procedural waiting list ranks them; its tile opens that page. */
+/** The patients waiting for a procedure, shown as the Procedural waiting list shows them, with its filters and ranking. */
 export default function WaitingListWorklist(state: WorklistState) {
   const { t } = useTranslation();
-  const { waitingList, urgencyBands } = useConfig<Config>();
+  const { waitingList } = useConfig<Config>();
   const { rows, isLoading, error } = useReportDataset(waitingList.report);
   const title = t('proceduralWaitingList', 'Procedural waiting list');
-  const entries = useMemo(
-    () =>
-      rankWaitingRows(labelUrgencies(rows, urgencyBands, 'shortLabel'), urgencyBands).map(({ row }) => ({
-        row,
-        why: [row.procedure_name, row.urgency].filter(Boolean).join(' · '),
-      })),
-    [rows, urgencyBands],
-  );
   return (
     <Worklist
       state={state}
@@ -28,15 +19,10 @@ export default function WaitingListWorklist(state: WorklistState) {
       tone="red"
       count={isLoading ? undefined : rows.length}
       error={error}
-      page={`\${openmrsSpaBase}/home/${waitingListDashboardMeta.name}`}
       list={
-        <WorklistTable
-          title={title}
-          csvName="procedural-waiting-list"
-          entries={entries}
-          isLoading={isLoading}
-          error={error}
-        />
+        <WorklistSection title={title}>
+          <WaitingListTable />
+        </WorklistSection>
       }
     />
   );
