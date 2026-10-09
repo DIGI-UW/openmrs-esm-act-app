@@ -43,6 +43,32 @@ export function adherence(row: ReportRow) {
 /** Below the care cascade's Adherent (80%+) threshold. */
 export const lowAdherence = (percent: number) => percent < 80;
 
+export interface DueColumn {
+  key: 'patient' | 'actId' | 'prescription' | 'lastDose' | 'status' | 'adherence';
+  header: string;
+  text: (row: ReportRow) => string;
+}
+
+/** The due list's columns, as the table heads them and the CSV holds them. */
+export function dueColumns(t: TFunction, recorded: Set<string>): Array<DueColumn> {
+  return [
+    { key: 'patient', header: t('patient', 'Patient'), text: (row) => String(row.full_name ?? '') },
+    { key: 'actId', header: t('actId', 'ACT ID'), text: (row) => String(row.rhd_id ?? '') },
+    { key: 'prescription', header: t('prescription', 'Prescription'), text: (row) => prescription(t, row) },
+    { key: 'lastDose', header: t('lastDose', 'Last dose'), text: lastDose },
+    {
+      key: 'status',
+      header: t('status', 'Status'),
+      text: (row) => statusLabel(t, row, recorded.has(String(row.patient_uuid))),
+    },
+    {
+      key: 'adherence',
+      header: t('adherence', 'Adherence'),
+      text: (row) => (adherence(row) === null ? '' : `${adherence(row)}%`),
+    },
+  ];
+}
+
 export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean) {
   if (recordedToday) {
     return t('recordedToday', 'Recorded today');

@@ -17,7 +17,7 @@ import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { openFormInChart } from '../visits/open-form-in-chart';
-import { adherence, isOral, lastDose, lowAdherence, prescription, statusLabel } from './due-list';
+import { adherence, type DueColumn, dueColumns, isOral, lowAdherence } from './due-list';
 import styles from './due-for-prophylaxis.scss';
 
 /**
@@ -56,22 +56,31 @@ export function DueForProphylaxisTable({
     }
   };
 
-  const status = (row: ReportRow) => {
-    const recordedToday = recorded.has(String(row.patient_uuid));
-    const dueNow = !recordedToday && row.status !== 'overdue';
-    return (
-      <Tag type={recordedToday ? 'green' : dueNow ? 'warm-gray' : 'red'} className={dueNow ? styles.dueTag : undefined}>
-        {statusLabel(t, row, recordedToday)}
-      </Tag>
-    );
-  };
+  const columns = dueColumns(t, recorded);
 
-  const adherenceCell = (row: ReportRow) => {
-    const percent = adherence(row);
-    if (percent === null) {
-      return '';
+  /** A column's text, as the CSV holds it, with the chart link, the status tag and the adherence colour on screen. */
+  const cell = (column: DueColumn, row: ReportRow) => {
+    const text = column.text(row);
+    if (column.key === 'patient') {
+      return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{text}</ConfigurableLink>;
     }
-    return <span className={lowAdherence(percent) ? styles.lowAdherence : styles.goodAdherence}>{`${percent}%`}</span>;
+    if (column.key === 'status') {
+      const recordedToday = recorded.has(String(row.patient_uuid));
+      const dueNow = !recordedToday && row.status !== 'overdue';
+      return (
+        <Tag
+          type={recordedToday ? 'green' : dueNow ? 'warm-gray' : 'red'}
+          className={dueNow ? styles.dueTag : undefined}
+        >
+          {text}
+        </Tag>
+      );
+    }
+    const percent = adherence(row);
+    if (column.key === 'adherence' && percent !== null) {
+      return <span className={lowAdherence(percent) ? styles.lowAdherence : styles.goodAdherence}>{text}</span>;
+    }
+    return text;
   };
 
   const action = (row: ReportRow) => {
@@ -107,28 +116,18 @@ export function DueForProphylaxisTable({
         <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
           <TableHead>
             <TableRow>
-              <TableHeader>{t('patient', 'Patient')}</TableHeader>
-              <TableHeader>{t('actId', 'ACT ID')}</TableHeader>
-              <TableHeader>{t('prescription', 'Prescription')}</TableHeader>
-              <TableHeader>{t('lastDose', 'Last dose')}</TableHeader>
-              <TableHeader>{t('status', 'Status')}</TableHeader>
-              <TableHeader>{t('adherence', 'Adherence')}</TableHeader>
+              {columns.map((column) => (
+                <TableHeader key={column.key}>{column.header}</TableHeader>
+              ))}
               <TableHeader aria-label={t('actions', 'Actions')} />
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map((row) => (
               <TableRow key={String(row.patient_uuid)}>
-                <TableCell>
-                  <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>
-                    {String(row.full_name ?? '')}
-                  </ConfigurableLink>
-                </TableCell>
-                <TableCell>{String(row.rhd_id ?? '')}</TableCell>
-                <TableCell>{prescription(t, row)}</TableCell>
-                <TableCell>{lastDose(row)}</TableCell>
-                <TableCell>{status(row)}</TableCell>
-                <TableCell>{adherenceCell(row)}</TableCell>
+                {columns.map((column) => (
+                  <TableCell key={column.key}>{cell(column, row)}</TableCell>
+                ))}
                 <TableCell>{action(row)}</TableCell>
               </TableRow>
             ))}

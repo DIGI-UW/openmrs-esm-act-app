@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
-  Button,
   DataTableSkeleton,
   InlineNotification,
   Pagination,
@@ -26,9 +25,7 @@ import {
   PatientListsPictogram,
   useConfig,
   useLayoutType,
-  UserHasAccess,
 } from '@openmrs/esm-framework';
-import { PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -36,7 +33,7 @@ import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { diagnosis } from '../reports/diagnosis';
 import { parseReportDate } from '../reports/report-date';
-import { downloadCsv } from '../table-filters/csv';
+import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
@@ -243,22 +240,12 @@ function RegistryTable() {
         />
       </div>
       <div className={styles.actions}>
-        <UserHasAccess privilege={PRIVILEGE_EXPORT_LISTS}>
-          <Button
-            kind="tertiary"
-            size="sm"
-            disabled={!shown.length}
-            onClick={() =>
-              downloadCsv(
-                `registry-${dayjs().format('YYYY-MM-DD')}.csv`,
-                csvColumns.map((column) => column.header),
-                shown.map((row) => csvColumns.map((column) => column.text(row))),
-              )
-            }
-          >
-            {t('downloadCsv', 'Download CSV')}
-          </Button>
-        </UserHasAccess>
+        <DownloadCsvButton
+          name="registry"
+          headers={csvColumns.map((column) => column.header)}
+          rows={() => shown.map((row) => csvColumns.map((column) => column.text(row)))}
+          disabled={!shown.length}
+        />
       </div>
       {shown.length ? (
         <>
