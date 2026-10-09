@@ -78,13 +78,19 @@ function UsersTable() {
   const roles = (data?.assignableRoles ?? []).filter((role) => role.name.startsWith(usersConfig.rolePrefix));
   const clinics = data?.clinicLimited ? allClinics.filter((clinic) => data.clinics.includes(clinic.uuid)) : allClinics;
 
+  // A user awaiting a clinic is one this administrator could give one to: every role it holds is one this
+  // administrator may give. Administrators of every clinic hold other roles, and need none.
+  const needsClinic = useMemo(() => {
+    const givable = new Set((data?.assignableRoles ?? []).map((role) => role.uuid));
+    return (user: ClinicUser) => !user.clinics.length && user.roles.every((role) => givable.has(role.uuid));
+  }, [data]);
   const shown = useMemo(() => {
     const words = query.trim().toLowerCase();
     return (data?.users ?? [])
       .filter((user) => !words || `${user.display} ${user.username ?? ''}`.toLowerCase().includes(words))
-      .filter((user) => !withoutClinic || !user.clinics.length)
+      .filter((user) => !withoutClinic || needsClinic(user))
       .sort((a, b) => a.display.localeCompare(b.display));
-  }, [data, query, withoutClinic]);
+  }, [data, query, withoutClinic, needsClinic]);
   const filters = useMemo(() => ({ query, withoutClinic }), [query, withoutClinic]);
   const { results, paginationProps } = usePagedRows(shown, filters);
   const hasProvider = (user: ClinicUser) => !providerPeople || providerPeople.has(user.person);
@@ -163,9 +169,9 @@ function UsersTable() {
               roles: roles.map(roleLabel).join(', '),
             })}
         {!data.clinicLimited &&
-          data.users.some((user) => !user.clinics.length) &&
+          data.users.some(needsClinic) &&
           ` ${t('usersWithoutClinic', 'Users without a clinic: {{count}}. No site administrator sees them.', {
-            count: data.users.filter((user) => !user.clinics.length).length,
+            count: data.users.filter(needsClinic).length,
           })}`}
       </p>
       <div className={styles.toolbar}>
@@ -204,11 +210,8 @@ function UsersTable() {
               <TableCell>{user.username || user.systemId}</TableCell>
               <TableCell>{user.roles.map(roleLabel).join(', ')}</TableCell>
               <TableCell>
-                {user.clinics.length ? (
-                  user.clinics.map(clinicName).join(', ')
-                ) : (
-                  <Tag type="red">{t('noClinic', 'No clinic')}</Tag>
-                )}
+                {user.clinics.map(clinicName).join(', ')}
+                {needsClinic(user) && <Tag type="red">{t('noClinic', 'No clinic')}</Tag>}
               </TableCell>
               <TableCell>
                 {user.retired ? (

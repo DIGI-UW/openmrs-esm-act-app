@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
@@ -95,13 +96,15 @@ export interface NewUser {
 
 /** The people with a provider record: a user without one cannot save forms. */
 export function useProviderPeople() {
-  const { data, error, isLoading, mutate } = useSWR<Set<string>, Error>('act-provider-people', async () => {
+  // An array, not a Set: SWR compares results to decide whether they changed, and sees every Set as equal.
+  const { data, error, isLoading, mutate } = useSWR<Array<string>, Error>('act-provider-people', async () => {
     const providers = await fetchAll<{ person: { uuid: string } | null }>(
       `${restBaseUrl}/provider?v=custom:(person:(uuid))`,
     );
-    return new Set(providers.map((provider) => provider.person?.uuid).filter(Boolean));
+    return providers.map((provider) => provider.person?.uuid).filter(Boolean);
   });
-  return { providerPeople: data, error, isLoading, mutate };
+  const providerPeople = useMemo(() => (data ? new Set(data) : undefined), [data]);
+  return { providerPeople, error, isLoading, mutate };
 }
 
 /** The provider a user's forms are saved under, identified by its username. */

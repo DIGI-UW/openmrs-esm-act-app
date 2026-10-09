@@ -94,6 +94,10 @@ function backend(view: ClinicUsers, refuse?: { url: RegExp; message: string }) {
     if (url.endsWith('?v=custom:(userProperties)')) {
       return { data: { userProperties: { defaultLocation: 'gulu', 'act.clinics': 'gulu,kiswa' } } } as never;
     }
+    if (method === 'POST' && url.endsWith('/provider')) {
+      providerPeople = [...providerPeople, (init.body as { person: string }).person];
+      return { data: {} } as never;
+    }
     if (method === 'POST' && url.endsWith('/user')) {
       return { data: { uuid: 'u-new', person: { uuid: 'p-new' } } } as never;
     }
@@ -294,6 +298,8 @@ describe('Users and roles', () => {
         identifier: 'peter',
       }),
     );
+
+    await waitFor(() => expect(within(peter).queryByText('No provider')).not.toBeInTheDocument());
   });
 
   it('keeps a new user whose provider was refused, and says how to add it', async () => {
@@ -349,5 +355,23 @@ describe('Users and roles', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Add user' }));
 
     expect(screen.getByText('At least 10 characters, with a number')).toBeInTheDocument();
+  });
+
+  it('does not count an administrator of every clinic, who needs no clinic, as awaiting one', async () => {
+    const instanceAdmin = {
+      ...siteAdminView.users[0],
+      uuid: 'u-daniel',
+      display: 'Daniel Kato',
+      person: 'p-daniel',
+      roles: [{ uuid: 'role-instance-admin', name: 'Organizational: ACT Instance Administrator' }],
+      clinics: [],
+    };
+    providerPeople = [...providerPeople, 'p-daniel'];
+    backend({ ...siteAdminView, clinicLimited: false, clinics: null, users: [...siteAdminView.users, instanceAdmin] });
+    renderPage();
+
+    const daniel = await screen.findByRole('row', { name: /Daniel Kato/ });
+    expect(within(daniel).queryByText('No clinic')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Users without a clinic/)).not.toBeInTheDocument();
   });
 });
