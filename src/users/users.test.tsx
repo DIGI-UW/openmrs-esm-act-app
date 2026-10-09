@@ -332,4 +332,22 @@ describe('Users and roles', () => {
     expect(screen.getAllByRole('row', { name: /User \d+/ })).toHaveLength(10);
     expect(screen.queryByRole('row', { name: /User 11/ })).not.toBeInTheDocument();
   });
+
+  it("tells the administrator the server's password rules when adding a user", async () => {
+    backend({
+      ...siteAdminView,
+      passwordRules: {
+        minimumLength: 10,
+        requiresUpperAndLowerCase: false,
+        requiresDigit: true,
+        requiresNonDigit: false,
+        cannotMatchUsername: false,
+        customRegex: null,
+      },
+    });
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Add user' }));
+
+    expect(screen.getByText('At least 10 characters, with a number')).toBeInTheDocument();
+  });
 });

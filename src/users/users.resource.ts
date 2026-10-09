@@ -24,6 +24,17 @@ export interface ClinicUser {
   editable: boolean;
 }
 
+/** Core's password settings (the security.password* global properties), which an administrator cannot read itself. */
+export interface PasswordRules {
+  minimumLength: number;
+  requiresUpperAndLowerCase: boolean;
+  requiresDigit: boolean;
+  requiresNonDigit: boolean;
+  cannotMatchUsername: boolean;
+  /** A further pattern the password must match, when the implementation sets one. */
+  customRegex: string | null;
+}
+
 export interface ClinicUsers {
   /** True for an administrator who manages only the users at its own clinics. */
   clinicLimited: boolean;
@@ -32,6 +43,8 @@ export interface ClinicUsers {
   /** The roles this administrator may give, as ACT Core decides them. */
   assignableRoles: Array<NamedRole>;
   users: Array<ClinicUser>;
+  /** Absent from an ACT Core that predates it, when the page falls back to core's defaults. */
+  passwordRules?: PasswordRules;
 }
 
 export interface Clinic {

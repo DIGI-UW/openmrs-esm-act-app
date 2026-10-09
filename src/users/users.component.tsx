@@ -24,12 +24,14 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { type Config } from '../config-schema';
 import { usePagedRows } from '../table-filters/paged-rows';
+import { passwordHint } from './password-hint';
 import { refusalMessage, UserForm, type UserFormValues } from './user-form.component';
 import {
   addProvider,
   type ClinicUser,
   createUser,
   type NamedRole,
+  type PasswordRules,
   resetPassword,
   setDisabled,
   updateUser,
@@ -268,6 +270,7 @@ function UsersTable() {
           roleLabel={roleLabel}
           clinics={clinics}
           clinicName={clinicName}
+          passwordRules={data.passwordRules}
           onSave={save}
           onClose={() => setEditing(null)}
         />
@@ -275,6 +278,7 @@ function UsersTable() {
       {resetting && (
         <ResetPassword
           user={resetting}
+          passwordRules={data.passwordRules}
           onClose={() => setResetting(null)}
           onReset={(password) =>
             run(
@@ -293,10 +297,12 @@ function UsersTable() {
 
 function ResetPassword({
   user,
+  passwordRules,
   onClose,
   onReset,
 }: {
   user: ClinicUser;
+  passwordRules?: PasswordRules;
   onClose: () => void;
   onReset: (password: string) => void;
 }) {
@@ -316,7 +322,7 @@ function ResetPassword({
       <PasswordInput
         id="reset-password"
         labelText={t('newPassword', 'New password')}
-        helperText={t('passwordRule', 'At least 8 characters, with upper and lower case letters and a number')}
+        helperText={passwordHint(t, passwordRules)}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />

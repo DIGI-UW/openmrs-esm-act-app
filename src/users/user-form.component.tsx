@@ -12,7 +12,8 @@ import {
   Stack,
   TextInput,
 } from '@carbon/react';
-import { type Clinic, type ClinicUser, type NamedRole } from './users.resource';
+import { passwordHint } from './password-hint';
+import { type Clinic, type ClinicUser, type NamedRole, type PasswordRules } from './users.resource';
 
 /** Above this many clinics, the form finds them by name instead of listing them all. */
 const manyClinics = 10;
@@ -35,12 +36,22 @@ interface UserFormProps {
   /** The clinics this administrator may add or remove. */
   clinics: Array<Clinic>;
   clinicName: (uuid: string) => string;
+  passwordRules?: PasswordRules;
   onSave: (values: UserFormValues) => Promise<void>;
   onClose: () => void;
 }
 
 /** Adds a user, or edits a user's roles and clinics. Saving is checked by ACT Core, which may refuse it. */
-export function UserForm({ user, roles, roleLabel, clinics, clinicName, onSave, onClose }: UserFormProps) {
+export function UserForm({
+  user,
+  roles,
+  roleLabel,
+  clinics,
+  clinicName,
+  passwordRules,
+  onSave,
+  onClose,
+}: UserFormProps) {
   const { t } = useTranslation();
   const editing = Boolean(user);
   const [values, setValues] = useState<UserFormValues>({
@@ -137,7 +148,7 @@ export function UserForm({ user, roles, roleLabel, clinics, clinicName, onSave, 
             <PasswordInput
               id="user-password"
               labelText={t('password', 'Password')}
-              helperText={t('passwordRule', 'At least 8 characters, with upper and lower case letters and a number')}
+              helperText={passwordHint(t, passwordRules)}
               value={values.password}
               onChange={(e) => set({ password: e.target.value })}
             />
