@@ -33,32 +33,66 @@
       "privileges": "App: act.home"
     },
     {
+      "name": "act-home-record-bpg",
+      "slot": "act-home-quick-actions-slot",
+      "component": "recordBpgQuickAction",
+      "order": 1,
+      "privileges": "Add Encounters",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-record-oral",
+      "slot": "act-home-quick-actions-slot",
+      "component": "recordOralQuickAction",
+      "order": 2,
+      "privileges": "Add Encounters",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
       "name": "act-home-register-patient",
       "slot": "act-home-quick-actions-slot",
       "component": "registerPatientQuickAction",
-      "order": 1,
+      "order": 3,
       "privileges": "Add Patients"
     },
     {
       "name": "act-home-enter-prophylaxis",
       "slot": "act-home-quick-actions-slot",
       "component": "enterProphylaxisQuickAction",
-      "order": 2,
-      "privileges": "Add Encounters"
+      "order": 4,
+      "privileges": "Add Encounters",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
       "name": "act-home-find-patient",
       "slot": "act-home-quick-actions-slot",
       "component": "findPatientQuickAction",
-      "order": 3,
+      "order": 5,
       "privileges": "Get Patients"
+    },
+    {
+      "name": "act-home-due-for-prophylaxis",
+      "slot": "rhd-home-widgets-slot",
+      "component": "dueForProphylaxisWidget",
+      "order": 2,
+      "privileges": "App: act.dueList",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
       "name": "act-home-worklists",
       "slot": "rhd-home-widgets-slot",
       "component": "actHomeWorklists",
       "order": 4,
-      "privileges": "App: act.worklists"
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-worklists-beside-cascade",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeWorklists",
+      "order": 4,
+      "privileges": "App: act.worklists",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
       "name": "act-home-waiting-list",
@@ -107,6 +141,66 @@
       "slot": "rhd-worklists-dashboard-slot",
       "component": "worklistsDashboard",
       "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-due-for-prophylaxis",
+      "slot": "act-worklists-slot",
+      "component": "dueForProphylaxisWorklist",
+      "order": 1,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-confirmatory-echo",
+      "slot": "act-worklists-slot",
+      "component": "confirmatoryEchoWorklist",
+      "order": 2,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-cardiology-follow-up",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 3,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-lost-to-follow-up",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 4,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-post-procedural-follow-up",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 5,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-worklist-pregnancy-outcome",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 6,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-worklist-inr-review",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 7,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-worklist-waiting-list",
+      "slot": "act-worklists-slot",
+      "component": "waitingListWorklist",
+      "order": 8,
+      "privileges": "App: act.waitingList",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
       "name": "act-waiting-list-dashboard-link",

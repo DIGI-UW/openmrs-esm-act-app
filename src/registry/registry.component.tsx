@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
   DataTableSkeleton,
@@ -30,7 +29,7 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { flagPriority, isListedFlag } from '../rhd-flags/rhd-flag-lists.resource';
-import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { type ReportRow } from '../reports/report-dataset.resource';
 import { diagnosis } from '../reports/diagnosis';
 import { parseReportDate } from '../reports/report-date';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
@@ -42,6 +41,7 @@ import { AdherenceRing } from './adherence-ring.component';
 import { BpgStatusTag, bpgStatuses, useBpgStatusLabel } from './bpg-status-tag.component';
 import { RegistryFlags } from './registry-flags.component';
 import { RegistryDetails } from './registry-details.component';
+import { useRegistryReport } from './registry.resource';
 import { nextSort, type RegistrySort, sortRegistry } from './registry-sort';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './registry.scss';
@@ -57,9 +57,8 @@ function RegistryTable() {
   const { t } = useTranslation();
   const { registry, flagLists } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
-  const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
   // Coming back from a chart paints the cached rows, then evaluates the report again for what the chart changed.
-  const { rows, isLoading, error } = useReportDataset(registry.report, params);
+  const { rows, isLoading, error } = useRegistryReport();
   const [filters, setFilters, filtersPending] = useRegistryFilters();
   // A BPG status in the URL has no filter to clear it while the setting is off, so it is not applied.
   const shown = useMemo(

@@ -56,12 +56,12 @@ async function signInWithFastDataEntry() {
 }
 
 describe('Quick actions card', () => {
-  it("frames ACT home's tiles, which come from its own slot", async () => {
+  it("shows ACT home's tiles, which come from its own slot, untitled across the top of the page", async () => {
     await signInWith([homePrivilege]);
 
     render(<ActHomeQuickActions />);
 
-    expect(screen.getByRole('heading', { name: 'Quick actions' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Quick actions' })).not.toBeInTheDocument();
     expect(vi.mocked(ExtensionSlot).mock.lastCall[0]).toEqual(
       expect.objectContaining({ name: 'act-home-quick-actions-slot' }),
     );

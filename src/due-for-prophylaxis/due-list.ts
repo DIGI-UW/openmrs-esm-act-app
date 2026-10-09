@@ -78,3 +78,14 @@ export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean
   }
   return row.status === 'due_today' ? t('dueToday', 'Due today') : t('overdue', 'Overdue');
 }
+
+/** Why the patient is on the due worklist: its status, with the date the dose was or is due when not today. */
+export function dueReason(t: TFunction, row: ReportRow, recordedToday: boolean) {
+  const label = statusLabel(t, row, recordedToday);
+  const due = parseReportDate(row.next_due);
+  if (recordedToday || row.status === 'due_today' || !due) {
+    return label;
+  }
+  const date = formatDate(due, { time: false, noToday: true });
+  return row.status === 'overdue' ? t('overdueWasDue', 'Overdue · was due {{date}}', { date }) : `${label} · ${date}`;
+}

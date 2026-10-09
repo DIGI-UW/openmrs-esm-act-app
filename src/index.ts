@@ -1,4 +1,10 @@
-import { createDashboard, defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import {
+  createDashboard,
+  defineConfigSchema,
+  defineExtensionConfigSchema,
+  getAsyncLifecycle,
+  getSyncLifecycle,
+} from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import actHomeDashboardLinkComponent from './act-home/act-home-dashboard-link.component';
 import registryDashboardLinkComponent from './registry/registry-dashboard-link.component';
@@ -12,6 +18,7 @@ import communityHomeDashboardLinkComponent from './community-home/community-home
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
+import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
 const moduleName = '@mherman22/esm-act-app';
 
@@ -24,6 +31,9 @@ export const importTranslation = require.context('../translations', false, /.jso
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+  Object.entries(flagWorklists).forEach(([name, defaults]) =>
+    defineExtensionConfigSchema(name, flagWorklistConfigSchema(defaults)),
+  );
   trackActReturn();
 }
 
@@ -77,6 +87,23 @@ export const registryDashboard = getAsyncLifecycle(() => import('./registry/regi
 export const worklistsDashboardLink = getSyncLifecycle(worklistsDashboardLinkComponent, options);
 
 export const worklistsDashboard = getAsyncLifecycle(() => import('./worklists/worklists.component'), options);
+
+export const dueForProphylaxisWorklist = getAsyncLifecycle(
+  () => import('./worklists/due-for-prophylaxis-worklist.component'),
+  options,
+);
+
+export const confirmatoryEchoWorklist = getAsyncLifecycle(
+  () => import('./worklists/confirmatory-echo-worklist.component'),
+  options,
+);
+
+export const flagWorklist = getAsyncLifecycle(() => import('./worklists/flag-worklist.component'), options);
+
+export const waitingListWorklist = getAsyncLifecycle(
+  () => import('./worklists/waiting-list-worklist.component'),
+  options,
+);
 
 export const waitingListDashboardLink = getSyncLifecycle(waitingListDashboardLinkComponent, options);
 

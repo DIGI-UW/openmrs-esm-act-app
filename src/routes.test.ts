@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { evaluate } from '@openmrs/esm-expression-evaluator';
 import routeFile from './routes.json';
 import {
   PRIVILEGE_ACT_HOME,
@@ -25,7 +26,13 @@ const screenPrivileges = {
 };
 
 const routes = routeFile as {
-  extensions: Array<{ name: string; slot?: string; order?: number; privileges?: string | Array<string> }>;
+  extensions: Array<{
+    name: string;
+    slot?: string;
+    order?: number;
+    privileges?: string | Array<string>;
+    displayExpression?: string;
+  }>;
 };
 
 describe('routes.json privileges', () => {
@@ -68,6 +75,7 @@ describe('routes.json privileges', () => {
     ['act-studies-dashboard', 'Manage Locations'],
     ['act-refresh-flags-dashboard-link', 'Task: act.refreshFlags'],
     ['act-refresh-flags-dashboard', 'Task: act.refreshFlags'],
+    ['act-home-due-for-prophylaxis', 'App: act.dueList'],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });
@@ -86,11 +94,37 @@ describe('routes.json privileges', () => {
     ],
     [
       'act-home-quick-actions-slot',
-      ['act-home-register-patient', 'act-home-enter-prophylaxis', 'act-home-find-patient'],
+      [
+        'act-home-record-bpg',
+        'act-home-record-oral',
+        'act-home-register-patient',
+        'act-home-enter-prophylaxis',
+        'act-home-find-patient',
+      ],
     ],
     [
       'rhd-home-widgets-slot',
-      ['act-home-quick-actions', 'act-home-worklists', 'act-home-waiting-list', 'act-home-care-cascade'],
+      [
+        'act-home-quick-actions',
+        'act-home-due-for-prophylaxis',
+        'act-home-worklists',
+        'act-home-worklists-beside-cascade',
+        'act-home-waiting-list',
+        'act-home-care-cascade',
+      ],
+    ],
+    [
+      'act-worklists-slot',
+      [
+        'act-worklist-due-for-prophylaxis',
+        'act-worklist-confirmatory-echo',
+        'act-worklist-cardiology-follow-up',
+        'act-worklist-lost-to-follow-up',
+        'act-worklist-post-procedural-follow-up',
+        'act-worklist-pregnancy-outcome',
+        'act-worklist-inr-review',
+        'act-worklist-waiting-list',
+      ],
     ],
   ])("fills %s in the mockup's order", (slot, names) => {
     expect(
@@ -99,6 +133,33 @@ describe('routes.json privileges', () => {
         .sort((a, b) => a.order - b.order)
         .map(({ name }) => name),
     ).toEqual(names);
+  });
+
+  // Privileges cannot tell a community clinician from a site administrator, who must hold every privilege they give.
+  it.each([
+    ['act-home-record-bpg', true],
+    ['act-home-record-oral', true],
+    ['act-home-due-for-prophylaxis', true],
+    ['act-home-worklists-beside-cascade', true],
+    ['act-home-enter-prophylaxis', false],
+    ['act-home-worklists', false],
+    ['act-worklist-due-for-prophylaxis', undefined],
+    ['act-worklist-confirmatory-echo', undefined],
+    ['act-worklist-cardiology-follow-up', undefined],
+    ['act-worklist-lost-to-follow-up', undefined],
+    ['act-worklist-post-procedural-follow-up', false],
+    ['act-worklist-pregnancy-outcome', false],
+    ['act-worklist-inr-review', false],
+    ['act-worklist-waiting-list', false],
+  ])('shows %s to a community clinician only (true), to everyone else (false), or by privilege alone', (name, cc) => {
+    const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
+    const roles = (display: string) => ({ session: { user: { roles: [{ display }] } } });
+    if (cc === undefined) {
+      expect(expression).toBeUndefined();
+    } else {
+      expect(evaluate(expression, roles('Organizational: ACT Community Clinician'))).toBe(cc);
+      expect(evaluate(expression, roles('Organizational: ACT Site Administrator'))).toBe(!cc);
+    }
   });
 
   it('declares a privilege on every extension, so none shows to every signed-in user', () => {

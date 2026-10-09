@@ -28,13 +28,15 @@ export const configSchema = {
     namePrefix: {
       _type: Type.String,
       _default: 'RHD ',
-      _description: 'The worklist tiles show the lists of the flags whose names start with this, unless names is set.',
+      _description:
+        "The registry's Flags column and filter show the flags whose names start with this, unless names is set. Each worklist names its own flag in its extension's config.",
     },
     names: {
       _type: Type.Array,
       _elements: { _type: Type.String },
       _default: [],
-      _description: 'The flags whose lists the worklist tiles show, by name. When set, namePrefix is not used.',
+      _description:
+        "The flags, by name, that the registry's Flags column and filter show. When set, namePrefix is not used.",
     },
     riskFlags: {
       _type: Type.Array,

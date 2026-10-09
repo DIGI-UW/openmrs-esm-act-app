@@ -1,38 +1,49 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { navigate } from '@openmrs/esm-framework';
-import { signInWith } from '../access/sign-in.test-helper';
-import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
+import {
+  type AssignedExtension,
+  Extension,
+  ExtensionSlot,
+  getDefaultsFromConfigSchema,
+  navigate,
+  useAssignedExtensions,
+} from '@openmrs/esm-framework';
+import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import WorklistTiles from '../act-home/worklist-tiles.component';
+import { type Config, configSchema } from '../config-schema';
+import { useDueList } from '../due-for-prophylaxis/due-for-prophylaxis.resource';
 import { useReportDataset } from '../reports/report-dataset.resource';
-import { type RhdFlagList, useRhdFlagLists } from '../rhd-flags/rhd-flag-lists.resource';
+import { useRhdFlagList } from '../rhd-flags/rhd-flag-lists.resource';
+import { downloadCsv } from '../table-filters/csv';
+import ConfirmatoryEchoWorklist from './confirmatory-echo-worklist.component';
+import DueForProphylaxisWorklist from './due-for-prophylaxis-worklist.component';
+import FlagWorklist from './flag-worklist.component';
+import { flagWorklists } from './flag-worklists';
+import WaitingListWorklist from './waiting-list-worklist.component';
+import { type WorklistState } from './worklist.component';
 import Worklists from './worklists.component';
 
-vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
-vi.mock('../rhd-flags/rhd-flag-lists.resource', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  useRhdFlagLists: vi.fn(),
+// Who may record a form is may-enter-form's own test; here every form may be recorded.
+vi.mock('../access/may-enter-form', () => ({
+  MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
 }));
-const mockUseReportDataset = vi.mocked(useReportDataset);
-const mockUseRhdFlagLists = vi.mocked(useRhdFlagLists);
+vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+vi.mock('../rhd-flags/rhd-flag-lists.resource', () => ({ useRhdFlagList: vi.fn() }));
+vi.mock('../due-for-prophylaxis/due-for-prophylaxis.resource', () => ({ useDueList: vi.fn() }));
+vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 
 const worklistsPrivilege = 'App: act.worklists';
 
-const list = (flagName: string, memberCount: number, priority: RhdFlagList['priority']): RhdFlagList => ({
-  flagName,
-  memberCount,
-  priority,
-  cohortUuid: flagName,
+beforeEach(() => {
+  window.getOpenmrsSpaBase = () => '/openmrs/spa/';
 });
+const tile: WorklistState = { view: 'tile', to: '/worklists?list=this' };
+const list: WorklistState = { view: 'list' };
 
-const lists = [
-  list('RHD INR target missing', 2, 'dataQuality'),
-  list('RHD prophylaxis overdue', 1, 'risk'),
-  list('RHD lost to follow-up', 0, 'risk'),
-];
-
-const row = (i: number, flags: string) => ({
+const registryRow = (i: number, flags = '', flagDates = '') => ({
   rhd_id: `rhd0000${i}`,
   full_name: `Patient ${i}`,
   sex: i % 2 ? 'M' : 'F',
@@ -42,228 +53,273 @@ const row = (i: number, flags: string) => ({
   prophylaxis_regimen: 'Q28 day BPG',
   patient_uuid: `patient-${i}`,
   rhd_flags: flags,
+  rhd_flag_dates: flagDates,
 });
 
-const rows = [row(1, 'RHD INR target missing|RHD prophylaxis overdue'), row(2, 'RHD INR target missing'), row(3, '')];
+type Report = 'registry' | 'due' | 'screenPositive' | 'waitingList';
 
-function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
-  mockUseReportDataset.mockReturnValue({
+/** Each report's rows, found by the report the default config names. */
+function reports(rowsByReport: Partial<Record<Report, Array<Record<string, unknown>>>>) {
+  const config = getDefaultsFromConfigSchema(configSchema) as Config;
+  const reportKeys: Record<string, Report> = {
+    [config.registry.report]: 'registry',
+    [config.dueForProphylaxis.report]: 'due',
+    [config.screenPositive.report]: 'screenPositive',
+    [config.waitingList.report]: 'waitingList',
+  };
+  vi.mocked(useReportDataset).mockImplementation((report) => ({
     columns: [],
-    rows: [],
+    rows: rowsByReport[reportKeys[report]] ?? [],
     isLoading: false,
     error: undefined,
     mutate: vi.fn(),
-    ...value,
-  });
+  }));
 }
 
-function flagLists(value: Partial<ReturnType<typeof useRhdFlagLists>>) {
-  mockUseRhdFlagLists.mockReturnValue({ lists: [], isLoading: false, error: undefined, ...value });
-}
-
-const tile = (flagName: string) => screen.getByRole('button', { name: new RegExp(flagName) });
-const shownNames = () =>
+/** The table's rows, each cell's text but the action's. */
+const tableRows = () =>
   within(screen.getByRole('table'))
     .getAllByRole('row')
     .slice(1)
-    .map((r) => within(r).getAllByRole('cell')[0].textContent);
-
-describe('Worklists', () => {
-  beforeEach(async () => {
-    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists');
-    await signInWith([worklistsPrivilege]);
-    flagLists({ lists });
-    dataset({ rows });
-  });
-
-  it('shows a tile per list, risk lists first, with the list in the URL chosen', () => {
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
-
-    render(<Worklists />);
-
-    expect(screen.getAllByTestId('worklist-tile').map((t) => t.textContent)).toEqual([
-      '1RHD prophylaxis overdue',
-      '0RHD lost to follow-up',
-      '2RHD INR target missing',
-    ]);
-    expect(tile('RHD INR target missing')).toHaveAttribute('aria-pressed', 'true');
-    expect(tile('RHD prophylaxis overdue')).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('heading', { name: 'RHD INR target missing' })).toBeInTheDocument();
-    expect(shownNames()).toEqual(['Patient 1rhd00001', 'Patient 2rhd00002']);
-  });
-
-  it("lists the chosen list's patients with their ACT ID, age and sex, diagnosis details and prophylaxis", () => {
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
-
-    render(<Worklists />);
-
-    const table = screen.getByRole('table');
-    expect(
-      within(table)
-        .getAllByRole('columnheader')
-        .map((h) => h.textContent),
-    ).toEqual(['Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Days on list', '']);
-    const [first] = within(table).getAllByRole('row').slice(1);
-    expect(
-      within(first)
+    .map((row) =>
+      within(row)
         .getAllByRole('cell')
+        .slice(0, -1)
         .map((cell) => cell.textContent),
-    ).toEqual(['Patient 1rhd00001', '11 M', 'RHD B', 'Q28 day BPG', '', 'Open chart']);
+    );
+
+/** The state the slot's children function gives the worklist with this id. */
+function stateFor({ children }: { children?: unknown }, id: string) {
+  vi.mocked(Extension).mockClear();
+  render(<>{(children as (extension: AssignedExtension) => React.ReactNode)({ id } as AssignedExtension)}</>);
+  return vi.mocked(Extension).mock.lastCall[0].state as unknown as WorklistState;
+}
+
+describe('Worklists page', () => {
+  const worklists = [{ id: 'act-worklist-due-for-prophylaxis' }, { id: 'act-worklist-lost-to-follow-up' }];
+  const choices = () => vi.mocked(ExtensionSlot).mock.calls.find(([props]) => typeof props?.children === 'function')[0];
+  const shownList = () => vi.mocked(ExtensionSlot).mock.calls.find(([props]) => props?.select)[0];
+
+  beforeEach(async () => {
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists');
+    vi.mocked(ExtensionSlot).mockClear();
+    await signInWith([worklistsPrivilege]);
+    vi.mocked(useAssignedExtensions).mockReturnValue(worklists as Array<AssignedExtension>);
+  });
+
+  it('shows each worklist in the slot as a choice, the first chosen, and the chosen one under them', () => {
+    render(<Worklists />);
+
+    expect(choices().name).toBe('act-worklists-slot');
+    expect(stateFor(choices(), 'act-worklist-due-for-prophylaxis')).toMatchObject({
+      view: 'choice',
+      selected: true,
+    });
+    expect(stateFor(choices(), 'act-worklist-lost-to-follow-up')).toMatchObject({
+      view: 'choice',
+      selected: false,
+    });
+    expect(shownList()).toMatchObject({ name: 'act-worklists-slot', state: { view: 'list' } });
+    expect(shownList().select(worklists as Array<AssignedExtension>)).toEqual([worklists[0]]);
+  });
+
+  it('chooses the worklist the URL names, and writes the one chosen to the URL', async () => {
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?list=act-worklist-lost-to-follow-up');
+
+    render(<Worklists />);
+
+    expect(shownList().select(worklists as Array<AssignedExtension>)).toEqual([worklists[1]]);
+    stateFor(choices(), 'act-worklist-due-for-prophylaxis').onSelect();
+    await waitFor(() => expect(window.location.search).toBe('?list=act-worklist-due-for-prophylaxis'));
+  });
+
+  it('says so when no worklist is assigned to the slot', () => {
+    vi.mocked(useAssignedExtensions).mockReturnValue([]);
+
+    render(<Worklists />);
+
+    expect(screen.getByText('No worklists have been added yet.')).toBeInTheDocument();
+  });
+});
+
+describe("ACT home's Worklists", () => {
+  it('shows each worklist as a tile opening the Worklists page on it', async () => {
+    await signInWith([homePrivilege, worklistsPrivilege]);
+
+    render(<WorklistTiles />);
+
+    expect(screen.getByRole('heading', { name: 'Worklists' })).toBeInTheDocument();
+    const [props] = vi.mocked(ExtensionSlot).mock.lastCall;
+    expect(props.name).toBe('act-worklists-slot');
+    expect(stateFor(props, 'act-worklist-x')).toEqual({
+      view: 'tile',
+      to: '${openmrsSpaBase}/home/act-worklists?list=act-worklist-x',
+    });
+  });
+});
+
+describe('Flag worklist', () => {
+  beforeEach(async () => {
+    await signInWith(
+      [worklistsPrivilege, 'Task: act.lists.export'],
+      flagWorklists['act-worklist-lost-to-follow-up'] as unknown as Partial<Config>,
+    );
+    vi.mocked(useRhdFlagList).mockReturnValue({
+      list: { cohortUuid: 'cohort', memberCount: 2 },
+      isLoading: false,
+      error: undefined,
+    });
+  });
+
+  it("shows its flag's count on a red tile, linking where the slot says", () => {
+    render(<FlagWorklist {...tile} />);
+
+    expect(vi.mocked(useRhdFlagList)).toHaveBeenCalledWith('RHD lost to follow-up');
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('2Lost to follow-up');
+    expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'red');
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/worklists?list=this');
+  });
+
+  it('is a button that chooses it, pressed when chosen, on the Worklists page', async () => {
+    const onSelect = vi.fn();
+    render(<FlagWorklist view="choice" selected onSelect={onSelect} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Lost to follow-up/ }));
+
+    expect(screen.getByRole('button', { name: /Lost to follow-up/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(onSelect).toHaveBeenCalled();
+  });
+
+  it('shows nothing where ACT Core keeps no list for its flag', () => {
+    vi.mocked(useRhdFlagList).mockReturnValue({ list: null, isLoading: false, error: undefined });
+
+    const { container } = render(<FlagWorklist {...tile} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('lists the registry patients on its flag, with how long they have been on it, and downloads them', async () => {
+    const joined = dayjs().subtract(12, 'day').format('YYYY-MM-DD');
+    reports({
+      registry: [
+        registryRow(1, 'RHD lost to follow-up|RHD INR target missing', `RHD lost to follow-up=${joined}`),
+        registryRow(2, 'RHD INR target missing'),
+      ],
+    });
+
+    render(<FlagWorklist {...list} />);
+
+    expect(screen.getByRole('heading', { name: 'Lost to follow-up' })).toBeInTheDocument();
+    expect(tableRows()).toEqual([['Patient 1rhd00001', '11 M', 'RHD B', 'Q28 day BPG', 'On the list for 12 days']]);
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    expect(vi.mocked(downloadCsv)).toHaveBeenCalledWith(
+      expect.stringMatching(/^rhd-lost-to-follow-up-/),
+      ['Patient', 'ACT ID', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Why on this list'],
+      [['Patient 1', 'rhd00001', '11 M', 'RHD B', 'Q28 day BPG', 'On the list for 12 days']],
+    );
   });
 
   it('opens the patient chart from a row', async () => {
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
+    reports({ registry: [registryRow(1, 'RHD lost to follow-up')] });
 
-    render(<Worklists />);
+    render(<FlagWorklist {...list} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Open chart' }));
 
-    const [first] = within(screen.getByRole('table')).getAllByRole('row').slice(1);
-    await userEvent.click(within(first).getByRole('button', { name: 'Open chart' }));
-
-    expect(navigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient/patient-1/chart' });
+    expect(vi.mocked(navigate)).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient/patient-1/chart' });
   });
 
-  it('chooses the first list when the URL names none', () => {
-    render(<Worklists />);
+  it('says so when its flag has no patients on the registry', () => {
+    reports({ registry: [registryRow(2)] });
 
-    expect(tile('RHD prophylaxis overdue')).toHaveAttribute('aria-pressed', 'true');
-    expect(shownNames()).toEqual(['Patient 1rhd00001']);
-  });
+    render(<FlagWorklist {...list} />);
 
-  it('changes the list, and the URL, when another tile is chosen', async () => {
-    render(<Worklists />);
-
-    await userEvent.click(tile('RHD INR target missing'));
-
-    expect(tile('RHD INR target missing')).toHaveAttribute('aria-pressed', 'true');
-    expect(tile('RHD prophylaxis overdue')).toHaveAttribute('aria-pressed', 'false');
-    expect(shownNames()).toEqual(['Patient 1rhd00001', 'Patient 2rhd00002']);
-    await waitFor(() => expect(window.location.search).toBe('?flag=RHD+INR+target+missing'));
-  });
-
-  it('says so when the chosen list has no patients', async () => {
-    render(<Worklists />);
-
-    await userEvent.click(tile('RHD lost to follow-up'));
-
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByTestId('table-empty-state')).toHaveTextContent('There are no patients on this list to display');
   });
+});
 
-  it('evaluates the registry report over every enrolment up to today', () => {
-    vi.useFakeTimers({ now: new Date(2026, 8, 29, 10) });
+describe('Due for prophylaxis worklist', () => {
+  const dueRow = (i: number, status: string, nextDue: string, type = 'BPG') => ({
+    patient_uuid: `patient-${i}`,
+    full_name: `Patient ${i}`,
+    rhd_id: `rhd0000${i}`,
+    prophylaxis_type: type,
+    injection_interval_days: type === 'BPG' ? 28 : null,
+    regimen: type === 'BPG' ? null : 'Penicillin V',
+    next_due: nextDue,
+    status,
+  });
+  const dueRows = [
+    dueRow(1, 'due_today', '2026-08-29'),
+    dueRow(2, 'overdue', '2026-08-21'),
+    dueRow(3, 'due_soon', '2026-08-30', 'Oral'),
+  ];
 
-    render(<Worklists />);
-
-    vi.useRealTimers();
-    expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
-      startDate: '1900-01-01',
-      endDate: '2026-09-29',
+  beforeEach(async () => {
+    await signInWith([worklistsPrivilege, 'Add Encounters']);
+    reports({ registry: [registryRow(1), registryRow(2)], due: dueRows });
+    vi.mocked(useDueList).mockReturnValue({
+      rows: dueRows,
+      recorded: new Set(['patient-1']),
+      recordedError: undefined,
+      checking: false,
+      waiting: 1,
+      isLoading: false,
+      error: undefined,
     });
   });
 
-  it.each(layouts)(
-    'loads as a table skeleton of a page of rows, sized as its table on $layout',
-    ({ layout, compact, size }) => {
-      setLayout(layout);
-      dataset({ isLoading: true });
-      const { rerender } = render(<Worklists />);
+  it('counts every patient due in the next 48 hours, due today or overdue, on a red tile', () => {
+    render(<DueForProphylaxisWorklist {...tile} />);
 
-      const { skeleton, rows: rowCount, columns } = tableSkeleton();
-      expect({ rows: rowCount, columns }).toEqual({ rows: 10, columns: 6 });
-      expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
-      dataset({ rows: rows });
-      rerender(<Worklists />);
-      expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
-    },
-  );
-
-  it('says so when the patients cannot be loaded', () => {
-    dataset({ error: new Error('Server responded with 500') });
-
-    render(<Worklists />);
-
-    expect(screen.getByText('Could not load the worklist patients')).toBeInTheDocument();
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('3Due for prophylaxis');
+    expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'red');
   });
 
-  it('says so when the lists cannot be loaded', () => {
-    flagLists({ error: new Error('Server responded with 403') });
+  it('lists them with their prescription and why they are due, to record the dose from', () => {
+    render(<DueForProphylaxisWorklist {...list} />);
 
-    render(<Worklists />);
+    const rows = tableRows();
+    expect(rows[0]).toEqual(['Patient 1rhd00001', '11 M', 'RHD B', 'BPG · every 28 days', 'Recorded today']);
+    expect(rows[1].slice(3)).toEqual(['BPG · every 28 days', expect.stringMatching(/^Overdue · was due \S/)]);
+    // Not on the registry, so who they are comes from the due list.
+    expect(rows[2]).toEqual(['Patient 3rhd00003', '', '', 'Penicillin V', expect.stringMatching(/^Due in 48 h · \S/)]);
+    expect(screen.getByRole('link', { name: 'View chart' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Record BPG' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Record oral' })).toBeInTheDocument();
+  });
+});
 
-    expect(screen.getByText('Could not load the worklists')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+describe('Confirmatory echo worklist', () => {
+  beforeEach(async () => {
+    await signInWith([worklistsPrivilege]);
+    reports({ screenPositive: [{ ...registryRow(4), diagnosis_details: '', screen_date: '2026-08-02' }] });
   });
 
-  it('says so when there are no RHD flag lists', () => {
-    flagLists({ lists: [] });
+  it('counts the screen positive patients awaiting confirmation on an orange tile', () => {
+    render(<ConfirmatoryEchoWorklist {...tile} />);
 
-    render(<Worklists />);
-
-    expect(screen.getByText('No RHD flag lists found')).toBeInTheDocument();
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1Confirmatory echo due');
+    expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'orange');
   });
 
-  it('lists every flag at once from the All flags tile, a row per patient and flag, with the flag named', async () => {
-    render(<Worklists />);
+  it('lists them with when they screened positive', () => {
+    render(<ConfirmatoryEchoWorklist {...list} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /All flags/ }));
-
-    expect(screen.getByTestId('worklist-all-tile')).toHaveTextContent('3All flags');
-    expect(screen.getByRole('heading', { name: 'All flags' })).toBeInTheDocument();
-    const table = screen.getByRole('table');
-    expect(
-      within(table)
-        .getAllByRole('row')
-        .slice(1)
-        .map((r) =>
-          within(r)
-            .getAllByRole('cell')
-            .slice(0, 2)
-            .map((cell) => cell.textContent),
-        ),
-    ).toEqual([
-      ['Patient 1rhd00001', 'RHD INR target missing'],
-      ['Patient 1rhd00001', 'RHD prophylaxis overdue'],
-      ['Patient 2rhd00002', 'RHD INR target missing'],
-    ]);
-    await waitFor(() => expect(window.location.search).toBe('?flag=all'));
+    expect(tableRows()[0][0]).toBe('Patient 4rhd00004');
+    expect(tableRows()[0][4]).toMatch(/^Screened positive · \S/);
   });
+});
 
-  it("counts each patient's days on the chosen list from the day they joined it", () => {
-    vi.useFakeTimers({ now: new Date(2026, 9, 3, 10), shouldAdvanceTime: true });
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
-    dataset({
-      rows: [
-        { ...rows[0], rhd_flag_dates: 'RHD INR target missing=2026-09-23|RHD prophylaxis overdue=2026-10-01' },
-        rows[1],
-      ],
+describe('Procedural waiting list worklist', () => {
+  it('lists the waiting patients with their procedure', async () => {
+    await signInWith([worklistsPrivilege, 'App: act.waitingList']);
+    reports({
+      registry: [registryRow(5)],
+      waitingList: [{ patient_uuid: 'patient-5', rhd_id: 'rhd00005', procedure_name: 'Mitral valve repair' }],
     });
 
-    render(<Worklists />);
+    render(<WaitingListWorklist {...list} />);
 
-    vi.useRealTimers();
-    const daysOnList = within(screen.getByRole('table'))
-      .getAllByRole('row')
-      .slice(1)
-      .map((r) => within(r).getAllByRole('cell')[4].textContent);
-    expect(daysOnList).toEqual(['10', '']);
-  });
-
-  it('narrows the patients by cardiac and primary care clinic', async () => {
-    window.history.replaceState(null, '', '/openmrs/spa/home/act-worklists?flag=RHD+INR+target+missing');
-    dataset({
-      rows: [
-        { ...rows[0], cardiac_clinic: 'Gulu RRH', primary_care_clinic: 'Anyeke HCIV' },
-        { ...rows[1], cardiac_clinic: 'Lira RRH', primary_care_clinic: 'Anyeke HCIV' },
-      ],
-    });
-    render(<Worklists />);
-
-    await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'Lira RRH');
-    expect(shownNames()).toEqual(['Patient 2rhd00002']);
-
-    await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), '');
-    await userEvent.selectOptions(screen.getByLabelText('Primary care clinic'), 'Anyeke HCIV');
-    expect(shownNames()).toEqual(['Patient 1rhd00001', 'Patient 2rhd00002']);
+    expect(tableRows()).toEqual([['Patient 5rhd00005', '15 M', 'RHD B', 'Q28 day BPG', 'Mitral valve repair']]);
   });
 });

@@ -1,23 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Button,
-  InlineNotification,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tag,
-} from '@carbon/react';
-import { ConfigurableLink, isDesktop, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
-import { MayEnterForm } from '../access/may-enter-form';
-import { type Config } from '../config-schema';
+import { InlineNotification, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
+import { ConfigurableLink, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { patientChartUrl } from '../patient-chart-url';
 import { type ReportRow } from '../reports/report-dataset.resource';
-import { openFormInChart } from '../visits/open-form-in-chart';
-import { adherence, type DueColumn, dueColumns, isOral, lowAdherence } from './due-list';
+import { adherence, type DueColumn, dueColumns, lowAdherence } from './due-list';
+import { RecordDoseAction, useRecordDose } from './record-dose.component';
 import styles from './due-for-prophylaxis.scss';
 
 /**
@@ -36,25 +24,8 @@ export function DueForProphylaxisTable({
   checking?: boolean;
 }) {
   const { t } = useTranslation();
-  const { prophylaxisCard, visitType } = useConfig<Config>();
-  const { sessionLocation } = useSession();
   const desktop = isDesktop(useLayoutType());
-  // One form at a time, as a second click while a visit is starting would start a second visit.
-  const [opening, setOpening] = useState(false);
-
-  const record = async (row: ReportRow, formUuid: string) => {
-    setOpening(true);
-    try {
-      await openFormInChart(t, {
-        patientUuid: String(row.patient_uuid),
-        formUuid,
-        visitType,
-        location: sessionLocation?.uuid,
-      });
-    } finally {
-      setOpening(false);
-    }
-  };
+  const { opening, record } = useRecordDose();
 
   const columns = dueColumns(t, recorded);
 
@@ -81,21 +52,6 @@ export function DueForProphylaxisTable({
       return <span className={lowAdherence(percent) ? styles.lowAdherence : styles.goodAdherence}>{text}</span>;
     }
     return text;
-  };
-
-  const action = (row: ReportRow) => {
-    if (recorded.has(String(row.patient_uuid))) {
-      return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{t('viewChart', 'View chart')}</ConfigurableLink>;
-    }
-    const oral = isOral(row);
-    const form = oral ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;
-    return (
-      <MayEnterForm formUuid={form}>
-        <Button kind="primary" size="sm" disabled={opening || checking} onClick={() => record(row, form)}>
-          {oral ? t('recordOral', 'Record oral') : t('recordBpg', 'Record BPG')}
-        </Button>
-      </MayEnterForm>
-    );
   };
 
   return (
@@ -128,7 +84,14 @@ export function DueForProphylaxisTable({
                 {columns.map((column) => (
                   <TableCell key={column.key}>{cell(column, row)}</TableCell>
                 ))}
-                <TableCell>{action(row)}</TableCell>
+                <TableCell>
+                  <RecordDoseAction
+                    row={row}
+                    recordedToday={recorded.has(String(row.patient_uuid))}
+                    disabled={opening || checking}
+                    onRecord={record}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
