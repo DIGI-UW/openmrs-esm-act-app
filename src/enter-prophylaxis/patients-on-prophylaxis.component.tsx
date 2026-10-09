@@ -2,13 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton, InlineNotification, Pagination, Search } from '@carbon/react';
 import { Information } from '@carbon/react/icons';
-import { CardiologyPictogram, isDesktop, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { CardiologyPictogram, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { DueForProphylaxisTable } from '../due-for-prophylaxis/due-for-prophylaxis-table.component';
 import { DueListToolbar } from '../due-for-prophylaxis/due-list-toolbar.component';
 import { useDueFilter } from '../due-for-prophylaxis/due-list';
 import { useRecordedToday } from '../due-for-prophylaxis/recorded-today.resource';
-import { useRegistryReport } from '../registry/registry.resource';
+import { onRegistryNow, useRegistryReport } from '../registry/registry.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { asProphylaxisRow } from './patients-on-prophylaxis';
@@ -19,7 +19,11 @@ function PatientsOnProphylaxis() {
   const desktop = isDesktop(useLayoutType());
   const registry = useRegistryReport();
   const [search, setSearch] = useState('');
-  const rows = useMemo(() => registry.rows.map(asProphylaxisRow).filter(Boolean), [registry.rows]);
+  // Only patients enrolled now and alive may have a dose recorded.
+  const rows = useMemo(
+    () => registry.rows.filter(onRegistryNow).map(asProphylaxisRow).filter(Boolean),
+    [registry.rows],
+  );
   const searched = useMemo(() => {
     const q = search.trim().toLowerCase();
     return q ? rows.filter((row) => `${row.full_name ?? ''} ${row.rhd_id ?? ''}`.toLowerCase().includes(q)) : rows;
@@ -33,6 +37,9 @@ function PatientsOnProphylaxis() {
     [results],
   );
   const { recorded, isValidating: checking, error: recordedError } = useRecordedToday(shownUuids);
+  // The CSV holds every filtered row, but who was recorded today is known for the page shown only, so the CSV gives
+  // each patient's status as the registry report has it.
+  const notLookedUp = useMemo(() => new Set<string>(), []);
 
   if (registry.error) {
     return (
@@ -61,7 +68,7 @@ function PatientsOnProphylaxis() {
           counts={counts}
           onFilter={setFilter}
           rows={filtered}
-          recorded={recorded}
+          recorded={notLookedUp}
         />
         {registry.isLoading ? (
           <DataTableSkeleton
@@ -100,15 +107,12 @@ function PatientsOnProphylaxis() {
 /** Enter prophylaxis: the clinic's patients on prophylaxis, to choose one and record what was given today. */
 export default function EnterProphylaxis() {
   const { t } = useTranslation();
-  const { sessionLocation } = useSession();
   return (
     <>
       <ActPageHeader title={t('enterProphylaxis', 'Enter prophylaxis')} illustration={<CardiologyPictogram />} />
       <div className={styles.page}>
         <p className={styles.description}>
-          {t('enterProphylaxisDescription', 'Choose the patient, then record what was given today · {{clinic}}', {
-            clinic: sessionLocation?.display ?? '',
-          })}
+          {t('enterProphylaxisDescription', 'Choose the patient, then record what was given today')}
         </p>
         <PatientsOnProphylaxis />
       </div>

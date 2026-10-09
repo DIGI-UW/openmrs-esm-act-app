@@ -8,15 +8,18 @@ export type DueFilter = 'bpg' | 'oral' | 'all';
 
 export const isOral = (row: ReportRow) => row.prophylaxis_type === 'Oral';
 
+export const isBpg = (row: ReportRow) => row.prophylaxis_type === 'BPG';
+
 /** The rows the BPG, Oral or All filter shows, and how many each would show. */
 export function useDueFilter(rows: Array<ReportRow>, initial: DueFilter = 'bpg') {
   const [filter, setFilter] = useState<DueFilter>(initial);
+  // A patient without a prescription is neither, so shows under All only.
   const counts = useMemo(
-    () => ({ bpg: rows.filter((row) => !isOral(row)).length, oral: rows.filter(isOral).length, all: rows.length }),
+    () => ({ bpg: rows.filter(isBpg).length, oral: rows.filter(isOral).length, all: rows.length }),
     [rows],
   );
   const filtered = useMemo(
-    () => (filter === 'all' ? rows : rows.filter((row) => isOral(row) === (filter === 'oral'))),
+    () => (filter === 'all' ? rows : rows.filter(filter === 'oral' ? isOral : isBpg)),
     [rows, filter],
   );
   return { filter, setFilter, counts, filtered };

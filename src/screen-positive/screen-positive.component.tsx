@@ -23,7 +23,6 @@ import {
   useConfig,
   useLayoutType,
   UserHasAccess,
-  useSession,
 } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
@@ -188,15 +187,12 @@ function ScreenPositiveTable() {
 
 export default function ScreenPositive() {
   const { t } = useTranslation();
-  const { sessionLocation } = useSession();
   return (
     <>
       <ActPageHeader title={t('confirmatoryEchoDue', 'Confirmatory echo due')} illustration={<CardiologyPictogram />} />
       <div className={styles.screenPositive}>
         <p className={styles.description}>
-          {t('confirmatoryEchoDueDescription', 'Screen-positive patients awaiting confirmatory echo · {{clinic}}', {
-            clinic: sessionLocation?.display ?? '',
-          })}
+          {t('confirmatoryEchoDueDescription', 'Screen-positive patients awaiting confirmatory echo')}
         </p>
         <ScreenPositiveTable />
       </div>

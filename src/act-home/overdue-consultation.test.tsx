@@ -16,6 +16,8 @@ const row = (i: number, nextConsultation: string | null) => ({
   patient_uuid: `patient-${i}`,
   full_name: `Patient ${i}`,
   rhd_id: `rhd0000${i}`,
+  enrollment_status: 'Active',
+  deceased: false,
   last_consultation_date: daysAgo(200),
   next_consultation_date: nextConsultation,
 });
@@ -50,6 +52,20 @@ describe('Overdue for consultation', () => {
       'Patient 1rhd00001',
     ]);
     expect(within(rows[0]).getByText('108 days')).toBeInTheDocument();
+  });
+
+  it('leaves out a completed enrolment and a patient who has died', () => {
+    registry([
+      row(1, daysAgo(8)),
+      { ...row(2, daysAgo(30)), enrollment_status: 'Completed' },
+      { ...row(3, daysAgo(40)), deceased: true },
+    ]);
+
+    render(<OverdueConsultation />);
+
+    expect(screen.getByText(/^1 patients?$/)).toBeInTheDocument();
+    const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1);
+    expect(rows.map((r) => within(r).getAllByRole('cell')[0].textContent)).toEqual(['Patient 1rhd00001']);
   });
 
   it("opens a patient's chart", async () => {

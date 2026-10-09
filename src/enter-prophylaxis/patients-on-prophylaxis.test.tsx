@@ -19,6 +19,8 @@ const registryRow = (i: number, value: Record<string, unknown>) => ({
   patient_uuid: `patient-${i}`,
   full_name: `Patient ${i}`,
   rhd_id: `rhd0000${i}`,
+  enrollment_status: 'Active',
+  deceased: false,
   ...value,
 });
 
@@ -34,6 +36,8 @@ const rows = [
   registryRow(3, { bpg_status: 'No prescription' }),
   registryRow(4, { prophylaxis_type: 'Oral', prophylaxis_regimen: 'Oral penicillin', adherence: 88 }),
   registryRow(5, {}),
+  registryRow(6, { prophylaxis_type: 'BPG', bpg_status: 'Covered', enrollment_status: 'Completed' }),
+  registryRow(7, { prophylaxis_type: 'Oral', prophylaxis_regimen: 'Oral penicillin', deceased: 1 }),
 ];
 
 const tableRows = () =>
@@ -54,6 +58,8 @@ describe('asProphylaxisRow', () => {
       ['', 'no_prescription'],
       ['Oral', ''],
       null,
+      ['BPG', 'up_to_date'],
+      ['Oral', ''],
     ]);
   });
 });
@@ -89,8 +95,19 @@ describe('Enter prophylaxis', () => {
     ]);
   });
 
-  it('narrows the list by BPG or oral and by name or ACT ID', async () => {
+  it('leaves out completed enrolments and patients who have died, as no dose can be recorded for them', () => {
     render(<EnterProphylaxis />);
+
+    expect(tableRows().map((row) => row[0])).not.toContain('Patient 6');
+    expect(tableRows().map((row) => row[0])).not.toContain('Patient 7');
+  });
+
+  it('narrows the list by BPG or oral and by name or ACT ID, a patient without a prescription under All only', async () => {
+    render(<EnterProphylaxis />);
+
+    expect(screen.getByRole('tab', { name: /^BPG/ })).toHaveTextContent('BPG 2');
+    await userEvent.click(screen.getByRole('tab', { name: /^BPG/ }));
+    expect(tableRows().map((row) => row[0])).toEqual(['Patient 1', 'Patient 2']);
 
     await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
     expect(tableRows().map((row) => row[0])).toEqual(['Patient 4']);
