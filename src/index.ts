@@ -107,6 +107,10 @@ export const studiesDashboardLink = getAsyncLifecycle(
 
 export const studiesDashboard = getAsyncLifecycle(() => import('./studies/studies.component'), options);
 
+export const usersDashboardLink = getAsyncLifecycle(() => import('./users/users-dashboard-link.component'), options);
+
+export const usersDashboard = getAsyncLifecycle(() => import('./users/users.component'), options);
+
 export const refreshFlagsDashboardLink = getAsyncLifecycle(
   () => import('./refresh-flags/refresh-flags-dashboard-link.component'),
   options,

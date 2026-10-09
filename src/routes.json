@@ -194,6 +194,23 @@
       "privileges": "Manage Locations"
     },
     {
+      "name": "act-users-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "usersDashboardLink",
+      "meta": {
+        "name": "act-users",
+        "slot": "act-users-dashboard-slot",
+        "title": "usersAndRoles"
+      },
+      "privileges": "Edit Users"
+    },
+    {
+      "name": "act-users-dashboard",
+      "slot": "act-users-dashboard-slot",
+      "component": "usersDashboard",
+      "privileges": "Edit Users"
+    },
+    {
       "name": "act-refresh-flags-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "refreshFlagsDashboardLink",

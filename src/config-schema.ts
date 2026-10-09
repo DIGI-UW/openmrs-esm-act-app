@@ -111,8 +111,8 @@ export const configSchema = {
   },
   adminLinks: {
     usersUrl: link(
-      "Where the left nav's Users and roles leads: OpenMRS's user management, for a user holding Edit Users.",
-      '${openmrsBase}/admin/users/users.list',
+      "Where the left nav's Users and roles leads: the Users and roles dashboard in this app, for a user holding Edit Users. ACT Core keeps a site administrator to the users at its clinics.",
+      '${openmrsSpaBase}/home/act-users',
     ),
     clinicsUrl: link(
       "Where the left nav's Clinics leads: OpenMRS's locations, for a user holding Manage Locations.",
@@ -126,6 +126,14 @@ export const configSchema = {
       "Where the left nav's Flags and adherence leads: the page that refreshes them now, for a user holding Task: act.refreshFlags.",
       '${openmrsSpaBase}/home/act-refresh-flags',
     ),
+  },
+  users: {
+    rolePrefix: {
+      _type: Type.String,
+      _default: 'Organizational: ACT ',
+      _description:
+        'Users and roles offers the roles whose names start with this, and shows them without it: the job roles, not the application roles they inherit.',
+    },
   },
   careCascade: {
     report: {
@@ -392,6 +400,7 @@ export interface Config {
     facilityReportUrl: string;
   };
   adminLinks: { usersUrl: string; clinicsUrl: string; studiesUrl: string; refreshFlagsUrl: string };
+  users: { rolePrefix: string };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };
