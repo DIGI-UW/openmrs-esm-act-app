@@ -63,7 +63,6 @@ function PatientsOnProphylaxis() {
         <h2 className={styles.title}>{t('patientsOnProphylaxis', 'Patients on prophylaxis')}</h2>
         <DueListToolbar
           csvName="patients-on-prophylaxis"
-          description={t('chooseAndRecordToday', 'Choose the patient and record what was given today')}
           filter={filter}
           counts={counts}
           onFilter={setFilter}
@@ -104,7 +103,7 @@ function PatientsOnProphylaxis() {
   );
 }
 
-/** Enter prophylaxis: the clinic's patients on prophylaxis, to choose one and record what was given today. */
+/** Enter prophylaxis: the registry's patients on prophylaxis, to choose one and record what was given today. */
 export default function EnterProphylaxis() {
   const { t } = useTranslation();
   return (

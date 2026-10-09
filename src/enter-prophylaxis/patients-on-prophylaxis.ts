@@ -1,8 +1,17 @@
 import { type ReportRow } from '../reports/report-dataset.resource';
 
+/** Overdue, due today, due in the next two days or up to date, as the Due for Prophylaxis report words it. */
+function bpgStatus(daysUntilDue: unknown) {
+  if (daysUntilDue === null || daysUntilDue === undefined || daysUntilDue === '') {
+    return '';
+  }
+  const days = Number(daysUntilDue);
+  return days < 0 ? 'overdue' : days === 0 ? 'due_today' : days <= 2 ? 'due_soon' : 'up_to_date';
+}
+
 /**
  * A registry row as the due list's table reads it, for a patient on prophylaxis or without a prescription; nothing for
- * a patient whose prophylaxis ACT Core has not typed yet. A BPG patient past their due date is overdue, else up to date.
+ * a patient whose prophylaxis ACT Core has not typed yet. A BPG patient's status counts days to their due date.
  */
 export function asProphylaxisRow(row: ReportRow): ReportRow | null {
   const common = {
@@ -17,8 +26,12 @@ export function asProphylaxisRow(row: ReportRow): ReportRow | null {
     return { ...common, prophylaxis_type: '', status: 'no_prescription' };
   }
   if (row.prophylaxis_type === 'BPG') {
-    const status = row.bpg_status === 'Not covered' ? 'overdue' : row.bpg_status ? 'up_to_date' : '';
-    return { ...common, prophylaxis_type: 'BPG', injection_interval_days: row.injection_interval_days, status };
+    return {
+      ...common,
+      prophylaxis_type: 'BPG',
+      injection_interval_days: row.injection_interval_days,
+      status: bpgStatus(row.days_until_due),
+    };
   }
   return row.prophylaxis_type === 'Oral' ? { ...common, prophylaxis_type: 'Oral', status: '' } : null;
 }

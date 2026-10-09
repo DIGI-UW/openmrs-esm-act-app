@@ -68,6 +68,22 @@ describe('Overdue for consultation', () => {
     expect(rows.map((r) => within(r).getAllByRole('cell')[0].textContent)).toEqual(['Patient 1rhd00001']);
   });
 
+  it('shows them a page at a time, so a long list does not push the rest of ACT home down', async () => {
+    registry(Array.from({ length: 12 }, (_, i) => row(i + 1, daysAgo(100 - i))));
+
+    render(<OverdueConsultation />);
+
+    const names = () =>
+      within(screen.getByRole('table'))
+        .getAllByRole('row')
+        .slice(1)
+        .map((r) => within(r).getAllByRole('cell')[0].textContent);
+    expect(screen.getByText('12 patients')).toBeInTheDocument();
+    expect(names()).toHaveLength(10);
+    await userEvent.click(screen.getByRole('button', { name: /next page/i }));
+    expect(names()).toEqual(['Patient 11rhd000011', 'Patient 12rhd000012']);
+  });
+
   it("opens a patient's chart", async () => {
     registry([row(1, daysAgo(8))]);
 

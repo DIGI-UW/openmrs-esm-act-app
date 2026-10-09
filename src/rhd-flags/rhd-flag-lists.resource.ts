@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { restBaseUrl } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
 
@@ -18,14 +18,6 @@ function searchLists(text: string) {
   ).then((lists) => lists.filter((list) => !list.voided));
 }
 
-/** Counts memberships that have not ended; the count also takes in memberships voided along with their patient. */
-async function countMembers(cohortUuid: string) {
-  const { data } = await openmrsFetch<{ totalCount: number }>(
-    `${restBaseUrl}/cohortm/cohortmember?cohort=${cohortUuid}&v=custom:(uuid)&limit=1&totalCount=true`,
-  );
-  return data.totalCount;
-}
-
 /** Whether the flag is one of the configured RHD flags: named in names, or else starting with namePrefix. */
 export function isListedFlag({ names, namePrefix }: Config['flagLists'], flagName: string) {
   return names.length ? names.includes(flagName) : flagName.startsWith(namePrefix);
@@ -35,13 +27,13 @@ export function flagPriority({ riskFlags }: Config['flagLists'], flagName: strin
   return riskFlags.includes(flagName) ? 'risk' : 'dataQuality';
 }
 
-/** The list ACT Core keeps for the flag with this name, and its patient count; no list when the flag has none. */
+/** The list ACT Core keeps for the flag with this name; no list when the flag has none. */
 export function useRhdFlagList(flagName: string) {
-  const { data, error, isLoading } = useSWR<{ cohortUuid: string; memberCount: number } | null, Error>(
+  const { data, error, isLoading } = useSWR<{ cohortUuid: string } | null, Error>(
     flagName ? ['rhd-flag-list', flagName] : null,
     async () => {
       const list = (await searchLists(flagName)).find((l) => l.name === flagName);
-      return list ? { cohortUuid: list.uuid, memberCount: await countMembers(list.uuid) } : null;
+      return list ? { cohortUuid: list.uuid } : null;
     },
     { revalidateIfStale: false },
   );

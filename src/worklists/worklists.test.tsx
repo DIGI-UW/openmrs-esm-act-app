@@ -165,13 +165,21 @@ describe('Flag worklist', () => {
       flagWorklists['act-worklist-lost-to-follow-up'] as unknown as Partial<Config>,
     );
     vi.mocked(useRhdFlagList).mockReturnValue({
-      list: { cohortUuid: 'cohort', memberCount: 2 },
+      list: { cohortUuid: 'cohort' },
       isLoading: false,
       error: undefined,
     });
   });
 
-  it("shows its flag's count on a red tile, linking where the slot says", () => {
+  it('counts on a red tile the registry patients its list shows, linking where the slot says', () => {
+    reports({
+      registry: [
+        registryRow(1, 'RHD lost to follow-up'),
+        registryRow(2, 'RHD INR target missing'),
+        registryRow(3, 'RHD INR target missing|RHD lost to follow-up'),
+      ],
+    });
+
     render(<FlagWorklist {...tile} />);
 
     expect(vi.mocked(useRhdFlagList)).toHaveBeenCalledWith('RHD lost to follow-up');
@@ -181,6 +189,7 @@ describe('Flag worklist', () => {
   });
 
   it('is a button that chooses it, pressed when chosen, on the Worklists page', async () => {
+    reports({});
     const onSelect = vi.fn();
     render(<FlagWorklist view="choice" selected onSelect={onSelect} />);
 
@@ -192,6 +201,7 @@ describe('Flag worklist', () => {
 
   it('shows nothing where ACT Core keeps no list for its flag', () => {
     vi.mocked(useRhdFlagList).mockReturnValue({ list: null, isLoading: false, error: undefined });
+    reports({});
 
     const { container } = render(<FlagWorklist {...tile} />);
 
@@ -245,7 +255,7 @@ describe('Cardiology follow-up worklist', () => {
     );
     const flag = 'RHD cardiology follow-up due';
     vi.mocked(useRhdFlagList).mockReturnValue({
-      list: { cohortUuid: 'cohort', memberCount: 2 },
+      list: { cohortUuid: 'cohort' },
       isLoading: false,
       error: undefined,
     });

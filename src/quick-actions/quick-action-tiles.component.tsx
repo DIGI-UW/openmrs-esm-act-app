@@ -84,7 +84,7 @@ export function RecordOralAction() {
 }
 
 /**
- * Enter prophylaxis: the clinic's patients on prophylaxis, to record what each was given; or, configured back to fast
+ * Enter prophylaxis: the registry's patients on prophylaxis, to record what each was given; or, configured back to fast
  * data entry, its forms to choose from, as ACT 2.0 offered BPG and oral, else one link.
  */
 export function EnterProphylaxisAction() {

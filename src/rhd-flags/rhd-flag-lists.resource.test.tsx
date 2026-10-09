@@ -13,14 +13,10 @@ const cohorts = [
   { uuid: 'deleted', name: 'RHD deleted flag', voided: true },
 ];
 
-/** The cohort search matches names containing the text; a list's members are counted from totalCount. */
-function respond(memberCounts: Record<string, number> = { lost: 4 }) {
+/** The cohort search matches names containing the text. */
+function respond() {
   mockOpenmrsFetch.mockImplementation(((url: string) => {
-    const params = new URL(url, 'http://host').searchParams;
-    if (url.includes('/cohortm/cohortmember')) {
-      return Promise.resolve({ data: { results: [], totalCount: memberCounts[params.get('cohort')] ?? 0 } });
-    }
-    const q = params.get('q').toLowerCase();
+    const q = new URL(url, 'http://host').searchParams.get('q').toLowerCase();
     const results = cohorts.filter((cohort) => cohort.name.toLowerCase().includes(q));
     return Promise.resolve({ data: { results, totalCount: results.length } });
   }) as never);
@@ -35,15 +31,13 @@ function renderList(flagName: string) {
 }
 
 describe('useRhdFlagList', () => {
-  it('finds the list named exactly as the flag, and counts its patients in one small request', async () => {
+  it('finds the list named exactly as the flag', async () => {
     respond();
 
     const { result } = renderList('RHD lost to follow-up');
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.list).toEqual({ cohortUuid: 'lost', memberCount: 4 });
-    const memberUrls = mockOpenmrsFetch.mock.calls.map(([url]) => url).filter((url) => url.includes('/cohortm/'));
-    expect(memberUrls).toEqual([expect.stringContaining('limit=1')]);
+    expect(result.current.list).toEqual({ cohortUuid: 'lost' });
   });
 
   it('has no list for a flag without one, or whose list was voided', async () => {

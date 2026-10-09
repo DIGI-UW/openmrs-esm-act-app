@@ -41,36 +41,25 @@ function dueBy(t: TFunction, value: unknown) {
     : t('dueOn', 'Due {{date}}', { date });
 }
 
-function FlagPatients({
-  flag,
-  dueDateColumn,
-  title,
-  csvName,
-}: {
-  flag: string;
-  dueDateColumn: string;
-  title: string;
-  csvName: string;
-}) {
+/**
+ * A worklist of the registry patients on one flag's list, as its extension's config names the flag, its tile counting
+ * the patients it lists; nothing where the flag has no list.
+ */
+export default function FlagWorklist(state: WorklistState) {
   const { t } = useTranslation();
-  const { rows, isLoading, error } = useRegistryReport();
+  const { flag, title, tone, dueDateColumn } = useConfig<FlagWorklistConfig>();
+  const { list, isLoading, error } = useRhdFlagList(flag);
+  const registry = useRegistryReport();
   const entries = useMemo(
     () =>
-      rows
+      registry.rows
         .filter((row) => rowFlags(row).includes(flag))
         .map((row) => ({
           row,
           why: dueDateColumn ? dueBy(t, row[dueDateColumn]) : onListSince(t, row, flag),
         })),
-    [rows, flag, dueDateColumn, t],
+    [registry.rows, flag, dueDateColumn, t],
   );
-  return <WorklistTable title={title} csvName={csvName} entries={entries} isLoading={isLoading} error={error} />;
-}
-
-/** A worklist of the patients on one flag's list, as its extension's config names the flag; nothing where it has no list. */
-export default function FlagWorklist(state: WorklistState) {
-  const { flag, title, tone, dueDateColumn } = useConfig<FlagWorklistConfig>();
-  const { list, isLoading, error } = useRhdFlagList(flag);
   if (!isLoading && !error && !list) {
     return null;
   }
@@ -79,14 +68,15 @@ export default function FlagWorklist(state: WorklistState) {
       state={state}
       title={title}
       tone={tone}
-      count={list?.memberCount}
-      error={error}
+      count={isLoading || registry.isLoading ? undefined : entries.length}
+      error={error ?? registry.error}
       list={
-        <FlagPatients
-          flag={flag}
-          dueDateColumn={dueDateColumn}
+        <WorklistTable
           title={title}
           csvName={flag.toLowerCase().replace(/\W+/g, '-')}
+          entries={entries}
+          isLoading={registry.isLoading}
+          error={registry.error}
         />
       }
     />

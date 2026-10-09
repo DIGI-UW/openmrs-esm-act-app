@@ -28,15 +28,27 @@ const rows = [
   registryRow(1, {
     prophylaxis_type: 'BPG',
     bpg_status: 'Not covered',
+    days_until_due: -18,
     prophylaxis_regimen: 'Q28 day BPG',
     injection_interval_days: 28,
     adherence: 62,
   }),
-  registryRow(2, { prophylaxis_type: 'BPG', bpg_status: 'Covered', prophylaxis_regimen: 'Q21 day BPG', adherence: 96 }),
+  registryRow(2, {
+    prophylaxis_type: 'BPG',
+    bpg_status: 'Covered',
+    days_until_due: 19,
+    prophylaxis_regimen: 'Q21 day BPG',
+    adherence: 96,
+  }),
   registryRow(3, { bpg_status: 'No prescription' }),
   registryRow(4, { prophylaxis_type: 'Oral', prophylaxis_regimen: 'Oral penicillin', adherence: 88 }),
   registryRow(5, {}),
-  registryRow(6, { prophylaxis_type: 'BPG', bpg_status: 'Covered', enrollment_status: 'Completed' }),
+  registryRow(6, {
+    prophylaxis_type: 'BPG',
+    bpg_status: 'Covered',
+    days_until_due: 19,
+    enrollment_status: 'Completed',
+  }),
   registryRow(7, { prophylaxis_type: 'Oral', prophylaxis_regimen: 'Oral penicillin', deceased: 1 }),
 ];
 
@@ -61,6 +73,15 @@ describe('asProphylaxisRow', () => {
       ['BPG', 'up_to_date'],
       ['Oral', ''],
     ]);
+  });
+
+  it("says a BPG dose is due as the due list does, though the registry calls 0 to 7 days 'Deadline approaching'", () => {
+    const approaching = (days: number) =>
+      asProphylaxisRow(
+        registryRow(8, { prophylaxis_type: 'BPG', bpg_status: 'Deadline approaching', days_until_due: days }),
+      ).status;
+
+    expect([0, 1, 2, 3, 7].map(approaching)).toEqual(['due_today', 'due_soon', 'due_soon', 'up_to_date', 'up_to_date']);
   });
 });
 

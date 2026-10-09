@@ -4,6 +4,7 @@ import {
   Button,
   DataTableSkeleton,
   InlineNotification,
+  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -18,10 +19,13 @@ import { onRegistryNow, useRegistryReport } from '../registry/registry.resource'
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { TableEmptyState } from '../table-filters/empty-state.component';
+import { usePagedRows } from '../table-filters/paged-rows';
 import { ActHomeCard } from './act-home-card.component';
 import styles from './overdue-consultation.scss';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+const noFilters = {};
 
 interface Overdue {
   row: ReportRow;
@@ -56,6 +60,7 @@ export default function OverdueConsultation() {
   const { rows, isLoading, error } = useRegistryReport();
   // A completed enrolment or a death keeps its last review date, which is no longer anyone's to act on.
   const overdue = useMemo(() => overdueConsultations(rows.filter(onRegistryNow)), [rows]);
+  const { results, paginationProps } = usePagedRows(overdue, noFilters);
   const headers = [
     t('patient', 'Patient'),
     t('lastConsultation', 'Last consultation'),
@@ -92,40 +97,43 @@ export default function OverdueConsultation() {
       ) : !overdue.length ? (
         <TableEmptyState message={t('noOverdueConsultations', 'No patient is overdue for consultation')} />
       ) : (
-        <div className={styles.tableContainer}>
-          <Table size={desktop ? 'sm' : 'lg'}>
-            <TableHead>
-              <TableRow>
-                {headers.map((header) => (
-                  <TableHeader key={header}>{header}</TableHeader>
-                ))}
-                <TableHeader aria-label={t('actions', 'Actions')} />
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {overdue.map(({ row, lastConsultation, wasDue, days }) => (
-                <TableRow key={String(row.patient_uuid)}>
-                  <TableCell>
-                    <span className={styles.name}>{String(row.full_name ?? '')}</span>
-                    <span className={styles.actId}>{String(row.rhd_id ?? '')}</span>
-                  </TableCell>
-                  <TableCell>{date(lastConsultation)}</TableCell>
-                  <TableCell>{date(wasDue)}</TableCell>
-                  <TableCell className={styles.days}>{t('daysCount', '{{count}} days', { count: days })}</TableCell>
-                  <TableCell>
-                    <Button
-                      kind="tertiary"
-                      size="sm"
-                      onClick={() => navigate({ to: patientChartUrl(row.patient_uuid) })}
-                    >
-                      {t('openChart', 'Open chart')}
-                    </Button>
-                  </TableCell>
+        <>
+          <div className={styles.tableContainer}>
+            <Table size={desktop ? 'sm' : 'lg'}>
+              <TableHead>
+                <TableRow>
+                  {headers.map((header) => (
+                    <TableHeader key={header}>{header}</TableHeader>
+                  ))}
+                  <TableHeader aria-label={t('actions', 'Actions')} />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHead>
+              <TableBody>
+                {results.map(({ row, lastConsultation, wasDue, days }) => (
+                  <TableRow key={String(row.patient_uuid)}>
+                    <TableCell>
+                      <span className={styles.name}>{String(row.full_name ?? '')}</span>
+                      <span className={styles.actId}>{String(row.rhd_id ?? '')}</span>
+                    </TableCell>
+                    <TableCell>{date(lastConsultation)}</TableCell>
+                    <TableCell>{date(wasDue)}</TableCell>
+                    <TableCell className={styles.days}>{t('daysCount', '{{count}} days', { count: days })}</TableCell>
+                    <TableCell>
+                      <Button
+                        kind="tertiary"
+                        size="sm"
+                        onClick={() => navigate({ to: patientChartUrl(row.patient_uuid) })}
+                      >
+                        {t('openChart', 'Open chart')}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {overdue.length > paginationProps.pageSizes[0] && <Pagination {...paginationProps} />}
+        </>
       )}
     </ActHomeCard>
   );
