@@ -266,7 +266,17 @@ describe('Due for prophylaxis page', () => {
 
     // SWR starts checking again a frame after the list mounts.
     await waitFor(() => expect(screen.getByRole('button', { name: 'Record BPG' })).toBeDisabled());
-    answer({ data: { results: [{ uuid: 'dose', form: { uuid: bpgForm } }] } });
+    answer({
+      data: {
+        results: [
+          {
+            uuid: 'dose',
+            form: { uuid: bpgForm },
+            obs: [{ concept: { uuid: '183fb30e-b861-5b7c-806f-7118a40f2b51' } }],
+          },
+        ],
+      },
+    });
     expect(await screen.findByText('Recorded today')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Record BPG' })).not.toBeInTheDocument();
   });
