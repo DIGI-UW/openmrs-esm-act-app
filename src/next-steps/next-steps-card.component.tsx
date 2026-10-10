@@ -11,17 +11,9 @@ import {
   Stethoscope,
   UserFollow,
 } from '@carbon/react/icons';
-import {
-  CardHeader,
-  launchWorkspace2,
-  showSnackbar,
-  useConfig,
-  usePatient,
-  userHasAccess,
-  useSession,
-} from '@openmrs/esm-framework';
+import { CardHeader, launchWorkspace2, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { PRIVILEGE_ADD_ENCOUNTERS } from '../constants';
+import { mayEnter } from '../access/may-enter-form';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type NextStep, useNextSteps, usePublishedForms } from './next-steps.resource';
 import cardStyles from '../styles/summary-card.scss';
@@ -54,9 +46,7 @@ function useFormCount(enabled: boolean) {
   if (!user) {
     return 0;
   }
-  return forms.filter((form) =>
-    userHasAccess([PRIVILEGE_ADD_ENCOUNTERS, form.encounterType?.editPrivilege?.display].filter(Boolean), user),
-  ).length;
+  return forms.filter((form) => mayEnter(form, user)).length;
 }
 
 /** The steps a newer list adds that are still to do, to name in the toast after a save. */
@@ -91,7 +81,8 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
     }
   }, [steps, t]);
 
-  if (!nextSteps.enabled || error) {
+  // A failed refetch keeps the last list; only a first load that fails hides the card.
+  if (!nextSteps.enabled || (error && !steps)) {
     return null;
   }
   const firstName = patient?.name?.[0]?.given?.[0] ?? '';

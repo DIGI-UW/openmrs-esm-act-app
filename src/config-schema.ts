@@ -300,7 +300,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        "Whether the patient summary shows Next steps for this visit, from ACT Core's /actcore/nextsteps. When false, the summary is as before.",
+        "Whether the patient summary shows Next steps for this visit, from ACT Core's /actcore/nextsteps. When false, the card is hidden and neither /actcore/nextsteps nor the form list is fetched.",
     },
   },
   prophylaxisCard: {

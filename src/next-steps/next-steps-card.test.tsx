@@ -238,6 +238,22 @@ describe('NextStepsCard', () => {
     expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(expect.stringContaining('/form?'));
   });
 
+  it('keeps the last list when asking again after a save fails', async () => {
+    renderCard();
+    await screen.findByText('Give BPG injection');
+
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      url.includes('/actcore/nextsteps')
+        ? Promise.reject(new Error('timeout'))
+        : Promise.resolve({ data: { results: forms } })) as never);
+    await invalidatePatientEncounters();
+
+    await waitFor(() =>
+      expect(mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).includes('/actcore/nextsteps'))).toHaveLength(2),
+    );
+    expect(screen.getByText('Give BPG injection')).toBeInTheDocument();
+  });
+
   it('shows nothing when ACT Core cannot be reached', async () => {
     mockOpenmrsFetch.mockImplementation(((url: string) =>
       url.includes('/actcore/nextsteps')
