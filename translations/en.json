@@ -165,6 +165,7 @@
   "noWorklists": "No worklists have been added yet.",
   "onListForDays_one": "On the list for {{count}} day",
   "onListForDays_other": "On the list for {{count}} days",
+  "onOral": "On oral",
   "onTime": "On time",
   "onTimeCount": "{{given}} of {{total}}",
   "onTimeSixMonths": "On-time (6 months)",
