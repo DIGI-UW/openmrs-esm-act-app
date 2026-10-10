@@ -9,9 +9,8 @@ interface EncounterForm {
 }
 
 /**
- * The listed patients with a BPG or oral prophylaxis encounter dated since local midnight. The report cannot tell, as
- * ACT Core rebuilds its due dates overnight. A failure is not retried, as each retry sends every lookup again.
- * A BPG visit without a Date of Injection does not count: the form records none when BPG is withheld.
+ * The listed patients with an oral encounter, or a BPG one with a Date of Injection, dated since local midnight, which
+ * the report cannot tell as ACT Core rebuilds due dates overnight. A failure is not retried, as each retry resends all.
  */
 export function useRecordedToday(patientUuids: Array<string>) {
   const { prophylaxisCard, prophylaxisPage } = useConfig<Config>();
