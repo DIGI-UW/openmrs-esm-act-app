@@ -15,8 +15,9 @@ vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }))
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const openForm = vi.fn();
 
-const [injectionDate, facility, lateReason, weeks, adherence] = [
+const [injectionDate, dose, facility, lateReason, weeks, adherence] = [
   '183fb30e-b861-5b7c-806f-7118a40f2b51',
+  '6a52b6aa-2427-4fa2-93cb-18956f50c16a',
   '01e6dd39-b8ba-5b0a-bcd7-6b8d5973c1bc',
   'f7cbfcdc-58bb-5e85-86ab-ffce26a08615',
   '75cd7e15-5f05-58d1-acb1-4a046eb1b437',
@@ -40,6 +41,7 @@ const bpg = [
     location: { display: 'Akunalaber HCIII' },
     obs: [
       obs(injectionDate, '2026-08-03'),
+      obs(dose, { uuid: '0cd38c13-17ac-48da-a946-1b21789e5027', display: '1.2 MU (1,200,000 units)' }),
       obs(lateReason, { uuid: 'transport', display: 'Could not arrange transportation' }),
       obs(lateReason, { uuid: 'forgot', display: 'Forgot to come' }),
     ],
@@ -119,7 +121,7 @@ describe('ProphylaxisPage', () => {
     serve();
   });
 
-  it("lists the patient's BPG injections newest first, with their facility and ACT Core's timing", async () => {
+  it("lists the patient's BPG injections newest first, with the dose given, their facility and ACT Core's timing", async () => {
     renderPage();
 
     const table = await screen.findByRole('table', { name: 'BPG injections' });
@@ -128,11 +130,16 @@ describe('ProphylaxisPage', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date', 'Facility', 'Notes']);
+    ).toEqual(['Date', 'Given', 'Facility', 'Notes']);
     expect(rows(table)).toEqual([
-      ['31-Aug-2026', 'Kiswa HC III (ACT 2.0)', 'On time'],
-      ['03-Aug-2026', 'Akunalaber HCIII', 'Late · Could not arrange transportation, Forgot to come'],
-      ['02-Jul-2026', 'Kiswa HC III', ''],
+      ['31-Aug-2026', '--', 'Kiswa HC III (ACT 2.0)', 'On time'],
+      [
+        '03-Aug-2026',
+        '1.2 MU (1,200,000 units)',
+        'Akunalaber HCIII',
+        'Late · Could not arrange transportation, Forgot to come',
+      ],
+      ['02-Jul-2026', '--', 'Kiswa HC III', ''],
     ]);
   });
 
@@ -163,7 +170,7 @@ describe('ProphylaxisPage', () => {
 
     const table = await screen.findByRole('table', { name: 'BPG injections' });
     await waitFor(() => expect(within(table).getByText('Kiswa HC III')).toBeInTheDocument());
-    expect(rows(table).map((row) => row[2])).toEqual(['', '', '']);
+    expect(rows(table).map((row) => row[3])).toEqual(['', '', '']);
     expect(ErrorState).not.toHaveBeenCalled();
   });
 
@@ -257,7 +264,7 @@ describe('ProphylaxisPage', () => {
 
     const { skeleton, columns } = tableSkeleton();
     expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
-    expect(columns).toBe(3);
+    expect(columns).toBe(4);
   });
 
   it('says so when the patient has no BPG injection, still offering both forms', async () => {
