@@ -24,8 +24,8 @@ const informationForm = { uuid: 'a6646c51-130d-3b59-a442-959bea93487d', display:
 const fhirPatient = { resourceType: 'Patient', id: 'patient-2' };
 const mutate = vi.fn();
 
-async function enterDiagnosis(actId: string) {
-  const row = screen.getByRole('row', { name: new RegExp(`${actId}\\b`) });
+async function enterDiagnosis(name: string) {
+  const row = screen.getByRole('row', { name: new RegExp(`${name}\\b`) });
   await userEvent.click(within(row).getByRole('button', { name: 'Enter diagnosis' }));
 }
 
@@ -47,7 +47,7 @@ describe('Screen positive, Enter diagnosis', () => {
   it('opens the form that recorded the Screen + to edit, beside the list, starting no visit', async () => {
     render(<ScreenPositive />);
 
-    await enterDiagnosis('rhd00002');
+    await enterDiagnosis('Patient 2');
 
     await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalled());
     expect(vi.mocked(openmrsFetch).mock.calls[0][0]).toContain(informationForm.uuid);
@@ -62,8 +62,8 @@ describe('Screen positive, Enter diagnosis', () => {
   it('opens the same form again for a second click, so the open form is not replaced', async () => {
     render(<ScreenPositive />);
 
-    await enterDiagnosis('rhd00002');
-    await enterDiagnosis('rhd00002');
+    await enterDiagnosis('Patient 2');
+    await enterDiagnosis('Patient 2');
 
     await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
     const [first, second] = vi.mocked(launchWorkspace2).mock.calls as unknown as Array<[string, { form: object }]>;
@@ -74,9 +74,9 @@ describe('Screen positive, Enter diagnosis', () => {
     vi.mocked(fetchCurrentPatient).mockRejectedValueOnce(new Error('forbidden'));
     render(<ScreenPositive />);
 
-    await enterDiagnosis('rhd00002');
+    await enterDiagnosis('Patient 2');
     await vi.waitFor(() => expect(vi.mocked(fetchCurrentPatient)).toHaveBeenCalledTimes(1));
-    await enterDiagnosis('rhd00002');
+    await enterDiagnosis('Patient 2');
 
     await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
     expect(vi.mocked(fetchCurrentPatient)).toHaveBeenCalledTimes(2);
@@ -94,7 +94,7 @@ describe('Screen positive, Enter diagnosis', () => {
     render(<ScreenPositive />);
 
     expect(
-      within(screen.getByRole('row', { name: /rhd00002\b/ })).queryByRole('button', { name: 'Enter diagnosis' }),
+      within(screen.getByRole('row', { name: /Patient 2\b/ })).queryByRole('button', { name: 'Enter diagnosis' }),
     ).not.toBeInTheDocument();
     expect(openmrsFetch).not.toHaveBeenCalled();
   });

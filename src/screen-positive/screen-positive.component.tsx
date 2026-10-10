@@ -11,6 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
 } from '@carbon/react';
 import {
   CardiologyPictogram,
@@ -47,6 +48,9 @@ function screenDate(row: ReportRow) {
   const date = parseReportDate(row.screen_date);
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 }
+
+// The report's follow-up statuses, as the prototype colours them.
+const statusTags = { 'Not contacted': 'warm-gray', 'Echo booked': 'blue', Urgent: 'red' } as const;
 
 const screenPositiveFormEntryWorkspace = 'act-screen-positive-form-entry-workspace';
 
@@ -95,19 +99,41 @@ export function ScreenPositiveTable() {
     />
   );
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
+  const statusLabel = {
+    'Not contacted': t('notContacted', 'Not contacted'),
+    'Echo booked': t('echoBooked', 'Echo booked'),
+    Urgent: t('urgent', 'Urgent'),
+  };
   const columns: Array<{ header: string; render: (row: ReportRow) => React.ReactNode }> = [
-    { header: t('actId', 'ACT ID'), render: text('rhd_id') },
     {
-      header: t('name', 'Name'),
+      header: t('patient', 'Patient'),
       render: (row) => (
-        <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{String(row.full_name ?? '')}</ConfigurableLink>
+        <>
+          <ConfigurableLink to={patientChartUrl(row.patient_uuid)} className={styles.name}>
+            {String(row.full_name ?? '')}
+          </ConfigurableLink>
+          <span className={styles.ageSex}>{[text('age_years')(row), text('sex')(row)].filter(Boolean).join(' ')}</span>
+        </>
       ),
     },
-    { header: t('age', 'Age'), render: text('age_years') },
-    { header: t('sex', 'Sex'), render: text('sex') },
-    { header: t('cardiacClinic', 'Cardiac clinic'), render: text('cardiac_clinic') },
-    { header: t('primaryCareClinic', 'Primary care clinic'), render: text('primary_care_clinic') },
-    { header: t('dateOfPositiveScreen', 'Date of positive screen'), render: screenDate },
+    { header: t('screened', 'Screened'), render: screenDate },
+    { header: t('screeningSite', 'Screening site'), render: text('screening_site') },
+    {
+      header: t('status', 'Status'),
+      render: (row) => {
+        const status = String(row.follow_up_status ?? '');
+        return status in statusTags ? (
+          <Tag
+            as="span"
+            size="sm"
+            type={statusTags[status]}
+            className={status === 'Not contacted' ? styles.notContacted : undefined}
+          >
+            {statusLabel[status]}
+          </Tag>
+        ) : null;
+      },
+    },
   ];
 
   if (error) {
