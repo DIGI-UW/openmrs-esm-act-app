@@ -15,10 +15,13 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
   <SWRConfig value={{ provider: () => new Map() }}>{children}</SWRConfig>
 );
 
-function encountersByPatient(forms: Record<string, Array<string>>) {
+const injectionDate = '183fb30e-b861-5b7c-806f-7118a40f2b51';
+const dated = [{ concept: { uuid: injectionDate } }];
+
+function encountersByPatient(forms: Record<string, Array<string>>, obs: Array<{ concept: { uuid: string } }> = dated) {
   mockOpenmrsFetch.mockImplementation((url: string) => {
     const patient = new URL(url, 'http://localhost').searchParams.get('patient');
-    const results = (forms[patient] ?? []).map((form) => ({ uuid: `${patient}-${form}`, form: { uuid: form } }));
+    const results = (forms[patient] ?? []).map((form) => ({ uuid: `${patient}-${form}`, form: { uuid: form }, obs }));
     return Promise.resolve({ data: { results } } as never);
   });
 }
@@ -48,7 +51,7 @@ describe('useRecordedToday', () => {
       new Date(2026, 9, 6).toISOString(),
       new Date(2026, 9, 6).toISOString(),
     ]);
-    expect(queries[0].get('v')).toBe('custom:(uuid,form:(uuid))');
+    expect(queries[0].get('v')).toBe('custom:(uuid,form:(uuid),obs:(concept:(uuid)))');
   });
 
   it("asks from the clinic's midnight, not UTC's, outside UTC", async () => {
@@ -76,6 +79,15 @@ describe('useRecordedToday', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect([...result.current.recorded].sort()).toEqual(['patient-bpg', 'patient-oral']);
+  });
+
+  it('does not count a BPG visit with no Date of Injection, as the form records none when BPG is withheld', async () => {
+    encountersByPatient({ 'patient-withheld': [bpgForm], 'patient-oral': [oralForm] }, []);
+
+    const { result } = renderHook(() => useRecordedToday(['patient-withheld', 'patient-oral']), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect([...result.current.recorded]).toEqual(['patient-oral']);
   });
 
   it('returns the error when a lookup fails', async () => {

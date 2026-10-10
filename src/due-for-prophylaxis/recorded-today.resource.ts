@@ -5,27 +5,37 @@ import { type Config } from '../config-schema';
 interface EncounterForm {
   uuid: string;
   form: { uuid: string } | null;
+  obs: Array<{ concept: { uuid: string } }>;
 }
 
 /**
  * The listed patients with a BPG or oral prophylaxis encounter dated since local midnight. The report cannot tell, as
  * ACT Core rebuilds its due dates overnight. A failure is not retried, as each retry sends every lookup again.
+ * A BPG visit without a Date of Injection does not count: the form records none when BPG is withheld.
  */
 export function useRecordedToday(patientUuids: Array<string>) {
-  const { prophylaxisCard } = useConfig<Config>();
+  const { prophylaxisCard, prophylaxisPage } = useConfig<Config>();
   // Local midnight as a UTC instant, as a bare date is read on the server's clock.
   const since = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
   const forms = [prophylaxisCard.bpgForm, prophylaxisCard.oralForm];
+  const injectionDate = prophylaxisPage.concepts.injectionDate;
+  const recorded = (encounter: EncounterForm) =>
+    encounter.form?.uuid === prophylaxisCard.oralForm ||
+    (encounter.form?.uuid === prophylaxisCard.bpgForm && encounter.obs.some((o) => o.concept.uuid === injectionDate));
   const { data, isLoading, isValidating, error } = useSWR(
-    patientUuids.length ? ['act-recorded-today', since, ...forms, ...patientUuids] : null,
+    patientUuids.length ? ['act-recorded-today', since, injectionDate, ...forms, ...patientUuids] : null,
     () =>
       Promise.all(
         patientUuids.map(async (patientUuid) => {
-          const params = new URLSearchParams({ patient: patientUuid, fromdate: since, v: 'custom:(uuid,form:(uuid))' });
+          const params = new URLSearchParams({
+            patient: patientUuid,
+            fromdate: since,
+            v: 'custom:(uuid,form:(uuid),obs:(concept:(uuid)))',
+          });
           const { data: page } = await openmrsFetch<{ results: Array<EncounterForm> }>(
             `${restBaseUrl}/encounter?${params}`,
           );
-          return page.results.some((encounter) => forms.includes(encounter.form?.uuid)) ? patientUuid : null;
+          return page.results.some(recorded) ? patientUuid : null;
         }),
       ),
     { shouldRetryOnError: false },
