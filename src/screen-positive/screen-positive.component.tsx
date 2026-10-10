@@ -49,7 +49,6 @@ function screenDate(row: ReportRow) {
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 }
 
-// The report's follow-up statuses, as the prototype colours them.
 const statusTags = { 'Not contacted': 'warm-gray', 'Echo booked': 'blue', Urgent: 'red' } as const;
 
 const screenPositiveFormEntryWorkspace = 'act-screen-positive-form-entry-workspace';

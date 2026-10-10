@@ -29,9 +29,8 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
   });
 }
 
-/** The ACT IDs of the patients shown, which the fixture numbers as their names are. */
-function shownIds() {
-  return screen.getAllByRole('link').map((link) => `rhd${link.textContent.replace('Patient ', '').padStart(5, '0')}`);
+function shownNames() {
+  return screen.getAllByRole('link').map((link) => link.textContent);
 }
 
 function options(label: string) {
@@ -61,7 +60,7 @@ describe('Confirmatory echo due', () => {
   });
 
   it.each([
-    ['Patient 1', 'Not contacted', 'act-yellow'],
+    ['Patient 1', 'Not contacted', 'notContacted'],
     ['Patient 2', 'Echo booked', 'cds--tag--blue'],
     ['Patient 3', 'Urgent', 'cds--tag--red'],
   ])("tags %s's follow-up status %s", (name, status, colour) => {
@@ -72,7 +71,7 @@ describe('Confirmatory echo due', () => {
     const tag = within(screen.getByRole('row', { name: new RegExp(`${name}\\b`) })).getByText(status);
     // The tag has no role, so it is found around its label.
     // eslint-disable-next-line testing-library/no-node-access
-    expect(tag.closest('.cds--tag')).toHaveClass(colour === 'act-yellow' ? 'notContacted' : colour);
+    expect(tag.closest('.cds--tag')).toHaveClass(colour);
   });
 
   it('leaves the site and status empty for a patient with neither recorded', () => {
@@ -119,7 +118,7 @@ describe('Confirmatory echo due', () => {
     await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'Gulu RRH');
     await userEvent.selectOptions(screen.getByLabelText('Sex'), 'M');
 
-    expect(shownIds()).toEqual(['rhd00002', 'rhd00006']);
+    expect(shownNames()).toEqual(['Patient 2', 'Patient 6']);
     await waitFor(() => expect(new URLSearchParams(window.location.search).get('cardiac')).toBe('Gulu RRH'));
     expect(new URLSearchParams(window.location.search).get('sex')).toBe('M');
   });
@@ -130,7 +129,7 @@ describe('Confirmatory echo due', () => {
 
     render(<ScreenPositive />);
 
-    expect(shownIds()).toEqual(['rhd00001']);
+    expect(shownNames()).toEqual(['Patient 1']);
   });
 
   it('says so when no patient matches the filters', async () => {
