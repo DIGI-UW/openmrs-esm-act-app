@@ -95,6 +95,7 @@ describe('configSchema', () => {
         oralEncounterType: '55271793-ef37-58da-9d86-1d9092a5a809',
         concepts: {
           injectionDate: '183fb30e-b861-5b7c-806f-7118a40f2b51',
+          doseGiven: '6a52b6aa-2427-4fa2-93cb-18956f50c16a',
           facility: '01e6dd39-b8ba-5b0a-bcd7-6b8d5973c1bc',
           lateReason: 'f7cbfcdc-58bb-5e85-86ab-ffce26a08615',
           weeks: '75cd7e15-5f05-58d1-acb1-4a046eb1b437',

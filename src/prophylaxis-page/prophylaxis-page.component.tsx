@@ -40,7 +40,7 @@ function BpgInjections({ patientUuid }: { patientUuid: string }) {
   const { injections, error, isLoading } = useBpgInjections(patientUuid);
   const timingTag = useTimingTag(patientUuid);
   const title = t('bpgInjections', 'BPG injections');
-  const headers = [t('date', 'Date'), t('facility', 'Facility'), t('notes', 'Notes')];
+  const headers = [t('date', 'Date'), t('given', 'Given'), t('facility', 'Facility'), t('notes', 'Notes')];
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
@@ -68,6 +68,7 @@ function BpgInjections({ patientUuid }: { patientUuid: string }) {
         {injections.map((injection) => (
           <TableRow key={injection.uuid}>
             <TableCell>{formatDate(parseDate(injection.day), { time: false, noToday: true })}</TableCell>
+            <TableCell>{injection.dose ?? '--'}</TableCell>
             <TableCell>{injection.facility ?? injection.location ?? '--'}</TableCell>
             <TableCell>{timingTag(injection)}</TableCell>
           </TableRow>
