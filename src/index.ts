@@ -40,6 +40,7 @@ export function startupApp() {
 
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);
 
+export const nextStepsCard = getAsyncLifecycle(() => import('./next-steps/next-steps-card.component'), options);
 export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
 
 export const prophylaxisStatusTag = getAsyncLifecycle(

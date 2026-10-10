@@ -1,0 +1,81 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.subtitle {
+  @include type.type-style('label-01');
+  color: $text-02;
+  padding: 0 layout.$spacing-05 layout.$spacing-03;
+}
+
+.loading,
+.empty {
+  padding: layout.$spacing-05;
+}
+
+.empty {
+  @include type.type-style('body-01');
+  color: $text-02;
+}
+
+.steps {
+  border-top: 1px solid $ui-03;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  border-bottom: 1px solid $ui-03;
+
+  &[data-new='true'] {
+    background-color: colors.$blue-10;
+
+    .icon {
+      fill: colors.$blue-60;
+    }
+  }
+}
+
+.icon {
+  flex-shrink: 0;
+  fill: $text-02;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  @include type.type-style('heading-compact-01');
+  color: $ui-05;
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.newTag {
+  margin: 0;
+}
+
+.reason {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.completed {
+  @include type.type-style('label-01');
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  color: colors.$green-60;
+
+  svg {
+    fill: colors.$green-50;
+  }
+}
