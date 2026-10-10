@@ -1,5 +1,7 @@
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
 
 // A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
 .screenPositive {
@@ -28,4 +30,19 @@
   gap: layout.$spacing-05;
   align-items: end;
   margin-bottom: layout.$spacing-05;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.ageSex {
+  display: block;
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+// Carbon has no yellow tag, so Not contacted is drawn in Carbon's yellow here.
+.notContacted {
+  @include act-yellow-tag;
 }

@@ -14,6 +14,8 @@ vi.mock('../access/may-enter-form', () => ({
   useMayEnterForm: () => true,
 }));
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+// The stylesheet's class names, so a test can tell the tag drawn yellow.
+vi.mock('./screen-positive.scss', () => ({ default: { notContacted: 'notContacted' } }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
 
 function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
@@ -27,12 +29,8 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
   });
 }
 
-function shownIds() {
-  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-  return screen
-    .getAllByRole('row')
-    .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[headers.indexOf('ACT ID')].textContent);
+function shownNames() {
+  return screen.getAllByRole('link').map((link) => link.textContent);
 }
 
 function options(label: string) {
@@ -48,35 +46,41 @@ describe('Confirmatory echo due', () => {
     await signInWith(['App: act.screenPositive', 'Add Encounters']);
   });
 
-  it("lists each patient's ACT ID, name, age, sex, clinics and date of positive screen", () => {
+  it('lists each patient with their age and sex, the date of positive screen, screening site and follow-up status', () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositive />);
 
     const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-    expect(headers).toEqual([
-      'ACT ID',
-      'Name',
-      'Age',
-      'Sex',
-      'Cardiac clinic',
-      'Primary care clinic',
-      'Date of positive screen',
-      '',
-    ]);
-    const cells = within(screen.getByRole('row', { name: /rhd00002\b/ }))
+    expect(headers).toEqual(['Patient', 'Screened', 'Screening site', 'Status', '']);
+    const cells = within(screen.getByRole('row', { name: /Patient 2\b/ }))
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
-    expect(cells).toEqual([
-      'rhd00002',
-      'Patient 2',
-      '9',
-      'M',
-      'Gulu RRH',
-      'Anyeke HCIV',
-      '17-Sept-2026',
-      'Enter diagnosis',
-    ]);
+    expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Echo booked', 'Enter diagnosis']);
+  });
+
+  it.each([
+    ['Patient 1', 'Not contacted', 'notContacted'],
+    ['Patient 2', 'Echo booked', 'cds--tag--blue'],
+    ['Patient 3', 'Urgent', 'cds--tag--red'],
+  ])("tags %s's follow-up status %s", (name, status, colour) => {
+    dataset({ rows: screenPositiveRows });
+
+    render(<ScreenPositive />);
+
+    const tag = within(screen.getByRole('row', { name: new RegExp(`${name}\\b`) })).getByText(status);
+    // The tag has no role, so it is found around its label.
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(tag.closest('.cds--tag')).toHaveClass(colour);
+  });
+
+  it('leaves the site and status empty for a patient with neither recorded', () => {
+    dataset({ rows: screenPositiveRows });
+
+    render(<ScreenPositive />);
+
+    const cells = within(screen.getByRole('row', { name: /Patient 4\b/ })).getAllByRole('cell');
+    expect([cells[2].textContent, cells[3].textContent]).toEqual(['', '']);
   });
 
   it("links each patient's name to their chart", () => {
@@ -114,7 +118,7 @@ describe('Confirmatory echo due', () => {
     await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'Gulu RRH');
     await userEvent.selectOptions(screen.getByLabelText('Sex'), 'M');
 
-    expect(shownIds()).toEqual(['rhd00002', 'rhd00006']);
+    expect(shownNames()).toEqual(['Patient 2', 'Patient 6']);
     await waitFor(() => expect(new URLSearchParams(window.location.search).get('cardiac')).toBe('Gulu RRH'));
     expect(new URLSearchParams(window.location.search).get('sex')).toBe('M');
   });
@@ -125,7 +129,7 @@ describe('Confirmatory echo due', () => {
 
     render(<ScreenPositive />);
 
-    expect(shownIds()).toEqual(['rhd00001']);
+    expect(shownNames()).toEqual(['Patient 1']);
   });
 
   it('says so when no patient matches the filters', async () => {
@@ -173,7 +177,7 @@ describe('Confirmatory echo due', () => {
       const { rerender } = render(<ScreenPositive />);
 
       const { skeleton, rows, columns } = tableSkeleton();
-      expect({ rows, columns }).toEqual({ rows: 10, columns: 8 });
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 5 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: screenPositiveRows });
       rerender(<ScreenPositive />);
