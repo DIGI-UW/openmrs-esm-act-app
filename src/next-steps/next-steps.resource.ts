@@ -29,9 +29,9 @@ interface ListedForm {
 }
 
 /** The published forms, with the edit privilege each one's encounter type needs. */
-export function usePublishedForms() {
+export function usePublishedForms(enabled: boolean) {
   const url = `${restBaseUrl}/form?v=custom:(uuid,published,retired,encounterType:(editPrivilege:(display)))`;
-  const { data } = useSWR<FetchResponse<{ results: Array<ListedForm> }>, Error>(url, openmrsFetch, {
+  const { data } = useSWR<FetchResponse<{ results: Array<ListedForm> }>, Error>(enabled ? url : null, openmrsFetch, {
     shouldRetryOnError: false,
   });
   return (data?.data?.results ?? []).filter((form) => form.published && !form.retired);

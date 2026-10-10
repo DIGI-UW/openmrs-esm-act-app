@@ -219,7 +219,7 @@ describe('NextStepsCard', () => {
     respond();
     await invalidatePatientEncounters();
 
-    await waitFor(() => expect(screen.getByText('Consultation visit')).toBeInTheDocument());
+    await screen.findByText('Consultation visit');
     expect(showSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Next step added: Consultation visit' }),
     );
@@ -235,6 +235,7 @@ describe('NextStepsCard', () => {
 
     await waitFor(() => expect(container).toBeEmptyDOMElement());
     expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(expect.stringContaining('/actcore/nextsteps'));
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(expect.stringContaining('/form?'));
   });
 
   it('shows nothing when ACT Core cannot be reached', async () => {

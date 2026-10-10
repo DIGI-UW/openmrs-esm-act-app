@@ -491,7 +491,8 @@
       },
       "privileges": [
         "Get Encounters",
-        "Get Observations"
+        "Get Observations",
+        "Add Encounters"
       ]
     },
     {

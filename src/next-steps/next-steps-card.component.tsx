@@ -48,9 +48,9 @@ function useActionLabel() {
 }
 
 /** How many forms the user may open from Clinical forms: Add Encounters and each form's edit privilege, if any. */
-function useFormCount() {
+function useFormCount(enabled: boolean) {
   const { user } = useSession();
-  const forms = usePublishedForms();
+  const forms = usePublishedForms(enabled);
   if (!user) {
     return 0;
   }
@@ -73,7 +73,7 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
   const { patient } = usePatient(patientUuid);
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
   const actionLabel = useActionLabel();
-  const formCount = useFormCount();
+  const formCount = useFormCount(nextSteps.enabled);
   const previous = useRef<Array<NextStep>>(null);
 
   useEffect(() => {
