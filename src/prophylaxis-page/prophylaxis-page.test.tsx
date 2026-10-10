@@ -167,15 +167,18 @@ describe('ProphylaxisPage', () => {
     expect(ErrorState).not.toHaveBeenCalled();
   });
 
-  it('dates an injection with no Date of Injection by its encounter, without timing', async () => {
+  it('leaves out a BPG visit with no Date of Injection, as the form records none when BPG is withheld', async () => {
     serve({
-      injections: [{ uuid: 'undated', encounterDatetime: '2026-09-01T09:00:00.000+0000', location: null, obs: [] }],
+      injections: [
+        bpg[0],
+        { uuid: 'withheld', encounterDatetime: '2026-09-01T09:00:00.000+0000', location: null, obs: [] },
+      ],
     });
 
     renderPage();
 
     const table = await screen.findByRole('table', { name: 'BPG injections' });
-    expect(rows(table)).toEqual([['01-Sept-2026', '--', '']]);
+    expect(rows(table).map((row) => row[0])).toEqual(['02-Jul-2026']);
   });
 
   it("shows the patient's oral adherence entries when there are any", async () => {

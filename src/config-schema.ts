@@ -274,7 +274,7 @@ export const configSchema = {
     },
     concepts: {
       injectionDate: concept(
-        'Date of Injection, the date a BPG row shows; without one, the encounter date.',
+        'Date of Injection, the date a BPG row shows. A BPG visit without one was withheld, so it is not listed or counted as recorded today.',
         '183fb30e-b861-5b7c-806f-7118a40f2b51',
       ),
       facility: concept(
