@@ -274,8 +274,12 @@ export const configSchema = {
     },
     concepts: {
       injectionDate: concept(
-        'Date of Injection, the date a BPG row shows; without one, the encounter date.',
+        'Date of Injection, the date a BPG row shows. A BPG visit without one was withheld, so it is not listed or counted as recorded today.',
         '183fb30e-b861-5b7c-806f-7118a40f2b51',
+      ),
+      doseGiven: concept(
+        'Dose given, the BPG dose a row shows; an injection saved before the form asked it has none.',
+        '6a52b6aa-2427-4fa2-93cb-18956f50c16a',
       ),
       facility: concept(
         'Facility, a location picked on the BPG form; without one, the encounter location.',
@@ -419,7 +423,7 @@ export interface Config {
   prophylaxisPage: {
     bpgEncounterType: string;
     oralEncounterType: string;
-    concepts: Record<'injectionDate' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
+    concepts: Record<'injectionDate' | 'doseGiven' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
   };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };

@@ -107,6 +107,40 @@ describe('Registry BPG status and adherence', () => {
     expect(tag).toHaveClass(colour);
   });
 
+  it('shows a patient on oral prophylaxis as a gray On oral tag', async () => {
+    await signInWith(['App: act.registry'], bpgOn);
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [{ ...withBpg[0], bpg_status: 'Oral', days_until_due: null }],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<Registry />);
+
+    const tag = within(bpgCell('Patient 1')).getByTestId('bpg-status');
+    expect(tag).toHaveTextContent(/^On oral$/);
+    expect(tag).toHaveClass('cds--tag--gray');
+  });
+
+  it('narrows the rows to the patients on oral prophylaxis', async () => {
+    await signInWith(['App: act.registry'], bpgOn);
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [withBpg[0], { ...withBpg[1], bpg_status: 'Oral', days_until_due: null }],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<Registry />);
+
+    await userEvent.selectOptions(screen.getByLabelText('BPG status'), 'On oral');
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(rows.map((r) => within(r).getByTestId('bpg-status').textContent)).toEqual(['On oral']);
+  });
+
   it('shows no BPG status tag for a patient the report gives none', async () => {
     await signInWith(['App: act.registry'], bpgOn);
 
@@ -134,7 +168,7 @@ describe('Registry BPG status and adherence', () => {
     expect(within(bpgCell('Patient 3')).getByTestId('bpg-status')).toHaveTextContent(new RegExp(`^${text}$`));
   });
 
-  it('offers the four statuses as the tags word them, whichever the rows have', async () => {
+  it('offers the five statuses as the tags word them, whichever the rows have', async () => {
     await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
@@ -153,6 +187,7 @@ describe('Registry BPG status and adherence', () => {
       'Due within 7 days',
       'Not covered',
       'No prescription',
+      'On oral',
     ]);
   });
 
