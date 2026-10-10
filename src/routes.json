@@ -482,6 +482,19 @@
       ]
     },
     {
+      "name": "act-next-steps-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "nextStepsCard",
+      "order": -1,
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-prophylaxis-card",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "prophylaxisCard",

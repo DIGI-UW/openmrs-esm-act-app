@@ -295,6 +295,14 @@ export const configSchema = {
       ),
     },
   },
+  nextSteps: {
+    enabled: {
+      _type: Type.Boolean,
+      _default: true,
+      _description:
+        "Whether the patient summary shows Next steps for this visit, from ACT Core's /actcore/nextsteps. When false, the summary is as before.",
+    },
+  },
   prophylaxisCard: {
     bpgForm: {
       _type: Type.UUID,
@@ -413,6 +421,7 @@ export interface Config {
     oralEncounterType: string;
     concepts: Record<'injectionDate' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
   };
+  nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
   visitType: string;
