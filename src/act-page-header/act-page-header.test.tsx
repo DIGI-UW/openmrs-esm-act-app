@@ -39,7 +39,7 @@ const screens = [
     noAccess: 'You do not have access to the procedural waiting list.',
   },
   {
-    name: 'Screen positive, pending confirmation',
+    name: 'Confirmatory echo due',
     Screen: ScreenPositive,
     pictogram: 'CardiologyPictogram',
     noAccess: 'You do not have access to the screen positive, pending confirmation list.',

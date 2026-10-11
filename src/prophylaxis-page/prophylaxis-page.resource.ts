@@ -9,6 +9,8 @@ export interface BpgInjection {
   uuid: string;
   /** The day the injection was given, as YYYY-MM-DD, matching ACT Core's injection dates. */
   day: string;
+  /** The Dose given answer's name; null for an injection saved before the form asked it. */
+  dose: string | null;
   /** The Facility answer's location name, which REST resolves from the uuid the form saves, or its text; null without one. */
   facility: string | null;
   location: string | null;
@@ -33,17 +35,22 @@ export function useBpgInjections(patientUuid: string) {
   const url = patientEncountersUrl(patientUuid, prophylaxisPage.bpgEncounterType, representation);
   const { data, error, isLoading } = useSWR<Array<BpgInjection>, Error>(url, async () => {
     const encounters = await fetchAll<PatientEncounter>(url);
-    const injections = encounters.map((encounter): BpgInjection => {
-      const [date] = answersTo(encounter, concepts.injectionDate);
-      const [facility] = answersTo(encounter, concepts.facility);
-      return {
-        uuid: encounter.uuid,
-        day: dayjs(String(date?.value ?? encounter.encounterDatetime)).format('YYYY-MM-DD'),
-        facility: facility ? facilityName(facility.value) : null,
-        location: encounter.location?.display ?? null,
-        lateReasons: answersTo(encounter, concepts.lateReason).map((o) => (o.value as { display: string }).display),
-      };
-    });
+    // The BPG form records no Date of Injection when BPG is withheld, so that visit is not an injection.
+    const injections = encounters
+      .filter((encounter) => answersTo(encounter, concepts.injectionDate).length)
+      .map((encounter): BpgInjection => {
+        const [date] = answersTo(encounter, concepts.injectionDate);
+        const [dose] = answersTo(encounter, concepts.doseGiven);
+        const [facility] = answersTo(encounter, concepts.facility);
+        return {
+          uuid: encounter.uuid,
+          day: dayjs(String(date.value)).format('YYYY-MM-DD'),
+          dose: dose ? (dose.value as { display: string }).display : null,
+          facility: facility ? facilityName(facility.value) : null,
+          location: encounter.location?.display ?? null,
+          lateReasons: answersTo(encounter, concepts.lateReason).map((o) => (o.value as { display: string }).display),
+        };
+      });
     return injections.sort((a, b) => b.day.localeCompare(a.day));
   });
   return { injections: data ?? [], error, isLoading };

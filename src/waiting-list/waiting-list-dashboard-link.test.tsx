@@ -21,4 +21,12 @@ describe('WaitingListDashboardLink', () => {
       expect.objectContaining({ path: 'act-waiting-list', basePath: '/openmrs/spa/home', title: 'waitingList' }),
     );
   });
+
+  it('is left out for a user with the worklists, whose tile opens it', async () => {
+    await signInWith(['App: act.waitingList', 'App: act.worklists']);
+
+    render(<WaitingListDashboardLink />);
+
+    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
+  });
 });

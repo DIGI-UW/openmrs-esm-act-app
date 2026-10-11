@@ -40,16 +40,13 @@ function serve() {
   }) as never);
 }
 
-async function pick(name: string, prophylaxis?: 'bpg' | 'oral') {
+async function pick(name: string, prophylaxis: 'bpg' | 'oral') {
   render(
     <SWRConfig value={{ provider: () => new Map() }}>
       <EnterProphylaxisSearch onClose={vi.fn()} prophylaxis={prophylaxis} />
     </SWRConfig>,
   );
-  return async (choice?: string) => {
-    if (choice) {
-      await userEvent.click(screen.getByRole('tab', { name: choice }));
-    }
+  return async () => {
     await userEvent.type(screen.getByRole('searchbox'), name.split(' ')[0]);
     await userEvent.click(await screen.findByRole('button', { name: new RegExp(name) }));
   };
@@ -67,38 +64,12 @@ describe('EnterProphylaxisSearch', () => {
     serve();
   });
 
-  it('shows the banner and the choice of prophylaxis, As prescribed first', async () => {
-    await pick('Grace Achieng');
+  it('shows the banner', async () => {
+    await pick('Grace Achieng', 'bpg');
 
     expect(
       screen.getByText('Choose the patient. The form opens in their chart and a visit starts automatically.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'As prescribed' })).toHaveAttribute('aria-selected', 'true');
-    expect(
-      screen.getByText("Opens the BPG or oral form based on each patient's current prescription."),
-    ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('tab', { name: 'Oral prophylaxis' }));
-    expect(screen.getByText('Always opens the oral prophylaxis form.')).toBeInTheDocument();
-  });
-
-  it.each([
-    ['Grace Achieng', undefined, bpgForm],
-    ['Emmanuel Wanyama', undefined, oralForm],
-    ['Grace Achieng', 'Oral prophylaxis', oralForm],
-    ['Emmanuel Wanyama', 'BPG injection', bpgForm],
-  ])('opens %s in their chart with the right form for %s', async (name, choice, formUuid) => {
-    const choose = await pick(name);
-
-    await choose(choice);
-
-    await vi.waitFor(() =>
-      expect(openFormInChart).toHaveBeenCalledWith(expect.anything(), {
-        patientUuid: name === 'Grace Achieng' ? 'grace' : 'emmanuel',
-        formUuid,
-        visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
-        location: 'clinic',
-      }),
-    );
   });
 
   it.each([
@@ -118,17 +89,4 @@ describe('EnterProphylaxisSearch', () => {
       );
     },
   );
-
-  it('opens the BPG form As prescribed when the summary cannot be read', async () => {
-    const serveDefault = vi.mocked(openmrsFetch).getMockImplementation();
-    vi.mocked(openmrsFetch).mockImplementation(((url: string) =>
-      url.includes('/actcore/prophylaxis') ? Promise.reject(new Error('403')) : serveDefault(url)) as never);
-    const choose = await pick('Emmanuel Wanyama');
-
-    await choose();
-
-    await vi.waitFor(() =>
-      expect(openFormInChart).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ formUuid: bpgForm })),
-    );
-  });
 });

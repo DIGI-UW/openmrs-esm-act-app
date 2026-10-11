@@ -28,13 +28,15 @@ export const configSchema = {
     namePrefix: {
       _type: Type.String,
       _default: 'RHD ',
-      _description: 'The worklist tiles show the lists of the flags whose names start with this, unless names is set.',
+      _description:
+        "The registry's Flags column and filter show the flags whose names start with this, unless names is set. Each worklist names its own flag in its extension's config.",
     },
     names: {
       _type: Type.Array,
       _elements: { _type: Type.String },
       _default: [],
-      _description: 'The flags whose lists the worklist tiles show, by name. When set, namePrefix is not used.',
+      _description:
+        "The flags, by name, that the registry's Flags column and filter show. When set, namePrefix is not used.",
     },
     riskFlags: {
       _type: Type.Array,
@@ -61,7 +63,7 @@ export const configSchema = {
         },
       ],
       _description:
-        "The form a flag's missing data is recorded on when the patient has no saved form to complete. The flag's workspace offers it as a new form; a flag not listed here offers the clinical forms list.",
+        "The form a flag's missing data is recorded on when the patient has no saved form to complete. The flag's workspace offers it as a new form, also for a flag whose criteria list no missing data, such as a risk flag; a flag not listed here offers the clinical forms list.",
     },
   },
   quickActions: {
@@ -73,7 +75,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: false,
       _description:
-        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens ACT's patient search and the form in the patient's chart. It covers Enter prophylaxis only: Home's Record BPG injection and Record oral prophylaxis always open the patient search.",
+        "Whether Enter prophylaxis on ACT home leads to fast data entry (prophylaxisForms, else enterProphylaxisUrl). When false, it opens Enter prophylaxis, the registry's patients on prophylaxis with Record BPG or Record oral on each. It covers Enter prophylaxis only: Record BPG injection and Record oral prophylaxis always open the patient search.",
     },
     enterProphylaxisUrl: link(
       'Where the Enter prophylaxis quick action on ACT home leads, when enterProphylaxisInFastDataEntry is true and prophylaxisForms is empty: the fast data entry app.',
@@ -280,8 +282,12 @@ export const configSchema = {
     },
     concepts: {
       injectionDate: concept(
-        'Date of Injection, the date a BPG row shows; without one, the encounter date.',
+        'Date of Injection, the date a BPG row shows. A BPG visit without one was withheld, so it is not listed or counted as recorded today.',
         '183fb30e-b861-5b7c-806f-7118a40f2b51',
+      ),
+      doseGiven: concept(
+        'Dose given, the BPG dose a row shows; an injection saved before the form asked it has none.',
+        '6a52b6aa-2427-4fa2-93cb-18956f50c16a',
       ),
       facility: concept(
         'Facility, a location picked on the BPG form; without one, the encounter location.',
@@ -299,6 +305,14 @@ export const configSchema = {
         'Adherence Estimate, the percentage an oral row shows.',
         '8edff8dc-4af6-5d0f-bf1d-8e349c7a1b15',
       ),
+    },
+  },
+  nextSteps: {
+    enabled: {
+      _type: Type.Boolean,
+      _default: true,
+      _description:
+        "Whether the patient summary shows Next steps for this visit, from ACT Core's /actcore/nextsteps. When false, the card is hidden and neither /actcore/nextsteps nor the form list is fetched.",
     },
   },
   prophylaxisCard: {
@@ -418,8 +432,9 @@ export interface Config {
   prophylaxisPage: {
     bpgEncounterType: string;
     oralEncounterType: string;
-    concepts: Record<'injectionDate' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
+    concepts: Record<'injectionDate' | 'doseGiven' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
   };
+  nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
   visitType: string;

@@ -11,7 +11,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 }));
 
 describe('ScreenPositiveDashboardLink', () => {
-  it('links the home left nav to /home/act-screen-positive, as the prototype names it', async () => {
+  it('links the home left nav to /home/act-screen-positive, as v2 names it', async () => {
     window.spaBase = '/openmrs/spa';
     await signInWith(['App: act.screenPositive']);
 
@@ -21,8 +21,16 @@ describe('ScreenPositiveDashboardLink', () => {
       expect.objectContaining({
         path: 'act-screen-positive',
         basePath: '/openmrs/spa/home',
-        title: 'Screen positive pending',
+        title: 'Confirmatory echo due',
       }),
     );
+  });
+
+  it('is left out for a user with the worklists, whose tile opens it', async () => {
+    await signInWith(['App: act.screenPositive', 'App: act.worklists']);
+
+    render(<ScreenPositiveDashboardLink />);
+
+    expect(vi.mocked(DashboardExtension)).not.toHaveBeenCalled();
   });
 });

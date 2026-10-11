@@ -5,7 +5,10 @@ export const worklistsDashboardMeta = {
   title: 'worklists',
 };
 
-/** The Worklists page, with the flag's list chosen when one is given. */
-export const worklistsUrl = (flagName?: string) =>
+/** Each worklist is an extension here, shown as a tile on ACT home, and as a choice and its patients on the page. */
+export const worklistsSlot = 'act-worklists-slot';
+
+/** The Worklists page, with the worklist chosen when one is given by its extension's id. */
+export const worklistsUrl = (worklist?: string) =>
   `\${openmrsSpaBase}/home/${worklistsDashboardMeta.name}` +
-  (flagName ? `?${new URLSearchParams({ flag: flagName })}` : '');
+  (worklist ? `?${new URLSearchParams({ list: worklist })}` : '');

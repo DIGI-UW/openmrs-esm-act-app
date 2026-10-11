@@ -1,5 +1,7 @@
+@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '../styles/act-colours' as *;
 
 // A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
 .dueForProphylaxis {
@@ -21,4 +23,51 @@
 
 .tableContainer {
   overflow-x: auto;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.description {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+  margin-left: auto;
+}
+
+.filter {
+  // Wide enough for each filter's label and count, which Carbon truncates in a narrower switcher.
+  width: 18rem;
+  flex-shrink: 0;
+}
+
+// Carbon has no yellow tag, so Due today and Due in 48 h are drawn in Carbon's yellow here.
+.dueTag {
+  @include act-yellow-tag;
+}
+
+.lowAdherence {
+  font-weight: 600;
+  color: colors.$red-60;
+}
+
+.goodAdherence {
+  font-weight: 600;
+  color: colors.$green-60;
+}
+
+.needsPrescription {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
 }

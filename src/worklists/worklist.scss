@@ -1,0 +1,106 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
+
+.link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+
+  &:focus-visible .tile {
+    @include act-focus;
+  }
+}
+
+.choice {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:focus-visible .tile {
+    @include act-focus;
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  height: 100%;
+  padding: layout.$spacing-04;
+  background-color: $ui-01;
+  border: 1px solid $ui-03;
+  border-top-width: layout.$spacing-02;
+}
+
+.red {
+  border-top-color: $act-risk;
+}
+
+.orange {
+  border-top-color: colors.$orange-40;
+}
+
+.selected {
+  @include brand-01(border-color);
+  box-shadow: inset 0 0 0 1px var(--brand-01);
+  background-color: $ui-02;
+}
+
+.link .tile:hover,
+.choice:hover .tile {
+  background-color: $ui-03;
+}
+
+.count {
+  @include type.type-style('heading-05');
+}
+
+.name {
+  @include type.type-style('body-compact-01');
+}
+
+.patients {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+}
+
+.title {
+  @include type.type-style('heading-compact-02');
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.patientName {
+  display: block;
+  @include type.type-style('heading-compact-01');
+}
+
+.actId {
+  display: block;
+  @include type.type-style('label-01');
+  color: $text-02;
+}

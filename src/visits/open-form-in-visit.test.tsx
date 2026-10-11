@@ -61,6 +61,20 @@ describe('useOpenFormInVisit', () => {
     ]);
   });
 
+  it('opens the form through the launcher given, as a child of a workspace that shares the window', async () => {
+    chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
+    const launchChildWorkspace = vi.fn();
+    const { result } = renderHook(() => useOpenFormInVisit('winnie', launchChildWorkspace));
+
+    await act(() => result.current.open(bpgForm.uuid));
+
+    expect(openedForms()).toEqual([]);
+    expect(launchChildWorkspace).toHaveBeenCalledWith(
+      'patient-form-entry-workspace',
+      expect.objectContaining({ form: bpgForm, encounterUuid: '' }),
+    );
+  });
+
   it('scrolls the opened form to the question for a concept when given one', async () => {
     chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
     vi.mocked(focusFormQuestion).mockResolvedValue(undefined);
@@ -115,6 +129,22 @@ describe('useOpenFormInVisit', () => {
     act(() => chart.setState({ workspaceGroupVisitUuid: 'new-visit' }));
     await act(() => opening);
 
+    expect(openedForms()).toHaveLength(1);
+  });
+
+  it('opens the form as a new workspace after starting a visit, as the chart has closed the launcher’s workspace', async () => {
+    const launchChildWorkspace = vi.fn();
+    const { result } = renderHook(() => useOpenFormInVisit('winnie', launchChildWorkspace));
+
+    let opening: Promise<void>;
+    act(() => {
+      opening = result.current.open(bpgForm.uuid);
+    });
+    await vi.waitFor(() => expect(mutateVisit).toHaveBeenCalled());
+    act(() => chart.setState({ workspaceGroupVisitUuid: 'new-visit' }));
+    await act(() => opening);
+
+    expect(launchChildWorkspace).not.toHaveBeenCalled();
     expect(openedForms()).toHaveLength(1);
   });
 

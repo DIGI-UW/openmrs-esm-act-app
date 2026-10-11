@@ -14,37 +14,18 @@
   @include type.type-style('body-01');
 }
 
-.patients {
+.tiles {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  padding: layout.$spacing-05;
-  background-color: $ui-02;
-  border: 1px solid $ui-03;
-}
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: layout.$spacing-04;
 
-.title {
-  @include type.type-style('heading-compact-02');
-  margin-bottom: layout.$spacing-05;
-}
-
-.tableContainer {
-  overflow-x: auto;
-}
-
-.actId {
-  display: block;
-  @include type.type-style('label-01');
-  color: $text-02;
+  // A worklist with no list in this deployment renders nothing, and takes no cell.
+  > :empty {
+    display: none;
+  }
 }
 
 .message {
   @include type.type-style('body-01');
   padding: layout.$spacing-05;
-}
-
-.filters {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 16rem));
-  gap: layout.$spacing-05;
-  margin-bottom: layout.$spacing-05;
 }
