@@ -19,13 +19,14 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
   const { consultations: config } = useConfig<Config>();
   const { last, nextReview, isLoading, error } = useConsultationSummary(patientUuid);
   const { diagnosis, isLoading: diagnosisLoading } = useDiagnosis(patientUuid);
-  const { contact } = useContact(patientUuid);
+  const { contact, isLoading: contactLoading } = useContact(patientUuid);
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
 
   if (error) {
     return null;
   }
-  const loaded = !isLoading && !diagnosisLoading && contact;
+  // A diagnosis or clinic that cannot be read shows --, rather than holding the card back.
+  const loaded = !isLoading && !diagnosisLoading && !contactLoading;
   return (
     <div className={styles.card}>
       <CardHeader title={t('consultationVisits', 'Consultation visits')}>
@@ -48,7 +49,7 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
                 { label: t('lastConsultation', 'Last consultation'), value: day(last?.date ?? null) },
                 { label: t('nextCardiologyReview', 'Next cardiology review'), value: day(nextReview) },
                 { label: t('diagnosis', 'Diagnosis'), value: diagnosis },
-                { label: t('cardiacClinic', 'Cardiac clinic'), value: contact.cardiacClinic },
+                { label: t('cardiacClinic', 'Cardiac clinic'), value: contact?.cardiacClinic ?? null },
               ]
             : null
         }

@@ -113,6 +113,28 @@ describe('Cardiology visit tag', () => {
   });
 });
 
+describe('Banner tags for a deceased patient', () => {
+  it.each([
+    ['Cardiology visit', CardiologyVisitTag],
+    ['INR', InrTag],
+    ['Confirmatory echo', ConfirmatoryEchoTag],
+    ['Prescription', PrescriptionTag],
+    ['Procedural recommendation', ProceduralRecommendationTag],
+  ])('shows no %s tag, without asking', async (_, BannerTag) => {
+    flags = [cardiologyFlag, inrFlag];
+    screenPositive = [{ patient_uuid: 'winnie' }];
+    const { container } = renderIn(
+      <BannerTag {...onChart} patient={{ resourceType: 'Patient', deceasedBoolean: true }} />,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(container).toBeEmptyDOMElement();
+    expect(openmrsFetch).not.toHaveBeenCalled();
+  });
+});
+
 describe('INR tag', () => {
   it('says INR due before the Next INR Date, while the patient has the INR review flag', async () => {
     flags = [inrFlag];

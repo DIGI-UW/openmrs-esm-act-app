@@ -131,6 +131,15 @@ describe('Consultation visits card', () => {
     );
   });
 
+  it('shows its other fields when the cardiac clinic cannot be read', async () => {
+    respond({ '/person/winnie': new Error('Privilege required: Get People') });
+    await signInWith(['Add Encounters']);
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+
+    await waitFor(() => expect(fields()).toContainEqual(['Cardiac clinic', '--']));
+    expect(fields()).toContainEqual(['Last consultation', '08-Aug-2026']);
+  });
+
   it("shows the diagnosis's category when it has no details", async () => {
     const [group] = patientInformation.obs;
     const categoryOnly = {
