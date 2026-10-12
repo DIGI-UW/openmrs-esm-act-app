@@ -79,6 +79,16 @@ Adherence forms in fast data entry, where the patient is picked. Each choice has
 none, Enter prophylaxis links to `enterProphylaxisUrl`. Fast data entry always opens on all forms, so a
 Prophylaxis category in its own config (`formCategories`) only adds a tab there.
 
+## The clinic you are signed in at
+
+ACT's lists hold the patients of the session location, by the kind of clinic its tags in `clinicLocationTags` make
+it: at a cardiac clinic, those whose cardiac clinic it is; at a primary care clinic, those whose primary care clinic
+it is; at a location of neither kind, every clinic's. The registry, the procedural waiting list and Confirmatory echo
+due open with their clinic filter on it, which can be cleared; the worklists, Due for prophylaxis, Overdue for
+consultation and Enter prophylaxis list only its patients, matching each report's clinic column, or the patient's
+registry row where the report has none. The care cascade passes the clinic to its report as `cardiacClinic` or
+`primaryCareClinic`, as Reports does. Clinics are matched by name, as the reports name them.
+
 ## Procedural waiting list
 
 A Procedural waiting list dashboard in the home app's left nav, at `/home/act-waiting-list`. It lists the rows of
