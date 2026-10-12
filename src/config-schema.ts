@@ -299,6 +299,180 @@ export const configSchema = {
       ),
     },
   },
+  consultations: {
+    form: {
+      _type: Type.UUID,
+      _default: '4b063fc7-996f-3001-8500-8940e201be8f',
+      _description:
+        "The form Start consultation opens, on the chart's Consultation visits page and the patient summary's Consultation visits card.",
+    },
+    encounterType: {
+      _type: Type.UUID,
+      _default: 'c2503561-c00d-5460-8157-43d594472b4a',
+      _description: "The encounter type of the consultations the Consultation visits page and card read, the form's.",
+    },
+    concepts: {
+      date: concept(
+        'Date of Consultation Visit, the date a row shows; without one, the encounter date.',
+        'c3edefd2-5777-5084-b01e-fd4ca0e40162',
+      ),
+      nyha: concept('NYHA Classification, the NYHA class column.', '2f51b894-383c-53bb-9997-583e9761d132'),
+      prophylaxis: concept(
+        'Secondary Antibiotic Prophylaxis, the prophylaxis plan column: each entry not stopped.',
+        '668e0221-8b41-5669-9ad8-78e193d42494',
+      ),
+      cardiacMedication: concept(
+        'Cardiac Medication: the latest consultation recording one says whether the patient is on warfarin.',
+        '0734567e-4f0a-5090-9d74-b953921a30e6',
+      ),
+      dosing: concept(
+        "Dosing (Consultation Visit), a medication entry's dose: the warfarin dose until an INR review records a new one.",
+        '8879385e-d35e-50a3-a3d0-4333d95d4878',
+      ),
+      dateStopped: concept(
+        'Date Stopped, which ends a prophylaxis or medication entry.',
+        'd75edc42-3213-5a06-9228-4e5735b9594b',
+      ),
+      nextReviewAmount: concept(
+        'Next Consultation Time Amount: with its period, after the encounter date, the next cardiology review.',
+        'ba4b8a87-2ce8-559e-9a30-45504a9b6c1f',
+      ),
+      nextReviewPeriod: concept(
+        'Next Consultation Time Period, answered Days, Weeks, Months or Years.',
+        '1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      ),
+    },
+    periods: {
+      _type: Type.Object,
+      _default: {
+        '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'day',
+        '1073AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'week',
+        '1074AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'month',
+        '1734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'year',
+      },
+      _description:
+        "Each Next Consultation Time Period answer, by concept uuid, and its unit: day, week, month or year, as the flag 'RHD cardiology follow-up due' counts them.",
+    },
+    warfarin: {
+      _type: Type.Array,
+      _elements: { _type: Type.ConceptUuid },
+      _default: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
+      _description:
+        "The Cardiac Medication answers that are warfarin (Warfarin, Acitrom), as the flags 'RHD INR target missing' and 'RHD INR review due' name them. A patient whose latest consultation recording a cardiac medication has one of them, not stopped, is on warfarin, and has INR reviews.",
+    },
+  },
+  inr: {
+    form: {
+      _type: Type.UUID,
+      _default: 'fe4848b2-a0b4-329f-a6a3-6ffc298e09a9',
+      _description:
+        "The form Record INR opens, on the chart's INR reviews page and the patient summary's INR review card.",
+    },
+    encounterType: {
+      _type: Type.UUID,
+      _default: 'b4bb88a3-9a04-5142-85bd-bb63c270f632',
+      _description: "The encounter type of the INR reviews the INR reviews page and card read, the form's.",
+    },
+    concepts: {
+      target: concept(
+        'INR Target, answered as a range such as 2.0-3.0. The form also uses it for the group of each INR reading, which has members where the target has an answer.',
+        '0778ce12-ddba-5e22-b5fd-92424e8747b4',
+      ),
+      dateTested: concept(
+        'Date Tested, the date of a reading; without one, the encounter date.',
+        'be9041b1-3948-5de0-a8b1-974e84b95715',
+      ),
+      value: concept('INR Value, the INR of a reading.', '161482AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
+      newDose: concept(
+        'New Anticoagulant Dose, the warfarin dose a reading changes to.',
+        'f27f6ed2-48db-5be7-91da-3e2483915462',
+      ),
+      nextDate: concept('Next INR Date, when the next INR is due.', '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
+    },
+  },
+  diagnosis: {
+    encounterType: {
+      _type: Type.UUID,
+      _default: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
+      _description:
+        "The encounter type of Patient Information, whose diagnosis the patient summary's Consultation visits card shows.",
+    },
+    concepts: {
+      diagnosis: concept('Diagnosis, the group of one diagnosis.', '594b4495-36dc-52a6-9810-15a9e2e2dcb9'),
+      category: concept(
+        'Category at Diagnosis, shown when the diagnosis has no details.',
+        '1a5aa050-661d-5e89-95d7-c1eba476df22',
+      ),
+      priority: concept(
+        'Diagnosis Priority; a Secondary diagnosis is not shown.',
+        '97c025b2-f42c-5c53-8aaa-0506c8dd3774',
+      ),
+      active: concept(
+        'Diagnosis Active; a diagnosis answered No is not shown.',
+        'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
+      ),
+    },
+    details: {
+      _type: Type.Array,
+      _elements: { _type: Type.ConceptUuid },
+      _default: [
+        'cfe17bb5-4a76-5f3a-9e1c-7b1e9b84a8e3',
+        'd3f6e1a2-9c5b-5e84-8f2d-1a6c7b9e0d4f',
+        'b7a2c4d8-5e91-5f3a-8c6d-2b9e4f7a1c0d',
+        'e9f3a5c7-6b82-5d4e-9f1a-3c7d8e2b5f4a',
+      ],
+      _description:
+        'The Diagnosis Details questions, one per category; their answers are the diagnosis shown, such as RHD C/RHD D.',
+    },
+    secondary: concept('The Diagnosis Priority answer Secondary.', 'af45fb2a-ed18-5beb-935e-8e4d92df2dac'),
+    no: concept('The answer No, to Diagnosis Active.', '488b58ff-64f5-4f8a-8979-fa79940b1594'),
+  },
+  contact: {
+    phone: {
+      _type: Type.Array,
+      _elements: { _type: Type.UUID },
+      _default: ['542c6fd2-05ca-53e3-a4f5-cd23bc1abd8f', '14d4f066-15f5-102d-96e4-000c29c2a5d7'],
+      _description:
+        "The person attribute types the Contact card's Phone reads, the first the patient has: Primary Phone, which registration records, then Telephone Number.",
+    },
+    phoneOwner: {
+      _type: Type.UUID,
+      _default: 'ea3cb7ae-ffbe-5aee-8343-44977898f675',
+      _description: "The person attribute type the Contact card's Phone owner reads.",
+    },
+    primaryCareClinic: {
+      _type: Type.Array,
+      _elements: { _type: Type.UUID },
+      _default: ['695f2990-236f-5d7c-b8aa-ddbdb22400f4', '8d87236c-c2cc-11de-8d13-0010c6dffd0f'],
+      _description:
+        "The person attribute types the Contact card's Primary care clinic reads, the first the patient has: Primary Care Clinic, which registration records, then Health Center, which patients seeded before it carry.",
+    },
+    cardiacClinic: {
+      _type: Type.UUID,
+      _default: 'fe261119-2911-5b36-be40-8f9827826987',
+      _description:
+        "The person attribute type, a location, the Contact and Consultation visits cards' Cardiac clinic reads. Its tertiary care centre is that clinic, or the nearest location above it, tagged tertiaryTag.",
+    },
+    tertiaryTag: {
+      _type: Type.String,
+      _default: 'RHD Tertiary',
+      _description: "The location tag that marks a tertiary care centre, the Contact card's Tertiary care centre.",
+    },
+  },
+  bannerFlags: {
+    cardiologyFollowUp: {
+      _type: Type.UUID,
+      _default: 'b1f7a2c0-0016-4a00-9000-000000000016',
+      _description:
+        'The flag RHD cardiology follow-up due, by uuid. While the patient has it, the banner shows Cardiology visit due, or overdue once the next review date has passed.',
+    },
+    inrReview: {
+      _type: Type.UUID,
+      _default: 'b1f7a2c0-0017-4a00-9000-000000000017',
+      _description:
+        'The flag RHD INR review due, by uuid. While the patient has it, the banner shows INR due, or overdue once the Next INR Date has passed.',
+    },
+  },
   nextSteps: {
     enabled: {
       _type: Type.Boolean,
@@ -425,6 +599,43 @@ export interface Config {
     oralEncounterType: string;
     concepts: Record<'injectionDate' | 'doseGiven' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
   };
+  consultations: {
+    form: string;
+    encounterType: string;
+    concepts: Record<
+      | 'date'
+      | 'nyha'
+      | 'prophylaxis'
+      | 'cardiacMedication'
+      | 'dosing'
+      | 'dateStopped'
+      | 'nextReviewAmount'
+      | 'nextReviewPeriod',
+      string
+    >;
+    periods: Record<string, 'day' | 'week' | 'month' | 'year'>;
+    warfarin: Array<string>;
+  };
+  inr: {
+    form: string;
+    encounterType: string;
+    concepts: Record<'target' | 'dateTested' | 'value' | 'newDose' | 'nextDate', string>;
+  };
+  diagnosis: {
+    encounterType: string;
+    concepts: Record<'diagnosis' | 'category' | 'priority' | 'active', string>;
+    details: Array<string>;
+    secondary: string;
+    no: string;
+  };
+  contact: {
+    phone: Array<string>;
+    phoneOwner: string;
+    primaryCareClinic: Array<string>;
+    cardiacClinic: string;
+    tertiaryTag: string;
+  };
+  bannerFlags: { cardiologyFollowUp: string; inrReview: string };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
