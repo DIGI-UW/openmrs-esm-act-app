@@ -45,6 +45,12 @@ function useRaisedFlag(patientUuid: string | null, flagUuid: string) {
   return Boolean(data?.some((flag) => flag.uuid === flagUuid));
 }
 
+/**
+ * A whole list read for one patient: what a list page or worklist already holds will do, rather than evaluating the
+ * report again on every chart opened or each return to the tab.
+ */
+const onceForTheBanner = { revalidateIfStale: false, revalidateOnFocus: false };
+
 const passed = (date: Date | null) => Boolean(date) && dayjs(date).isBefore(dayjs().startOf('day'));
 
 /**
@@ -88,7 +94,7 @@ export function InrTag(props: BannerTagProps) {
 export function ConfirmatoryEchoTag(props: BannerTagProps) {
   const { t } = useTranslation();
   const { screenPositive } = useConfig<Config>();
-  const { rows } = useReportDataset(onChart(props) ? screenPositive.report : null);
+  const { rows } = useReportDataset(onChart(props) ? screenPositive.report : null, undefined, onceForTheBanner);
   return rows.some((row) => row.patient_uuid === props.patientUuid) ? (
     <BannerTag type="purple">{t('confirmatoryEchoNeeded', 'Confirmatory echo needed')}</BannerTag>
   ) : null;
@@ -115,7 +121,11 @@ export function PrescriptionTag(props: BannerTagProps) {
 export function ProceduralRecommendationTag(props: BannerTagProps) {
   const { t } = useTranslation();
   const { waitingList } = useConfig<Config>();
-  const { rows, isLoading, error } = useReportDataset(onChart(props) ? waitingList.report : null);
+  const { rows, isLoading, error } = useReportDataset(
+    onChart(props) ? waitingList.report : null,
+    undefined,
+    onceForTheBanner,
+  );
   if (!onChart(props) || isLoading || error) {
     return null;
   }

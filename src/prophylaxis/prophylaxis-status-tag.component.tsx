@@ -44,7 +44,8 @@ const colours = { due_soon: 'purple', up_to_date: 'green' } as const;
 /**
  * The patient banner's prophylaxis tag: Overdue or Due today as ACT Core says, else Due in 48 h or Up to date by the
  * days to the next dose, as the due list counts them. No prescription, an unknown due date, an unreadable summary or a
- * deceased patient shows none.
+ * deceased patient shows none, nor does a dose ACT Core has not yet called due whose date the browser's clock, in
+ * another time zone, already counts as today or past.
  */
 export default function ProphylaxisStatusTag({ patientUuid, patient }: ProphylaxisStatusTagProps) {
   const { t } = useTranslation();

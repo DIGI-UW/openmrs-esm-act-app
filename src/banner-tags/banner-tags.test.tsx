@@ -185,6 +185,29 @@ describe('Confirmatory echo tag', () => {
     await waitFor(() => expect(tag()).toHaveTextContent('Confirmatory echo needed'));
   });
 
+  it('reads the list once, not again for the next chart opened', async () => {
+    screenPositive = [{ patient_uuid: 'winnie' }];
+    const cache = new Map();
+    const chart = () => (
+      <SWRConfig value={{ provider: () => cache, shouldRetryOnError: false }}>
+        <ConfirmatoryEchoTag {...onChart} />
+      </SWRConfig>
+    );
+    const first = render(chart());
+    await waitFor(() => expect(tag()).toHaveTextContent('Confirmatory echo needed'));
+    first.unmount();
+
+    render(chart());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    const evaluations = vi
+      .mocked(openmrsFetch)
+      .mock.calls.filter(([url]) => String(url).includes(`/reportdata/${screenPositiveReport}`));
+    expect(evaluations).toHaveLength(1);
+  });
+
   it('shows nothing for a patient not on it', async () => {
     screenPositive = [{ patient_uuid: 'someone-else' }];
     const { container } = renderIn(<ConfirmatoryEchoTag {...onChart} />);

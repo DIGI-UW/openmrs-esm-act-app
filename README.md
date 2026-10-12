@@ -89,6 +89,11 @@ consultation and Enter prophylaxis list only its patients, matching each report'
 registry row where the report has none. The care cascade passes the clinic to its report as `cardiacClinic` or
 `primaryCareClinic`, as Reports does. Clinics are matched by name, as the reports name them.
 
+This needs the distro's reports to name each patient's primary care clinic from the Primary Care Clinic attribute,
+else Health Center, and the RHD Care Cascade report to take those two parameters. Against reports without them, a
+primary care clinic's lists hold only the patients whose Primary Care Clinic is recorded, and the cascade counts
+every clinic under its clinic's caption.
+
 ## Procedural waiting list
 
 A Procedural waiting list dashboard in the home app's left nav, at `/home/act-waiting-list`. It lists the rows of

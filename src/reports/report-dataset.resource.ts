@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { type SWRConfiguration } from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { isUuid } from '../uuid';
 import { fetchAll } from '../fetch-all';
@@ -40,11 +40,15 @@ async function evaluateReport(reportUuidOrName: string, params: Record<string, s
  * A failure is not retried.
  * The server sends `columns` only with rows, so an empty dataset has none and a screen defines its own headers.
  */
-export function useReportDataset(reportUuidOrName: string | null, params: Record<string, string> = {}) {
-  const { data, error, isLoading, mutate } = useSWR(
+export function useReportDataset(
+  reportUuidOrName: string | null,
+  params: Record<string, string> = {},
+  options: SWRConfiguration = {},
+) {
+  const { data, error, isLoading, mutate } = useSWR<Awaited<ReturnType<typeof evaluateReport>>, Error>(
     reportUuidOrName ? ['rhd-report-dataset', reportUuidOrName, params] : null,
     () => evaluateReport(reportUuidOrName, params),
-    { shouldRetryOnError: false },
+    { shouldRetryOnError: false, ...options },
   );
 
   return { columns: data?.metadata.columns ?? [], rows: data?.rows ?? [], isLoading, error, mutate };
