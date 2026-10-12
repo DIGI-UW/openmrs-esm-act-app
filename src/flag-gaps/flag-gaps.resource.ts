@@ -38,7 +38,7 @@ async function fetchFlagGaps(patientUuid: string, flagUuid: string, flagName: st
 }
 
 /** The patient's flags that are raised now, each once. */
-async function fetchRaisedFlags(patientUuid: string) {
+export async function fetchRaisedFlags(patientUuid: string) {
   const { data } = await openmrsFetch<PatientFlagsResponse>(
     `${restBaseUrl}/patientflags/patientflag?patient=${patientUuid}&v=custom:(voided,flag:(uuid,display))`,
   );
