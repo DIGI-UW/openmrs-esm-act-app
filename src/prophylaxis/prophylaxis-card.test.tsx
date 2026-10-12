@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
 import { getDefaultsFromConfigSchema, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
+import { ROLE_COMMUNITY_CLINICIAN } from '../constants';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import ProphylaxisCard from './prophylaxis-card.component';
 
@@ -110,7 +111,7 @@ describe('ProphylaxisCard', () => {
       ['Record BPG', 'Record oral'],
     ],
   ])('offers a community clinician the record action for %s prescription', async (_, summary, actions) => {
-    await signInWith(['Add Encounters'], {}, ['Organizational: ACT Community Clinician']);
+    await signInWith(['Add Encounters'], {}, [ROLE_COMMUNITY_CLINICIAN]);
     respondWith(summary);
 
     renderCard();

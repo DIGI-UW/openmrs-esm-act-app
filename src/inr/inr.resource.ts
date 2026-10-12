@@ -5,6 +5,7 @@ import { fetchAll } from '../fetch-all';
 import {
   answersTo,
   answerText,
+  groupsOf,
   memberValue,
   type Obs,
   type PatientEncounter,
@@ -57,7 +58,7 @@ export function useInrReviews(patientUuid: string | null) {
       const [next] = answersTo(encounter, concepts.nextDate);
       const nextInr = next ? parseDate(String(next.value)) : null;
       const encounterDate = parseDate(encounter.encounterDatetime);
-      const readings = answers.filter((obs) => obs.groupMembers?.length).map((group) => group.groupMembers);
+      const readings = groupsOf(encounter, concepts.target);
       if (!readings.length) {
         return [
           {

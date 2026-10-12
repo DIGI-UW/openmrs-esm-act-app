@@ -1,8 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@carbon/react';
-import { AddIcon, CardHeader, useConfig } from '@openmrs/esm-framework';
-import { MayEnterForm } from '../access/may-enter-form';
+import { CardHeader, useConfig } from '@openmrs/esm-framework';
+import { RecordFormButton } from '../access/record-form-button.component';
 import { type Config } from '../config-schema';
 import { useConsultationSummary } from '../consultations/consultations.resource';
 import { SummaryFields } from '../styles/summary-fields.component';
@@ -17,7 +16,7 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
   const { inr: config } = useConfig<Config>();
   const { onWarfarin, warfarinDosing, isLoading: consultationsLoading } = useConsultationSummary(patientUuid);
   const { lastReading, target, nextInr, lastDose, isLoading, error } = useInrSummary(onWarfarin ? patientUuid : null);
-  const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
+  const opener = useOpenFormInVisit(patientUuid);
 
   if (!onWarfarin || error) {
     return null;
@@ -28,17 +27,7 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
   return (
     <div className={styles.card}>
       <CardHeader title={t('inrReview', 'INR review')}>
-        <MayEnterForm formUuid={config.form}>
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            disabled={isOpening}
-            onClick={() => openForm(config.form)}
-          >
-            {t('recordInr', 'Record INR')}
-          </Button>
-        </MayEnterForm>
+        <RecordFormButton form={config.form} label={t('recordInr', 'Record INR')} opener={opener} />
       </CardHeader>
       <SummaryFields
         fields={

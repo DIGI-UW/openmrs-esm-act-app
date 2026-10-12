@@ -1,8 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@carbon/react';
-import { AddIcon, CardHeader, useConfig } from '@openmrs/esm-framework';
-import { MayEnterForm } from '../access/may-enter-form';
+import { CardHeader, useConfig } from '@openmrs/esm-framework';
+import { RecordFormButton } from '../access/record-form-button.component';
 import { type Config } from '../config-schema';
 import { useContact } from '../contact/contact.resource';
 import { SummaryFields } from '../styles/summary-fields.component';
@@ -19,7 +18,7 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
   const { last, nextReview, isLoading, error } = useConsultationSummary(patientUuid);
   const { diagnosis, isLoading: diagnosisLoading } = useDiagnosis(patientUuid);
   const { contact, isLoading: contactLoading } = useContact(patientUuid);
-  const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
+  const opener = useOpenFormInVisit(patientUuid);
 
   if (error) {
     return null;
@@ -29,17 +28,7 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
   return (
     <div className={styles.card}>
       <CardHeader title={t('consultationVisits', 'Consultation visits')}>
-        <MayEnterForm formUuid={config.form}>
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            disabled={isOpening}
-            onClick={() => openForm(config.form)}
-          >
-            {t('startConsultation', 'Start consultation')}
-          </Button>
-        </MayEnterForm>
+        <RecordFormButton form={config.form} label={t('startConsultation', 'Start consultation')} opener={opener} />
       </CardHeader>
       <SummaryFields
         fields={

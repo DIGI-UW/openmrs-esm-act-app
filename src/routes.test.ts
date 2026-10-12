@@ -11,6 +11,7 @@ import {
   PRIVILEGE_SCREEN_POSITIVE,
   PRIVILEGE_WAITING_LIST,
   PRIVILEGE_WORKLISTS,
+  ROLE_COMMUNITY_CLINICIAN,
 } from './constants';
 
 const screenPrivileges = {
@@ -194,7 +195,7 @@ describe('routes.json privileges', () => {
     if (cc === undefined) {
       expect(expression).toBeUndefined();
     } else {
-      expect(evaluate(expression, roles('Organizational: ACT Community Clinician'))).toBe(cc);
+      expect(evaluate(expression, roles(ROLE_COMMUNITY_CLINICIAN))).toBe(cc);
       expect(evaluate(expression, roles('Organizational: ACT Site Administrator'))).toBe(!cc);
     }
   });
