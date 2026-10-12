@@ -5,18 +5,21 @@ import { useSessionClinicRows } from '../registry/registry.resource';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { useRecordedToday } from './recorded-today.resource';
 
-/**
- * The due list: the report's rows of patients at the session's clinic, who among all of them was recorded today, whether that is being checked again, and
- * how many are still waiting, left unknown until that lookup first answers or when it fails.
- */
-export function useDueList() {
+/** The Due for Prophylaxis report's rows of patients at the session's clinic. */
+export function useDueRows() {
   const { dueForProphylaxis } = useConfig<Config>();
   const report = useReportDataset(dueForProphylaxis.report);
   // The report names each patient's primary care clinic, and no cardiac clinic.
   const scoped = useSessionClinicRows(report.rows, ['primary_care_clinic']);
-  const rows = scoped.rows;
-  const isLoading = report.isLoading || scoped.isLoading;
-  const error = report.error ?? scoped.error;
+  return { rows: scoped.rows, isLoading: report.isLoading || scoped.isLoading, error: report.error ?? scoped.error };
+}
+
+/**
+ * The due list: its rows (useDueRows), who among them was recorded today, whether that is being checked again, and
+ * how many are still waiting, left unknown until that lookup first answers or when it fails.
+ */
+export function useDueList() {
+  const { rows, isLoading, error } = useDueRows();
   const patientUuids = useMemo(() => rows.map((row) => String(row.patient_uuid)), [rows]);
   const {
     recorded,

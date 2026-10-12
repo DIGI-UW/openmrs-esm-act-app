@@ -41,7 +41,10 @@ vi.mock('../screen-positive/screen-positive.component', () => ({
   ScreenPositiveTable: () => <div data-testid="screen-positive-table" />,
 }));
 vi.mock('../rhd-flags/rhd-flag-lists.resource', () => ({ useRhdFlagList: vi.fn() }));
-vi.mock('../due-for-prophylaxis/due-for-prophylaxis.resource', () => ({ useDueList: vi.fn() }));
+vi.mock('../due-for-prophylaxis/due-for-prophylaxis.resource', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useDueList: vi.fn(),
+}));
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 
 const worklistsPrivilege = 'App: act.worklists';

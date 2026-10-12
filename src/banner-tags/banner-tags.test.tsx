@@ -193,9 +193,9 @@ describe('Confirmatory echo tag', () => {
         <ConfirmatoryEchoTag {...onChart} />
       </SWRConfig>
     );
-    const first = render(chart());
+    const { unmount } = render(chart());
     await waitFor(() => expect(tag()).toHaveTextContent('Confirmatory echo needed'));
-    first.unmount();
+    unmount();
 
     render(chart());
     await act(async () => {

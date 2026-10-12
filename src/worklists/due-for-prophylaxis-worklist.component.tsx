@@ -1,12 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useConfig } from '@openmrs/esm-framework';
-import { type Config } from '../config-schema';
 import { dueReason, prescription } from '../due-for-prophylaxis/due-list';
-import { useDueList } from '../due-for-prophylaxis/due-for-prophylaxis.resource';
+import { useDueList, useDueRows } from '../due-for-prophylaxis/due-for-prophylaxis.resource';
 import { RecordDoseAction, useRecordDose } from '../due-for-prophylaxis/record-dose.component';
-import { useSessionClinicRows } from '../registry/registry.resource';
-import { useReportDataset } from '../reports/report-dataset.resource';
 import { Worklist, type WorklistState, WorklistTable } from './worklist.component';
 
 function DuePatients({ title }: { title: string }) {
@@ -40,12 +36,8 @@ function DuePatients({ title }: { title: string }) {
 /** The patients whose prophylaxis is due in the next 48 hours, due today or overdue. */
 export default function DueForProphylaxisWorklist(state: WorklistState) {
   const { t } = useTranslation();
-  const { dueForProphylaxis } = useConfig<Config>();
-  const report = useReportDataset(dueForProphylaxis.report);
-  // The due list's report names each patient's primary care clinic, and no cardiac clinic.
-  const { rows, isLoading: scoping, error: scopeError } = useSessionClinicRows(report.rows, ['primary_care_clinic']);
-  const isLoading = report.isLoading || scoping;
-  const error = report.error ?? scopeError;
+  // The report's rows, not the due list, whose who-was-recorded-today lookup the tile does not need.
+  const { rows, isLoading, error } = useDueRows();
   const title = t('dueForProphylaxis', 'Due for prophylaxis');
   return (
     <Worklist
