@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
 import { openmrsFetch, useSession } from '@openmrs/esm-framework';
@@ -77,6 +77,19 @@ function statusTag(name: RegExp) {
   ];
 }
 
+// A cache per render, so no test reads the session location another one looked up; it renders once that is answered.
+async function renderPage() {
+  const view = render(
+    <SWRConfig value={{ provider: () => new Map() }}>
+      <DueForProphylaxis />
+    </SWRConfig>,
+  );
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  return view;
+}
+
 describe('Due for prophylaxis page', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
@@ -98,7 +111,7 @@ describe('Due for prophylaxis page', () => {
       rows: dueRows.map((row, i) => ({ ...row, primary_care_clinic: i % 2 ? 'Acimi HCIII' : 'Kiswa HC III' })),
     });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
     await showAll();
 
     const listed = within(screen.getByRole('table')).getAllByRole('row').slice(1);
@@ -116,7 +129,7 @@ describe('Due for prophylaxis page', () => {
       mutate: vi.fn(),
     }));
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(await screen.findByText(/could not/i)).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -132,7 +145,7 @@ describe('Due for prophylaxis page', () => {
       mutate: vi.fn(),
     }));
 
-    render(<DueForProphylaxis />);
+    await renderPage();
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -146,7 +159,7 @@ describe('Due for prophylaxis page', () => {
       rows: dueRows.map((row, i) => ({ ...row, primary_care_clinic: i % 2 ? 'Acimi HCIII' : 'Kiswa HC III' })),
     });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
     await showAll();
 
     expect(within(screen.getByRole('table')).getAllByRole('row').slice(1)).toHaveLength(dueRows.length);
@@ -157,7 +170,7 @@ describe('Due for prophylaxis page', () => {
     vi.mocked(openmrsFetch).mockReturnValue(new Promise(() => {}) as never);
     dataset({ rows: dueRows });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(mockUseRecordedToday.mock.calls.every(([uuids]) => uuids.length === 0)).toBe(true);
@@ -166,7 +179,7 @@ describe('Due for prophylaxis page', () => {
   it("lists each patient's prescription, last dose, status and adherence", async () => {
     dataset({ rows: dueRows });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
     await showAll();
 
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
@@ -207,7 +220,7 @@ describe('Due for prophylaxis page', () => {
     dataset({ rows: dueRows });
     recorded(['patient-today']);
 
-    render(<DueForProphylaxis />);
+    await renderPage();
     await showAll();
 
     expect([/rhd00012/, /rhd00021/, /rhd00003/, /rhd00052/].map(statusTag)).toEqual([
@@ -218,7 +231,7 @@ describe('Due for prophylaxis page', () => {
     ]);
   });
 
-  it('shows adherence red below 80% and green from 80%', () => {
+  it('shows adherence red below 80% and green from 80%', async () => {
     dataset({
       rows: [
         { ...dueRows[0], adherence: 79 },
@@ -226,7 +239,7 @@ describe('Due for prophylaxis page', () => {
       ],
     });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(screen.getByText('79%')).toHaveClass('lowAdherence');
     expect(screen.getByText('80%')).toHaveClass('goodAdherence');
@@ -234,7 +247,7 @@ describe('Due for prophylaxis page', () => {
 
   it('opens the BPG form in the chart from Record BPG, and the oral form from Record oral', async () => {
     dataset({ rows: dueRows });
-    render(<DueForProphylaxis />);
+    await renderPage();
     await showAll();
 
     await userEvent.click(within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button'));
@@ -249,7 +262,7 @@ describe('Due for prophylaxis page', () => {
   it('opens one form at a time, so a second click cannot start a second visit', async () => {
     mockOpenFormInChart.mockReturnValue(new Promise(() => {}));
     dataset({ rows: dueRows });
-    render(<DueForProphylaxis />);
+    await renderPage();
     await showAll();
 
     const recordBpg = within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button');
@@ -260,11 +273,11 @@ describe('Due for prophylaxis page', () => {
     expect(mockOpenFormInChart).toHaveBeenCalledTimes(1);
   });
 
-  it('shows a patient recorded today as Recorded today, with View chart in place of Record', () => {
+  it('shows a patient recorded today as Recorded today, with View chart in place of Record', async () => {
     dataset({ rows: dueRows });
     recorded(['patient-today']);
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(cells(/rhd00003/)).toEqual([
       'Abebe Zeleke',
@@ -281,11 +294,11 @@ describe('Due for prophylaxis page', () => {
     expect(screen.getByText('2 waiting')).toBeInTheDocument();
   });
 
-  it('asks for every listed patient whether they were recorded today, not only the first page', () => {
+  it('asks for every listed patient whether they were recorded today, not only the first page', async () => {
     dataset({ rows: manyDueRows(12) });
     recorded(['patient-11']);
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(mockUseRecordedToday).toHaveBeenLastCalledWith(manyDueRows(12).map((row) => row.patient_uuid));
     expect(screen.getByText('11 waiting')).toBeInTheDocument();
@@ -295,14 +308,14 @@ describe('Due for prophylaxis page', () => {
     dataset({ rows: dueRows });
     recorded(['patient-overdue', 'patient-oral', 'patient-today']);
 
-    render(<DueForProphylaxis />);
+    await renderPage();
     await showAll();
 
     expect(screen.getAllByText('Recorded today')).toHaveLength(3);
     expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
   });
 
-  it('offers no Record button until it knows who was recorded today', () => {
+  it('offers no Record button until it knows who was recorded today', async () => {
     dataset({ rows: dueRows });
     mockUseRecordedToday.mockReturnValue({
       recorded: new Set(),
@@ -311,7 +324,7 @@ describe('Due for prophylaxis page', () => {
       error: undefined,
     });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Record/ })).not.toBeInTheDocument();
@@ -354,7 +367,7 @@ describe('Due for prophylaxis page', () => {
     expect(screen.queryByRole('button', { name: 'Record BPG' })).not.toBeInTheDocument();
   });
 
-  it('warns, and counts no one as waiting, when it cannot tell who was recorded today', () => {
+  it('warns, and counts no one as waiting, when it cannot tell who was recorded today', async () => {
     dataset({ rows: dueRows });
     mockUseRecordedToday.mockReturnValue({
       recorded: new Set(),
@@ -363,7 +376,7 @@ describe('Due for prophylaxis page', () => {
       error: new Error('timeout'),
     });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(screen.getByText('Could not check who was recorded today')).toBeInTheDocument();
     expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
@@ -373,7 +386,7 @@ describe('Due for prophylaxis page', () => {
   it('shows the patients on BPG first, and the oral ones or all of them with their counts', async () => {
     dataset({ rows: dueRows });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['BPG 3', 'Oral 1', 'All 4']);
     expect(screen.queryByRole('row', { name: /rhd00021/ })).not.toBeInTheDocument();
@@ -386,10 +399,10 @@ describe('Due for prophylaxis page', () => {
     ).toEqual(['rhd00021']);
   });
 
-  it('counts a patient due in the next two days as listed, not waiting', () => {
+  it('counts a patient due in the next two days as listed, not waiting', async () => {
     dataset({ rows: dueRows });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(cells(/rhd00052/)).toContain('Due in 48 h');
     expect(screen.getByText('3 waiting')).toBeInTheDocument();
@@ -398,7 +411,7 @@ describe('Due for prophylaxis page', () => {
   it('downloads the patients the filter shows as CSV, for a user who may export lists', async () => {
     await signInWith(['App: act.dueList', 'Add Encounters', 'Task: act.lists.export']);
     dataset({ rows: dueRows });
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
@@ -410,26 +423,26 @@ describe('Due for prophylaxis page', () => {
     );
   });
 
-  it('offers no CSV to a user who may not export lists', () => {
+  it('offers no CSV to a user who may not export lists', async () => {
     dataset({ rows: dueRows });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
   });
 
-  it('shows an error when the report cannot be evaluated', () => {
+  it('shows an error when the report cannot be evaluated', async () => {
     dataset({ error: new Error('forbidden') });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(screen.getByText('Could not load the patients due for prophylaxis')).toBeInTheDocument();
   });
 
-  it('says so when nobody is due', () => {
+  it('says so when nobody is due', async () => {
     dataset({ rows: [] });
 
-    render(<DueForProphylaxis />);
+    await renderPage();
 
     expect(screen.getByText('Nobody is due for prophylaxis')).toBeInTheDocument();
   });
@@ -442,7 +455,7 @@ describe('Due for prophylaxis widget', () => {
     recorded([]);
   });
 
-  it('shows the first five patients and how many of all of them are waiting', () => {
+  it('shows the first five patients and how many of all of them are waiting', async () => {
     dataset({ rows: manyDueRows(7) });
     recorded(['patient-6']);
 
@@ -457,7 +470,7 @@ describe('Due for prophylaxis widget', () => {
     );
   });
 
-  it('keeps the waiting count beside Open, apart from the title', () => {
+  it('keeps the waiting count beside Open, apart from the title', async () => {
     dataset({ rows: manyDueRows(7) });
 
     render(<DueForProphylaxisWidget />);
@@ -469,7 +482,7 @@ describe('Due for prophylaxis widget', () => {
     expect(end).not.toContainElement(screen.getByRole('heading', { name: 'Due for prophylaxis' }));
   });
 
-  it('counts no one as waiting until it knows who was recorded today', () => {
+  it('counts no one as waiting until it knows who was recorded today', async () => {
     dataset({ rows: manyDueRows(7) });
     mockUseRecordedToday.mockReturnValue({
       recorded: new Set(),
@@ -484,7 +497,7 @@ describe('Due for prophylaxis widget', () => {
     expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
   });
 
-  it('holds Record while it checks again who was recorded today', () => {
+  it('holds Record while it checks again who was recorded today', async () => {
     dataset({ rows: manyDueRows(2) });
     mockUseRecordedToday.mockReturnValue({
       recorded: new Set(),
@@ -514,7 +527,7 @@ describe('Due for prophylaxis widget', () => {
     expect(csvNames()).toEqual(['Joan Apio']);
   });
 
-  it('hides the waiting count once everyone listed was recorded today', () => {
+  it('hides the waiting count once everyone listed was recorded today', async () => {
     dataset({ rows: manyDueRows(2) });
     recorded(['patient-0', 'patient-1']);
 
