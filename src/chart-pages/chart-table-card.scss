@@ -1,0 +1,10 @@
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.card {
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
