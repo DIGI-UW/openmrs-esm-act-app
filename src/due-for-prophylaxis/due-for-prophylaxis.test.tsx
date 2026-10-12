@@ -122,6 +122,23 @@ describe('Due for prophylaxis page', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
+  it('waits for the registry, rather than listing nobody, at a cardiac clinic, whose patients it tells', async () => {
+    atSessionLocation('Lira RRH', ['RHD District']);
+    mockUseReportDataset.mockImplementation((report) => ({
+      columns: [],
+      rows: report === 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8' ? dueRows : [],
+      isLoading: report !== 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8',
+      error: undefined,
+      mutate: vi.fn(),
+    }));
+
+    render(<DueForProphylaxis />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
   it("lists each patient's prescription, last dose, status and adherence", async () => {
     dataset({ rows: dueRows });
 

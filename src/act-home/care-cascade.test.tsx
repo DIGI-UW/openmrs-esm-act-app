@@ -1,6 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { openmrsFetch } from '@openmrs/esm-framework';
 import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import CareCascade from './care-cascade.component';
@@ -48,6 +49,19 @@ describe('CareCascade', () => {
     expect(await screen.findByText('Patients enrolled at Kiswa HCIII')).toBeInTheDocument();
     const [, params] = mockUseReportDataset.mock.lastCall;
     expect(params).toEqual(expect.objectContaining({ [param]: `${param}-uuid` }));
+  });
+
+  it('evaluates nothing, rather than every clinic, while the session location is being looked up', async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', ['RHD Community'], 'pending-uuid');
+    vi.mocked(openmrsFetch).mockReturnValue(new Promise(() => {}) as never);
+
+    render(<CareCascade />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockUseReportDataset.mock.calls.length).toBeGreaterThan(0);
+    expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
+    expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
   });
 
   it('counts every clinic at a location of neither kind', async () => {
