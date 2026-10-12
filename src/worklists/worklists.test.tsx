@@ -9,7 +9,9 @@ import {
   ExtensionSlot,
   getDefaultsFromConfigSchema,
   navigate,
+  openmrsFetch,
   useAssignedExtensions,
+  useSession,
 } from '@openmrs/esm-framework';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import WorklistTiles from '../act-home/worklist-tiles.component';
@@ -395,5 +397,73 @@ describe('Procedural waiting list worklist', () => {
 
     expect(onSelect).toHaveBeenCalled();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+});
+
+describe('Worklists at the clinic you are signed in at', () => {
+  /** Signs in at a location whose tags make it a primary care clinic, a cardiac clinic, or neither. */
+  async function signInAt(display: string, tags: Array<string>, privileges: Array<string>, config = {}) {
+    await signInWith(privileges, config);
+    const session = vi.mocked(useSession)();
+    vi.mocked(useSession).mockReturnValue({ ...session, sessionLocation: { uuid: display, display } } as never);
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: { tags: tags.map((tag) => ({ display: tag })) } } as never);
+  }
+
+  const at = (i: number, cardiac: string, primaryCare: string) => ({
+    ...registryRow(i, 'RHD lost to follow-up'),
+    cardiac_clinic: cardiac,
+    primary_care_clinic: primaryCare,
+  });
+  const registry = [
+    at(1, 'Gulu RRH', 'Kiswa HCIII'),
+    at(2, 'Gulu RRH', 'Acimi HCIII'),
+    at(3, 'Lira RRH', 'Kiswa HCIII'),
+  ];
+
+  beforeEach(() => {
+    vi.mocked(useRhdFlagList).mockReturnValue({ list: { cohortUuid: 'cohort' }, isLoading: false, error: undefined });
+  });
+
+  it.each([
+    ['primary care clinic', 'Kiswa HCIII', ['RHD Community'], ['Patient 1', 'Patient 3']],
+    ['cardiac clinic', 'Gulu RRH', ['RHD District'], ['Patient 1', 'Patient 2']],
+    ['location of neither kind', 'Head office', [], ['Patient 1', 'Patient 2', 'Patient 3']],
+  ])("lists and counts a flag's patients of the %s", async (_, clinic, tags, patients) => {
+    await signInAt(clinic, tags, [worklistsPrivilege], flagWorklists['act-worklist-lost-to-follow-up']);
+    reports({ registry });
+
+    const { unmount } = render(<FlagWorklist {...tile} />);
+    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent(`${patients.length}Lost`));
+    unmount();
+    render(<FlagWorklist {...list} />);
+
+    await waitFor(() => expect(tableRows().map((row) => row[0].replace(/rhd\d+$/, ''))).toEqual(patients));
+  });
+
+  it("counts the due list's patients whose cardiac clinic it is, by their registry row", async () => {
+    await signInAt('Gulu RRH', ['RHD District'], [worklistsPrivilege]);
+    // The due list's report names no cardiac clinic.
+    reports({ registry, due: [{ patient_uuid: 'patient-2' }, { patient_uuid: 'patient-3' }] });
+
+    render(<DueForProphylaxisWorklist {...tile} />);
+
+    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1Due for prophylaxis'));
+  });
+
+  it.each([
+    ['Procedural waiting list', WaitingListWorklist, 'waitingList'],
+    ['Confirmatory echo due', ConfirmatoryEchoWorklist, 'screenPositive'],
+  ] as const)('counts the %s patients of the primary care clinic', async (title, Worklist, report) => {
+    await signInAt('Kiswa HCIII', ['RHD Community'], [worklistsPrivilege]);
+    reports({
+      [report]: [
+        { patient_uuid: 'patient-1', primary_care_clinic: 'Kiswa HCIII', cardiac_clinic: 'Gulu RRH' },
+        { patient_uuid: 'patient-2', primary_care_clinic: 'Acimi HCIII', cardiac_clinic: 'Gulu RRH' },
+      ],
+    });
+
+    render(<Worklist {...tile} />);
+
+    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent(`1${title}`));
   });
 });

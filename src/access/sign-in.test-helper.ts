@@ -2,6 +2,7 @@ import React from 'react';
 import { vi } from 'vitest';
 import {
   getDefaultsFromConfigSchema,
+  openmrsFetch,
   useConfig,
   UserHasAccess,
   userHasAccess,
@@ -41,4 +42,20 @@ export async function signInWith(privileges: Array<string>, config: Partial<Conf
   );
   vi.mocked(useConfig<Config>).mockReturnValue({ ...(getDefaultsFromConfigSchema(configSchema) as Config), ...config });
   vi.mocked(useSession).mockReturnValue({ authenticated: true, sessionId: 'session', user } as never);
+}
+
+/**
+ * Puts the signed-in user's session at a location with these tags, which make it a cardiac clinic, a primary care
+ * clinic, or neither; its uuid is its name unless given. Other requests go to the fetch mock already set.
+ */
+export function atSessionLocation(display: string, tags: Array<string>, uuid = display) {
+  const session = vi.mocked(useSession)();
+  vi.mocked(useSession).mockReturnValue({ ...session, sessionLocation: { uuid, display } } as never);
+  const previous = vi.mocked(openmrsFetch).getMockImplementation();
+  vi.mocked(openmrsFetch).mockImplementation(((url: string, ...rest: Array<unknown>) =>
+    String(url).includes(`/location/${uuid}?`)
+      ? Promise.resolve({ data: { tags: tags.map((tag) => ({ display: tag })) } })
+      : previous
+        ? (previous as (...args: Array<unknown>) => unknown)(url, ...rest)
+        : Promise.resolve({ data: {} })) as never);
 }

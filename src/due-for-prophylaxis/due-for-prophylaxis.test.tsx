@@ -4,7 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
 import { openmrsFetch, useSession } from '@openmrs/esm-framework';
-import { signInWith } from '../access/sign-in.test-helper';
+import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { downloadCsv } from '../table-filters/csv';
 import { openFormInChart } from '../visits/open-form-in-chart';
@@ -55,7 +55,7 @@ function recorded(patientUuids: Array<string>) {
 
 /** Shows every patient, not only those on BPG, the list's first choice. */
 async function showAll() {
-  await userEvent.click(screen.getByRole('tab', { name: /^All/ }));
+  await userEvent.click(await screen.findByRole('tab', { name: /^All/ }));
 }
 
 function cells(name: RegExp) {
@@ -86,8 +86,23 @@ describe('Due for prophylaxis page', () => {
       sessionId: 'session',
       sessionLocation: { uuid: 'clinic', display: 'Kiswa HC III' },
     } as never);
+    // A location of no clinic kind, so every patient on the report is listed.
+    atSessionLocation('Kiswa HC III', [], 'clinic');
     mockOpenFormInChart.mockReset();
     recorded([]);
+  });
+
+  it('lists only the patients whose primary care clinic it is, at a primary care clinic', async () => {
+    atSessionLocation('Kiswa HC III', ['RHD Community']);
+    dataset({
+      rows: dueRows.map((row, i) => ({ ...row, primary_care_clinic: i % 2 ? 'Acimi HCIII' : 'Kiswa HC III' })),
+    });
+
+    render(<DueForProphylaxis />);
+    await showAll();
+
+    const listed = within(screen.getByRole('table')).getAllByRole('row').slice(1);
+    expect(listed).toHaveLength(dueRows.filter((_, i) => i % 2 === 0).length);
   });
 
   it("lists each patient's prescription, last dose, status and adherence", async () => {

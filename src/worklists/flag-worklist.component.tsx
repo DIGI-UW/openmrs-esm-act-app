@@ -3,7 +3,7 @@ import { type TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { rowFlags } from '../registry/registry-filters';
-import { useRegistryReport } from '../registry/registry.resource';
+import { bothClinics, useRegistryReport, useSessionClinicRows } from '../registry/registry.resource';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { useRhdFlagList } from '../rhd-flags/rhd-flag-lists.resource';
@@ -49,7 +49,13 @@ export default function FlagWorklist(state: WorklistState) {
   const { t } = useTranslation();
   const { flag, title, tone, dueDateColumn } = useConfig<FlagWorklistConfig>();
   const { list, isLoading, error } = useRhdFlagList(flag);
-  const registry = useRegistryReport();
+  const registryReport = useRegistryReport();
+  const clinicRows = useSessionClinicRows(registryReport.rows, bothClinics);
+  const registry = {
+    rows: clinicRows.rows,
+    isLoading: registryReport.isLoading || clinicRows.isLoading,
+    error: registryReport.error,
+  };
   const entries = useMemo(
     () =>
       registry.rows

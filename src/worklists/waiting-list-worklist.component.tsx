@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { bothClinics, useSessionClinicRows } from '../registry/registry.resource';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { WaitingListTable } from '../waiting-list/waiting-list.component';
 import { Worklist, type WorklistState, WorklistSection } from './worklist.component';
@@ -10,7 +11,10 @@ import { Worklist, type WorklistState, WorklistSection } from './worklist.compon
 export default function WaitingListWorklist(state: WorklistState) {
   const { t } = useTranslation();
   const { waitingList } = useConfig<Config>();
-  const { rows, isLoading, error } = useReportDataset(waitingList.report);
+  const report = useReportDataset(waitingList.report);
+  const { rows, isLoading: scoping } = useSessionClinicRows(report.rows, bothClinics);
+  const isLoading = report.isLoading || scoping;
+  const error = report.error;
   const title = t('proceduralWaitingList', 'Procedural waiting list');
   return (
     <Worklist
