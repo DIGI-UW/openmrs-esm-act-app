@@ -390,75 +390,6 @@ export const configSchema = {
       nextDate: concept('Next INR Date, when the next INR is due.', '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
     },
   },
-  diagnosis: {
-    encounterType: {
-      _type: Type.UUID,
-      _default: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
-      _description:
-        "The encounter type of Patient Information, whose diagnosis the patient summary's Consultation visits card shows.",
-    },
-    concepts: {
-      diagnosis: concept('Diagnosis, the group of one diagnosis.', '594b4495-36dc-52a6-9810-15a9e2e2dcb9'),
-      category: concept(
-        'Category at Diagnosis, shown when the diagnosis has no details.',
-        '1a5aa050-661d-5e89-95d7-c1eba476df22',
-      ),
-      priority: concept(
-        'Diagnosis Priority; a Secondary diagnosis is not shown.',
-        '97c025b2-f42c-5c53-8aaa-0506c8dd3774',
-      ),
-      active: concept(
-        'Diagnosis Active; a diagnosis answered No is not shown.',
-        'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
-      ),
-    },
-    details: {
-      _type: Type.Array,
-      _elements: { _type: Type.ConceptUuid },
-      _default: [
-        'cfe17bb5-4a76-5f3a-9e1c-7b1e9b84a8e3',
-        'd3f6e1a2-9c5b-5e84-8f2d-1a6c7b9e0d4f',
-        'b7a2c4d8-5e91-5f3a-8c6d-2b9e4f7a1c0d',
-        'e9f3a5c7-6b82-5d4e-9f1a-3c7d8e2b5f4a',
-      ],
-      _description:
-        'The Diagnosis Details questions, one per category; their answers are the diagnosis shown, such as RHD C/RHD D.',
-    },
-    secondary: concept('The Diagnosis Priority answer Secondary.', 'af45fb2a-ed18-5beb-935e-8e4d92df2dac'),
-    no: concept('The answer No, to Diagnosis Active.', '488b58ff-64f5-4f8a-8979-fa79940b1594'),
-  },
-  contact: {
-    phone: {
-      _type: Type.Array,
-      _elements: { _type: Type.UUID },
-      _default: ['542c6fd2-05ca-53e3-a4f5-cd23bc1abd8f', '14d4f066-15f5-102d-96e4-000c29c2a5d7'],
-      _description:
-        "The person attribute types the Contact card's Phone reads, the first the patient has: Primary Phone, which registration records, then Telephone Number.",
-    },
-    phoneOwner: {
-      _type: Type.UUID,
-      _default: 'ea3cb7ae-ffbe-5aee-8343-44977898f675',
-      _description: "The person attribute type the Contact card's Phone owner reads.",
-    },
-    primaryCareClinic: {
-      _type: Type.Array,
-      _elements: { _type: Type.UUID },
-      _default: ['695f2990-236f-5d7c-b8aa-ddbdb22400f4', '8d87236c-c2cc-11de-8d13-0010c6dffd0f'],
-      _description:
-        "The person attribute types the Contact card's Primary care clinic reads, the first the patient has: Primary Care Clinic, which registration records, then Health Center, which patients seeded before it carry.",
-    },
-    cardiacClinic: {
-      _type: Type.UUID,
-      _default: 'fe261119-2911-5b36-be40-8f9827826987',
-      _description:
-        "The person attribute type, a location, the Contact and Consultation visits cards' Cardiac clinic reads. Its tertiary care centre is that clinic, or the nearest location above it, tagged tertiaryTag.",
-    },
-    tertiaryTag: {
-      _type: Type.String,
-      _default: 'RHD Tertiary',
-      _description: "The location tag that marks a tertiary care centre, the Contact card's Tertiary care centre.",
-    },
-  },
   nextSteps: {
     enabled: {
       _type: Type.Boolean,
@@ -606,20 +537,6 @@ export interface Config {
     form: string;
     encounterType: string;
     concepts: Record<'target' | 'dateTested' | 'value' | 'newDose' | 'nextDate', string>;
-  };
-  diagnosis: {
-    encounterType: string;
-    concepts: Record<'diagnosis' | 'category' | 'priority' | 'active', string>;
-    details: Array<string>;
-    secondary: string;
-    no: string;
-  };
-  contact: {
-    phone: Array<string>;
-    phoneOwner: string;
-    primaryCareClinic: Array<string>;
-    cardiacClinic: string;
-    tertiaryTag: string;
   };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };

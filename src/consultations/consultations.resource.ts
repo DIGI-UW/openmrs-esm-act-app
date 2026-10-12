@@ -89,20 +89,16 @@ export function useConsultations(patientUuid: string | null) {
   return { consultations, error, isLoading };
 }
 
-/** The patient's latest consultation and next cardiology review, and whether they are on warfarin, with its dose. */
+/** Whether the patient is on warfarin, with its dose. */
 export function useConsultationSummary(patientUuid: string | null) {
   const { consultations: config } = useConfig<Config>();
   const { consultations, error, isLoading } = useConsultations(patientUuid);
   const byEncounter = [...consultations].sort((a, b) => b.encounterDate.getTime() - a.encounterDate.getTime());
-  // The latest consultation that sets one, as the flag RHD cardiology follow-up due reads it.
-  const nextReview = byEncounter.find((consultation) => consultation.nextReview)?.nextReview ?? null;
   // The latest consultation recording a cardiac medication is the current list, as the flag RHD INR review due reads it.
   const current = byEncounter.find((consultation) => consultation.recordsMedication);
   const medications = current?.medications ?? [];
   const warfarin = medications.find((medication) => config.warfarin.includes(medication.drug));
   return {
-    last: consultations[0] ?? null,
-    nextReview,
     onWarfarin: Boolean(warfarin),
     warfarinDosing: warfarin?.dosing ? { dose: warfarin.dosing, date: current.date } : null,
     error,

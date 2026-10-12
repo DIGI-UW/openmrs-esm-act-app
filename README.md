@@ -144,11 +144,10 @@ pages. A distro adds a page's link to the chart's `patient-chart-dashboard-slot`
 - **The note under a community clinician's nav** (`act-clinical-dashboards-note`): "Clinical dashboards are only
   visible to clinicians." It is a dashboard in name only, so that the chart does not report it as a broken one.
 
-The patient summary has ACT's cards, in order: Next steps, Prophylaxis, Consultation visits, INR review (for a patient
-on warfarin) and Contact, whose phone and clinics read the person attributes in `contact`. A community clinician's
-Prophylaxis card offers the record action for the regimen prescribed. The patient banner's tags are prophylaxis,
-Confirmatory echo needed and, for a user who records clinical forms, the procedural recommendation; follow-up and
-prescription alerts are the patient flags'.
+The patient summary has ACT's cards, in order: Next steps, Prophylaxis and INR review (for a patient on warfarin). A
+community clinician's Prophylaxis card offers the record action for the regimen prescribed. The patient banner's tags
+are prophylaxis, Confirmatory echo needed and, for a user who records clinical forms, the procedural recommendation;
+follow-up and prescription alerts are the patient flags'.
 
 ## Requirements
 

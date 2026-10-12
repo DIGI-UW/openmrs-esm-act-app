@@ -82,11 +82,7 @@ export const clinicalDashboardsNote = getAsyncLifecycle(
   options,
 );
 
-export const consultationCard = getAsyncLifecycle(() => import('./consultations/consultation-card.component'), options);
-
 export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
-
-export const contactCard = getAsyncLifecycle(() => import('./contact/contact-card.component'), options);
 
 const bannerTags = () => import('./banner-tags/banner-tags.component');
 

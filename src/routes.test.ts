@@ -83,9 +83,7 @@ describe('routes.json privileges', () => {
     ['act-inr-reviews-dashboard-link', ['Get Encounters', 'Get Observations']],
     ['act-inr-reviews-dashboard', ['Get Encounters', 'Get Observations']],
     ['act-clinical-dashboards-note', 'Get Patients'],
-    ['act-consultation-card', ['Get Encounters', 'Get Observations']],
     ['act-inr-card', ['Get Encounters', 'Get Observations']],
-    ['act-contact-card', ['Get People']],
     ['act-confirmatory-echo-tag', 'Run Reports'],
     // The clinician's and site administrator's alone: who records clinical forms.
     ['act-procedural-recommendation-tag', ['Run Reports', 'Task: act.enterClinicalForms']],
@@ -139,10 +137,7 @@ describe('routes.json privileges', () => {
         'act-worklist-waiting-list',
       ],
     ],
-    [
-      'patient-chart-summary-dashboard-slot',
-      ['act-next-steps-card', 'act-prophylaxis-card', 'act-consultation-card', 'act-inr-card', 'act-contact-card'],
-    ],
+    ['patient-chart-summary-dashboard-slot', ['act-next-steps-card', 'act-prophylaxis-card', 'act-inr-card']],
     [
       'patient-banner-tags-slot',
       ['act-prophylaxis-status-tag', 'act-confirmatory-echo-tag', 'act-procedural-recommendation-tag'],
@@ -243,9 +238,7 @@ describe('routes.json privileges', () => {
     'act-inr-reviews-dashboard',
     'act-next-steps-card',
     'act-prophylaxis-card',
-    'act-consultation-card',
     'act-inr-card',
-    'act-contact-card',
   ];
   it.each([
     ['community clinician', [...everyonesChart, 'act-clinical-dashboards-note']],

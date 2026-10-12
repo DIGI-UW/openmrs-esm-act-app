@@ -134,30 +134,6 @@ describe('configSchema', () => {
           nextDate: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         },
       },
-      diagnosis: {
-        encounterType: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
-        concepts: {
-          diagnosis: '594b4495-36dc-52a6-9810-15a9e2e2dcb9',
-          category: '1a5aa050-661d-5e89-95d7-c1eba476df22',
-          priority: '97c025b2-f42c-5c53-8aaa-0506c8dd3774',
-          active: 'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
-        },
-        details: [
-          'cfe17bb5-4a76-5f3a-9e1c-7b1e9b84a8e3',
-          'd3f6e1a2-9c5b-5e84-8f2d-1a6c7b9e0d4f',
-          'b7a2c4d8-5e91-5f3a-8c6d-2b9e4f7a1c0d',
-          'e9f3a5c7-6b82-5d4e-9f1a-3c7d8e2b5f4a',
-        ],
-        secondary: 'af45fb2a-ed18-5beb-935e-8e4d92df2dac',
-        no: '488b58ff-64f5-4f8a-8979-fa79940b1594',
-      },
-      contact: {
-        phone: ['542c6fd2-05ca-53e3-a4f5-cd23bc1abd8f', '14d4f066-15f5-102d-96e4-000c29c2a5d7'],
-        phoneOwner: 'ea3cb7ae-ffbe-5aee-8343-44977898f675',
-        primaryCareClinic: ['695f2990-236f-5d7c-b8aa-ddbdb22400f4', '8d87236c-c2cc-11de-8d13-0010c6dffd0f'],
-        cardiacClinic: 'fe261119-2911-5b36-be40-8f9827826987',
-        tertiaryTag: 'RHD Tertiary',
-      },
       nextSteps: { enabled: true },
       prophylaxisCard: {
         bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
