@@ -327,6 +327,19 @@ describe('Contact card', () => {
     expect(fields()).toContainEqual(['Village', '--']);
   });
 
+  it('says -- for an attribute saved without a value, rather than null', async () => {
+    respond({
+      '/person/winnie': {
+        attributes: [{ attributeType: { uuid: '695f2990-236f-5d7c-b8aa-ddbdb22400f4' }, value: null }],
+        preferredAddress: null,
+      },
+    });
+    await signInWith(['Get People']);
+    renderIn(<ContactCard patientUuid="winnie" />);
+
+    await waitFor(() => expect(fields()).toContainEqual(['Primary care clinic', '--']));
+  });
+
   it('names a tertiary cardiac clinic as its own tertiary care centre', async () => {
     respond({
       [`/location/${kitgum.uuid}`]: {

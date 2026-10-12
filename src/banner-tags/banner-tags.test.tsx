@@ -131,9 +131,9 @@ describe('Banner tags for a deceased patient', () => {
   ] as const;
   const deaths = [{ deceasedBoolean: true }, { deceasedDateTime: '2026-09-01' }];
 
-  it.each(tags.flatMap(([name, BannerTag]) => deaths.map((death) => [name, BannerTag, death] as const)))(
+  it.each(tags.flatMap(([name, BannerTag]) => deaths.map((death) => [name, death, BannerTag] as const)))(
     'shows no %s tag for %j, without asking',
-    async (_, BannerTag, death) => {
+    async (_, death, BannerTag) => {
       flags = [cardiologyFlag, inrFlag];
       screenPositive = [{ patient_uuid: 'winnie' }];
       const { container } = renderIn(<BannerTag {...onChart} patient={{ resourceType: 'Patient', ...death }} />);

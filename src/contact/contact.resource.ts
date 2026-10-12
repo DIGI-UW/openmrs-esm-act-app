@@ -24,7 +24,7 @@ const personRepresentation = 'custom:(attributes:(attributeType:(uuid),value),pr
 const placeRepresentation =
   'custom:(display,tags:(display),parentLocation:(display,tags:(display),parentLocation:(display,tags:(display))))';
 
-const text = (attribute: Attribute | undefined) => (attribute == null ? null : answerText(attribute.value));
+const text = (attribute: Attribute | undefined) => (attribute?.value == null ? null : answerText(attribute.value));
 
 /** The cardiac clinic itself when tagged a tertiary centre, else the nearest location above it that is. */
 function tertiaryOf(place: Place | null | undefined, tag: string): string | null {
