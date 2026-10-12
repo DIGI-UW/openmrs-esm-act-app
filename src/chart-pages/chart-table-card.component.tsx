@@ -1,16 +1,8 @@
 import React from 'react';
-import {
-  Button,
-  DataTableSkeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@carbon/react';
-import { AddIcon, CardHeader, EmptyCard, ErrorState, isDesktop, useLayoutType } from '@openmrs/esm-framework';
+import { DataTableSkeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
+import { CardHeader, EmptyCard, ErrorState, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { useMayEnterForm } from '../access/may-enter-form';
+import { RecordFormButton } from '../access/record-form-button.component';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import styles from './chart-table-card.scss';
 
@@ -48,9 +40,10 @@ export function ChartTableCard<T>({
   error,
 }: ChartTableCardProps<T>) {
   const desktop = isDesktop(useLayoutType());
-  const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
+  const opener = useOpenFormInVisit(patientUuid);
+  // The empty state's link is not a button, so it is gated here.
   const mayRecord = useMayEnterForm(form);
-  const record = () => openForm(form);
+  const record = () => opener.open(form);
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
@@ -61,17 +54,7 @@ export function ChartTableCard<T>({
   return (
     <div className={styles.card}>
       <CardHeader title={title}>
-        {mayRecord && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            disabled={isOpening}
-            onClick={record}
-          >
-            {actionLabel}
-          </Button>
-        )}
+        <RecordFormButton form={form} label={actionLabel} opener={opener} />
       </CardHeader>
       {isLoading ? (
         <DataTableSkeleton

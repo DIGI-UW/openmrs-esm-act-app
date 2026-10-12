@@ -21,7 +21,7 @@ export const onRegistryNow = (row: ReportRow) =>
  * where the list's report has it, else by the patient's registry row. Every row while the session location is not a
  * clinic, or its kind cannot be read, as the registry then opens on every clinic; none while that kind is looked up.
  */
-export function useInSessionClinic(columnsOfRows: ReadonlyArray<string>) {
+function useInSessionClinic(columnsOfRows: ReadonlyArray<string>) {
   const scope = useSessionClinicScope();
   const column = scope.status === 'ready' ? scope.column : null;
   const clinicName = scope.status === 'ready' ? scope.clinic?.name : null;
@@ -53,7 +53,7 @@ export function useInSessionClinic(columnsOfRows: ReadonlyArray<string>) {
 }
 
 /** The rows of patients at the session's clinic, by useInSessionClinic. */
-export function useSessionClinicRows(rows: Array<ReportRow>, columnsOfRows: ReadonlyArray<string>) {
+function useSessionClinicRows(rows: Array<ReportRow>, columnsOfRows: ReadonlyArray<string>) {
   const { inClinic, isLoading, error } = useInSessionClinic(columnsOfRows);
   const scoped = useMemo(() => rows.filter(inClinic), [rows, inClinic]);
   return { rows: scoped, isLoading, error };

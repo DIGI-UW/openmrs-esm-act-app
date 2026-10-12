@@ -489,6 +489,22 @@ describe('Worklists at the clinic you are signed in at', () => {
     expect(screen.getByTestId('worklist-tile')).not.toHaveTextContent(/\d/);
   });
 
+  it('counts no one while the due report is still being evaluated', async () => {
+    await signInAt('Kiswa HCIII', ['RHD Community'], [worklistsPrivilege]);
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [],
+      isLoading: true,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<DueForProphylaxisWorklist {...tile} />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(screen.getByTestId('worklist-tile')).not.toHaveTextContent(/\d/);
+  });
+
   it.each([
     ['Procedural waiting list', WaitingListWorklist, 'waitingList'],
     ['Confirmatory echo due', ConfirmatoryEchoWorklist, 'screenPositive'],
