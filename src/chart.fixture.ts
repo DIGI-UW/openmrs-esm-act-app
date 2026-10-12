@@ -72,7 +72,7 @@ export const consultations = [
   },
 ];
 
-/** An INR review as the form saves it: the target and each reading's group share the INR Target question. */
+/** An INR review as the form saves it: the target and each reading's group share the INR Target question, the target top level. */
 export const inrReview = {
   uuid: 'review',
   encounterDatetime: '2026-09-01T10:00:00.000+0000',
@@ -87,6 +87,21 @@ export const inrReview = {
       obs(concepts.newDose, '4 mg daily'),
     ]),
     obs(concepts.nextInr, '2026-10-01'),
+  ],
+};
+
+/** Lillian Aber's INR review on the distro: the target is a member of the reading's group, as the INR Monitoring report reads it. */
+export const inrReviewTargetInGroup = {
+  uuid: 'target-in-group',
+  encounterDatetime: '2026-09-04T11:00:00.000+0000',
+  obs: [
+    obs(concepts.nextInr, '2026-10-04'),
+    obs(concepts.inrTarget, null, [
+      obs(concepts.inrTarget, coded('ea841a3a-f9cb-5761-aac6-939ffb158d94', '2.5-3.5')),
+      obs(concepts.inr, 2.8),
+      obs(concepts.dateTested, '2026-09-04'),
+    ]),
+    obs(concepts.indication, coded('6f68aab6-4053-5476-9e12-b53b8709d87f', 'Mechanical Valve')),
   ],
 };
 

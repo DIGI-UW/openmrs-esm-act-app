@@ -51,7 +51,7 @@ export function useInrReviews(patientUuid: string | null) {
 
   const reviews = (data ?? [])
     .flatMap((encounter): Array<InrReview> => {
-      // The form records the target and each reading's group under one question: the group is the one with members.
+      // The target and each reading's group share one question; a group may hold its own target as a member.
       const answers = answersTo(encounter, concepts.target) as Array<Obs>;
       const targetAnswer = answers.find((obs) => !obs.groupMembers?.length && obs.value != null);
       const target = targetAnswer ? answerText(targetAnswer.value) : null;
@@ -78,13 +78,15 @@ export function useInrReviews(patientUuid: string | null) {
         const value = memberValue(members, concepts.value);
         const inr = value == null ? null : Number(value);
         const newDose = memberValue(members, concepts.newDose);
+        const ownTarget = memberValue(members, concepts.target);
+        const readingTarget = ownTarget == null ? target : answerText(ownTarget);
         return {
           key: `${encounter.uuid}-${index}`,
           date: tested == null ? encounterDate : parseDate(String(tested)),
           encounterDate,
           inr,
-          target,
-          result: inrResult(inr, target),
+          target: readingTarget,
+          result: inrResult(inr, readingTarget),
           nextInr,
           newDose: newDose == null ? null : answerText(newDose),
         };

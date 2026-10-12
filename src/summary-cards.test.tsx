@@ -5,7 +5,14 @@ import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from './access/sign-in.test-helper';
-import { consultations, forms, indicationOnly, inrReview, respondWithEncounters } from './chart.fixture';
+import {
+  consultations,
+  forms,
+  indicationOnly,
+  inrReview,
+  inrReviewTargetInGroup,
+  respondWithEncounters,
+} from './chart.fixture';
 import { useOpenFormInVisit } from './visits/open-form-in-visit';
 import ConsultationCard from './consultations/consultation-card.component';
 import InrCard from './inr/inr-card.component';
@@ -253,6 +260,15 @@ describe('INR review card', () => {
     await waitFor(() => expect(fields()).toContainEqual(['Target range', '1.5-2.5']));
     expect(fields()).toContainEqual(['Next INR due', '01-Nov-2026']);
     expect(fields()).toContainEqual(['Last INR', '2.2 · 01-Aug-2026']);
+  });
+
+  it("shows the target range a review records inside its reading's group", async () => {
+    respondWithEncounters({ consultation: consultations, inr: [inrReviewTargetInGroup] }, () => ({ results: [] }));
+    await signInWith(['Add Encounters']);
+    renderIn(<InrCard patientUuid="lillian" />);
+
+    await waitFor(() => expect(fields()).toContainEqual(['Target range', '2.5-3.5']));
+    expect(fields()).toContainEqual(['Last INR', '2.8 · 04-Sept-2026']);
   });
 
   it("shows the consultation's warfarin dose when no INR review changed it", async () => {

@@ -11,6 +11,7 @@ import {
   forms,
   indicationOnly,
   inrReview,
+  inrReviewTargetInGroup,
   medication,
   respondWithEncounters,
 } from '../chart.fixture';
@@ -78,6 +79,17 @@ describe('INR reviews page', () => {
       ['30-Aug-2026', '--', '--', '--', '--'],
       ['20-Aug-2026', '1.8', '2.0-3.0', 'Below range', '01-Oct-2026'],
     ]);
+  });
+
+  it("reads a reading's target from its own group when the target is recorded there", async () => {
+    respondWithEncounters({ inr: [inrReviewTargetInGroup] }, (url) =>
+      url.includes(`/form/${forms.inr}`) ? inrForm : { results: [] },
+    );
+    await signInWith(['Add Encounters', clinicalForms]);
+    renderIn(<InrReviews patientUuid="lillian" />);
+
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(rowTexts()).toEqual([['04-Sept-2026', '2.8', '2.5-3.5', 'In range', '04-Oct-2026']]);
   });
 
   it('offers Record INR to a clinician, which opens the INR form', async () => {

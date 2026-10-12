@@ -375,7 +375,7 @@ export const configSchema = {
     },
     concepts: {
       target: concept(
-        'INR Target, answered as a range such as 2.0-3.0. The form also uses it for the group of each INR reading, which has members where the target has an answer.',
+        "INR Target, answered as a range such as 2.0-3.0. The form also uses it for the group of each INR reading, which has members where the target has an answer. A reading's group may also hold its own target as a member, which then is that reading's target.",
         '0778ce12-ddba-5e22-b5fd-92424e8747b4',
       ),
       dateTested: concept(
