@@ -15,18 +15,16 @@ import {
   CardHeader,
   EmptyCard,
   ErrorState,
-  formatDate,
   isDesktop,
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { useMayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
+import { day } from '../patient-encounters';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type InrResult, type InrReview, useInrReviews } from './inr.resource';
 import styles from '../cardiac-tests/cardiac-tests.scss';
-
-const day = (date: Date | null) => (date ? formatDate(date, { time: false }) : '--');
 
 export function useResultLabel() {
   const { t } = useTranslation();
@@ -50,11 +48,11 @@ export default function InrReviews({ patientUuid }: { patientUuid: string }) {
   const title = t('inrReviews', 'INR reviews');
   const record = () => openForm(config.form);
   const columns: Array<{ header: string; text: (review: InrReview) => string }> = [
-    { header: t('date', 'Date'), text: (review) => day(review.date) },
+    { header: t('date', 'Date'), text: (review) => day(review.date) ?? '--' },
     { header: t('inr', 'INR'), text: (review) => (review.inr == null ? '--' : String(review.inr)) },
     { header: t('targetRange', 'Target range'), text: (review) => review.target ?? '--' },
     { header: t('result', 'Result'), text: (review) => resultLabel(review.result) },
-    { header: t('nextInr', 'Next INR'), text: (review) => day(review.nextInr) },
+    { header: t('nextInr', 'Next INR'), text: (review) => day(review.nextInr) ?? '--' },
   ];
 
   if (error) {

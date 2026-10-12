@@ -1,17 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
-import { AddIcon, CardHeader, formatDate, useConfig } from '@openmrs/esm-framework';
+import { AddIcon, CardHeader, useConfig } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
 import { useContact } from '../contact/contact.resource';
 import { SummaryFields } from '../styles/summary-fields.component';
+import { day } from '../patient-encounters';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { useConsultationSummary } from './consultations.resource';
 import { useDiagnosis } from './diagnosis.resource';
 import styles from '../styles/summary-card.scss';
-
-const day = (date: Date | null) => (date ? formatDate(date, { time: false }) : null);
 
 /** The patient summary's consultations: the last, the next cardiology review, the diagnosis and the cardiac clinic. */
 export default function ConsultationCard({ patientUuid }: { patientUuid: string }) {

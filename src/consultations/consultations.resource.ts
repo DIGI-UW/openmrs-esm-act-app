@@ -3,7 +3,16 @@ import useSWR from 'swr';
 import { parseDate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
-import { answersTo, type PatientEncounter, patientEncountersUrl } from '../patient-encounters';
+import {
+  answersTo,
+  answerText,
+  answerUuid,
+  groupsOf,
+  memberValue,
+  type Obs,
+  type PatientEncounter,
+  patientEncountersUrl,
+} from '../patient-encounters';
 
 export interface Consultation {
   uuid: string;
@@ -22,27 +31,9 @@ export interface Consultation {
   recordsMedication: boolean;
 }
 
-/** A coded answer or a group, as the representation below returns them. */
-export type Obs = PatientEncounter['obs'][number] & { groupMembers?: Array<Obs> | null };
-
 const representation =
   'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),' +
   'obs:(concept:(uuid,display),value:(uuid,display),groupMembers:(concept:(uuid,display),value:(uuid,display))))';
-
-export const display = (value: unknown) =>
-  typeof value === 'object' && value !== null ? String((value as { display?: string }).display ?? '') : String(value);
-
-const uuidOf = (value: unknown) => (value as { uuid?: string } | null)?.uuid;
-
-/** The members of the encounter's groups for the question, each group with its own member answering it. */
-export function groupsOf(encounter: PatientEncounter, concept: string) {
-  return (answersTo(encounter, concept) as Array<Obs>)
-    .filter((obs) => obs.groupMembers?.length)
-    .map((group) => group.groupMembers);
-}
-
-export const memberValue = (members: Array<Obs>, concept: string) =>
-  members.find((member) => member.concept.uuid === concept)?.value;
 
 export function useConsultationsUrl(patientUuid: string | null) {
   const { consultations } = useConfig<Config>();
@@ -62,7 +53,7 @@ export function useConsultations(patientUuid: string | null) {
       const [date] = answersTo(encounter, concepts.date);
       const [nyha] = answersTo(encounter, concepts.nyha);
       const [amount] = answersTo(encounter, concepts.nextReviewAmount);
-      const unit = config.periods[uuidOf(answersTo(encounter, concepts.nextReviewPeriod)[0]?.value)];
+      const unit = config.periods[answerUuid(answersTo(encounter, concepts.nextReviewPeriod)[0]?.value)];
       const notStopped = (members: Array<Obs>) => memberValue(members, concepts.dateStopped) == null;
       const medicationGroups = groupsOf(encounter, concepts.cardiacMedication);
       return {
@@ -70,10 +61,10 @@ export function useConsultations(patientUuid: string | null) {
         date: date ? parseDate(String(date.value)) : encounterDate,
         encounterDate,
         seenBy: (encounter.encounterProviders ?? []).map(({ provider }) => provider.display),
-        nyha: nyha ? display(nyha.value) : null,
+        nyha: nyha ? answerText(nyha.value) : null,
         plan: groupsOf(encounter, concepts.prophylaxis)
           .filter(notStopped)
-          .map((members) => display(memberValue(members, concepts.prophylaxis))),
+          .map((members) => answerText(memberValue(members, concepts.prophylaxis))),
         nextReview:
           amount && unit
             ? dayjs(encounterDate)
@@ -84,8 +75,8 @@ export function useConsultations(patientUuid: string | null) {
         medications: medicationGroups.filter(notStopped).map((members) => {
           const dosing = memberValue(members, concepts.dosing);
           return {
-            drug: uuidOf(memberValue(members, concepts.cardiacMedication)),
-            dosing: dosing == null ? null : display(dosing),
+            drug: answerUuid(memberValue(members, concepts.cardiacMedication)),
+            dosing: dosing == null ? null : answerText(dosing),
           };
         }),
         recordsMedication: medicationGroups.length > 0,

@@ -15,18 +15,16 @@ import {
   CardHeader,
   EmptyCard,
   ErrorState,
-  formatDate,
   isDesktop,
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { useMayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
+import { day } from '../patient-encounters';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type Consultation, useConsultations } from './consultations.resource';
 import styles from '../cardiac-tests/cardiac-tests.scss';
-
-const day = (date: Date | null) => (date ? formatDate(date, { time: false }) : '--');
 
 /** The chart's Consultation visits: each consultation, newest first, and Start consultation for whoever may record one. */
 export default function ConsultationVisits({ patientUuid }: { patientUuid: string }) {
@@ -39,11 +37,11 @@ export default function ConsultationVisits({ patientUuid }: { patientUuid: strin
   const title = t('consultationVisits', 'Consultation visits');
   const start = () => openForm(config.form);
   const columns: Array<{ header: string; text: (consultation: Consultation) => string }> = [
-    { header: t('date', 'Date'), text: (consultation) => day(consultation.date) },
+    { header: t('date', 'Date'), text: (consultation) => day(consultation.date) ?? '--' },
     { header: t('seenBy', 'Seen by'), text: (consultation) => consultation.seenBy.join(', ') || '--' },
     { header: t('nyhaClass', 'NYHA class'), text: (consultation) => consultation.nyha ?? '--' },
     { header: t('prophylaxisPlan', 'Prophylaxis plan'), text: (consultation) => consultation.plan.join(', ') || '--' },
-    { header: t('nextReview', 'Next review'), text: (consultation) => day(consultation.nextReview) },
+    { header: t('nextReview', 'Next review'), text: (consultation) => day(consultation.nextReview) ?? '--' },
   ];
 
   if (error) {

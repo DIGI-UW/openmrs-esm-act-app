@@ -1,9 +1,15 @@
 import useSWR from 'swr';
 import { parseDate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { display, memberValue, type Obs } from '../consultations/consultations.resource';
 import { fetchAll } from '../fetch-all';
-import { answersTo, type PatientEncounter, patientEncountersUrl } from '../patient-encounters';
+import {
+  answersTo,
+  answerText,
+  memberValue,
+  type Obs,
+  type PatientEncounter,
+  patientEncountersUrl,
+} from '../patient-encounters';
 
 export type InrResult = 'inRange' | 'below' | 'above' | null;
 
@@ -47,7 +53,7 @@ export function useInrReviews(patientUuid: string | null) {
       // The form records the target and each reading's group under one question: the group is the one with members.
       const answers = answersTo(encounter, concepts.target) as Array<Obs>;
       const targetAnswer = answers.find((obs) => !obs.groupMembers?.length && obs.value != null);
-      const target = targetAnswer ? display(targetAnswer.value) : null;
+      const target = targetAnswer ? answerText(targetAnswer.value) : null;
       const [next] = answersTo(encounter, concepts.nextDate);
       const nextInr = next ? parseDate(String(next.value)) : null;
       const encounterDate = parseDate(encounter.encounterDatetime);
@@ -79,7 +85,7 @@ export function useInrReviews(patientUuid: string | null) {
           target,
           result: inrResult(inr, target),
           nextInr,
-          newDose: newDose == null ? null : display(newDose),
+          newDose: newDose == null ? null : answerText(newDose),
         };
       });
     })

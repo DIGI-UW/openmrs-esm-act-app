@@ -2,7 +2,7 @@ import useSWR from 'swr';
 import { parseDate, useConfig } from '@openmrs/esm-framework';
 import { type Config, type EchoField } from '../config-schema';
 import { fetchAll } from '../fetch-all';
-import { answersTo, type PatientEncounter, patientEncountersUrl } from '../patient-encounters';
+import { answersTo, answerText, type PatientEncounter, patientEncountersUrl } from '../patient-encounters';
 
 export type Echocardiogram = { uuid: string; date: Date; otherFindings: Array<Finding> } & Partial<
   Record<Exclude<EchoField, 'date'>, unknown>
@@ -22,9 +22,6 @@ export interface Electrocardiogram {
 }
 
 const representation = 'custom:(uuid,encounterDatetime,obs:(concept:(uuid,display),value:(display)))';
-
-const answerText = (value: unknown) =>
-  typeof value === 'object' && value !== null ? String((value as { display?: string }).display ?? '') : String(value);
 
 /** The patient's echocardiograms, newest first, each with its answers by field. */
 export function useEchocardiograms(patientUuid: string) {
