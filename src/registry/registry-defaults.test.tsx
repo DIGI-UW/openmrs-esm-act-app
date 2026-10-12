@@ -117,6 +117,17 @@ describe('Registry defaults', () => {
     expect(matching()).toBe(1);
   });
 
+  it("opens on active patients at every clinic when the session location's tags cannot be read", async () => {
+    await atLocation('Anyeke HCIV', ['RHD Community']);
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('Internal Server Error'));
+
+    renderRegistry();
+
+    await waitFor(() => expect(screen.getByLabelText('Status')).toHaveValue('Active'));
+    expect(screen.getByLabelText('Primary care clinic')).toHaveValue('');
+    expect(matching()).toBe(29);
+  });
+
   it('opens on active patients at every clinic when the session location is neither kind of clinic', async () => {
     await atLocation('Head office', ['Login Location']);
 
