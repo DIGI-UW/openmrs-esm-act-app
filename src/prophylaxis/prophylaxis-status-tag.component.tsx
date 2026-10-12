@@ -1,7 +1,10 @@
 import React, { useEffect, useRef } from 'react';
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Tag } from '@carbon/react';
 import { formatDate, parseDate, showSnackbar } from '@openmrs/esm-framework';
+import { statusLabel } from '../due-for-prophylaxis/due-list';
+import { dueStatus } from '../enter-prophylaxis/patients-on-prophylaxis';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
 
 interface ProphylaxisStatusTagProps {
@@ -36,7 +39,13 @@ function useNextDueSnackbar(summary: ProphylaxisSummary | undefined) {
   }, [summary, lastGiven, t]);
 }
 
-/** The patient banner's Overdue or Due today tag; up to date, unknown, unreadable or deceased shows none. */
+const colours = { due_soon: 'purple', up_to_date: 'green' } as const;
+
+/**
+ * The patient banner's prophylaxis tag: Overdue or Due today as ACT Core says, else Due in 48 h or Up to date by the
+ * days to the next dose, as the due list counts them. No prescription, an unknown due date, an unreadable summary or a
+ * deceased patient shows none.
+ */
 export default function ProphylaxisStatusTag({ patientUuid, patient }: ProphylaxisStatusTagProps) {
   const { t } = useTranslation();
   const deceased = Boolean(patient?.deceasedBoolean || patient?.deceasedDateTime);
@@ -56,6 +65,16 @@ export default function ProphylaxisStatusTag({ patientUuid, patient }: Prophylax
         {t('dueToday', 'Due today')}
       </Tag>
     );
+  }
+  if ((summary?.status === 'dueSoon' || summary?.status === 'ok') && summary.nextDue) {
+    const status = dueStatus(dayjs(summary.nextDue).diff(dayjs().startOf('day'), 'day'));
+    if (status === 'due_soon' || status === 'up_to_date') {
+      return (
+        <Tag data-testid="prophylaxis-status" type={colours[status]}>
+          {statusLabel(t, { status }, false)}
+        </Tag>
+      );
+    }
   }
   return null;
 }

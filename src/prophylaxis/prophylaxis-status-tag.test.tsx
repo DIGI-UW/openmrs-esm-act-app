@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
 import { openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
@@ -86,7 +86,30 @@ describe('ProphylaxisStatusTag', () => {
     expect(tag).toHaveClass('cds--tag--blue');
   });
 
-  it.each(['dueSoon', 'ok', 'none', null])('shows no tag for a status of %s', async (status) => {
+  describe('for a dose not yet due', () => {
+    // The summary's next dose is due on 12 Sept 2026.
+    beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }));
+    afterEach(() => vi.useRealTimers());
+
+    it.each([
+      ['dueSoon', '2026-09-10T08:00:00', 'Due in 48 h', 'cds--tag--purple'],
+      ['dueSoon', '2026-09-11T08:00:00', 'Due in 48 h', 'cds--tag--purple'],
+      // ACT Core's due soon is a week; the banner's is two days, as the due list's.
+      ['dueSoon', '2026-09-09T08:00:00', 'Up to date', 'cds--tag--green'],
+      ['ok', '2026-09-01T08:00:00', 'Up to date', 'cds--tag--green'],
+    ])('says %s on %s as %s', async (status, today, label, colour) => {
+      vi.setSystemTime(new Date(today));
+      respondWith(status);
+
+      renderTag();
+
+      const tag = await screen.findByTestId('prophylaxis-status');
+      expect(tag).toHaveTextContent(label);
+      expect(tag).toHaveClass(colour);
+    });
+  });
+
+  it.each(['none', null])('shows no tag for a status of %s', async (status) => {
     respondWith(status);
 
     const { container } = renderTag();

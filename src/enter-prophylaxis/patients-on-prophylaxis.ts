@@ -1,7 +1,7 @@
 import { type ReportRow } from '../reports/report-dataset.resource';
 
 /** Overdue, due today, due in the next two days or up to date, as the Due for Prophylaxis report words it. */
-function dueStatus(daysUntilDue: unknown) {
+export function dueStatus(daysUntilDue: unknown) {
   if (daysUntilDue === null || daysUntilDue === undefined || daysUntilDue === '') {
     return '';
   }
