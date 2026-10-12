@@ -78,8 +78,9 @@ export const inrReview = {
   encounterDatetime: '2026-09-01T10:00:00.000+0000',
   obs: [
     obs(concepts.indication, coded('6f68aab6-4053-5476-9e12-b53b8709d87f', 'Mechanical Valve')),
-    obs(concepts.inrTarget, coded('d894d89a-04bd-5fc0-91a0-5dc3ddd8802b', '2.0-3.0')),
+    // A reading's group may come before the target: only its members tell them apart.
     obs(concepts.inrTarget, null, [obs(concepts.dateTested, '2026-08-20'), obs(concepts.inr, 1.8)]),
+    obs(concepts.inrTarget, coded('d894d89a-04bd-5fc0-91a0-5dc3ddd8802b', '2.0-3.0')),
     obs(concepts.inrTarget, null, [
       obs(concepts.dateTested, '2026-09-01'),
       obs(concepts.inr, 3.4),
