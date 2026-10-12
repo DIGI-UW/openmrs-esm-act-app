@@ -105,6 +105,23 @@ describe('Due for prophylaxis page', () => {
     expect(listed).toHaveLength(dueRows.filter((_, i) => i % 2 === 0).length);
   });
 
+  it("says so, rather than listing nobody, when a cardiac clinic's patients cannot be told from the registry", async () => {
+    atSessionLocation('Gulu RRH', ['RHD District']);
+    mockUseReportDataset.mockImplementation((report) => ({
+      columns: [],
+      rows: report === 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8' ? dueRows : [],
+      isLoading: false,
+      error:
+        report === 'f3d8b672-a8a3-47a3-8a0b-dff01de6e3a8' ? undefined : new Error('Privilege required: Run Reports'),
+      mutate: vi.fn(),
+    }));
+
+    render(<DueForProphylaxis />);
+
+    expect(await screen.findByText(/could not/i)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
   it("lists each patient's prescription, last dose, status and adherence", async () => {
     dataset({ rows: dueRows });
 
