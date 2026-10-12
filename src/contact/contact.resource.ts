@@ -20,7 +20,7 @@ interface Place {
 }
 
 const personRepresentation = 'custom:(attributes:(attributeType:(uuid),value),preferredAddress:(cityVillage))';
-// Three levels reach a tertiary centre from a community clinic, through its district clinic.
+// Three levels, as a district clinic may sit under another district location below its tertiary centre.
 const placeRepresentation =
   'custom:(display,tags:(display),parentLocation:(display,tags:(display),parentLocation:(display,tags:(display))))';
 

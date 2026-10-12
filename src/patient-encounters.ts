@@ -4,7 +4,7 @@ export interface PatientEncounter {
   uuid: string;
   encounterDatetime: string;
   location?: { display: string } | null;
-  encounterProviders?: Array<{ provider: { display: string } }>;
+  encounterProviders?: Array<{ provider: { name?: string | null; person?: { display: string } | null } }>;
   obs: Array<{ concept: { uuid: string; display?: string }; value: unknown }>;
 }
 

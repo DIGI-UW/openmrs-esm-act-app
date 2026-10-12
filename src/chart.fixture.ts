@@ -63,7 +63,15 @@ export const consultations = [
   {
     uuid: 'second',
     encounterDatetime: '2026-08-08T06:00:00.000+0000',
-    encounterProviders: [{ provider: { display: 'Dr Sarah Namusoke' } }],
+    encounterProviders: [
+      {
+        provider: {
+          display: 'communityClinician-provider - ACT Community Clinician',
+          name: null,
+          person: { display: 'ACT Community Clinician' },
+        },
+      },
+    ],
     obs: [
       obs(concepts.date, '2026-08-08'),
       obs(concepts.nyha, coded('e4a2da4b-cca3-5bd6-bfc6-8e206dc339e9', 'II')),

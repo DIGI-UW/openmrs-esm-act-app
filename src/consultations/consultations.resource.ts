@@ -32,7 +32,7 @@ export interface Consultation {
 }
 
 const representation =
-  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),' +
+  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(name,person:(display))),' +
   'obs:(concept:(uuid,display),value:(uuid,display),groupMembers:(concept:(uuid,display),value:(uuid,display))))';
 
 export function useConsultationsUrl(patientUuid: string | null) {
@@ -60,7 +60,9 @@ export function useConsultations(patientUuid: string | null) {
         uuid: encounter.uuid,
         date: date ? parseDate(String(date.value)) : encounterDate,
         encounterDate,
-        seenBy: (encounter.encounterProviders ?? []).map(({ provider }) => provider.display),
+        seenBy: (encounter.encounterProviders ?? [])
+          .map(({ provider }) => provider.person?.display ?? provider.name)
+          .filter(Boolean),
         nyha: nyha ? answerText(nyha.value) : null,
         plan: groupsOf(encounter, concepts.prophylaxis)
           .filter(notStopped)

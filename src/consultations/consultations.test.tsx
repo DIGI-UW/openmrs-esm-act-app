@@ -87,7 +87,7 @@ describe('Consultation visits page', () => {
     ]);
     // The first consultation's next review is six months after its encounter date.
     expect(rowTexts()).toEqual([
-      ['08-Aug-2026', 'Dr Sarah Namusoke', 'II', '--', '--'],
+      ['08-Aug-2026', 'ACT Community Clinician', 'II', '--', '--'],
       ['14-Oct-2025', '--', '--', 'Q28 day BPG', '14-Apr-2026'],
     ]);
   });
@@ -120,7 +120,7 @@ describe('Consultation visits page', () => {
     await signInWith(['Add Encounters', 'Task: act.enterProphylaxis']);
     renderPage();
 
-    expect(await screen.findByText('Dr Sarah Namusoke')).toBeInTheDocument();
+    expect(await screen.findByText('ACT Community Clinician')).toBeInTheDocument();
     await formLoaded();
     expect(screen.queryByRole('button', { name: /Start consultation/ })).not.toBeInTheDocument();
   });
