@@ -15,7 +15,7 @@ import {
 } from '@carbon/react';
 import { formatDate, isDesktop, navigate, useLayoutType } from '@openmrs/esm-framework';
 import { patientChartUrl } from '../patient-chart-url';
-import { bothClinics, onRegistryNow, useRegistryReport, useSessionClinicRows } from '../registry/registry.resource';
+import { bothClinics, onRegistryNow, useRegistryReport, useSessionClinicReport } from '../registry/registry.resource';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -57,11 +57,7 @@ const date = (value: Date | null) => (value ? formatDate(value, { time: false, n
 export default function OverdueConsultation() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const registry = useRegistryReport();
-  const clinic = useSessionClinicRows(registry.rows, bothClinics);
-  const rows = clinic.rows;
-  const error = registry.error;
-  const isLoading = registry.isLoading || clinic.isLoading;
+  const { rows, isLoading, error } = useSessionClinicReport(useRegistryReport(), bothClinics);
   // A completed enrolment or a death keeps its last review date, which is no longer anyone's to act on.
   const overdue = useMemo(() => overdueConsultations(rows.filter(onRegistryNow)), [rows]);
   const { results, paginationProps } = usePagedRows(overdue, noFilters);

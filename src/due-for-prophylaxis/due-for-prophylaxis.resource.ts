@@ -1,17 +1,15 @@
 import { useMemo } from 'react';
 import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { useSessionClinicRows } from '../registry/registry.resource';
+import { useSessionClinicReport } from '../registry/registry.resource';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { useRecordedToday } from './recorded-today.resource';
 
 /** The Due for Prophylaxis report's rows of patients at the session's clinic. */
 export function useDueRows() {
   const { dueForProphylaxis } = useConfig<Config>();
-  const report = useReportDataset(dueForProphylaxis.report);
   // The report names each patient's primary care clinic, and no cardiac clinic.
-  const scoped = useSessionClinicRows(report.rows, ['primary_care_clinic']);
-  return { rows: scoped.rows, isLoading: report.isLoading || scoped.isLoading, error: report.error ?? scoped.error };
+  return useSessionClinicReport(useReportDataset(dueForProphylaxis.report), ['primary_care_clinic']);
 }
 
 /**

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { PRIVILEGE_SCREEN_POSITIVE } from '../constants';
 import { type Config } from '../config-schema';
-import { bothClinics, useSessionClinicRows } from '../registry/registry.resource';
+import { bothClinics, useSessionClinicReport } from '../registry/registry.resource';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { ScreenPositiveTable } from '../screen-positive/screen-positive.component';
@@ -18,10 +18,7 @@ export default function ConfirmatoryEchoWorklist(state: WorklistState) {
   const { user } = useSession();
   const hasPage = Boolean(user) && userHasAccess(PRIVILEGE_SCREEN_POSITIVE, user);
   const { screenPositive } = useConfig<Config>();
-  const report = useReportDataset(screenPositive.report);
-  const { rows, isLoading: scoping } = useSessionClinicRows(report.rows, bothClinics);
-  const isLoading = report.isLoading || scoping;
-  const error = report.error;
+  const { rows, isLoading, error } = useSessionClinicReport(useReportDataset(screenPositive.report), bothClinics);
   const title = t('confirmatoryEchoDue', 'Confirmatory echo due');
   const entries = rows.map((row) => {
     const screened = parseReportDate(row.screen_date);

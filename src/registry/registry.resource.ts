@@ -61,3 +61,12 @@ export function useSessionClinicRows(rows: Array<ReportRow>, columnsOfRows: Read
 
 /** The clinic columns the reports with both name for each patient. */
 export const bothClinics = ['cardiac_clinic', 'primary_care_clinic'] as const;
+
+/** A report's rows of patients at the session's clinic (useInSessionClinic), loading or failing with the report. */
+export function useSessionClinicReport(
+  report: { rows: Array<ReportRow>; isLoading: boolean; error?: Error },
+  columnsOfRows: ReadonlyArray<string>,
+) {
+  const scoped = useSessionClinicRows(report.rows, columnsOfRows);
+  return { rows: scoped.rows, isLoading: report.isLoading || scoped.isLoading, error: report.error ?? scoped.error };
+}
