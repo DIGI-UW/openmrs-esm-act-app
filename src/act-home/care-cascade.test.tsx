@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { render, screen, waitFor } from '@testing-library/react';
+import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import CareCascade from './care-cascade.component';
 
@@ -34,6 +34,32 @@ describe('CareCascade', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     await signInWith(['App: act.registry']);
+  });
+
+  it.each([
+    ['primary care', ['RHD Community'], 'primaryCareClinic'],
+    ['cardiac', ['RHD District'], 'cardiacClinic'],
+  ])("counts the patients of the session's %s clinic, which it names", async (_, tags, param) => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', tags, `${param}-uuid`);
+
+    render(<CareCascade />);
+
+    expect(await screen.findByText('Patients enrolled at Kiswa HCIII')).toBeInTheDocument();
+    const [, params] = mockUseReportDataset.mock.lastCall;
+    expect(params).toEqual(expect.objectContaining({ [param]: `${param}-uuid` }));
+  });
+
+  it('counts every clinic at a location of neither kind', async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Head office', [], 'head-office');
+
+    render(<CareCascade />);
+
+    await waitFor(() => expect(screen.getAllByTestId('cascade-step')).toHaveLength(5));
+    const [, params] = mockUseReportDataset.mock.lastCall;
+    expect(Object.keys(params)).toEqual(['endDate']);
+    expect(screen.queryByText(/Patients enrolled at/)).not.toBeInTheDocument();
   });
 
   it("draws the report's five cascade steps, leaving out its Oral and BPG split", () => {
