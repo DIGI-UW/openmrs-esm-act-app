@@ -17,3 +17,7 @@ export const PRIVILEGE_GET_PATIENTS = 'Get Patients';
 export const PRIVILEGE_ADD_ENCOUNTERS = 'Add Encounters';
 export const PRIVILEGE_EDIT_USERS = 'Edit Users';
 export const PRIVILEGE_MANAGE_LOCATIONS = 'Manage Locations';
+
+// The role routes.json's displayExpressions name, where privileges cannot tell a community clinician from a site
+// administrator, who must hold every privilege they give out.
+export const ROLE_COMMUNITY_CLINICIAN = 'Organizational: ACT Community Clinician';

@@ -7,14 +7,15 @@ import { type Config } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import styles from '../styles/summary-card.scss';
 
-export function RecordProphylaxisButtons({ patientUuid }: { patientUuid: string }) {
+/** Record BPG and Record oral, or only the one for the given type. */
+export function RecordProphylaxisButtons({ patientUuid, only }: { patientUuid: string; only?: 'BPG' | 'Oral' }) {
   const { t } = useTranslation();
   const { prophylaxisCard } = useConfig<Config>();
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
   const buttons = [
-    { label: t('recordBpg', 'Record BPG'), form: prophylaxisCard.bpgForm },
-    { label: t('recordOral', 'Record oral'), form: prophylaxisCard.oralForm },
-  ];
+    { type: 'BPG', label: t('recordBpg', 'Record BPG'), form: prophylaxisCard.bpgForm },
+    { type: 'Oral', label: t('recordOral', 'Record oral'), form: prophylaxisCard.oralForm },
+  ].filter((button) => !only || button.type === only);
 
   return (
     <div className={styles.actions}>

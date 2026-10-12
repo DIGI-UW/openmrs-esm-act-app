@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
-import { CardHeader, formatDate, parseDate } from '@openmrs/esm-framework';
+import { CardHeader, formatDate, parseDate, useSession } from '@openmrs/esm-framework';
+import { ROLE_COMMUNITY_CLINICIAN } from '../constants';
 import { useOralEntries } from '../prophylaxis-page/prophylaxis-page.resource';
 import { RecordProphylaxisButtons } from './record-prophylaxis-buttons.component';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
@@ -37,6 +38,10 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const oral = summary?.type === 'Oral';
   const { entries } = useOralEntries(oral ? patientUuid : null);
   const latestAdherence = entries.find((entry) => entry.adherence != null)?.adherence;
+  // A community clinician gives what is prescribed; with nothing prescribed, either.
+  const { user } = useSession();
+  const communityClinician = Boolean(user?.roles?.some((role) => role.display === ROLE_COMMUNITY_CLINICIAN));
+  const only = communityClinician && summary?.type ? summary.type : undefined;
 
   if (error) {
     return null;
@@ -54,12 +59,12 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
     oral
       ? {
           id: 'on-time',
-          label: t('adherenceLastReport', 'Adherence (last report)'),
+          label: t('adherence', 'Adherence'),
           value: latestAdherence == null ? '--' : `${latestAdherence}%`,
         }
       : {
           id: 'on-time',
-          label: t('onTimeSixMonths', 'On-time (6 months)'),
+          label: t('adherence', 'Adherence'),
           value: summary.onTime
             ? t('onTimeCount', '{{given}} of {{total}}', { given: summary.onTime.given, total: summary.onTime.total })
             : '--',
@@ -69,7 +74,7 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   return (
     <div className={styles.card}>
       <CardHeader title={t('prophylaxis', 'Prophylaxis')}>
-        <RecordProphylaxisButtons patientUuid={patientUuid} />
+        <RecordProphylaxisButtons patientUuid={patientUuid} only={only} />
       </CardHeader>
       {!fields ? (
         <div data-testid="prophylaxis-loading">

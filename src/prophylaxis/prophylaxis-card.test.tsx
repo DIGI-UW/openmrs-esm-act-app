@@ -87,6 +87,52 @@ describe('ProphylaxisCard', () => {
     expect(field('next-due')).toHaveAttribute('data-overdue', 'false');
   });
 
+  it('calls the on-time count Adherence', async () => {
+    respondWith(winnie);
+
+    renderCard();
+
+    await screen.findByText('BPG · every 4 weeks');
+    expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual([
+      'Type',
+      'Last dose',
+      'Next due',
+      'Adherence',
+    ]);
+  });
+
+  it.each([
+    ['a BPG patient', winnie, ['Record BPG']],
+    ['an oral patient', { ...winnie, type: 'Oral', regimen: 'Oral penicillin V', intervalDays: null }, ['Record oral']],
+    [
+      'a patient with no prescription',
+      { ...winnie, type: null, regimen: null, intervalDays: null },
+      ['Record BPG', 'Record oral'],
+    ],
+  ])('offers a community clinician the record action for %s prescription', async (_, summary, actions) => {
+    await signInWith(['Add Encounters'], {}, ['Organizational: ACT Community Clinician']);
+    respondWith(summary);
+
+    renderCard();
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+    await screen.findAllByRole('term');
+    expect(screen.getAllByRole('button').map((button) => button.textContent.replace('AddIcon', ''))).toEqual(actions);
+  });
+
+  it('offers a clinician both record actions, whatever is prescribed', async () => {
+    await signInWith(['Add Encounters'], {}, ['Organizational: ACT Clinician']);
+    respondWith(winnie);
+
+    renderCard();
+
+    await screen.findAllByRole('term');
+    expect(screen.getAllByRole('button').map((button) => button.textContent.replace('AddIcon', ''))).toEqual([
+      'Record BPG',
+      'Record oral',
+    ]);
+  });
+
   it('counts a regimen that is not whole weeks in days', async () => {
     respondWith({ ...winnie, regimen: 'Q10 day BPG', intervalDays: 10 });
 
@@ -125,7 +171,7 @@ describe('ProphylaxisCard', () => {
     renderCard();
 
     expect(await screen.findByText('Oral penicillin V')).toBeInTheDocument();
-    expect(screen.getByText('Adherence (last report)')).toBeInTheDocument();
+    expect(screen.getByText('Adherence')).toBeInTheDocument();
     await waitFor(() => expect(field('on-time')).toHaveTextContent('70%'));
   });
 

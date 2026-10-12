@@ -24,11 +24,15 @@ function realUserHasAccess(requiredPrivilege: string | Array<string> | undefined
 }
 
 /**
- * Signs in a user holding the given privileges, checked with the framework's own userHasAccess. The
+ * Signs in a user holding the given privileges, and roles if given, checked with the framework's own userHasAccess. The
  * framework's UserHasAccess mock renders its children for everyone, so it is given the same check.
  */
-export async function signInWith(privileges: Array<string>, config: Partial<Config> = {}) {
-  const user = { uuid: 'user', privileges: privileges.map((display) => ({ uuid: display, display })), roles: [] };
+export async function signInWith(privileges: Array<string>, config: Partial<Config> = {}, roles: Array<string> = []) {
+  const user = {
+    uuid: 'user',
+    privileges: privileges.map((display) => ({ uuid: display, display })),
+    roles: roles.map((display) => ({ uuid: display, display })),
+  };
   vi.mocked(userHasAccess).mockImplementation(realUserHasAccess as typeof userHasAccess);
   vi.mocked(UserHasAccess).mockImplementation(({ privilege, fallback, children }) =>
     realUserHasAccess(privilege, user as never)
