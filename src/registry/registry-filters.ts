@@ -1,4 +1,4 @@
-import { useSessionClinicScope } from '../session-clinic';
+import { useClinicFilterDefaults } from '../session-clinic';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { matchesColumns } from '../table-filters/distinct-values';
 import { type FilterDefaults, useUrlFilters } from '../table-filters/url-filters';
@@ -19,14 +19,8 @@ export const registryFilterColumns = {
 
 /** Active patients at the session's clinic, cardiac or primary care, as the report names its clinics. */
 function useRegistryDefaults(): FilterDefaults<(typeof keys)[number]> {
-  const scope = useSessionClinicScope();
-  if (scope.status === 'pending') {
-    return 'pending';
-  }
-  if (scope.status !== 'ready' || !scope.clinic) {
-    return { status: 'Active' };
-  }
-  return { status: 'Active', [scope.kind === 'cardiac' ? 'cardiac' : 'primaryCare']: scope.clinic.name };
+  const clinic = useClinicFilterDefaults();
+  return clinic === 'pending' ? 'pending' : { status: 'Active', ...clinic };
 }
 
 /** The registry's filters, kept in the page's URL so a view can be bookmarked. */
