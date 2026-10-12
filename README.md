@@ -87,7 +87,9 @@ it is; at a location of neither kind, every clinic's. The registry, the procedur
 due open with their clinic filter on it, which can be cleared; the worklists, Due for prophylaxis, Overdue for
 consultation and Enter prophylaxis list only its patients, matching each report's clinic column, or the patient's
 registry row where the report has none. The care cascade passes the clinic to its report as `cardiacClinic` or
-`primaryCareClinic`, as Reports does. Clinics are matched by name, as the reports name them.
+`primaryCareClinic`, as Reports does. Clinics are matched by name, as the reports name them. When the session
+location's tags cannot be read, the lists open on every clinic, as the registry always has, and the care cascade says
+it could not load rather than counting every clinic under no caption.
 
 This needs the distro's reports to name each patient's primary care clinic from the Primary Care Clinic attribute,
 else Health Center, and the RHD Care Cascade report to take those two parameters. Against reports without them, a

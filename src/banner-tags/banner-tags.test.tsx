@@ -20,7 +20,7 @@ const waitingListReport = '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10';
 
 let flags: Array<string>;
 let screenPositive: Array<object>;
-let waitingList: Array<object>;
+let waitingList: Array<object> | Error;
 let prophylaxis: object;
 
 const raised = (uuids: Array<string>) => ({
@@ -37,7 +37,7 @@ function respond() {
       return dataset(screenPositive);
     }
     if (url.includes(`/reportdata/${waitingListReport}`)) {
-      return dataset(waitingList);
+      return waitingList instanceof Error ? waitingList : dataset(waitingList);
     }
     if (url.includes('/actcore/prophylaxis')) {
       return prophylaxis;
@@ -122,25 +122,29 @@ describe('Cardiology visit tag', () => {
 });
 
 describe('Banner tags for a deceased patient', () => {
-  it.each([
+  const tags = [
     ['Cardiology visit', CardiologyVisitTag],
     ['INR', InrTag],
     ['Confirmatory echo', ConfirmatoryEchoTag],
     ['Prescription', PrescriptionTag],
     ['Procedural recommendation', ProceduralRecommendationTag],
-  ])('shows no %s tag, without asking', async (_, BannerTag) => {
-    flags = [cardiologyFlag, inrFlag];
-    screenPositive = [{ patient_uuid: 'winnie' }];
-    const { container } = renderIn(
-      <BannerTag {...onChart} patient={{ resourceType: 'Patient', deceasedBoolean: true }} />,
-    );
+  ] as const;
+  const deaths = [{ deceasedBoolean: true }, { deceasedDateTime: '2026-09-01' }];
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    });
-    expect(container).toBeEmptyDOMElement();
-    expect(openmrsFetch).not.toHaveBeenCalled();
-  });
+  it.each(tags.flatMap(([name, BannerTag]) => deaths.map((death) => [name, BannerTag, death] as const)))(
+    'shows no %s tag for %j, without asking',
+    async (_, BannerTag, death) => {
+      flags = [cardiologyFlag, inrFlag];
+      screenPositive = [{ patient_uuid: 'winnie' }];
+      const { container } = renderIn(<BannerTag {...onChart} patient={{ resourceType: 'Patient', ...death }} />);
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+      expect(container).toBeEmptyDOMElement();
+      expect(openmrsFetch).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('INR tag', () => {
@@ -249,5 +253,13 @@ describe('Procedural recommendation tag', () => {
     renderIn(<ProceduralRecommendationTag {...onChart} />);
 
     await waitFor(() => expect(tag()).toHaveTextContent(label));
+  });
+
+  it('shows no tag, rather than No procedural recommendation, when the waiting list cannot be read', async () => {
+    waitingList = new Error('Privilege required: Run Reports');
+    const { container } = renderIn(<ProceduralRecommendationTag {...onChart} />);
+
+    await settled();
+    expect(container).toBeEmptyDOMElement();
   });
 });

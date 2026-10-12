@@ -139,6 +139,19 @@ describe('Due for prophylaxis page', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
+  it("lists every clinic's patients, as the registry opens, when the session location's kind cannot be read", async () => {
+    atSessionLocation('Kiswa HC III', ['RHD Community'], 'unreadable');
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('Internal Server Error'));
+    dataset({
+      rows: dueRows.map((row, i) => ({ ...row, primary_care_clinic: i % 2 ? 'Acimi HCIII' : 'Kiswa HC III' })),
+    });
+
+    render(<DueForProphylaxis />);
+    await showAll();
+
+    expect(within(screen.getByRole('table')).getAllByRole('row').slice(1)).toHaveLength(dueRows.length);
+  });
+
   it("lists each patient's prescription, last dose, status and adherence", async () => {
     dataset({ rows: dueRows });
 

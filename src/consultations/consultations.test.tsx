@@ -13,8 +13,19 @@ vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }))
 // The framework's test mock has no EmptyCard, the styleguide's empty state.
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  EmptyCard: ({ displayText, headerTitle }: { displayText: string; headerTitle: string }) => (
-    <div data-testid="empty-card">{`${headerTitle}: no ${displayText}`}</div>
+  EmptyCard: ({
+    displayText,
+    headerTitle,
+    launchForm,
+  }: {
+    displayText: string;
+    headerTitle: string;
+    launchForm?: () => void;
+  }) => (
+    <div data-testid="empty-card">
+      {`${headerTitle}: no ${displayText}`}
+      {launchForm && <button onClick={launchForm}>Record {displayText}</button>}
+    </div>
   ),
 }));
 
@@ -120,5 +131,28 @@ describe('Consultation visits page', () => {
     renderPage();
 
     expect(await screen.findByTestId('empty-card')).toHaveTextContent('Consultation visits: no consultation visits');
+  });
+
+  it('offers a community clinician no way to record one from the empty state', async () => {
+    respondWithEncounters({ consultation: [] }, (url) =>
+      url.includes(`/form/${forms.consultation}`) ? consultationForm : { results: [] },
+    );
+    await signInWith(['Add Encounters', 'Task: act.enterProphylaxis']);
+    renderPage();
+
+    await screen.findByTestId('empty-card');
+    await formLoaded();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('offers a clinician the consultation form from the empty state', async () => {
+    respondWithEncounters({ consultation: [] }, (url) =>
+      url.includes(`/form/${forms.consultation}`) ? consultationForm : { results: [] },
+    );
+    await signInWith(['Add Encounters', clinicalForms]);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Record consultation visits' }));
+    expect(openForm).toHaveBeenCalledWith(forms.consultation);
   });
 });

@@ -106,6 +106,17 @@ describe('Registry defaults', () => {
     expect(every.filter((label) => screen.queryByLabelText(label))).toEqual(labels);
   });
 
+  it("filters a primary care clinic's patients by their prophylaxis regimen", async () => {
+    await atLocation('Anyeke HCIV', ['RHD Community']);
+
+    renderRegistry();
+    await waitFor(() => expect(screen.getByLabelText('Primary care clinic')).toHaveValue('Anyeke HCIV'));
+    await userEvent.selectOptions(screen.getByLabelText('Prophylaxis'), 'Oral penicillin V');
+
+    // Patient 2, the fixture's one oral regimen, is at Anyeke HCIV.
+    expect(matching()).toBe(1);
+  });
+
   it('opens on active patients at every clinic when the session location is neither kind of clinic', async () => {
     await atLocation('Head office', ['Login Location']);
 
