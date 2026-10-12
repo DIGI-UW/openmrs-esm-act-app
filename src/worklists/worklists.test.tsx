@@ -443,6 +443,25 @@ describe('Worklists at the clinic you are signed in at', () => {
     await waitFor(() => expect(tableRows().map((row) => row[0].replace(/rhd\d+$/, ''))).toEqual(patients));
   });
 
+  it("lists and counts no one, rather than every clinic's patients, while the session location is looked up", async () => {
+    await signInWith(
+      [worklistsPrivilege],
+      flagWorklists['act-worklist-lost-to-follow-up'] as unknown as Partial<Config>,
+    );
+    const session = vi.mocked(useSession)();
+    vi.mocked(useSession).mockReturnValue({
+      ...session,
+      sessionLocation: { uuid: 'looking-up', display: 'Kiswa HCIII' },
+    } as never);
+    vi.mocked(openmrsFetch).mockReturnValue(new Promise(() => {}) as never);
+    reports({ registry });
+
+    render(<FlagWorklist {...tile} />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(screen.getByTestId('worklist-tile')).not.toHaveTextContent(/\d/);
+  });
+
   it("counts the due list's patients whose cardiac clinic it is, by their registry row", async () => {
     await signInAt('Gulu RRH', ['RHD District'], [worklistsPrivilege]);
     // The due list's report names no cardiac clinic.

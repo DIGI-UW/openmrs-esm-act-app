@@ -152,6 +152,17 @@ describe('Due for prophylaxis page', () => {
     expect(within(screen.getByRole('table')).getAllByRole('row').slice(1)).toHaveLength(dueRows.length);
   });
 
+  it("asks who was recorded today for no one, rather than every clinic's patients, while the session location is looked up", async () => {
+    atSessionLocation('Kiswa HC III', ['RHD Community'], 'looking-up');
+    vi.mocked(openmrsFetch).mockReturnValue(new Promise(() => {}) as never);
+    dataset({ rows: dueRows });
+
+    render(<DueForProphylaxis />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockUseRecordedToday.mock.calls.every(([uuids]) => uuids.length === 0)).toBe(true);
+  });
+
   it("lists each patient's prescription, last dose, status and adherence", async () => {
     dataset({ rows: dueRows });
 

@@ -19,12 +19,13 @@ export const onRegistryNow = (row: ReportRow) =>
 /**
  * Which of a list's rows are patients at the session's clinic (useSessionClinicScope): by the row's own clinic column
  * where the list's report has it, else by the patient's registry row. Every row while the session location is not a
- * clinic, or its kind cannot be read, as the registry then opens on every clinic.
+ * clinic, or its kind cannot be read, as the registry then opens on every clinic; none while that kind is looked up.
  */
 export function useInSessionClinic(columnsOfRows: ReadonlyArray<string>) {
   const scope = useSessionClinicScope();
   const column = scope.status === 'ready' ? scope.column : null;
   const clinicName = scope.status === 'ready' ? scope.clinic?.name : null;
+  const pending = scope.status === 'pending';
   const viaRegistry = Boolean(column) && !columnsOfRows.includes(column);
   const registry = useRegistryReport(viaRegistry);
   const byPatient = useMemo(
@@ -33,17 +34,20 @@ export function useInSessionClinic(columnsOfRows: ReadonlyArray<string>) {
   );
   const inClinic = useCallback(
     (row: ReportRow) => {
+      if (pending) {
+        return false;
+      }
       if (!column) {
         return true;
       }
       const source = viaRegistry ? byPatient.get(String(row.patient_uuid)) : row;
       return String(source?.[column] ?? '') === clinicName;
     },
-    [column, clinicName, viaRegistry, byPatient],
+    [pending, column, clinicName, viaRegistry, byPatient],
   );
   return {
     inClinic,
-    isLoading: scope.status === 'pending' || (viaRegistry && registry.isLoading),
+    isLoading: pending || (viaRegistry && registry.isLoading),
     error: viaRegistry ? registry.error : undefined,
   };
 }
