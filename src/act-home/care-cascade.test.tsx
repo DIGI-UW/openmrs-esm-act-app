@@ -64,6 +64,17 @@ describe('CareCascade', () => {
     expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
   });
 
+  it("says it could not load, rather than counting every clinic, when the session location's kind cannot be read", async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', ['RHD Community'], 'unreadable-uuid');
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('Internal Server Error'));
+
+    render(<CareCascade />);
+
+    expect(await screen.findByText('Could not load the care cascade')).toBeInTheDocument();
+    expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
+  });
+
   it('counts every clinic at a location of neither kind', async () => {
     dataset({ rows: cascade });
     atSessionLocation('Head office', [], 'head-office');

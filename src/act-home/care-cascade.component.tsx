@@ -15,7 +15,7 @@ function Cascade() {
   const { careCascade } = useConfig<Config>();
   // The reports app runs a date as that day's midnight, so the counts match the report run for today.
   const today = useMemo(() => dayjs().startOf('day'), []);
-  // The session's clinic, as Reports counts it; the report is not evaluated for every clinic while that is unknown.
+  // The session's clinic, as Reports counts it; while its kind is unknown or cannot be read, nothing is evaluated.
   const scope = useProgrammeScope(false);
   const clinic = useSessionClinicScope();
   const clinicName = clinic.status === 'ready' ? clinic.clinic?.name : null;
@@ -28,8 +28,10 @@ function Cascade() {
     }),
     [today, cardiacClinic, primaryCareClinic],
   );
-  const report = useReportDataset(scope.status === 'pending' ? null : careCascade.report, params);
-  const { rows, error } = report;
+  const report = useReportDataset(scope.status === 'ready' ? careCascade.report : null, params);
+  const { rows } = report;
+  const error =
+    report.error ?? (scope.status === 'error' ? new Error('The session location could not be read') : undefined);
   const isLoading = report.isLoading || scope.status === 'pending';
   // The cascade descriptor names its columns step and patients, one row per step.
   const byStep = new Map(rows.map((row) => [String(row.step), Number(row.patients)]));
