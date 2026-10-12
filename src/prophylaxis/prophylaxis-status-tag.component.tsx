@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Tag } from '@carbon/react';
 import { formatDate, parseDate, showSnackbar } from '@openmrs/esm-framework';
+import { isDeceased } from '../deceased';
 import { statusLabel } from '../due-for-prophylaxis/due-list';
 import { dueStatus } from '../enter-prophylaxis/patients-on-prophylaxis';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
@@ -49,8 +50,7 @@ const colours = { due_soon: 'purple', up_to_date: 'green' } as const;
  */
 export default function ProphylaxisStatusTag({ patientUuid, patient }: ProphylaxisStatusTagProps) {
   const { t } = useTranslation();
-  const deceased = Boolean(patient?.deceasedBoolean || patient?.deceasedDateTime);
-  const { summary } = useProphylaxisSummary(deceased ? null : patientUuid);
+  const { summary } = useProphylaxisSummary(isDeceased(patient) ? null : patientUuid);
   useNextDueSnackbar(summary);
 
   if (summary?.status === 'overdue') {

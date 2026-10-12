@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { Tag } from '@carbon/react';
 import { restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { isDeceased } from '../deceased';
 import { useConsultationSummary } from '../consultations/consultations.resource';
 import { fetchRaisedFlags } from '../flag-gaps/flag-gaps.resource';
 import { useInrSummary } from '../inr/inr.resource';
@@ -25,8 +26,7 @@ type TagType = 'red' | 'blue' | 'purple' | 'green' | 'magenta' | 'gray' | 'teal'
  * The chart's banner, for a living patient. A search result's banner shows these tags too, and each would evaluate
  * reports or fetch the patient's forms for every result, so there they show nothing.
  */
-const onChart = ({ patient, renderedFrom }: BannerTagProps) =>
-  renderedFrom === 'patient-chart' && !patient?.deceasedBoolean && !patient?.deceasedDateTime;
+const onChart = ({ patient, renderedFrom }: BannerTagProps) => renderedFrom === 'patient-chart' && !isDeceased(patient);
 
 function BannerTag({ type, children }: { type: TagType; children: React.ReactNode }) {
   return (

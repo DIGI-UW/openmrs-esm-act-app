@@ -41,7 +41,7 @@ export function ChartTableCard<T>({
 }: ChartTableCardProps<T>) {
   const desktop = isDesktop(useLayoutType());
   const opener = useOpenFormInVisit(patientUuid);
-  // The empty state's link is not a button, so it is gated here.
+  // EmptyCard takes a callback, not a RecordFormButton, so its action is gated here.
   const mayRecord = useMayEnterForm(form);
   const record = () => opener.open(form);
 

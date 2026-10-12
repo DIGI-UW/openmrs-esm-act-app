@@ -1,6 +1,7 @@
 import useSWR from 'swr';
 import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { answerText } from '../patient-encounters';
 
 interface Attribute {
   attributeType: { uuid: string };
@@ -23,12 +24,7 @@ const personRepresentation = 'custom:(attributes:(attributeType:(uuid),value),pr
 const placeRepresentation =
   'custom:(display,tags:(display),parentLocation:(display,tags:(display),parentLocation:(display,tags:(display))))';
 
-const text = (attribute: Attribute | undefined) =>
-  attribute == null
-    ? null
-    : typeof attribute.value === 'object'
-      ? (attribute.value?.display ?? null)
-      : String(attribute.value);
+const text = (attribute: Attribute | undefined) => (attribute == null ? null : answerText(attribute.value));
 
 /** The cardiac clinic itself when tagged a tertiary centre, else the nearest location above it that is. */
 function tertiaryOf(place: Place | null | undefined, tag: string): string | null {
