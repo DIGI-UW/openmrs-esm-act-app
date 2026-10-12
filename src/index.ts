@@ -12,6 +12,7 @@ import worklistsDashboardLinkComponent from './worklists/worklists-dashboard-lin
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
+import { consultationsDashboardMeta } from './consultations/consultations.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
 import dueForProphylaxisDashboardLinkComponent from './due-for-prophylaxis/due-for-prophylaxis-dashboard-link.component';
 import patientsOnProphylaxisDashboardLinkComponent from './enter-prophylaxis/patients-on-prophylaxis-dashboard-link.component';
@@ -59,6 +60,55 @@ export const cardiacTestsDashboardLink = getSyncLifecycle(createDashboard(cardia
 
 export const cardiacTestsDashboard = getAsyncLifecycle(
   () => import('./cardiac-tests/cardiac-tests.component'),
+  options,
+);
+
+export const consultationsDashboardLink = getSyncLifecycle(createDashboard(consultationsDashboardMeta), options);
+
+export const consultationsDashboard = getAsyncLifecycle(
+  () => import('./consultations/consultations.component'),
+  options,
+);
+
+export const inrReviewsDashboardLink = getAsyncLifecycle(
+  () => import('./inr/inr-reviews-dashboard-link.component'),
+  options,
+);
+
+export const inrReviewsDashboard = getAsyncLifecycle(() => import('./inr/inr-reviews.component'), options);
+
+export const clinicalDashboardsNote = getAsyncLifecycle(
+  () => import('./chart-nav/clinical-dashboards-note.component'),
+  options,
+);
+
+export const consultationCard = getAsyncLifecycle(() => import('./consultations/consultation-card.component'), options);
+
+export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
+
+export const contactCard = getAsyncLifecycle(() => import('./contact/contact-card.component'), options);
+
+const bannerTags = () => import('./banner-tags/banner-tags.component');
+
+export const cardiologyVisitTag = getAsyncLifecycle(
+  () => bannerTags().then(({ CardiologyVisitTag }) => ({ default: CardiologyVisitTag })),
+  options,
+);
+
+export const inrTag = getAsyncLifecycle(() => bannerTags().then(({ InrTag }) => ({ default: InrTag })), options);
+
+export const confirmatoryEchoTag = getAsyncLifecycle(
+  () => bannerTags().then(({ ConfirmatoryEchoTag }) => ({ default: ConfirmatoryEchoTag })),
+  options,
+);
+
+export const prescriptionTag = getAsyncLifecycle(
+  () => bannerTags().then(({ PrescriptionTag }) => ({ default: PrescriptionTag })),
+  options,
+);
+
+export const proceduralRecommendationTag = getAsyncLifecycle(
+  () => bannerTags().then(({ ProceduralRecommendationTag }) => ({ default: ProceduralRecommendationTag })),
   options,
 );
 

@@ -94,7 +94,9 @@ describe('INR reviews page', () => {
 
     await screen.findByRole('table');
     await waitFor(() => expect(openmrsFetch).toHaveBeenCalledWith(expect.stringContaining(`/form/${forms.inr}`)));
-    await act(async () => {});
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(screen.queryByRole('button', { name: /Record INR/ })).not.toBeInTheDocument();
   });
 });
@@ -143,7 +145,9 @@ describe('INR reviews link', () => {
     const { container } = renderIn(<InrReviewsDashboardLink basePath="/patient/winnie/chart" />);
 
     await waitFor(() => expect(openmrsFetch).toHaveBeenCalled());
-    await act(async () => {});
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(container).toBeEmptyDOMElement();
   });
 });

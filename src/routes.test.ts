@@ -77,6 +77,20 @@ describe('routes.json privileges', () => {
     ['act-refresh-flags-dashboard', 'Task: act.refreshFlags'],
     ['act-home-due-for-prophylaxis', 'App: act.dueList'],
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
+    ['act-consultations-dashboard-link', ['Get Encounters', 'Get Observations']],
+    ['act-consultations-dashboard', ['Get Encounters', 'Get Observations']],
+    ['act-inr-reviews-dashboard-link', ['Get Encounters', 'Get Observations']],
+    ['act-inr-reviews-dashboard', ['Get Encounters', 'Get Observations']],
+    ['act-clinical-dashboards-note', 'Get Patients'],
+    ['act-consultation-card', ['Get Encounters', 'Get Observations']],
+    ['act-inr-card', ['Get Encounters', 'Get Observations']],
+    ['act-contact-card', ['Get People', 'Get Locations']],
+    ['act-cardiology-visit-tag', ['Get Encounters', 'Get Observations', 'View Patient Flags']],
+    ['act-inr-tag', ['Get Encounters', 'Get Observations', 'View Patient Flags']],
+    ['act-confirmatory-echo-tag', 'Run Reports'],
+    // The clinician's and site administrator's alone: who records clinical forms.
+    ['act-prescription-tag', ['Get Observations', 'Task: act.enterClinicalForms']],
+    ['act-procedural-recommendation-tag', ['Run Reports', 'Task: act.enterClinicalForms']],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });
@@ -127,6 +141,21 @@ describe('routes.json privileges', () => {
         'act-worklist-waiting-list',
       ],
     ],
+    [
+      'patient-chart-summary-dashboard-slot',
+      ['act-next-steps-card', 'act-prophylaxis-card', 'act-consultation-card', 'act-inr-card', 'act-contact-card'],
+    ],
+    [
+      'patient-banner-tags-slot',
+      [
+        'act-prophylaxis-status-tag',
+        'act-cardiology-visit-tag',
+        'act-inr-tag',
+        'act-confirmatory-echo-tag',
+        'act-prescription-tag',
+        'act-procedural-recommendation-tag',
+      ],
+    ],
   ])("fills %s in the mockup's order", (slot, names) => {
     expect(
       routes.extensions
@@ -153,6 +182,12 @@ describe('routes.json privileges', () => {
     ['act-worklist-pregnancy-outcome', false],
     ['act-worklist-inr-review', false],
     ['act-worklist-waiting-list', false],
+    // The chart: the community clinician sees no Cardiac tests, and the note saying why.
+    ['act-cardiac-tests-dashboard-link', false],
+    ['act-cardiac-tests-dashboard', false],
+    ['act-clinical-dashboards-note', true],
+    ['act-consultations-dashboard-link', undefined],
+    ['act-inr-reviews-dashboard-link', undefined],
   ])('shows %s to a community clinician only (true), to everyone else (false), or by privilege alone', (name, cc) => {
     const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
     const roles = (display: string) => ({ session: { user: { roles: [{ display }] } } });

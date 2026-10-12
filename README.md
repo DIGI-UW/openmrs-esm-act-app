@@ -117,6 +117,21 @@ pages. A distro adds a page's link to the chart's `patient-chart-dashboard-slot`
 - **Cardiac tests** (`act-cardiac-tests-dashboard-link`): the patient's echocardiograms, newest first, with the
   mitral and aortic valve findings and left ventricular ejection fraction; Add opens the echo form, starting a visit
   when the patient has none. The form, its encounter type and the concepts are in `cardiacTests`.
+  Not shown to a community clinician.
+- **Consultation visits** (`act-consultations-dashboard-link`): each consultation, newest first, with who saw the
+  patient, the NYHA class, the prophylaxis plan and the next review, counted as the flag RHD cardiology follow-up due
+  counts it. Start consultation opens the form in `consultations`, for a user who may record it.
+- **INR reviews** (`act-inr-reviews-dashboard-link`): each INR reading, newest first, with its target range, whether it
+  is in range and the next INR date; Record INR opens the form in `inr`. The link shows only for a patient on warfarin:
+  one whose latest consultation recording a cardiac medication has a `consultations.warfarin` answer not stopped.
+- **The note under a community clinician's nav** (`act-clinical-dashboards-note`): "Clinical dashboards are only
+  visible to clinicians." It is a dashboard in name only, so that the chart does not report it as a broken one.
+
+The patient summary has ACT's cards, in order: Next steps, Prophylaxis, Consultation visits, INR review (for a patient
+on warfarin) and Contact, whose phone and clinics read the person attributes in `contact`. A community clinician's
+Prophylaxis card offers the record action for the regimen prescribed. The patient banner's tags are prophylaxis,
+Cardiology visit and INR (while the patient has the flags in `bannerFlags`), Confirmatory echo needed, and, for a user
+who records clinical forms, the prescription and the procedural recommendation.
 
 ## Requirements
 

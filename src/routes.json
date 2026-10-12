@@ -427,6 +427,56 @@
       "privileges": [
         "Get Encounters",
         "Get Observations"
+      ],
+      "order": 0
+    },
+    {
+      "name": "act-cardiology-visit-tag",
+      "slot": "patient-banner-tags-slot",
+      "component": "cardiologyVisitTag",
+      "order": 1,
+      "privileges": [
+        "Get Encounters",
+        "Get Observations",
+        "View Patient Flags"
+      ]
+    },
+    {
+      "name": "act-inr-tag",
+      "slot": "patient-banner-tags-slot",
+      "component": "inrTag",
+      "order": 2,
+      "privileges": [
+        "Get Encounters",
+        "Get Observations",
+        "View Patient Flags"
+      ]
+    },
+    {
+      "name": "act-confirmatory-echo-tag",
+      "slot": "patient-banner-tags-slot",
+      "component": "confirmatoryEchoTag",
+      "order": 3,
+      "privileges": "Run Reports"
+    },
+    {
+      "name": "act-prescription-tag",
+      "slot": "patient-banner-tags-slot",
+      "component": "prescriptionTag",
+      "order": 4,
+      "privileges": [
+        "Get Observations",
+        "Task: act.enterClinicalForms"
+      ]
+    },
+    {
+      "name": "act-procedural-recommendation-tag",
+      "slot": "patient-banner-tags-slot",
+      "component": "proceduralRecommendationTag",
+      "order": 5,
+      "privileges": [
+        "Run Reports",
+        "Task: act.enterClinicalForms"
       ]
     },
     {
@@ -467,7 +517,8 @@
       "privileges": [
         "Get Encounters",
         "Get Observations"
-      ]
+      ],
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
       "name": "act-cardiac-tests-dashboard",
@@ -479,7 +530,70 @@
       "privileges": [
         "Get Encounters",
         "Get Observations"
+      ],
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-consultations-dashboard-link",
+      "component": "consultationsDashboardLink",
+      "meta": {
+        "slot": "act-consultations-dashboard-slot",
+        "path": "act-consultations",
+        "title": "Consultation visits",
+        "icon": "omrs-icon-events"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
       ]
+    },
+    {
+      "name": "act-consultations-dashboard",
+      "slot": "act-consultations-dashboard-slot",
+      "component": "consultationsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-reviews-dashboard-link",
+      "component": "inrReviewsDashboardLink",
+      "meta": {
+        "slot": "act-inr-reviews-dashboard-slot",
+        "path": "act-inr-reviews",
+        "title": "INR reviews",
+        "icon": "omrs-icon-chemistry"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-reviews-dashboard",
+      "slot": "act-inr-reviews-dashboard-slot",
+      "component": "inrReviewsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-clinical-dashboards-note",
+      "component": "clinicalDashboardsNote",
+      "meta": {
+        "slot": "act-clinical-dashboards-note-slot",
+        "path": "act-clinical-dashboards-note"
+      },
+      "privileges": "Get Patients",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
       "name": "act-next-steps-card",
@@ -506,6 +620,45 @@
       "privileges": [
         "Get Encounters",
         "Get Observations"
+      ]
+    },
+    {
+      "name": "act-consultation-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "consultationCard",
+      "order": 1,
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "inrCard",
+      "order": 2,
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-contact-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "contactCard",
+      "order": 100,
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get People",
+        "Get Locations"
       ]
     }
   ],

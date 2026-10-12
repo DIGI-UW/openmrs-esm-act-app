@@ -29,7 +29,9 @@ async function formLoaded() {
   await waitFor(() =>
     expect(openmrsFetch).toHaveBeenCalledWith(expect.stringContaining(`/form/${forms.consultation}`)),
   );
-  await act(async () => {});
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 }
 
 function renderPage() {

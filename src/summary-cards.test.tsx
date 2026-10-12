@@ -103,7 +103,9 @@ const fields = () =>
 
 async function formLoaded(form: string) {
   await waitFor(() => expect(openmrsFetch).toHaveBeenCalledWith(expect.stringContaining(`/form/${form}`)));
-  await act(async () => {});
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 }
 
 beforeEach(() => {
@@ -199,7 +201,9 @@ describe('INR review card', () => {
     const { container } = renderIn(<InrCard patientUuid="winnie" />);
 
     await waitFor(() => expect(openmrsFetch).toHaveBeenCalled());
-    await act(async () => {});
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(container).toBeEmptyDOMElement();
   });
 
