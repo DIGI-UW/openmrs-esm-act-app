@@ -39,6 +39,12 @@ function useActionLabel() {
     })[step.key] ?? t('start', 'Start');
 }
 
+/**
+ * ACT Core holds the BPG step after an anaphylaxis no consultation has reviewed, saying so only in its reason. The
+ * card then offers no Record BPG; the Prophylaxis card and All forms still record a withheld injection.
+ */
+const onHold = (step: NextStep) => step.key === 'bpg' && step.reason.startsWith('On hold');
+
 /** How many forms the user may open from Clinical forms: Add Encounters and each form's edit privilege, if any. */
 function useFormCount(enabled: boolean) {
   const { user } = useSession();
@@ -132,7 +138,8 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
                     {t('completed', 'Completed')}
                   </span>
                 ) : (
-                  step.form && (
+                  step.form &&
+                  !onHold(step) && (
                     <Button kind="ghost" size="sm" disabled={isOpening} onClick={() => open(step.form)}>
                       {actionLabel(step)}
                     </Button>

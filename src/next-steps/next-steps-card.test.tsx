@@ -254,6 +254,22 @@ describe('NextStepsCard', () => {
     expect(screen.getByText('Give BPG injection')).toBeInTheDocument();
   });
 
+  it.each([
+    'On hold: complete the consultation before giving BPG',
+    'On hold: a clinician must review before the next dose',
+  ])('offers no Record BPG on a BPG step on hold (%s), and keeps the reason', async (reason) => {
+    // Faith Atuhaire on the seeded distro: anaphylaxis at a BPG injection that no consultation has reviewed.
+    steps = [{ ...grace[0], reason }, grace[1]];
+    renderCard();
+
+    expect(await screen.findByText(reason)).toBeInTheDocument();
+    expect(rows().map((row) => row.textContent)).toEqual([
+      `Give BPG injection${reason}`,
+      'EchocardiogramNo echocardiogram recordedEnter result',
+    ]);
+    expect(screen.queryByRole('button', { name: 'Record BPG' })).not.toBeInTheDocument();
+  });
+
   it('shows nothing when ACT Core cannot be reached', async () => {
     mockOpenmrsFetch.mockImplementation(((url: string) =>
       url.includes('/actcore/nextsteps')
