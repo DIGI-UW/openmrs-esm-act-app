@@ -472,6 +472,23 @@ describe('Worklists at the clinic you are signed in at', () => {
     await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1Due for prophylaxis'));
   });
 
+  it("says the due tile could not load, rather than counting no one, when the registry cannot tell a cardiac clinic's patients", async () => {
+    await signInAt('Gulu RRH', ['RHD District'], [worklistsPrivilege]);
+    const config = getDefaultsFromConfigSchema(configSchema) as Config;
+    vi.mocked(useReportDataset).mockImplementation((report) => ({
+      columns: [],
+      rows: report === config.dueForProphylaxis.report ? [{ patient_uuid: 'patient-1' }] : [],
+      isLoading: false,
+      error: report === config.registry.report ? new Error('Privilege required: Run Reports') : undefined,
+      mutate: vi.fn(),
+    }));
+
+    render(<DueForProphylaxisWorklist {...tile} />);
+
+    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent('Could not load this list'));
+    expect(screen.getByTestId('worklist-tile')).not.toHaveTextContent(/\d/);
+  });
+
   it.each([
     ['Procedural waiting list', WaitingListWorklist, 'waitingList'],
     ['Confirmatory echo due', ConfirmatoryEchoWorklist, 'screenPositive'],
