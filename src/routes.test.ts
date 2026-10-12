@@ -85,7 +85,7 @@ describe('routes.json privileges', () => {
     ['act-clinical-dashboards-note', 'Get Patients'],
     ['act-consultation-card', ['Get Encounters', 'Get Observations']],
     ['act-inr-card', ['Get Encounters', 'Get Observations']],
-    ['act-contact-card', ['Get People', 'Get Locations']],
+    ['act-contact-card', ['Get People']],
     ['act-cardiology-visit-tag', ['Get Encounters', 'Get Observations', 'View Patient Flags']],
     ['act-inr-tag', ['Get Encounters', 'Get Observations', 'View Patient Flags']],
     ['act-confirmatory-echo-tag', 'Run Reports'],
@@ -198,6 +198,87 @@ describe('routes.json privileges', () => {
       expect(evaluate(expression, roles(ROLE_COMMUNITY_CLINICIAN))).toBe(cc);
       expect(evaluate(expression, roles('Organizational: ACT Site Administrator'))).toBe(!cc);
     }
+  });
+
+  // A session lists only its roles' privileges, not Authenticated's, so a gate on any other privilege hides the extension.
+  // Source: openmrs-distro-referenceapplication distro/configuration/roles/act_roles.csv.
+  const applicationRoles = {
+    base: 'Get People;Get Concepts;Get Forms;Get Visit Types;Get Providers;Get Programs;Get Patients;Get Patient Identifiers;Get Users;Get Concept Sources',
+    readsPatients:
+      'Get Encounters;Get Observations;Get Visits;Get Patient Programs;Get Allergies;Get Care Settings;Get Orders;View Patient Flags;Test Flags;Get Visit Attribute Types',
+    recordsVisits:
+      'Add Visits;Edit Visits;Add Encounters;Edit Encounters;Add Observations;Edit Observations;Get Admission Locations;Get Beds;Get Encounter Roles;Task: act.enterProphylaxis',
+    registersPatients:
+      'Add Patients;Edit Patients;Add Patient Identifiers;Edit Patient Identifiers;Add Patient Programs;Edit Patient Programs;Add Relationships;Edit Relationships;Delete Relationships',
+    registry:
+      'App: act.home;App: act.registry;App: act.worklists;App: act.reports;View Reports;Run Reports;Get Patient Cohorts;View Cohorts In Cohort Module',
+    proceduralLists: 'App: act.waitingList;App: act.screenPositive;View Reports;Run Reports',
+    dueForProphylaxis: 'App: act.dueList;View Reports;Run Reports',
+    exports: 'Task: act.lists.export',
+    clinicalForms: 'Task: act.enterClinicalForms',
+    patientInformation: 'Task: act.enterPatientInformation',
+  };
+  const grants = (...roles: Array<keyof typeof applicationRoles>) =>
+    roles.flatMap((role) => applicationRoles[role].split(';'));
+  const roleGrants = {
+    'community clinician': grants(
+      'base',
+      'readsPatients',
+      'recordsVisits',
+      'registersPatients',
+      'dueForProphylaxis',
+      'registry',
+      'exports',
+    ),
+    clinician: grants(
+      'base',
+      'readsPatients',
+      'recordsVisits',
+      'registersPatients',
+      'registry',
+      'proceduralLists',
+      'exports',
+      'clinicalForms',
+      'patientInformation',
+    ),
+  };
+  const everyonesChart = [
+    'act-prophylaxis-status-tag',
+    'act-cardiology-visit-tag',
+    'act-inr-tag',
+    'act-confirmatory-echo-tag',
+    'act-prophylaxis-dashboard-link',
+    'act-prophylaxis-dashboard',
+    'act-consultations-dashboard-link',
+    'act-consultations-dashboard',
+    'act-inr-reviews-dashboard-link',
+    'act-inr-reviews-dashboard',
+    'act-next-steps-card',
+    'act-prophylaxis-card',
+    'act-consultation-card',
+    'act-inr-card',
+    'act-contact-card',
+  ];
+  it.each([
+    ['community clinician', [...everyonesChart, 'act-clinical-dashboards-note']],
+    [
+      'clinician',
+      [
+        ...everyonesChart,
+        'act-cardiac-tests-dashboard-link',
+        'act-cardiac-tests-dashboard',
+        'act-prescription-tag',
+        'act-procedural-recommendation-tag',
+      ],
+    ],
+  ] as const)("gates the %s's chart extensions only on privileges that role holds", (role, names) => {
+    const missing = names.flatMap((name) =>
+      [routes.extensions.find((extension) => extension.name === name)?.privileges ?? `${name} is absent`]
+        .flat()
+        .filter((privilege) => !roleGrants[role].includes(privilege))
+        .map((privilege) => `${name}: ${privilege}`),
+    );
+    expect(missing).toEqual([]);
   });
 
   it('declares a privilege on every extension, so none shows to every signed-in user', () => {

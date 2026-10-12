@@ -657,8 +657,7 @@
         "fullWidth": true
       },
       "privileges": [
-        "Get People",
-        "Get Locations"
+        "Get People"
       ]
     }
   ],
