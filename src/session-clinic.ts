@@ -63,3 +63,15 @@ export function useSessionClinicScope(): SessionClinicScope {
     column: kind === 'cardiac' ? 'cardiac_clinic' : 'primary_care_clinic',
   };
 }
+
+/** A list's clinic filters opening on the session's clinic, by its kind; none at a location of neither kind. */
+export function useClinicFilterDefaults(): Partial<Record<'cardiac' | 'primaryCare', string>> | 'pending' {
+  const scope = useSessionClinicScope();
+  if (scope.status === 'pending') {
+    return 'pending';
+  }
+  if (scope.status !== 'ready' || !scope.clinic) {
+    return {};
+  }
+  return { [scope.kind === 'cardiac' ? 'cardiac' : 'primaryCare']: scope.clinic.name };
+}

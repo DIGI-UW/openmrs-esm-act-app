@@ -2,7 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { signInWith } from '../access/sign-in.test-helper';
+import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
 import WaitingList from './waiting-list.component';
@@ -59,6 +59,17 @@ describe('Procedural waiting list filters and CSV', () => {
       error: undefined,
       mutate: vi.fn(),
     });
+  });
+
+  it("opens on the recommendations of the session's cardiac clinic", async () => {
+    atSessionLocation('Gulu RRH', ['RHD District']);
+
+    render(<WaitingList />);
+
+    await waitFor(() => expect(screen.getByLabelText('Cardiac clinic')).toHaveValue('Gulu RRH'));
+    const gulu = rows.filter((row) => row.cardiac_clinic === 'Gulu RRH').map((row) => row.rhd_id);
+    expect(shownIds().length).toBeGreaterThan(0);
+    expect(shownIds().filter((id) => !gulu.includes(id))).toEqual([]);
   });
 
   it('offers each filter the values the recommendations have', () => {

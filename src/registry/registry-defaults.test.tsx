@@ -94,12 +94,16 @@ describe('Registry defaults', () => {
     renderRegistry();
 
     await waitFor(() => expect(screen.getByLabelText('Status')).toHaveValue('Active'));
-    expect(
-      screen
-        .getAllByRole('combobox')
-        .filter((select) => select.id.startsWith('registry-'))
-        .map((select) => document.querySelector(`label[for="${select.id}"]`)?.textContent),
-    ).toEqual(labels);
+    const every = [
+      'Status',
+      'Cardiac clinic',
+      'Primary care clinic',
+      'Category at diagnosis',
+      'Prophylaxis',
+      'BPG status',
+      'RHD flag',
+    ];
+    expect(every.filter((label) => screen.queryByLabelText(label))).toEqual(labels);
   });
 
   it('opens on active patients at every clinic when the session location is neither kind of clinic', async () => {

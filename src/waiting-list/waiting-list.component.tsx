@@ -51,7 +51,7 @@ export function WaitingListTable() {
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
-  const [filters, setFilters] = useWaitingListFilters();
+  const [filters, setFilters, filtersPending] = useWaitingListFilters();
   const ranked = useMemo(
     () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),
     [rows, filters, urgencyBands],
@@ -127,7 +127,8 @@ export function WaitingListTable() {
       />
     );
   }
-  if (isLoading) {
+  // Until the session's clinic is known, the list would show every clinic's recommendations.
+  if (isLoading || filtersPending) {
     return (
       <DataTableSkeleton
         role="progressbar"
