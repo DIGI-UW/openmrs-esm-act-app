@@ -36,12 +36,19 @@ import { DownloadCsvButton } from '../table-filters/download-csv-button.componen
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { filterRegistry, registryFilterColumns, rowFlags, useRegistryFilters } from './registry-filters';
+import {
+  filterRegistry,
+  registryFilterColumns,
+  type RegistryFilters,
+  rowFlags,
+  useRegistryFilters,
+} from './registry-filters';
 import { AdherenceRing } from './adherence-ring.component';
 import { BpgStatusTag, bpgStatuses, useBpgStatusLabel } from './bpg-status-tag.component';
 import { RegistryFlags } from './registry-flags.component';
 import { RegistryDetails } from './registry-details.component';
 import { useRegistryReport } from './registry.resource';
+import { useSessionClinicScope } from '../session-clinic';
 import { nextSort, type RegistrySort, sortRegistry } from './registry-sort';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './registry.scss';
@@ -60,10 +67,35 @@ function RegistryTable() {
   // Coming back from a chart paints the cached rows, then evaluates the report again for what the chart changed.
   const { rows, isLoading, error } = useRegistryReport();
   const [filters, setFilters, filtersPending] = useRegistryFilters();
-  // A BPG status in the URL has no filter to clear it while the setting is off, so it is not applied.
+  const scope = useSessionClinicScope();
+  const kind = scope.status === 'ready' ? scope.kind : 'none';
+  // Each kind of clinic has its filters; a value in the URL for a filter not shown has nothing to clear it with, so
+  // it is not applied.
+  const offered = useMemo(
+    () =>
+      new Set<keyof RegistryFilters>(
+        (
+          {
+            primaryCare: ['status', 'primaryCare', 'category', 'prophylaxis', 'flag'],
+            cardiac: ['status', 'cardiac', 'primaryCare', 'category', 'bpg'],
+            none: ['status', 'cardiac', 'primaryCare', 'category', 'bpg', 'flag'],
+          } as const
+        )[kind].filter((key) => key !== 'bpg' || registry.showBpgColumns),
+      ),
+    [kind, registry.showBpgColumns],
+  );
   const shown = useMemo(
-    () => filterRegistry(rows, registry.showBpgColumns ? filters : { ...filters, bpg: '' }),
-    [rows, filters, registry.showBpgColumns],
+    () =>
+      filterRegistry(
+        rows,
+        Object.fromEntries(
+          Object.entries(filters).map(([key, value]) => [
+            key,
+            key === 'q' || offered.has(key as keyof RegistryFilters) ? value : '',
+          ]),
+        ) as RegistryFilters,
+      ),
+    [rows, filters, offered],
   );
   const [sort, setSort] = useState<RegistrySort | null>(null);
   const sorted = useMemo(() => sortRegistry(shown, sort), [shown, sort]);
@@ -217,10 +249,11 @@ function RegistryTable() {
           onChange={(event) => setFilters({ q: event.target.value })}
         />
         {filterSelect('status', t('status', 'Status'))}
-        {filterSelect('cardiac', t('cardiacClinic', 'Cardiac clinic'))}
+        {offered.has('cardiac') && filterSelect('cardiac', t('cardiacClinic', 'Cardiac clinic'))}
         {filterSelect('primaryCare', t('primaryCareClinic', 'Primary care clinic'))}
         {filterSelect('category', t('categoryAtDiagnosis', 'Category at diagnosis'))}
-        {registry.showBpgColumns && (
+        {offered.has('prophylaxis') && filterSelect('prophylaxis', t('prophylaxis', 'Prophylaxis'))}
+        {offered.has('bpg') && (
           <FilterSelect
             id="registry-bpg"
             label={t('bpgStatus', 'BPG status')}
@@ -230,13 +263,15 @@ function RegistryTable() {
             onChange={(value) => setFilters({ bpg: value })}
           />
         )}
-        <FilterSelect
-          id="registry-flag"
-          label={t('rhdFlag', 'RHD flag')}
-          value={filters.flag}
-          options={flagOptions}
-          onChange={(value) => setFilters({ flag: value })}
-        />
+        {offered.has('flag') && (
+          <FilterSelect
+            id="registry-flag"
+            label={t('rhdFlag', 'RHD flag')}
+            value={filters.flag}
+            options={flagOptions}
+            onChange={(value) => setFilters({ flag: value })}
+          />
+        )}
       </div>
       <div className={styles.actions}>
         <DownloadCsvButton
@@ -310,10 +345,17 @@ function RegistryTable() {
 
 export default function Registry() {
   const { t } = useTranslation();
+  const scope = useSessionClinicScope();
+  const clinic = scope.status === 'ready' ? scope.clinic?.name : null;
   return (
     <>
       <ActPageHeader title={t('registry', 'Registry')} illustration={<PatientListsPictogram />} />
       <div className={styles.registry}>
+        <p className={styles.description}>
+          {clinic
+            ? t('registryDescriptionAt', 'Patients enrolled in the RHD Registry programme at {{clinic}}', { clinic })
+            : t('registryDescription', 'Patients enrolled in the RHD Registry programme')}
+        </p>
         <RegistryTable />
       </div>
     </>

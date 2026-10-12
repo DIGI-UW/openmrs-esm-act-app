@@ -57,7 +57,11 @@ describe('Registry', () => {
   it("shows the diagnosis's details, or its category when no details are recorded", () => {
     dataset({
       rows: [
-        { ...registryRows[0], diagnosis_category: 'Rheumatic Heart Disease/Rheumatic Fever', diagnosis_details: 'RHD B' },
+        {
+          ...registryRows[0],
+          diagnosis_category: 'Rheumatic Heart Disease/Rheumatic Fever',
+          diagnosis_details: 'RHD B',
+        },
         { ...registryRows[1], diagnosis_category: 'Normal', diagnosis_details: null },
       ],
     });

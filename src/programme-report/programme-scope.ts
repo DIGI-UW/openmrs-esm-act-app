@@ -1,5 +1,5 @@
 import { useSession } from '@openmrs/esm-framework';
-import { useSessionClinicKind } from '../session-clinic';
+import { useSessionClinicScope } from '../session-clinic';
 
 export type ProgrammeScope =
   | { status: 'pending' }
@@ -12,17 +12,17 @@ export type ProgrammeScope =
  */
 export function useProgrammeScope(fixed: boolean): ProgrammeScope {
   const { sessionLocation } = useSession();
-  const kind = useSessionClinicKind();
-  if (kind === 'pending' || kind === 'error') {
-    return { status: kind };
+  const scope = useSessionClinicScope();
+  if (scope.status !== 'ready') {
+    return { status: scope.status };
   }
   if (fixed && !sessionLocation?.uuid) {
     return { status: 'error' };
   }
-  if (kind === 'cardiac') {
+  if (scope.kind === 'cardiac') {
     return { status: 'ready', params: { cardiacClinic: sessionLocation.uuid } };
   }
-  if (kind === 'primaryCare' || fixed) {
+  if (scope.kind === 'primaryCare' || fixed) {
     return { status: 'ready', params: { primaryCareClinic: sessionLocation.uuid } };
   }
   return { status: 'ready', params: {} };

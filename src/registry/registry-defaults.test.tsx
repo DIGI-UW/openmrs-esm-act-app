@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, useConfig, useSession } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
@@ -58,14 +59,59 @@ describe('Registry defaults', () => {
     expect(vi.mocked(openmrsFetch).mock.calls[0][0]).toContain('/location/session-location');
   });
 
-  it('opens on active patients at every clinic when the session location is not a cardiac clinic', async () => {
-    await atLocation('Acimi HCIII', ['Login Location', 'RHD Community']);
+  it("opens on the active patients of the session's primary care clinic", async () => {
+    await atLocation('Anyeke HCIV', ['Login Location', 'RHD Community']);
+
+    renderRegistry();
+
+    await waitFor(() => expect(screen.getByLabelText('Primary care clinic')).toHaveValue('Anyeke HCIV'));
+    expect(screen.getByLabelText('Status')).toHaveValue('Active');
+    // The fixture's 15 Anyeke HCIV patients include Patient 4, its one Completed enrolment.
+    expect(matching()).toBe(14);
+    expect(screen.getByText('Patients enrolled in the RHD Registry programme at Anyeke HCIV')).toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      'primary care',
+      'Anyeke HCIV',
+      ['RHD Community'],
+      ['Status', 'Primary care clinic', 'Category at diagnosis', 'Prophylaxis', 'RHD flag'],
+    ],
+    [
+      'cardiac',
+      'Gulu RRH',
+      ['RHD District'],
+      ['Status', 'Cardiac clinic', 'Primary care clinic', 'Category at diagnosis', 'BPG status'],
+    ],
+  ])('offers the filters of a %s clinic', async (_, clinic, tags, labels) => {
+    await atLocation(clinic, tags);
+    vi.mocked(useConfig<Config>).mockReturnValue({
+      ...(getDefaultsFromConfigSchema(configSchema) as Config),
+      registry: { report: 'registry', showBpgColumns: true },
+    });
+
+    renderRegistry();
+
+    await waitFor(() => expect(screen.getByLabelText('Status')).toHaveValue('Active'));
+    expect(
+      screen
+        .getAllByRole('combobox')
+        .filter((select) => select.id.startsWith('registry-'))
+        .map((select) => document.querySelector(`label[for="${select.id}"]`)?.textContent),
+    ).toEqual(labels);
+  });
+
+  it('opens on active patients at every clinic when the session location is neither kind of clinic', async () => {
+    await atLocation('Head office', ['Login Location']);
 
     renderRegistry();
 
     await waitFor(() => expect(screen.getByLabelText('Status')).toHaveValue('Active'));
     expect(screen.getByLabelText('Cardiac clinic')).toHaveValue('');
+    expect(screen.getByLabelText('Primary care clinic')).toHaveValue('');
     expect(matching()).toBe(29);
+    expect(screen.getByText('Patients enrolled in the RHD Registry programme')).toBeInTheDocument();
   });
 
   it('lets a filter in the URL win over the defaults', async () => {

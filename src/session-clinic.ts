@@ -31,3 +31,35 @@ export function useSessionClinicKind(): SessionClinicKind {
   }
   return 'none';
 }
+
+export type SessionClinicScope =
+  | { status: 'pending' | 'error' }
+  | {
+      status: 'ready';
+      kind: 'cardiac' | 'primaryCare' | 'none';
+      /** The session location, named as the reports name clinics; null at a location of neither kind. */
+      clinic: { uuid: string; name: string } | null;
+      /** The report column naming the patient's clinic of the session location's kind. */
+      column: 'cardiac_clinic' | 'primary_care_clinic' | null;
+    };
+
+/**
+ * The patients a list holds at the session location: those whose cardiac clinic it is at a cardiac clinic, those
+ * whose primary care clinic it is at a primary care clinic, and every clinic's at a location of neither kind.
+ */
+export function useSessionClinicScope(): SessionClinicScope {
+  const { sessionLocation } = useSession();
+  const kind = useSessionClinicKind();
+  if (kind === 'pending' || kind === 'error') {
+    return { status: kind };
+  }
+  if (kind === 'none') {
+    return { status: 'ready', kind, clinic: null, column: null };
+  }
+  return {
+    status: 'ready',
+    kind,
+    clinic: { uuid: sessionLocation.uuid, name: sessionLocation.display },
+    column: kind === 'cardiac' ? 'cardiac_clinic' : 'primary_care_clinic',
+  };
+}
