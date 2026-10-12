@@ -459,20 +459,6 @@ export const configSchema = {
       _description: "The location tag that marks a tertiary care centre, the Contact card's Tertiary care centre.",
     },
   },
-  bannerFlags: {
-    cardiologyFollowUp: {
-      _type: Type.UUID,
-      _default: 'b1f7a2c0-0016-4a00-9000-000000000016',
-      _description:
-        'The flag RHD cardiology follow-up due, by uuid. While the patient has it, the banner shows Cardiology visit due, or overdue once the next review date has passed.',
-    },
-    inrReview: {
-      _type: Type.UUID,
-      _default: 'b1f7a2c0-0017-4a00-9000-000000000017',
-      _description:
-        'The flag RHD INR review due, by uuid. While the patient has it, the banner shows INR due, or overdue once the Next INR Date has passed.',
-    },
-  },
   nextSteps: {
     enabled: {
       _type: Type.Boolean,
@@ -635,7 +621,6 @@ export interface Config {
     cardiacClinic: string;
     tertiaryTag: string;
   };
-  bannerFlags: { cardiologyFollowUp: string; inrReview: string };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;

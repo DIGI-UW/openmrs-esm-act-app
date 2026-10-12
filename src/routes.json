@@ -431,43 +431,11 @@
       "order": 0
     },
     {
-      "name": "act-cardiology-visit-tag",
-      "slot": "patient-banner-tags-slot",
-      "component": "cardiologyVisitTag",
-      "order": 1,
-      "privileges": [
-        "Get Encounters",
-        "Get Observations",
-        "View Patient Flags"
-      ]
-    },
-    {
-      "name": "act-inr-tag",
-      "slot": "patient-banner-tags-slot",
-      "component": "inrTag",
-      "order": 2,
-      "privileges": [
-        "Get Encounters",
-        "Get Observations",
-        "View Patient Flags"
-      ]
-    },
-    {
       "name": "act-confirmatory-echo-tag",
       "slot": "patient-banner-tags-slot",
       "component": "confirmatoryEchoTag",
       "order": 3,
       "privileges": "Run Reports"
-    },
-    {
-      "name": "act-prescription-tag",
-      "slot": "patient-banner-tags-slot",
-      "component": "prescriptionTag",
-      "order": 4,
-      "privileges": [
-        "Get Observations",
-        "Task: act.enterClinicalForms"
-      ]
     },
     {
       "name": "act-procedural-recommendation-tag",

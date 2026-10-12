@@ -90,20 +90,8 @@ export const contactCard = getAsyncLifecycle(() => import('./contact/contact-car
 
 const bannerTags = () => import('./banner-tags/banner-tags.component');
 
-export const cardiologyVisitTag = getAsyncLifecycle(
-  () => bannerTags().then(({ CardiologyVisitTag }) => ({ default: CardiologyVisitTag })),
-  options,
-);
-
-export const inrTag = getAsyncLifecycle(() => bannerTags().then(({ InrTag }) => ({ default: InrTag })), options);
-
 export const confirmatoryEchoTag = getAsyncLifecycle(
   () => bannerTags().then(({ ConfirmatoryEchoTag }) => ({ default: ConfirmatoryEchoTag })),
-  options,
-);
-
-export const prescriptionTag = getAsyncLifecycle(
-  () => bannerTags().then(({ PrescriptionTag }) => ({ default: PrescriptionTag })),
   options,
 );
 

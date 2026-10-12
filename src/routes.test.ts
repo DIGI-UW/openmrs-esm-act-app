@@ -86,11 +86,8 @@ describe('routes.json privileges', () => {
     ['act-consultation-card', ['Get Encounters', 'Get Observations']],
     ['act-inr-card', ['Get Encounters', 'Get Observations']],
     ['act-contact-card', ['Get People']],
-    ['act-cardiology-visit-tag', ['Get Encounters', 'Get Observations', 'View Patient Flags']],
-    ['act-inr-tag', ['Get Encounters', 'Get Observations', 'View Patient Flags']],
     ['act-confirmatory-echo-tag', 'Run Reports'],
     // The clinician's and site administrator's alone: who records clinical forms.
-    ['act-prescription-tag', ['Get Observations', 'Task: act.enterClinicalForms']],
     ['act-procedural-recommendation-tag', ['Run Reports', 'Task: act.enterClinicalForms']],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
@@ -148,14 +145,7 @@ describe('routes.json privileges', () => {
     ],
     [
       'patient-banner-tags-slot',
-      [
-        'act-prophylaxis-status-tag',
-        'act-cardiology-visit-tag',
-        'act-inr-tag',
-        'act-confirmatory-echo-tag',
-        'act-prescription-tag',
-        'act-procedural-recommendation-tag',
-      ],
+      ['act-prophylaxis-status-tag', 'act-confirmatory-echo-tag', 'act-procedural-recommendation-tag'],
     ],
   ])("fills %s in the mockup's order", (slot, names) => {
     expect(
@@ -244,8 +234,6 @@ describe('routes.json privileges', () => {
   };
   const everyonesChart = [
     'act-prophylaxis-status-tag',
-    'act-cardiology-visit-tag',
-    'act-inr-tag',
     'act-confirmatory-echo-tag',
     'act-prophylaxis-dashboard-link',
     'act-prophylaxis-dashboard',
@@ -267,7 +255,6 @@ describe('routes.json privileges', () => {
         ...everyonesChart,
         'act-cardiac-tests-dashboard-link',
         'act-cardiac-tests-dashboard',
-        'act-prescription-tag',
         'act-procedural-recommendation-tag',
       ],
     ],

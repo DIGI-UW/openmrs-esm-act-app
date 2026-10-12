@@ -158,10 +158,6 @@ describe('configSchema', () => {
         cardiacClinic: 'fe261119-2911-5b36-be40-8f9827826987',
         tertiaryTag: 'RHD Tertiary',
       },
-      bannerFlags: {
-        cardiologyFollowUp: 'b1f7a2c0-0016-4a00-9000-000000000016',
-        inrReview: 'b1f7a2c0-0017-4a00-9000-000000000017',
-      },
       nextSteps: { enabled: true },
       prophylaxisCard: {
         bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
