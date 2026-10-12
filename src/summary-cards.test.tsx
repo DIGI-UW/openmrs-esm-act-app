@@ -140,6 +140,34 @@ describe('Consultation visits card', () => {
     expect(fields()).toContainEqual(['Last consultation', '08-Aug-2026']);
   });
 
+  it("takes the next review from the latest consultation by its encounter's date, as the flag does, not by the date the form records", async () => {
+    const months = { uuid: '1074AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Months' };
+    const consultation = (uuid: string, encounterDatetime: string, formDate: string, amount: number) => ({
+      uuid,
+      encounterDatetime,
+      encounterProviders: [],
+      obs: [
+        obs('c3edefd2-5777-5084-b01e-fd4ca0e40162', formDate),
+        obs('ba4b8a87-2ce8-559e-9a30-45504a9b6c1f', amount),
+        obs('1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', months),
+      ],
+    });
+    respondWithEncounters(
+      {
+        // Saved last, for a visit the form dates earlier.
+        consultation: [
+          consultation('later-saved', '2026-09-01T10:00:00.000+0000', '2025-01-01', 1),
+          consultation('earlier-saved', '2026-01-01T10:00:00.000+0000', '2026-02-01', 2),
+        ],
+      },
+      () => ({ results: [] }),
+    );
+    await signInWith(['Add Encounters']);
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+
+    await waitFor(() => expect(fields()).toContainEqual(['Next cardiology review', '01-Oct-2026']));
+  });
+
   it("shows the diagnosis's category when it has no details", async () => {
     const [group] = patientInformation.obs;
     const categoryOnly = {
@@ -193,6 +221,38 @@ describe('INR review card', () => {
         ['Warfarin dose', '4 mg daily'],
       ]),
     );
+  });
+
+  it("takes the target and next INR from the latest review by its encounter's date, as the flag does", async () => {
+    const review = (uuid: string, encounterDatetime: string, tested: string, target: string, next: string) => ({
+      uuid,
+      encounterDatetime,
+      obs: [
+        obs('0778ce12-ddba-5e22-b5fd-92424e8747b4', coded(target, target)),
+        obs('0778ce12-ddba-5e22-b5fd-92424e8747b4', null, [
+          obs('be9041b1-3948-5de0-a8b1-974e84b95715', tested),
+          obs('161482AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 2.2),
+        ]),
+        obs('5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', next),
+      ],
+    });
+    respondWithEncounters(
+      {
+        consultation: consultations,
+        // Saved last, for a reading taken earlier.
+        inr: [
+          review('later-saved', '2026-09-10T10:00:00.000+0000', '2026-01-01', '1.5-2.5', '2026-11-01'),
+          review('earlier-saved', '2026-08-01T10:00:00.000+0000', '2026-08-01', '2.0-3.0', '2026-09-01'),
+        ],
+      },
+      () => ({ results: [] }),
+    );
+    await signInWith(['Add Encounters']);
+    renderIn(<InrCard patientUuid="winnie" />);
+
+    await waitFor(() => expect(fields()).toContainEqual(['Target range', '1.5-2.5']));
+    expect(fields()).toContainEqual(['Next INR due', '01-Nov-2026']);
+    expect(fields()).toContainEqual(['Last INR', '2.2 · 01-Aug-2026']);
   });
 
   it("shows the consultation's warfarin dose when no INR review changed it", async () => {

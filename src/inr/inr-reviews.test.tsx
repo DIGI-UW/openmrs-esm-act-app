@@ -17,6 +17,7 @@ import {
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import InrReviews from './inr-reviews.component';
 import InrReviewsDashboardLink from './inr-reviews-dashboard-link.component';
+import { inrResult } from './inr.resource';
 
 vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }));
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -98,6 +99,25 @@ describe('INR reviews page', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(screen.queryByRole('button', { name: /Record INR/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('inrResult', () => {
+  it.each([
+    [2.0, 'inRange'],
+    [3.0, 'inRange'],
+    [1.9, 'below'],
+    [3.1, 'above'],
+  ] as const)('reads an INR of %s against 2.0-3.0 as %s, the range taking in both its ends', (inr, result) => {
+    expect(inrResult(inr, '2.0-3.0')).toBe(result);
+  });
+
+  it.each([
+    [null, '2.0-3.0'],
+    [2.5, null],
+    [2.5, 'Other'],
+  ])('reads nothing when the INR (%s) or a range (%s) is missing', (inr, target) => {
+    expect(inrResult(inr, target)).toBeNull();
   });
 });
 

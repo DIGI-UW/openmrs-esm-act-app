@@ -93,6 +93,14 @@ describe('Cardiology visit tag', () => {
     await waitFor(() => expect(tag()).toHaveTextContent('Cardiology visit due'));
   });
 
+  it('says due, not overdue, on the day of the next review', async () => {
+    flags = [cardiologyFlag];
+    vi.setSystemTime(new Date('2026-04-14T15:00:00'));
+    renderIn(<CardiologyVisitTag {...onChart} />);
+
+    await waitFor(() => expect(tag()).toHaveTextContent('Cardiology visit due'));
+  });
+
   it('shows nothing without the flag, whatever the dates', async () => {
     flags = [inrFlag];
     const { container } = renderIn(<CardiologyVisitTag {...onChart} />);
@@ -138,6 +146,14 @@ describe('Banner tags for a deceased patient', () => {
 describe('INR tag', () => {
   it('says INR due before the Next INR Date, while the patient has the INR review flag', async () => {
     flags = [inrFlag];
+    renderIn(<InrTag {...onChart} />);
+
+    await waitFor(() => expect(tag()).toHaveTextContent('INR due'));
+  });
+
+  it('says INR due, not overdue, on the Next INR Date', async () => {
+    flags = [inrFlag];
+    vi.setSystemTime(new Date('2026-10-01T15:00:00'));
     renderIn(<InrTag {...onChart} />);
 
     await waitFor(() => expect(tag()).toHaveTextContent('INR due'));
