@@ -16,7 +16,6 @@ import {
 import { FacilityPictogram, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
-import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import styles from './studies.scss';
@@ -82,11 +81,7 @@ export default function Studies() {
 
   return (
     <>
-      <ActPageHeader
-        title={t('studies', 'Studies')}
-        illustration={<FacilityPictogram />}
-        actions={<SessionLocationAndDate />}
-      />
+      <ActPageHeader title={t('studies', 'Studies')} illustration={<FacilityPictogram />} />
       <div className={styles.studies}>
         {error ? (
           <InlineNotification

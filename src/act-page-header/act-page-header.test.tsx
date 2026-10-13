@@ -1,7 +1,7 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import { useAssignedExtensions } from '@openmrs/esm-framework';
+import { useAssignedExtensions, useSession } from '@openmrs/esm-framework';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import ActHomeDashboard from '../act-home/act-home-dashboard.component';
@@ -48,6 +48,8 @@ const screens = [
 
 describe('ACT page header', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 9, 13, 10, 0));
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useAssignedExtensions).mockReturnValue([]);
     vi.mocked(useReportDataset).mockReturnValue({
@@ -57,6 +59,10 @@ describe('ACT page header', () => {
       error: undefined,
       mutate: vi.fn(),
     } as never);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it.each(screens)(
@@ -81,6 +87,27 @@ describe('ACT page header', () => {
       expect(header).toContainElement(headings[0]);
     },
   );
+
+  it.each(screens)("heads $name with the session's location and today's date", async ({ Screen }) => {
+    await signInWith([
+      homePrivilege,
+      'App: act.registry',
+      'App: act.worklists',
+      'App: act.waitingList',
+      'App: act.screenPositive',
+    ]);
+    const signedIn = vi.mocked(useSession)();
+    vi.mocked(useSession).mockReturnValue({
+      ...signedIn,
+      sessionLocation: { uuid: 'tertiary', display: 'Uganda Heart Institute Tertiary' },
+    } as never);
+
+    render(<Screen />);
+
+    const header = screen.getByTestId('act-page-header');
+    expect(within(header).getByText('Uganda Heart Institute Tertiary')).toBeInTheDocument();
+    expect(within(header).getByText('13-Oct-2026')).toBeInTheDocument();
+  });
 
   it('shows actions on the right when given them', () => {
     render(<ActPageHeader title="Title" illustration={<span>Pictogram</span>} actions={<button>Act</button>} />);

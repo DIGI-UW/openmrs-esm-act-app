@@ -3,7 +3,7 @@ import { Calendar, Location } from '@carbon/react/icons';
 import { formatDate, useSession } from '@openmrs/esm-framework';
 import styles from './session-location-and-date.scss';
 
-/** A page header's session location and today's date, as Home's and the reports pages' headers show them. */
+/** The session location and today's date, on the right of every ACT page header. */
 export function SessionLocationAndDate() {
   const { sessionLocation } = useSession();
   return (

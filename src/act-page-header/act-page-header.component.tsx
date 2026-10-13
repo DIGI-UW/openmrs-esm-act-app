@@ -1,5 +1,6 @@
 import React from 'react';
 import { PageHeader, PageHeaderContent } from '@openmrs/esm-framework';
+import { SessionLocationAndDate } from './session-location-and-date.component';
 import styles from './act-page-header.scss';
 
 export function ActPageHeader({
@@ -14,7 +15,10 @@ export function ActPageHeader({
   return (
     <PageHeader className={styles.header} data-testid="act-page-header">
       <PageHeaderContent title={title} illustration={illustration} />
-      {actions && <div className={styles.actions}>{actions}</div>}
+      <div className={styles.actions}>
+        {actions}
+        <SessionLocationAndDate />
+      </div>
     </PageHeader>
   );
 }
