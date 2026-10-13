@@ -63,6 +63,8 @@ const field = (name: string) => screen.getByTestId(`prophylaxis-${name}`);
 describe('ProphylaxisCard', () => {
   beforeEach(async () => {
     await signInWith(['Add Encounters']);
+    // The History link interpolates the SPA base, as the other chart links do.
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
   });
 
@@ -167,6 +169,16 @@ describe('ProphylaxisCard', () => {
     expect(await screen.findByText('No prescription')).toBeInTheDocument();
     expect(field('last-dose')).toHaveTextContent('--');
     expect(field('next-due')).toHaveTextContent('--');
+  });
+
+  it("links to the chart's Prophylaxis page, which lists every injection and oral report", async () => {
+    respondWith(winnie);
+    renderCard();
+
+    expect(await screen.findByRole('link', { name: 'History' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/patient/winnie/chart/act-prophylaxis'),
+    );
   });
 
   it('shows nothing when the summary cannot be read', async () => {

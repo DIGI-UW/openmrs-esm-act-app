@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
-import { CardHeader, formatDate, parseDate } from '@openmrs/esm-framework';
+import { CardHeader, ConfigurableLink, formatDate, parseDate } from '@openmrs/esm-framework';
+import { patientChartUrl } from '../patient-chart-url';
 import { useOralEntries } from '../prophylaxis-page/prophylaxis-page.resource';
 import { RecordProphylaxisButtons } from './record-prophylaxis-buttons.component';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
@@ -69,7 +70,13 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   return (
     <div className={styles.card}>
       <CardHeader title={t('prophylaxis', 'Prophylaxis')}>
-        <RecordProphylaxisButtons patientUuid={patientUuid} />
+        <div className={styles.actions}>
+          {/* The card is the current regimen only; the page lists every injection and oral report. */}
+          <ConfigurableLink to={`${patientChartUrl(patientUuid)}/act-prophylaxis`} className={styles.headerLink}>
+            {t('history', 'History')}
+          </ConfigurableLink>
+          <RecordProphylaxisButtons patientUuid={patientUuid} />
+        </div>
       </CardHeader>
       {!fields ? (
         <div data-testid="prophylaxis-loading">
