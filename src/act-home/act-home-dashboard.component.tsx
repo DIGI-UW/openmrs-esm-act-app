@@ -11,18 +11,16 @@ export function HomeDashboard({
   title,
   widgetsSlot,
   emptyMessage,
-  headerActions,
 }: {
   title: string;
   widgetsSlot: string;
   emptyMessage: string;
-  headerActions?: React.ReactNode;
 }) {
   const widgets = useAssignedExtensions(widgetsSlot);
 
   return (
     <>
-      <ActPageHeader title={title} illustration={<HomePictogram />} actions={headerActions} />
+      <ActPageHeader title={title} illustration={<HomePictogram />} />
       <div className={styles.dashboard}>
         {widgets.length ? (
           <ExtensionSlot name={widgetsSlot} className={styles.widgets} />

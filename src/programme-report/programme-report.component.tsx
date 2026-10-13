@@ -20,7 +20,6 @@ import {
 import { FacilityPictogram, isDesktop, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
-import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -242,7 +241,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
 export function ProgrammeReport({ title, clinicFilters = false }: { title: string; clinicFilters?: boolean }) {
   return (
     <>
-      <ActPageHeader title={title} illustration={<FacilityPictogram />} actions={<SessionLocationAndDate />} />
+      <ActPageHeader title={title} illustration={<FacilityPictogram />} />
       <div className={styles.programmeReport}>
         <ProgrammeNumbers clinicFilters={clinicFilters} />
       </div>

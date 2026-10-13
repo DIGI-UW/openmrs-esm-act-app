@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Button, InlineLoading, InlineNotification, SkeletonText, Tile } from '@carbon/react';
 import { formatDatetime, PatientListsPictogram, showSnackbar } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
-import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { runRefresh, useRefreshStatus } from './refresh-flags.resource';
 import styles from './refresh-flags.scss';
 
@@ -67,11 +66,7 @@ export default function RefreshFlags() {
 
   return (
     <>
-      <ActPageHeader
-        title={t('flagsAndAdherence', 'Flags and adherence')}
-        illustration={<PatientListsPictogram />}
-        actions={<SessionLocationAndDate />}
-      />
+      <ActPageHeader title={t('flagsAndAdherence', 'Flags and adherence')} illustration={<PatientListsPictogram />} />
       <div className={styles.page}>
         <Tile className={styles.tile}>
           <p className={styles.explanation}>
