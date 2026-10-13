@@ -10,7 +10,15 @@
 
 .actions {
   display: flex;
+  align-items: center;
   gap: layout.$spacing-03;
+}
+
+// Sits with the header's ghost buttons, at their text size.
+.headerLink {
+  @include type.type-style('body-compact-01');
+  padding: 0 layout.$spacing-03;
+  white-space: nowrap;
 }
 
 // The 1px gaps show the background through as dividers, wherever the fields wrap.

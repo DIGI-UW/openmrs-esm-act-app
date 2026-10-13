@@ -4,7 +4,15 @@ import { signInWith } from '../access/sign-in.test-helper';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
-import { getDefaultsFromConfigSchema, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  type AssignedExtension,
+  getAssignedExtensions,
+  getDefaultsFromConfigSchema,
+  openmrsFetch,
+  restBaseUrl,
+  useAssignedExtensions,
+  useConfig,
+} from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import ProphylaxisCard from './prophylaxis-card.component';
@@ -15,6 +23,11 @@ vi.mock('../access/may-enter-form', () => ({
   useMayEnterForm: () => true,
 }));
 vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }));
+// The framework's test mock has no getAssignedExtensions, which reads a dashboard group's slot.
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getAssignedExtensions: vi.fn(() => []),
+}));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const openForm = vi.fn();
@@ -58,11 +71,24 @@ const invalidatePatientEncounters = (patientUuid: string) =>
       typeof key === 'string' && key.includes(`${restBaseUrl}/encounter`) && key.includes(`patient=${patientUuid}`),
   );
 
+const pageLink = {
+  name: 'act-prophylaxis-dashboard-link',
+  meta: { slot: 'act-prophylaxis-dashboard-slot', path: 'act-prophylaxis' },
+  config: {},
+} as unknown as AssignedExtension;
+
+function navHas(links: Array<object>, groups: Record<string, Array<object>> = {}) {
+  vi.mocked(useAssignedExtensions).mockReturnValue(links as Array<AssignedExtension>);
+  vi.mocked(getAssignedExtensions).mockImplementation((slot) => (groups[slot] ?? []) as Array<AssignedExtension>);
+}
+
 const field = (name: string) => screen.getByTestId(`prophylaxis-${name}`);
 
 describe('ProphylaxisCard', () => {
   beforeEach(async () => {
     await signInWith(['Add Encounters']);
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    navHas([pageLink]);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
   });
 
@@ -167,6 +193,47 @@ describe('ProphylaxisCard', () => {
     expect(await screen.findByText('No prescription')).toBeInTheDocument();
     expect(field('last-dose')).toHaveTextContent('--');
     expect(field('next-due')).toHaveTextContent('--');
+  });
+
+  it("links to the chart's Prophylaxis page, which lists every injection and oral report", async () => {
+    respondWith(winnie);
+    renderCard();
+
+    expect(await screen.findByRole('link', { name: 'History' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/patient/winnie/chart/act-prophylaxis',
+    );
+  });
+
+  it('links to the Prophylaxis page when the distro puts it in a dashboard group', async () => {
+    navHas([{ name: 'act-group', meta: {}, config: { slotName: 'act-group-slot' } }], { 'act-group-slot': [pageLink] });
+    respondWith(winnie);
+    renderCard();
+
+    expect(await screen.findByRole('link', { name: 'History' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/patient/winnie/chart/act-prophylaxis',
+    );
+  });
+
+  it("links to the path the distro's config gives the Prophylaxis page", async () => {
+    navHas([{ ...pageLink, config: { path: 'bpg-history' } }]);
+    respondWith(winnie);
+    renderCard();
+
+    expect(await screen.findByRole('link', { name: 'History' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/patient/winnie/chart/bpg-history',
+    );
+  });
+
+  it("has no History link when the chart's nav has no Prophylaxis page", async () => {
+    navHas([{ name: 'act-cardiac-tests-dashboard-link', meta: { path: 'act-cardiac-tests' }, config: {} }]);
+    respondWith(winnie);
+    renderCard();
+
+    await screen.findByText('BPG · every 4 weeks');
+    expect(screen.queryByRole('link', { name: 'History' })).not.toBeInTheDocument();
   });
 
   it('shows nothing when the summary cannot be read', async () => {
