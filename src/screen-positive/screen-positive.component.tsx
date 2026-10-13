@@ -214,10 +214,10 @@ export default function ScreenPositive() {
   const { t } = useTranslation();
   return (
     <>
-      <ActPageHeader title={t('confirmatoryEchoDue', 'Confirmatory echo due')} illustration={<CardiologyPictogram />} />
+      <ActPageHeader title={t('diagnosisToConfirm', 'Diagnosis to confirm')} illustration={<CardiologyPictogram />} />
       <div className={styles.screenPositive}>
         <p className={styles.description}>
-          {t('confirmatoryEchoDueDescription', 'Screen-positive patients awaiting confirmatory echo')}
+          {t('diagnosisToConfirmDescription', 'Screen-positive patients whose diagnosis has no details yet. Enter diagnosis takes a patient off this list.')}
         </p>
         <ScreenPositiveTable />
       </div>
