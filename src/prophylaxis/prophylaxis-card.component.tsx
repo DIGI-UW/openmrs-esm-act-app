@@ -1,7 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
-import { CardHeader, ConfigurableLink, formatDate, parseDate } from '@openmrs/esm-framework';
+import {
+  CardHeader,
+  ConfigurableLink,
+  formatDate,
+  getAssignedExtensions,
+  parseDate,
+  useAssignedExtensions,
+  useExtensionStore,
+} from '@openmrs/esm-framework';
 import { patientChartUrl } from '../patient-chart-url';
 import { useOralEntries } from '../prophylaxis-page/prophylaxis-page.resource';
 import { RecordProphylaxisButtons } from './record-prophylaxis-buttons.component';
@@ -27,6 +35,16 @@ function useRegimenLabel() {
   };
 }
 
+/** The Prophylaxis page's path, found in the chart's nav as ChartReview finds dashboards, or null when it is not there. */
+function useProphylaxisPagePath() {
+  // Re-renders when a dashboard group's slot fills, which getAssignedExtensions does not subscribe to.
+  useExtensionStore();
+  const page = useAssignedExtensions('patient-chart-dashboard-slot')
+    .flatMap((link) => (link.config?.slotName ? getAssignedExtensions(link.config.slotName) : [link]))
+    .find((link) => link.name === 'act-prophylaxis-dashboard-link');
+  return page ? ({ ...page.meta, ...page.config }.path as string) : null;
+}
+
 const date = (value: string | null) => (value ? formatDate(parseDate(value), { time: false }) : '--');
 
 /** The patient summary's prophylaxis: regimen, last and next dose, on-time count, and the forms to record a dose. */
@@ -34,6 +52,7 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const { t } = useTranslation();
   const { summary, error } = useProphylaxisSummary(patientUuid);
   const regimenLabel = useRegimenLabel();
+  const pagePath = useProphylaxisPagePath();
   // An oral regimen has no doses to count on time, so the card shows the latest reported adherence instead.
   const oral = summary?.type === 'Oral';
   const { entries } = useOralEntries(oral ? patientUuid : null);
@@ -71,10 +90,11 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
     <div className={styles.card}>
       <CardHeader title={t('prophylaxis', 'Prophylaxis')}>
         <div className={styles.actions}>
-          {/* The card is the current regimen only; the page lists every injection and oral report. */}
-          <ConfigurableLink to={`${patientChartUrl(patientUuid)}/act-prophylaxis`} className={styles.headerLink}>
-            {t('history', 'History')}
-          </ConfigurableLink>
+          {pagePath && (
+            <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`} className={styles.headerLink}>
+              {t('history', 'History')}
+            </ConfigurableLink>
+          )}
           <RecordProphylaxisButtons patientUuid={patientUuid} />
         </div>
       </CardHeader>
