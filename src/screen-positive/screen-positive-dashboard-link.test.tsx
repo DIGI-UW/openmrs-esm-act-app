@@ -21,7 +21,7 @@ describe('ScreenPositiveDashboardLink', () => {
       expect.objectContaining({
         path: 'act-screen-positive',
         basePath: '/openmrs/spa/home',
-        title: 'Confirmatory echo due',
+        title: 'Diagnosis to confirm',
       }),
     );
   });

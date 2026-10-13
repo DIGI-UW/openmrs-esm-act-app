@@ -4,7 +4,7 @@ import { ActDashboardLink } from '../access/act-dashboard-link.component';
 import { useHoldsWorklists } from '../access/holds-worklists';
 import { screenPositiveDashboardMeta } from './screen-positive.meta';
 
-/** Confirmatory echo due's entry in the left nav, left out for a user with the worklists, whose tile opens it. */
+/** Diagnosis to confirm's entry in the left nav, left out for a user with the worklists, whose tile opens it. */
 export default function ScreenPositiveDashboardLink() {
   const { t } = useTranslation();
   const holdsWorklists = useHoldsWorklists();
@@ -13,7 +13,7 @@ export default function ScreenPositiveDashboardLink() {
   }
   return (
     <ActDashboardLink
-      meta={{ ...screenPositiveDashboardMeta, title: t('confirmatoryEchoDue', 'Confirmatory echo due') }}
+      meta={{ ...screenPositiveDashboardMeta, title: t('diagnosisToConfirm', 'Diagnosis to confirm') }}
     />
   );
 }

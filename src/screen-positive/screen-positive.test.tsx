@@ -39,11 +39,20 @@ function options(label: string) {
     .map((option) => option.textContent);
 }
 
-describe('Confirmatory echo due', () => {
+describe('Diagnosis to confirm', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-screen-positive');
     await signInWith(['App: act.screenPositive', 'Add Encounters']);
+  });
+
+  it('names the list for what takes a patient off it', () => {
+    dataset({ rows: screenPositiveRows });
+
+    render(<ScreenPositive />);
+
+    expect(screen.getByRole('heading', { name: 'Diagnosis to confirm' })).toBeInTheDocument();
+    expect(screen.getByText(/Enter diagnosis takes a patient off this list\./)).toBeInTheDocument();
   });
 
   it('lists each patient with their age and sex, the date of positive screen, screening site and follow-up status', () => {

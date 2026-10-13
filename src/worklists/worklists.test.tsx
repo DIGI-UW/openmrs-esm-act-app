@@ -346,7 +346,7 @@ describe('Confirmatory echo worklist', () => {
   it('counts the screen positive patients awaiting confirmation on an orange tile', () => {
     render(<ConfirmatoryEchoWorklist {...tile} />);
 
-    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1Confirmatory echo due');
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1Diagnosis to confirm');
     expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'orange');
   });
 
@@ -354,15 +354,15 @@ describe('Confirmatory echo worklist', () => {
     await signInWith([worklistsPrivilege, 'App: act.screenPositive']);
     render(<ConfirmatoryEchoWorklist view="choice" onSelect={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: /Confirmatory echo due/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Diagnosis to confirm/ })).toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('shows Confirmatory echo due itself, with Enter diagnosis, to a user who has that page', async () => {
+  it('shows Diagnosis to confirm itself, with Enter diagnosis, to a user who has that page', async () => {
     await signInWith([worklistsPrivilege, 'App: act.screenPositive']);
     render(<ConfirmatoryEchoWorklist {...list} />);
 
-    expect(screen.getByRole('heading', { name: 'Confirmatory echo due' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Diagnosis to confirm' })).toBeInTheDocument();
     expect(screen.getByTestId('screen-positive-table')).toBeInTheDocument();
   });
 

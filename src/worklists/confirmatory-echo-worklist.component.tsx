@@ -9,7 +9,7 @@ import { ScreenPositiveTable } from '../screen-positive/screen-positive.componen
 import { Worklist, type WorklistState, WorklistSection, WorklistTable } from './worklist.component';
 
 /**
- * The patients who screened positive and are waiting for a confirmatory echo. A user who has Confirmatory echo due
+ * The patients who screened positive and whose diagnosis has no details yet. A user who has Diagnosis to confirm
  * gets its table here, with its filters and Enter diagnosis; anyone else sees the worklist's own columns.
  */
 export default function ConfirmatoryEchoWorklist(state: WorklistState) {
@@ -18,7 +18,7 @@ export default function ConfirmatoryEchoWorklist(state: WorklistState) {
   const hasPage = Boolean(user) && userHasAccess(PRIVILEGE_SCREEN_POSITIVE, user);
   const { screenPositive } = useConfig<Config>();
   const { rows, isLoading, error } = useReportDataset(screenPositive.report);
-  const title = t('confirmatoryEchoDue', 'Confirmatory echo due');
+  const title = t('diagnosisToConfirm', 'Diagnosis to confirm');
   const entries = rows.map((row) => {
     const screened = parseReportDate(row.screen_date);
     return {
