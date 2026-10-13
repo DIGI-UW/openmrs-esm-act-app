@@ -11,10 +11,11 @@ import {
   Stethoscope,
   UserFollow,
 } from '@carbon/react/icons';
-import { CardHeader, launchWorkspace2, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
+import { CardHeader, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { mayEnter } from '../access/may-enter-form';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+import { launchInClinicalFormsWindow } from '../visits/launch-in-clinical-forms-window';
 import { type NextStep, useNextSteps, usePublishedForms } from './next-steps.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './next-steps-card.scss';
@@ -90,7 +91,7 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
   return (
     <div className={cardStyles.card}>
       <CardHeader title={t('nextStepsForThisVisit', 'Next steps for this visit')}>
-        <Button kind="ghost" size="sm" onClick={() => launchWorkspace2('clinical-forms-workspace')}>
+        <Button kind="ghost" size="sm" onClick={() => launchInClinicalFormsWindow('clinical-forms-workspace')}>
           {t('allFormsCount', 'All forms ({{count}})', { count: formCount })}
         </Button>
       </CardHeader>

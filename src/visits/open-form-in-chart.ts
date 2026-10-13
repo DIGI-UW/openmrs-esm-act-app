@@ -1,6 +1,7 @@
 import { type TFunction } from 'i18next';
-import { getGlobalStore, launchWorkspace2, navigate, showSnackbar } from '@openmrs/esm-framework';
+import { getGlobalStore, navigate, showSnackbar } from '@openmrs/esm-framework';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
+import { launchInClinicalFormsWindow } from './launch-in-clinical-forms-window';
 import { patientChartUrl } from '../patient-chart-url';
 import { findActiveVisit, startVisit } from './start-visit';
 import { visitWaitMs } from './open-form-in-visit';
@@ -72,7 +73,7 @@ export async function openFormInChart(
       });
       return;
     }
-    launchWorkspace2('patient-form-entry-workspace', {
+    launchInClinicalFormsWindow('patient-form-entry-workspace', {
       workspaceTitle: form.display,
       form,
       encounterUuid: '',
