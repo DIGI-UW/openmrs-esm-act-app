@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   getGlobalStore,
-  launchWorkspace2,
   showSnackbar,
   useConfig,
   useSession,
@@ -11,6 +10,7 @@ import {
 } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
+import { launchInClinicalFormsWindow } from './launch-in-clinical-forms-window';
 import { focusFormQuestion } from '../flag-gaps/focus-question';
 import { startVisit } from './start-visit';
 
@@ -53,7 +53,7 @@ export type FormLauncher = (workspaceName: string, workspaceProps: object) => un
  * root workspace there closes the window and reopens it, and the reopened window comes up hidden. It is not used after
  * starting a visit, as the chart has closed that workspace by then.
  */
-export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = launchWorkspace2) {
+export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = launchInClinicalFormsWindow) {
   const { t } = useTranslation();
   const { visitType } = useConfig<Config>();
   const { sessionLocation } = useSession();
@@ -94,13 +94,14 @@ export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = l
           }
         }
         // Starting a visit relaunches the chart's workspace group, which closes any window the launcher belonged to.
-        await (hasVisit ? launch : launchWorkspace2)('patient-form-entry-workspace', {
+        const launched = await (hasVisit ? launch : launchInClinicalFormsWindow)('patient-form-entry-workspace', {
           workspaceTitle: form.display,
           form,
           encounterUuid: '',
           additionalProps: { mode: 'enter', openClinicalFormsWorkspaceOnFormClose: false },
         });
-        if (focusConcept) {
+        // False when the user kept another form's unsaved changes, so there is no form to scroll.
+        if (focusConcept && launched !== false) {
           // A question the form never renders leaves it at the top.
           focusFormQuestion(form, focusConcept).catch(() => undefined);
         }
