@@ -201,7 +201,7 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByRole('link', { name: 'History' })).toHaveAttribute(
       'href',
-      expect.stringContaining('/patient/winnie/chart/act-prophylaxis'),
+      '/openmrs/spa/patient/winnie/chart/act-prophylaxis',
     );
   });
 
@@ -212,7 +212,7 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByRole('link', { name: 'History' })).toHaveAttribute(
       'href',
-      expect.stringContaining('/patient/winnie/chart/act-prophylaxis'),
+      '/openmrs/spa/patient/winnie/chart/act-prophylaxis',
     );
   });
 
@@ -223,7 +223,7 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByRole('link', { name: 'History' })).toHaveAttribute(
       'href',
-      expect.stringContaining('/patient/winnie/chart/bpg-history'),
+      '/openmrs/spa/patient/winnie/chart/bpg-history',
     );
   });
 
