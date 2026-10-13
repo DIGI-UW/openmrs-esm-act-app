@@ -10,7 +10,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Tag,
   Tile,
 } from '@carbon/react';
 import { FacilityPictogram, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
@@ -19,30 +18,8 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { useRegistryByFacility } from './studies.resource';
 import styles from './studies.scss';
-
-type DataStatus = 'Complete' | 'Review' | 'Duplicates';
-
-const tagTypes: Record<DataStatus, 'green' | 'gray' | 'red'> = {
-  Complete: 'green',
-  Review: 'gray',
-  Duplicates: 'red',
-};
-
-interface StudyRow {
-  facility: string;
-  patients: number;
-  adherence: number;
-  dataStatus: DataStatus;
-}
-
-// Placeholder rows until the backend module provides the dataset.
-const rows: Array<StudyRow> = [
-  { facility: 'Kiswa HC III', patients: 142, adherence: 91, dataStatus: 'Complete' },
-  { facility: 'Mulago Cardiac Clinic', patients: 388, adherence: 87, dataStatus: 'Complete' },
-  { facility: 'Nakawa HC IV', patients: 96, adherence: 78, dataStatus: 'Review' },
-  { facility: 'Wakiso HC IV', patients: 121, adherence: 72, dataStatus: 'Duplicates' },
-];
 
 const sum = (reportRows: Array<ReportRow>, column: string) =>
   reportRows.reduce((total, row) => total + Number(row[column] ?? 0), 0);
@@ -61,12 +38,7 @@ export default function Studies() {
     [],
   );
   const { rows: reportRows, isLoading, error } = useReportDataset(programmeReport.report, params);
-
-  const tagLabels: Record<DataStatus, string> = {
-    Complete: t('dataComplete', 'Complete'),
-    Review: t('dataReview', 'Review'),
-    Duplicates: t('dataDuplicates', 'Duplicates'),
-  };
+  const { rows: facilityRows, isLoading: isLoadingFacilities, error: facilitiesError } = useRegistryByFacility();
 
   const timed = sum(reportRows, 'bpg_timed');
   const tiles = [
@@ -110,36 +82,49 @@ export default function Studies() {
           </div>
         )}
         <ActHomeCard title={t('byFacility', 'By facility')}>
-          <div className={styles.tableContainer}>
-            <Table size={desktop ? 'sm' : 'lg'}>
-              <TableHead>
-                <TableRow>
-                  <TableHeader>{t('facility', 'Facility')}</TableHeader>
-                  <TableHeader>{t('patients', 'Patients')}</TableHeader>
-                  <TableHeader>{t('adherence', 'Adherence')}</TableHeader>
-                  <TableHeader>{t('data', 'Data')}</TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.facility}>
-                    <TableCell>{row.facility}</TableCell>
-                    <TableCell>{t('activeCount', '{{count}} active', { count: row.patients })}</TableCell>
-                    <TableCell>{`${row.adherence}%`}</TableCell>
-                    <TableCell>
-                      <Tag
-                        type={tagTypes[row.dataStatus]}
-                        size="sm"
-                        className={row.dataStatus === 'Review' ? styles.review : undefined}
-                      >
-                        {tagLabels[row.dataStatus]}
-                      </Tag>
-                    </TableCell>
+          {facilitiesError ? (
+            <InlineNotification
+              kind="error"
+              lowContrast
+              hideCloseButton
+              title={t('couldNotLoadFacilities', 'Could not load the facility rollup')}
+            />
+          ) : (
+            <div className={styles.tableContainer}>
+              <Table size={desktop ? 'sm' : 'lg'}>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>{t('facility', 'Facility')}</TableHeader>
+                    <TableHeader>{t('patients', 'Patients')}</TableHeader>
+                    <TableHeader>{t('adherence', 'Adherence')}</TableHeader>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHead>
+                <TableBody>
+                  {isLoadingFacilities ? (
+                    <TableRow>
+                      <TableCell>
+                        <SkeletonText />
+                      </TableCell>
+                      <TableCell>
+                        <SkeletonText />
+                      </TableCell>
+                      <TableCell>
+                        <SkeletonText />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    facilityRows.map((row) => (
+                      <TableRow key={row.facility ?? 'no-facility'}>
+                        <TableCell>{row.facility ?? t('noFacility', 'No facility')}</TableCell>
+                        <TableCell>{t('activeCount', '{{count}} active', { count: row.patients })}</TableCell>
+                        <TableCell>{row.adherence == null ? '–' : `${Math.round(row.adherence)}%`}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </ActHomeCard>
       </div>
     </>
