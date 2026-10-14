@@ -17,6 +17,8 @@ const rows = [
     overdue: 2,
     bpg_on_time: 8,
     bpg_timed: 10,
+    adherence: 91,
+    data_tag: 'Complete',
   },
   {
     facility: 'Anyeke HCIV',
@@ -26,6 +28,8 @@ const rows = [
     overdue: 4,
     bpg_on_time: 1,
     bpg_timed: 2,
+    adherence: 72,
+    data_tag: 'Duplicates',
   },
 ];
 
@@ -64,7 +68,12 @@ describe('Studies', () => {
   });
 
   it('shows no rate when no injection in the period was timed', () => {
-    dataset({ rows: [{ ...rows[0], bpg_on_time: 0, bpg_timed: 0 }, { ...rows[1], bpg_on_time: 0, bpg_timed: 0 }] });
+    dataset({
+      rows: [
+        { ...rows[0], bpg_on_time: 0, bpg_timed: 0 },
+        { ...rows[1], bpg_on_time: 0, bpg_timed: 0 },
+      ],
+    });
 
     render(<Studies />);
 
@@ -98,30 +107,37 @@ describe('Studies', () => {
     expect(params.endDate).toBe(dayjs().endOf('month').format('YYYY-MM-DD'));
   });
 
-  it("shows a By facility table listing each programme-report row's facility, active patients and BPG on-time rate", () => {
+  it("shows a By facility table listing each programme-report row's facility, active patients, adherence and data tag, as Reports does", () => {
     render(<Studies />);
 
     expect(screen.getByText('By facility')).toBeInTheDocument();
     const table = screen.getByRole('table');
-    const tableRows = within(table).getAllByRole('row');
-    // Header row + one row per facility in the report.
-    expect(tableRows).toHaveLength(3);
-    expect(within(tableRows[1]).getByText('Akunalaber HCIII')).toBeInTheDocument();
-    expect(within(tableRows[1]).getByText('12 active')).toBeInTheDocument();
-    // 8 of 10 timed on time.
-    expect(within(tableRows[1]).getByText('80%')).toBeInTheDocument();
-    expect(within(tableRows[2]).getByText('Anyeke HCIV')).toBeInTheDocument();
-    expect(within(tableRows[2]).getByText('5 active')).toBeInTheDocument();
-    // 1 of 2 timed on time.
-    expect(within(tableRows[2]).getByText('50%')).toBeInTheDocument();
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((header) => header.textContent),
+    ).toEqual(['Facility', 'Patients', 'Adherence', 'Data']);
+    expect(
+      within(table)
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) =>
+          within(row)
+            .getAllByRole('cell')
+            .map((cell) => cell.textContent),
+        ),
+    ).toEqual([
+      ['Akunalaber HCIII', '12 active', '91%', 'Complete'],
+      ['Anyeke HCIV', '5 active', '72%', 'Duplicates'],
+    ]);
   });
 
-  it('shows a dash when no injection in the period was timed at a facility', () => {
-    dataset({ rows: [{ ...rows[0], bpg_on_time: 0, bpg_timed: 0 }] });
+  it('says there are no active patients when the report has no rows for the month', () => {
+    dataset({ rows: [] });
 
     render(<Studies />);
 
-    const tableRows = within(screen.getByRole('table')).getAllByRole('row');
-    expect(within(tableRows[1]).getByText('–')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByText('There are no active patients')).toBeInTheDocument();
   });
 });
