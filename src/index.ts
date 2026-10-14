@@ -43,8 +43,8 @@ export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-
 export const nextStepsCard = getAsyncLifecycle(() => import('./next-steps/next-steps-card.component'), options);
 export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
 
-export const prophylaxisStatusTag = getAsyncLifecycle(
-  () => import('./prophylaxis/prophylaxis-status-tag.component'),
+export const patientStatusFlags = getAsyncLifecycle(
+  () => import('./patient-status/patient-status-flags.component'),
   options,
 );
 
