@@ -58,8 +58,9 @@ const registryEnrollment = {
 function backendAnswers({
   optIn = yes,
   consent = yes,
+  dead = false,
   enrollments = [arcEnrollment, registryEnrollment],
-}: { optIn?: string | null; consent?: string | null; enrollments?: Array<unknown> } = {}) {
+}: { optIn?: string | null; consent?: string | null; dead?: boolean; enrollments?: Array<unknown> } = {}) {
   const posts: Array<{ url: string; body: unknown }> = [];
   mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
     if (init?.method === 'POST') {
@@ -75,6 +76,7 @@ function backendAnswers({
     if (url.includes('/person/patient-1')) {
       return {
         data: {
+          dead,
           attributes: [
             ...(optIn ? [{ uuid: 'opt-in-attr', value: { uuid: optIn }, attributeType: { uuid: optInType } }] : []),
             ...(consent
@@ -141,6 +143,15 @@ describe('Research participation', () => {
         'A patient is enrolled in a study only after giving registry consent, which is recorded at registration.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('enrols no patient who has died', async () => {
+    backendAnswers({ dead: true, enrollments: [] });
+
+    renderPage();
+
+    expect(await screen.findByText('The patient has died, so they cannot be enrolled in a study.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add participation/ })).toBeDisabled();
   });
 
   it('warns when a patient active in a study no longer answers Yes to research', async () => {

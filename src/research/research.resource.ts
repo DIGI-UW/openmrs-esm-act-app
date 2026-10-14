@@ -146,6 +146,7 @@ export async function saveEnrollment(
 }
 
 interface RestPerson {
+  dead: boolean;
   attributes: Array<{
     uuid: string;
     voided?: boolean;
@@ -155,12 +156,12 @@ interface RestPerson {
 }
 
 /**
- * The patient's answers that gate enrolling in a study, each as its concept or null: whether they would like to be
- * considered for research, and whether they gave registry consent at registration.
+ * What gates enrolling the patient in a study: whether they would like to be considered for research and whether they
+ * gave registry consent at registration, each as its concept or null, and whether they have died.
  */
 export function useResearchAnswers(patientUuid: string) {
   const { researchOptInAttributeType, consentAttributeType } = useConfig<Config>().studies;
-  const url = `${restBaseUrl}/person/${patientUuid}?v=custom:(attributes:(uuid,voided,value,attributeType:(uuid)))`;
+  const url = `${restBaseUrl}/person/${patientUuid}?v=custom:(dead,attributes:(uuid,voided,value,attributeType:(uuid)))`;
   const { data, error, isLoading, mutate } = useSWR<RestPerson, Error>(
     patientUuid ? url : null,
     async () => (await openmrsFetch<RestPerson>(url)).data,
@@ -172,6 +173,7 @@ export function useResearchAnswers(patientUuid: string) {
   return {
     optIn: answer(researchOptInAttributeType),
     consent: answer(consentAttributeType),
+    dead: data?.dead ?? false,
     error,
     isLoading,
     mutate,

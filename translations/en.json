@@ -88,6 +88,7 @@
   "date": "Date",
   "dateDaysAgo": "{{date}} ({{days}} days ago)",
   "dateNotInFuture": "The date cannot be in the future",
+  "deceasedNotEnrolled": "The patient has died, so they cannot be enrolled in a study.",
   "dateOfBirth": "Date of birth",
   "daysCount_one": "{{count}} day",
   "daysCount_other": "{{count}} days",

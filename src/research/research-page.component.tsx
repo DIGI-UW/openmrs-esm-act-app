@@ -103,7 +103,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { yesConcept } = useConfig<Config>().studies;
-  const { optIn, consent } = useResearchAnswers(patientUuid);
+  const { optIn, consent, dead } = useResearchAnswers(patientUuid);
   const { enrollments, studies, error, isLoading, mutate } = useStudyEnrollments(patientUuid);
   const [editing, setEditing] = useState<StudyEnrollment | 'new' | null>(null);
   const title = t('researchParticipation', 'Research participation');
@@ -124,7 +124,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
   const available = studies.filter((study) => !activeIn.has(study.uuid));
   const consented = consent === yesConcept;
   const optedIn = optIn === yesConcept;
-  const mayEnrol = consented && optedIn;
+  const mayEnrol = !dead && consented && optedIn;
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
@@ -204,12 +204,14 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
       <OptIn patientUuid={patientUuid} />
       {!mayEnrol && !isLoading && (
         <p className={styles.hint}>
-          {consented
-            ? t('optInBeforeEnrolling', 'A patient is enrolled in a study only after answering Yes above.')
-            : t(
-                'consentBeforeEnrolling',
-                'A patient is enrolled in a study only after giving registry consent, which is recorded at registration.',
-              )}
+          {dead
+            ? t('deceasedNotEnrolled', 'The patient has died, so they cannot be enrolled in a study.')
+            : consented
+              ? t('optInBeforeEnrolling', 'A patient is enrolled in a study only after answering Yes above.')
+              : t(
+                  'consentBeforeEnrolling',
+                  'A patient is enrolled in a study only after giving registry consent, which is recorded at registration.',
+                )}
         </p>
       )}
       {!mayEnrol && !isLoading && activeIn.size > 0 && (
