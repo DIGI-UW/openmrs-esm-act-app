@@ -64,10 +64,15 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
 
   const fields = summary && [
     { id: 'type', label: t('type', 'Type'), value: regimenLabel(summary) },
-    { id: 'last-dose', label: t('lastDose', 'Last dose'), value: date(summary.lastGiven) },
+    // ACT Core dates an oral regimen by its latest adherence report and when that report's supply runs out.
+    {
+      id: 'last-dose',
+      label: oral ? t('lastReport', 'Last report') : t('lastDose', 'Last dose'),
+      value: date(summary.lastGiven),
+    },
     {
       id: 'next-due',
-      label: t('nextDue', 'Next due'),
+      label: oral ? t('nextRefill', 'Next refill') : t('nextDue', 'Next due'),
       value: date(summary.nextDue),
       overdue: summary.status === 'overdue',
     },

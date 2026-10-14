@@ -289,13 +289,25 @@ export const configSchema = {
         'If injection(s) late, why?, the reasons a late injection tag names.',
         'f7cbfcdc-58bb-5e85-86ab-ffce26a08615',
       ),
-      weeks: concept(
-        'Weeks in Reporting Period, the period an oral row shows.',
-        '75cd7e15-5f05-58d1-acb1-4a046eb1b437',
+      estimateDate: concept(
+        'Date of Adherence Estimate, the date an oral row shows; without one, the encounter date.',
+        '99512ab5-208e-5c37-8f7b-8f72abe2a0db',
       ),
       adherence: concept(
         'Adherence Estimate, the percentage an oral row shows.',
         '8edff8dc-4af6-5d0f-bf1d-8e349c7a1b15',
+      ),
+      basedOn: concept(
+        'Adherence Based On, what an oral row says the estimate was based on.',
+        '4313005d-d5b2-5d20-bf33-39aab1bf90c0',
+      ),
+      lowAdherenceReason: concept(
+        'Explanation if Adherence is Below 80%, the reason an oral row gives for low adherence.',
+        'a9fbf67b-65d7-57f6-8270-7bb65cd49469',
+      ),
+      newPrescription: concept(
+        'New Prescription Duration, the supply an oral row says was given.',
+        'cd03af00-de81-5c08-9a02-92f95c00e1ce',
       ),
     },
   },
@@ -423,7 +435,18 @@ export interface Config {
   prophylaxisPage: {
     bpgEncounterType: string;
     oralEncounterType: string;
-    concepts: Record<'injectionDate' | 'doseGiven' | 'facility' | 'lateReason' | 'weeks' | 'adherence', string>;
+    concepts: Record<
+      | 'injectionDate'
+      | 'doseGiven'
+      | 'facility'
+      | 'lateReason'
+      | 'estimateDate'
+      | 'adherence'
+      | 'basedOn'
+      | 'lowAdherenceReason'
+      | 'newPrescription',
+      string
+    >;
   };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
