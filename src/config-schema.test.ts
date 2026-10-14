@@ -75,6 +75,7 @@ describe('configSchema', () => {
         participantsReport: 'ea8687da-4bed-5e2b-bafa-7a11ad9bc3ae',
         studyParticipantIdAttributeType: '7840ba5d-d927-52d6-907b-dd070bea6626',
         researchOptInAttributeType: 'a78f6ae3-faec-5db8-9493-53877985ca7f',
+        consentAttributeType: 'e15bf9b7-249e-5d75-907d-937b8d9b0c46',
         yesConcept: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         noConcept: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       },

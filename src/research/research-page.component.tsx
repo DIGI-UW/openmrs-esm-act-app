@@ -4,6 +4,7 @@ import {
   Button,
   DataTableSkeleton,
   InlineLoading,
+  InlineNotification,
   Select,
   SelectItem,
   Table,
@@ -30,7 +31,7 @@ import { type Config } from '../config-schema';
 import { PRIVILEGE_ENTER_CLINICAL_FORMS } from '../constants';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { EnrollmentModal } from './enrollment-modal.component';
-import { saveResearchOptIn, type StudyEnrollment, useResearchOptIn, useStudyEnrollments } from './research.resource';
+import { saveResearchOptIn, type StudyEnrollment, useResearchAnswers, useStudyEnrollments } from './research.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './research-page.scss';
 
@@ -40,11 +41,12 @@ const showDate = (value: string | null) =>
 function OptIn({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { researchOptInAttributeType, yesConcept, noConcept } = useConfig<Config>().studies;
-  const { optIn, isLoading, mutate } = useResearchOptIn(patientUuid);
+  const { optIn, consent, isLoading, mutate } = useResearchAnswers(patientUuid);
   const [saving, setSaving] = useState(false);
   const label = t('wouldLikeToBeConsidered', 'Would the patient like to be considered for research?');
-  const answer =
-    optIn === yesConcept ? t('yes', 'Yes') : optIn === noConcept ? t('no', 'No') : t('notRecorded', 'Not recorded');
+  const showAnswer = (value: string | null) =>
+    value === yesConcept ? t('yes', 'Yes') : value === noConcept ? t('no', 'No') : t('notRecorded', 'Not recorded');
+  const answer = showAnswer(optIn);
 
   const save = async (conceptUuid: string) => {
     setSaving(true);
@@ -63,6 +65,12 @@ function OptIn({ patientUuid }: { patientUuid: string }) {
   }
   return (
     <div className={styles.optIn}>
+      <p className={styles.consent}>
+        <span className={styles.optInLabel}>
+          {t('registryConsent', 'Registry consent (recorded at registration):')}
+        </span>{' '}
+        {showAnswer(consent)}
+      </p>
       <UserHasAccess
         privilege={PRIVILEGE_ENTER_CLINICAL_FORMS}
         fallback={
@@ -95,7 +103,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { yesConcept } = useConfig<Config>().studies;
-  const { optIn } = useResearchOptIn(patientUuid);
+  const { optIn, consent } = useResearchAnswers(patientUuid);
   const { enrollments, studies, error, isLoading, mutate } = useStudyEnrollments(patientUuid);
   const [editing, setEditing] = useState<StudyEnrollment | 'new' | null>(null);
   const title = t('researchParticipation', 'Research participation');
@@ -114,7 +122,9 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
       .map((enrollment) => enrollment.study.uuid),
   );
   const available = studies.filter((study) => !activeIn.has(study.uuid));
+  const consented = consent === yesConcept;
   const optedIn = optIn === yesConcept;
+  const mayEnrol = consented && optedIn;
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
@@ -184,7 +194,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
             kind="ghost"
             size="sm"
             renderIcon={Add}
-            disabled={!optedIn || !available.length}
+            disabled={!mayEnrol || !available.length}
             onClick={() => setEditing('new')}
           >
             {t('addParticipation', 'Add participation')}
@@ -192,10 +202,28 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
         </UserHasAccess>
       </CardHeader>
       <OptIn patientUuid={patientUuid} />
-      {!optedIn && !isLoading && (
+      {!mayEnrol && !isLoading && (
         <p className={styles.hint}>
-          {t('optInBeforeEnrolling', 'A patient is enrolled in a study only after answering Yes above.')}
+          {consented
+            ? t('optInBeforeEnrolling', 'A patient is enrolled in a study only after answering Yes above.')
+            : t(
+                'consentBeforeEnrolling',
+                'A patient is enrolled in a study only after giving registry consent, which is recorded at registration.',
+              )}
         </p>
+      )}
+      {!mayEnrol && !isLoading && activeIn.size > 0 && (
+        <InlineNotification
+          className={styles.notice}
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          title={t('stillActiveInAStudy', 'Still active in a study')}
+          subtitle={t(
+            'stillActiveInAStudyWithout',
+            'The patient is active in a study without registry consent and a Yes to research. If they have left the study, edit its status.',
+          )}
+        />
       )}
       {body}
       {editing && (

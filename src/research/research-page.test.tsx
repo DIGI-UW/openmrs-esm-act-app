@@ -10,7 +10,9 @@ import ResearchPage from './research-page.component';
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const yes = '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const no = '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const optInType = 'a78f6ae3-faec-5db8-9493-53877985ca7f';
+const consentType = 'e15bf9b7-249e-5d75-907d-937b8d9b0c46';
 const studyIdType = '7840ba5d-d927-52d6-907b-dd070bea6626';
 
 const states = [
@@ -53,7 +55,11 @@ const registryEnrollment = {
   states: [],
 };
 
-function backendAnswers({ optIn = yes, enrollments = [arcEnrollment, registryEnrollment] } = {}) {
+function backendAnswers({
+  optIn = yes,
+  consent = yes,
+  enrollments = [arcEnrollment, registryEnrollment],
+}: { optIn?: string | null; consent?: string | null; enrollments?: Array<unknown> } = {}) {
   const posts: Array<{ url: string; body: unknown }> = [];
   mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
     if (init?.method === 'POST') {
@@ -69,9 +75,12 @@ function backendAnswers({ optIn = yes, enrollments = [arcEnrollment, registryEnr
     if (url.includes('/person/patient-1')) {
       return {
         data: {
-          attributes: optIn
-            ? [{ uuid: 'opt-in-attr', value: { uuid: optIn }, attributeType: { uuid: optInType } }]
-            : [],
+          attributes: [
+            ...(optIn ? [{ uuid: 'opt-in-attr', value: { uuid: optIn }, attributeType: { uuid: optInType } }] : []),
+            ...(consent
+              ? [{ uuid: 'consent-attr', value: { uuid: consent }, attributeType: { uuid: consentType } }]
+              : []),
+          ],
         },
       } as never;
     }
@@ -79,6 +88,10 @@ function backendAnswers({ optIn = yes, enrollments = [arcEnrollment, registryEnr
   });
   return posts;
 }
+
+/** Matches the paragraph whose whole text this is, across the label and answer it is split into. */
+const paragraph = (text: string) => (_: string, element: Element | null) =>
+  element?.tagName === 'P' && element.textContent === text;
 
 function renderPage() {
   return render(
@@ -113,6 +126,29 @@ describe('Research participation', () => {
     expect(await screen.findByText('There are no study participations to display')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Add participation/ })).toBeDisabled();
     expect(screen.getByText('A patient is enrolled in a study only after answering Yes above.')).toBeInTheDocument();
+  });
+
+  it('enrols only a patient who gave registry consent, which it shows', async () => {
+    backendAnswers({ consent: no, enrollments: [] });
+
+    renderPage();
+
+    expect(await screen.findByText('There are no study participations to display')).toBeInTheDocument();
+    expect(screen.getByText(paragraph('Registry consent (recorded at registration): No'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add participation/ })).toBeDisabled();
+    expect(
+      screen.getByText(
+        'A patient is enrolled in a study only after giving registry consent, which is recorded at registration.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('warns when a patient active in a study no longer answers Yes to research', async () => {
+    backendAnswers({ optIn: no });
+
+    renderPage();
+
+    expect(await screen.findByText('Still active in a study')).toBeInTheDocument();
   });
 
   it('saves the answer to being considered as the research opt-in', async () => {
@@ -212,6 +248,8 @@ describe('Research participation', () => {
     expect(screen.queryByRole('button', { name: /Add participation/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit participation' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-    expect(screen.getByText('Yes')).toBeInTheDocument();
+    expect(
+      screen.getByText(paragraph('Would the patient like to be considered for research? Yes')),
+    ).toBeInTheDocument();
   });
 });

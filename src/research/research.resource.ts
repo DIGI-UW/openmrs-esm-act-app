@@ -154,17 +154,28 @@ interface RestPerson {
   }>;
 }
 
-/** Whether the patient would like to be considered for research: the Yes or No concept, else null. */
-export function useResearchOptIn(patientUuid: string) {
-  const { researchOptInAttributeType } = useConfig<Config>().studies;
+/**
+ * The patient's answers that gate enrolling in a study, each as its concept or null: whether they would like to be
+ * considered for research, and whether they gave registry consent at registration.
+ */
+export function useResearchAnswers(patientUuid: string) {
+  const { researchOptInAttributeType, consentAttributeType } = useConfig<Config>().studies;
   const url = `${restBaseUrl}/person/${patientUuid}?v=custom:(attributes:(uuid,voided,value,attributeType:(uuid)))`;
   const { data, error, isLoading, mutate } = useSWR<RestPerson, Error>(
     patientUuid ? url : null,
     async () => (await openmrsFetch<RestPerson>(url)).data,
   );
-  const attribute = data?.attributes.find((a) => !a.voided && a.attributeType.uuid === researchOptInAttributeType);
-  const value = attribute ? (typeof attribute.value === 'string' ? attribute.value : attribute.value?.uuid) : null;
-  return { optIn: value ?? null, error, isLoading, mutate };
+  const answer = (attributeType: string) => {
+    const attribute = data?.attributes.find((a) => !a.voided && a.attributeType.uuid === attributeType);
+    return (attribute && (typeof attribute.value === 'string' ? attribute.value : attribute.value?.uuid)) || null;
+  };
+  return {
+    optIn: answer(researchOptInAttributeType),
+    consent: answer(consentAttributeType),
+    error,
+    isLoading,
+    mutate,
+  };
 }
 
 /**

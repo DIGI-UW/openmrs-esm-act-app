@@ -17,3 +17,12 @@
   color: $text-02;
   padding: 0 layout.$spacing-05 layout.$spacing-05;
 }
+
+.consent {
+  @include type.type-style('body-compact-01');
+  padding-bottom: layout.$spacing-05;
+}
+
+.notice {
+  margin: 0 layout.$spacing-05 layout.$spacing-05;
+}

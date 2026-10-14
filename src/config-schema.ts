@@ -212,7 +212,16 @@ export const configSchema = {
       _description:
         'The person attribute type, of Concept format, that records whether the patient would like to be considered for research.',
     },
-    yesConcept: concept('The Yes answer of the research opt-in.', '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
+    consentAttributeType: {
+      _type: Type.UUID,
+      _default: 'e15bf9b7-249e-5d75-907d-937b8d9b0c46',
+      _description:
+        'The person attribute type, of Concept format, that records registry consent at registration. A patient is enrolled in a study only after consenting, as ACT Core requires.',
+    },
+    yesConcept: concept(
+      'The Yes answer of registry consent and of the research opt-in.',
+      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    ),
     noConcept: concept('The No answer of the research opt-in.', '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
   },
   programmeReport: {
@@ -449,6 +458,7 @@ export interface Config {
     participantsReport: string;
     studyParticipantIdAttributeType: string;
     researchOptInAttributeType: string;
+    consentAttributeType: string;
     yesConcept: string;
     noConcept: string;
   };
