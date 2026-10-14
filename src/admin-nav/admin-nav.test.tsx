@@ -11,7 +11,7 @@ describe('AdminNav', () => {
   });
 
   it('offers Users and roles, Clinics, Studies, and Flags and adherence under Admin to a user who may use them all', async () => {
-    await signInWith([homePrivilege, 'Edit Users', 'Manage Locations', 'Task: act.refreshFlags']);
+    await signInWith([homePrivilege, 'Edit Users', 'Manage Locations', 'App: act.studies', 'Task: act.refreshFlags']);
 
     render(<AdminNav />);
 
@@ -33,7 +33,16 @@ describe('AdminNav', () => {
 
   it.each([
     { privilege: 'Edit Users', shown: ['Users and roles'], hidden: ['Clinics', 'Studies', 'Flags and adherence'] },
-    { privilege: 'Manage Locations', shown: ['Clinics', 'Studies'], hidden: ['Users and roles', 'Flags and adherence'] },
+    {
+      privilege: 'Manage Locations',
+      shown: ['Clinics'],
+      hidden: ['Users and roles', 'Studies', 'Flags and adherence'],
+    },
+    {
+      privilege: 'App: act.studies',
+      shown: ['Studies'],
+      hidden: ['Users and roles', 'Clinics', 'Flags and adherence'],
+    },
     {
       privilege: 'Task: act.refreshFlags',
       shown: ['Flags and adherence'],

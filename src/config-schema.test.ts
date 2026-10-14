@@ -71,6 +71,13 @@ describe('configSchema', () => {
       programmeReport: {
         report: 'c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31',
       },
+      studies: {
+        participantsReport: 'ea8687da-4bed-5e2b-bafa-7a11ad9bc3ae',
+        studyParticipantIdAttributeType: '7840ba5d-d927-52d6-907b-dd070bea6626',
+        researchOptInAttributeType: 'a78f6ae3-faec-5db8-9493-53877985ca7f',
+        yesConcept: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        noConcept: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
       cardiacTests: {
         echoForm: '88e54fb0-1243-3f7a-b925-f64648ca6635',
         echoEncounterType: '730f5ec2-7102-55d0-8602-2d792844f245',
