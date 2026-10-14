@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, ChartLine, Medication, Pills, Search, UserFollow } from '@carbon/react/icons';
+import {
+  ArrowUpRight,
+  ChartLine,
+  Chemistry,
+  Medication,
+  Pills,
+  Search,
+  Settings,
+  UserFollow,
+  UserRole,
+} from '@carbon/react/icons';
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.component';
@@ -130,6 +140,45 @@ export function FacilityReportAction() {
       label={t('facilityReport', 'Facility report')}
       subtitle={t('monthlyQuarterly', 'Monthly · quarterly')}
       to={dataClerkQuickActions.facilityReportUrl}
+    />
+  );
+}
+
+export function FormsAndSitesAction() {
+  const { t } = useTranslation();
+  const { instanceAdminQuickActions } = useConfig<Config>();
+  return (
+    <QuickActionTile
+      Icon={Settings}
+      label={t('formsAndSites', 'Forms & sites')}
+      subtitle={t('configureInstance', 'Configure instance')}
+      to={instanceAdminQuickActions.formsAndSitesUrl}
+    />
+  );
+}
+
+export function RolePermissionsAction() {
+  const { t } = useTranslation();
+  const { instanceAdminQuickActions } = useConfig<Config>();
+  return (
+    <QuickActionTile
+      Icon={UserRole}
+      label={t('rolePermissions', 'Role permissions')}
+      subtitle={t('whoSeesWhat', 'Who sees what')}
+      to={instanceAdminQuickActions.rolePermissionsUrl}
+    />
+  );
+}
+
+export function ResearchParticipationAction() {
+  const { t } = useTranslation();
+  const { instanceAdminQuickActions } = useConfig<Config>();
+  return (
+    <QuickActionTile
+      Icon={Chemistry}
+      label={t('researchParticipation', 'Research participation')}
+      subtitle={t('governedOffByDefault', 'Governed · OFF by default')}
+      to={instanceAdminQuickActions.researchParticipationUrl}
     />
   );
 }
