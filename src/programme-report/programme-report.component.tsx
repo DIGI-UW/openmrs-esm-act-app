@@ -84,10 +84,69 @@ function ClinicFilters({
   );
 }
 
+/** The programme report's By facility table, shared so Reports and Studies show the same figures under each header. */
+export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; isLoading: boolean }) {
+  const { t } = useTranslation();
+  const desktop = isDesktop(useLayoutType());
+  const tagLabels = {
+    Complete: t('dataComplete', 'Complete'),
+    Review: t('dataReview', 'Review'),
+    Duplicates: t('dataDuplicates', 'Duplicates'),
+  };
+  return (
+    <ActHomeCard title={t('byFacility', 'By facility')}>
+      {isLoading ? (
+        <DataTableSkeleton
+          role="progressbar"
+          columnCount={4}
+          rowCount={4}
+          compact={desktop}
+          showHeader={false}
+          showToolbar={false}
+        />
+      ) : rows.length ? (
+        <div className={styles.tableContainer}>
+          <Table size={desktop ? 'sm' : 'lg'}>
+            <TableHead>
+              <TableRow>
+                <TableHeader>{t('facility', 'Facility')}</TableHeader>
+                <TableHeader>{t('patients', 'Patients')}</TableHeader>
+                <TableHeader>{t('adherence', 'Adherence')}</TableHeader>
+                <TableHeader>{t('data', 'Data')}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={String(row.facility_uuid ?? row.facility)}>
+                  <TableCell>{String(row.facility ?? '')}</TableCell>
+                  <TableCell>
+                    {t('activeCount', '{{count}} active', { count: Number(row.active_patients ?? 0) })}
+                  </TableCell>
+                  <TableCell>{row.adherence == null ? '' : `${row.adherence}%`}</TableCell>
+                  <TableCell>
+                    <Tag
+                      type={tagTypes[String(row.data_tag)] ?? 'gray'}
+                      size="sm"
+                      className={row.data_tag === 'Review' ? styles.review : undefined}
+                    >
+                      {tagLabels[String(row.data_tag)] ?? String(row.data_tag ?? '')}
+                    </Tag>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <TableEmptyState message={t('noActivePatients', 'There are no active patients')} />
+      )}
+    </ActHomeCard>
+  );
+}
+
 function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   const { t } = useTranslation();
   const { programmeReport } = useConfig<Config>();
-  const desktop = isDesktop(useLayoutType());
   const sessionScope = useProgrammeScope(!clinicFilters);
   // The session location's clinic until a filter is changed.
   const [chosenScope, setChosenScope] = useState<Record<string, string>>();
@@ -107,11 +166,6 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   );
   const { rows, isLoading, error } = useReportDataset(scope ? programmeReport.report : null, params);
 
-  const tagLabels = {
-    Complete: t('dataComplete', 'Complete'),
-    Review: t('dataReview', 'Review'),
-    Duplicates: t('dataDuplicates', 'Duplicates'),
-  };
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
     { label: t('activePatients', 'Active patients'), value: sum(rows, 'active_patients') },
@@ -181,53 +235,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
               </Tile>
             ))}
           </div>
-          <ActHomeCard title={t('byFacility', 'By facility')}>
-            {isLoading || !scope ? (
-              <DataTableSkeleton
-                role="progressbar"
-                columnCount={4}
-                rowCount={4}
-                compact={desktop}
-                showHeader={false}
-                showToolbar={false}
-              />
-            ) : rows.length ? (
-              <div className={styles.tableContainer}>
-                <Table size={desktop ? 'sm' : 'lg'}>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeader>{t('facility', 'Facility')}</TableHeader>
-                      <TableHeader>{t('patients', 'Patients')}</TableHeader>
-                      <TableHeader>{t('adherence', 'Adherence')}</TableHeader>
-                      <TableHeader>{t('data', 'Data')}</TableHeader>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {rows.map((row) => (
-                      <TableRow key={String(row.facility_uuid ?? row.facility)}>
-                        <TableCell>{String(row.facility ?? '')}</TableCell>
-                        <TableCell>
-                          {t('activeCount', '{{count}} active', { count: Number(row.active_patients ?? 0) })}
-                        </TableCell>
-                        <TableCell>{row.adherence == null ? '' : `${row.adherence}%`}</TableCell>
-                        <TableCell>
-                          <Tag
-                            type={tagTypes[String(row.data_tag)] ?? 'gray'}
-                            size="sm"
-                            className={row.data_tag === 'Review' ? styles.review : undefined}
-                          >
-                            {tagLabels[String(row.data_tag)] ?? String(row.data_tag ?? '')}
-                          </Tag>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <TableEmptyState message={t('noActivePatients', 'There are no active patients')} />
-            )}
-          </ActHomeCard>
+          <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
         </>
       )}
     </>
