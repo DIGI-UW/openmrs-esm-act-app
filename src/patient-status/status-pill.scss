@@ -1,0 +1,54 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '../styles/act-colours' as *;
+
+.pill {
+  @include type.type-style('label-01');
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  min-height: layout.$spacing-06;
+  padding: 0 layout.$spacing-03;
+  border-radius: layout.$spacing-06;
+  white-space: nowrap;
+}
+
+.dot {
+  flex: none;
+  width: layout.$spacing-03;
+  height: layout.$spacing-03;
+  border-radius: 50%;
+}
+
+.red {
+  background-color: $act-risk-background;
+  color: colors.$red-70;
+
+  .dot {
+    background-color: colors.$red-60;
+  }
+}
+
+.yellow {
+  @include act-yellow-tag;
+
+  .dot {
+    background-color: colors.$yellow-30;
+  }
+}
+
+.green {
+  background-color: colors.$green-10;
+  color: colors.$green-70;
+
+  .dot {
+    background-color: colors.$green-50;
+  }
+}
+
+.pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}

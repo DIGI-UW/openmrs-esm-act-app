@@ -9,6 +9,7 @@ import {
   PRIVILEGE_REGISTRY,
   PRIVILEGE_REPORTS,
   PRIVILEGE_SCREEN_POSITIVE,
+  PRIVILEGE_STATUS_FLAGS,
   PRIVILEGE_WAITING_LIST,
   PRIVILEGE_WORKLISTS,
 } from './constants';
@@ -77,6 +78,7 @@ describe('routes.json privileges', () => {
     ['act-refresh-flags-dashboard', 'Task: act.refreshFlags'],
     ['act-home-due-for-prophylaxis', 'App: act.dueList'],
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
+    ['act-patient-status-flags', [PRIVILEGE_STATUS_FLAGS, 'Get Encounters', 'Get Observations']],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });

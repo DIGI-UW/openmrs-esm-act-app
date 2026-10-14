@@ -1,26 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { InlineLoading, Tag } from '@carbon/react';
+import { InlineLoading } from '@carbon/react';
 import { age, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
+import { ProphylaxisPill } from '../patient-status/status-pills.component';
 import { type SearchedPatient } from './patient-search.resource';
 import styles from './patient-search-panel.scss';
 
 function StatusTag({ patientUuid }: { patientUuid: string }) {
-  const { t } = useTranslation();
   const { summary } = useProphylaxisSummary(patientUuid);
-  switch (summary?.status) {
-    case 'overdue':
-      return <Tag type="red">{t('overdue', 'Overdue')}</Tag>;
-    case 'dueToday':
-      return <Tag type="blue">{t('dueToday', 'Due today')}</Tag>;
-    case 'ok':
-    case 'dueSoon':
-      return <Tag type="gray">{t('upToDate', 'Up to date')}</Tag>;
-    default:
-      return null;
-  }
+  return <ProphylaxisPill summary={summary} />;
 }
 
 /** One patient in the search panel: initials, name, demographics, ACT ID and prophylaxis status. */
