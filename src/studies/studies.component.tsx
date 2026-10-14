@@ -18,11 +18,15 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { SessionLocationAndDate } from '../act-page-header/session-location-and-date.component';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
-import { useRegistryByFacility } from './studies.resource';
 import styles from './studies.scss';
 
 const sum = (reportRows: Array<ReportRow>, column: string) =>
   reportRows.reduce((total, row) => total + Number(row[column] ?? 0), 0);
+
+const onTimePercent = (row: ReportRow) => {
+  const timed = Number(row.bpg_timed ?? 0);
+  return timed ? `${Math.round((Number(row.bpg_on_time ?? 0) / timed) * 100)}%` : '–';
+};
 
 export default function Studies() {
   const { t } = useTranslation();
@@ -38,7 +42,6 @@ export default function Studies() {
     [],
   );
   const { rows: reportRows, isLoading, error } = useReportDataset(programmeReport.report, params);
-  const { rows: facilityRows, isLoading: isLoadingFacilities, error: facilitiesError } = useRegistryByFacility();
 
   const timed = sum(reportRows, 'bpg_timed');
   const tiles = [
@@ -68,64 +71,59 @@ export default function Studies() {
             title={t('couldNotLoadReports', 'Could not load the report')}
           />
         ) : (
-          <div className={styles.tiles}>
-            {tiles.map((tile) => (
-              <Tile key={tile.label} className={styles.tile} data-testid="studies-tile">
-                <span className={styles.tileLabel}>{tile.label}</span>
-                {isLoading ? (
-                  <SkeletonText heading width="40%" />
-                ) : (
-                  <span className={`${styles.tileValue} ${tile.tone ?? ''}`}>{tile.value}</span>
-                )}
-              </Tile>
-            ))}
-          </div>
-        )}
-        <ActHomeCard title={t('byFacility', 'By facility')}>
-          {facilitiesError ? (
-            <InlineNotification
-              kind="error"
-              lowContrast
-              hideCloseButton
-              title={t('couldNotLoadFacilities', 'Could not load the facility rollup')}
-            />
-          ) : (
-            <div className={styles.tableContainer}>
-              <Table size={desktop ? 'sm' : 'lg'}>
-                <TableHead>
-                  <TableRow>
-                    <TableHeader>{t('facility', 'Facility')}</TableHeader>
-                    <TableHeader>{t('patients', 'Patients')}</TableHeader>
-                    <TableHeader>{t('adherence', 'Adherence')}</TableHeader>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {isLoadingFacilities ? (
-                    <TableRow>
-                      <TableCell>
-                        <SkeletonText />
-                      </TableCell>
-                      <TableCell>
-                        <SkeletonText />
-                      </TableCell>
-                      <TableCell>
-                        <SkeletonText />
-                      </TableCell>
-                    </TableRow>
+          <>
+            <div className={styles.tiles}>
+              {tiles.map((tile) => (
+                <Tile key={tile.label} className={styles.tile} data-testid="studies-tile">
+                  <span className={styles.tileLabel}>{tile.label}</span>
+                  {isLoading ? (
+                    <SkeletonText heading width="40%" />
                   ) : (
-                    facilityRows.map((row) => (
-                      <TableRow key={row.facility ?? 'no-facility'}>
-                        <TableCell>{row.facility ?? t('noFacility', 'No facility')}</TableCell>
-                        <TableCell>{t('activeCount', '{{count}} active', { count: row.patients })}</TableCell>
-                        <TableCell>{row.adherence == null ? '–' : `${Math.round(row.adherence)}%`}</TableCell>
-                      </TableRow>
-                    ))
+                    <span className={`${styles.tileValue} ${tile.tone ?? ''}`}>{tile.value}</span>
                   )}
-                </TableBody>
-              </Table>
+                </Tile>
+              ))}
             </div>
-          )}
-        </ActHomeCard>
+            <ActHomeCard title={t('byFacility', 'By facility')}>
+              <div className={styles.tableContainer}>
+                <Table size={desktop ? 'sm' : 'lg'}>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeader>{t('facility', 'Facility')}</TableHeader>
+                      <TableHeader>{t('patients', 'Patients')}</TableHeader>
+                      <TableHeader>{t('adherence', 'Adherence')}</TableHeader>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell>
+                          <SkeletonText />
+                        </TableCell>
+                        <TableCell>
+                          <SkeletonText />
+                        </TableCell>
+                        <TableCell>
+                          <SkeletonText />
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      reportRows.map((row) => (
+                        <TableRow key={String(row.facility_uuid ?? row.facility)}>
+                          <TableCell>{row.facility as string}</TableCell>
+                          <TableCell>
+                            {t('activeCount', '{{count}} active', { count: Number(row.active_patients ?? 0) })}
+                          </TableCell>
+                          <TableCell>{onTimePercent(row)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </ActHomeCard>
+          </>
+        )}
       </div>
     </>
   );
