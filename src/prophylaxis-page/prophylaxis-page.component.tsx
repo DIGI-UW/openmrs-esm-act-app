@@ -34,7 +34,13 @@ function useTimingTag(patientUuid: string) {
   };
 }
 
-function BpgInjections({ patientUuid }: { patientUuid: string }) {
+interface SectionProps {
+  patientUuid: string;
+  /** Whether the section leads the page, carrying the Record actions and saying when it is empty. */
+  leads: boolean;
+}
+
+function BpgInjections({ patientUuid, leads }: SectionProps) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { injections, error, isLoading } = useBpgInjections(patientUuid);
@@ -44,6 +50,9 @@ function BpgInjections({ patientUuid }: { patientUuid: string }) {
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
+  }
+  if (!leads && !injections.length) {
+    return null;
   }
   const body = isLoading ? (
     <DataTableSkeleton
@@ -79,58 +88,97 @@ function BpgInjections({ patientUuid }: { patientUuid: string }) {
 
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title}>
-        <RecordProphylaxisButtons patientUuid={patientUuid} />
-      </CardHeader>
+      <CardHeader title={title}>{leads && <RecordProphylaxisButtons patientUuid={patientUuid} />}</CardHeader>
       {body}
     </div>
   );
 }
 
-function OralEntries({ patientUuid }: { patientUuid: string }) {
+/** Below 80% is where the oral form asks why adherence is low. */
+const LOW_ADHERENCE = 80;
+
+function OralEntries({ patientUuid, leads }: SectionProps) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { entries, error } = useOralEntries(patientUuid);
+  const { entries, error, isLoading } = useOralEntries(patientUuid);
   const title = t('oralAdherence', 'Oral adherence');
+  const headers = [
+    t('date', 'Date'),
+    t('adherence', 'Adherence'),
+    t('basedOn', 'Based on'),
+    t('reasonBelow80', 'Reason if below 80%'),
+    t('newPrescription', 'New prescription'),
+  ];
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
   }
-  if (!entries.length) {
+  if (!leads && !entries.length) {
     return null;
   }
+  const body = isLoading ? (
+    <DataTableSkeleton
+      role="progressbar"
+      columnCount={headers.length}
+      compact={desktop}
+      showHeader={false}
+      showToolbar={false}
+    />
+  ) : !entries.length ? (
+    <TableEmptyState message={t('noOralReports', 'There are no oral adherence reports to display')} />
+  ) : (
+    <Table aria-label={title} size={desktop ? 'sm' : 'lg'}>
+      <TableHead>
+        <TableRow>
+          {headers.map((header) => (
+            <TableHeader key={header}>{header}</TableHeader>
+          ))}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {entries.map((entry) => (
+          <TableRow key={entry.uuid}>
+            <TableCell>{formatDate(parseDate(entry.date), { time: false, noToday: true })}</TableCell>
+            <TableCell>
+              {entry.adherence == null ? (
+                '--'
+              ) : entry.adherence < LOW_ADHERENCE ? (
+                <Tag type="red" size="sm" data-testid="low-adherence">
+                  {`${entry.adherence}%`}
+                </Tag>
+              ) : (
+                `${entry.adherence}%`
+              )}
+            </TableCell>
+            <TableCell>{entry.basedOn ?? '--'}</TableCell>
+            <TableCell>{entry.lowAdherenceReason ?? '--'}</TableCell>
+            <TableCell>{entry.newPrescription ?? '--'}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title} />
-      <Table aria-label={title} size={desktop ? 'sm' : 'lg'}>
-        <TableHead>
-          <TableRow>
-            {[t('date', 'Date'), t('period', 'Period'), t('adherence', 'Adherence')].map((header) => (
-              <TableHeader key={header}>{header}</TableHeader>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {entries.map((entry) => (
-            <TableRow key={entry.uuid}>
-              <TableCell>{formatDate(parseDate(entry.date), { time: false, noToday: true })}</TableCell>
-              <TableCell>
-                {entry.weeks == null ? '--' : t('weeksCount', '{{count}} weeks', { count: entry.weeks })}
-              </TableCell>
-              <TableCell>{entry.adherence == null ? '--' : `${entry.adherence}%`}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <CardHeader title={title}>{leads && <RecordProphylaxisButtons patientUuid={patientUuid} />}</CardHeader>
+      {body}
     </div>
   );
 }
 
+/** The prescribed type's history leads, with the Record actions; the other shows only when it has entries. */
 export default function ProphylaxisPage({ patientUuid }: { patientUuid: string }) {
-  return (
+  const oral = useProphylaxisSummary(patientUuid).summary?.type === 'Oral';
+  return oral ? (
     <>
-      <BpgInjections patientUuid={patientUuid} />
-      <OralEntries patientUuid={patientUuid} />
+      <OralEntries patientUuid={patientUuid} leads />
+      <BpgInjections patientUuid={patientUuid} leads={false} />
+    </>
+  ) : (
+    <>
+      <BpgInjections patientUuid={patientUuid} leads />
+      <OralEntries patientUuid={patientUuid} leads={false} />
     </>
   );
 }

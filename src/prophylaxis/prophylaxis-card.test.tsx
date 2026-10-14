@@ -152,7 +152,37 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByText('Oral penicillin V')).toBeInTheDocument();
     expect(screen.getByText('Adherence (last report)')).toBeInTheDocument();
+    // ACT Core dates an oral regimen by its latest report and when that report's supply runs out.
+    expect(screen.getByText('Last report')).toBeInTheDocument();
+    expect(screen.getByText('Next refill')).toBeInTheDocument();
     await waitFor(() => expect(field('on-time')).toHaveTextContent('70%'));
+  });
+
+  it("shows a back-entered report's adherence, as ACT Core takes the latest report by encounter date", async () => {
+    const defaults = getDefaultsFromConfigSchema(configSchema) as Config;
+    const { adherence, estimateDate } = defaults.prophylaxisPage.concepts;
+    vi.mocked(useConfig<Config>).mockReturnValue(defaults);
+    const report = (entered: string, estimated: string, value: number) => ({
+      uuid: entered,
+      encounterDatetime: entered,
+      obs: [
+        { concept: { uuid: estimateDate }, value: estimated },
+        { concept: { uuid: adherence }, value },
+      ],
+    });
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('/actcore/prophylaxis')
+          ? { ...winnie, type: 'Oral', regimen: null, intervalDays: 0, onTime: null, status: 'ok' }
+          : {
+              results: [report('2026-09-01', '2026-09-01', 90), report('2026-09-20', '2026-08-15', 60)],
+              totalCount: 2,
+            },
+      })) as never);
+
+    renderCard();
+
+    await waitFor(() => expect(field('on-time')).toHaveTextContent('60%'));
   });
 
   it('says -- for an oral regimen with no adherence reported', async () => {
@@ -250,12 +280,34 @@ describe('ProphylaxisCard', () => {
     ['Record BPG', '0119d2e6-e2e1-391c-9b88-d59a10b0780d'],
     ['Record oral', 'ba29e982-ce18-302a-9fc4-d4b2c3983465'],
   ])('%s opens that form in a visit', async (action, formUuid) => {
-    respondWith(winnie);
+    respondWith({ ...winnie, type: null });
 
     renderCard();
 
     await userEvent.click(await screen.findByRole('button', { name: new RegExp(`^${action}`) }));
     expect(openForm).toHaveBeenCalledWith(formUuid);
+  });
+
+  it.each([
+    ['BPG', 'Record BPG'],
+    ['Oral', 'Record oral'],
+  ])('offers only the form for a %s prescription', async (type, action) => {
+    respondWith({ ...winnie, type });
+
+    renderCard();
+
+    await waitFor(() => expect(screen.getAllByRole('button')).toHaveLength(1));
+    expect(screen.getByRole('button', { name: new RegExp(`^${action}`) })).toBeInTheDocument();
+  });
+
+  it('offers both forms to a patient with no prescription', async () => {
+    respondWith({ ...winnie, type: null, regimen: null, intervalDays: null, status: 'none' });
+
+    renderCard();
+
+    await screen.findByText('No prescription');
+    expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
   });
 
   it('asks for the summary again when a form save invalidates the patient encounters', async () => {
@@ -295,7 +347,7 @@ describe('ProphylaxisCard', () => {
   });
 
   it('disables the Record actions while a form is being opened', async () => {
-    respondWith(winnie);
+    respondWith({ ...winnie, type: null });
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: true });
 
     renderCard();

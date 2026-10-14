@@ -22,9 +22,13 @@ const facilityName = (value: unknown) =>
 
 export interface OralEntry {
   uuid: string;
+  /** The Date of Adherence Estimate, or the encounter date for a report saved without one. */
   date: string;
-  weeks: number | null;
+  encounterDatetime: string;
   adherence: number | null;
+  basedOn: string | null;
+  lowAdherenceReason: string | null;
+  newPrescription: string | null;
 }
 
 const representation = 'custom:(uuid,encounterDatetime,location:(display),obs:(concept:(uuid),value:(uuid,display)))';
@@ -56,27 +60,35 @@ export function useBpgInjections(patientUuid: string) {
   return { injections: data ?? [], error, isLoading };
 }
 
-/** The patient's Oral Adherence reports, newest first; a null patient fetches nothing. */
+/** The patient's Oral Adherence reports, latest estimate date first; a null patient fetches nothing. */
 export function useOralEntries(patientUuid: string | null) {
   const { prophylaxisPage } = useConfig<Config>();
   const { concepts } = prophylaxisPage;
   const url = patientEncountersUrl(patientUuid, prophylaxisPage.oralEncounterType, representation);
-  const { data, error } = useSWR<Array<PatientEncounter>, Error>(patientUuid ? url : null, () =>
+  const { data, error, isLoading } = useSWR<Array<PatientEncounter>, Error>(patientUuid ? url : null, () =>
     fetchAll<PatientEncounter>(url),
   );
   const number = (encounter: PatientEncounter, concept: string) => {
     const [obs] = answersTo(encounter, concept);
     return obs == null ? null : Number(obs.value);
   };
+  const answer = (encounter: PatientEncounter, concept: string) => {
+    const [obs] = answersTo(encounter, concept);
+    return obs == null ? null : (obs.value as { display: string }).display;
+  };
   const entries = (data ?? [])
-    .map(
-      (encounter): OralEntry => ({
+    .map((encounter): OralEntry => {
+      const [estimateDate] = answersTo(encounter, concepts.estimateDate);
+      return {
         uuid: encounter.uuid,
-        date: encounter.encounterDatetime,
-        weeks: number(encounter, concepts.weeks),
+        date: estimateDate ? String(estimateDate.value) : encounter.encounterDatetime,
+        encounterDatetime: encounter.encounterDatetime,
         adherence: number(encounter, concepts.adherence),
-      }),
-    )
+        basedOn: answer(encounter, concepts.basedOn),
+        lowAdherenceReason: answer(encounter, concepts.lowAdherenceReason),
+        newPrescription: answer(encounter, concepts.newPrescription),
+      };
+    })
     .sort((a, b) => b.date.localeCompare(a.date));
-  return { entries, error };
+  return { entries, error, isLoading };
 }
