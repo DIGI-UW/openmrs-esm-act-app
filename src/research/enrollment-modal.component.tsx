@@ -37,7 +37,8 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const states = study?.states ?? [];
+  // Rejoining a study is a new enrolment; reopening a completed one leaves it with no open status.
+  const states = (study?.states ?? []).filter((s) => !enrollment?.dateCompleted || s.terminal);
   const state = states.find((s) => s.uuid === stateUuid);
   const today = dayjs().endOf('day').toDate();
   const errors = {

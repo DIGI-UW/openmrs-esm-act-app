@@ -174,6 +174,20 @@ describe('Studies', () => {
     expect(screen.getByRole('button', { name: 'Download CSV' })).toBeEnabled();
   });
 
+  it("opens a study's participants from its row", async () => {
+    backendAnswers();
+    renderPage();
+    await userEvent.selectOptions(screen.getByLabelText('Study status'), 'Active');
+
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'ARC' }));
+
+    expect(screen.getByLabelText('Study')).toHaveValue('ARC');
+    expect(screen.getByLabelText('Study status')).toHaveValue('');
+    const participants = screen.getByRole('table', { name: 'Study participants' });
+    expect(within(participants).getAllByRole('row')).toHaveLength(3);
+    expect(within(participants).queryByText('John Okello')).not.toBeInTheDocument();
+  });
+
   it('says so when no one is enrolled in a study yet', async () => {
     backendAnswers();
     vi.mocked(useReportDataset).mockReturnValue({

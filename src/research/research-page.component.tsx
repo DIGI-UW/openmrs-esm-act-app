@@ -103,8 +103,12 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { yesConcept } = useConfig<Config>().studies;
-  const { optIn, consent, dead } = useResearchAnswers(patientUuid);
-  const { enrollments, studies, error, isLoading, mutate } = useStudyEnrollments(patientUuid);
+  const answers = useResearchAnswers(patientUuid);
+  const { optIn, consent, dead } = answers;
+  const participation = useStudyEnrollments(patientUuid);
+  const { enrollments, studies, mutate } = participation;
+  const error = participation.error ?? answers.error;
+  const isLoading = participation.isLoading || answers.isLoading;
   const [editing, setEditing] = useState<StudyEnrollment | 'new' | null>(null);
   const title = t('researchParticipation', 'Research participation');
   const headers = [
@@ -214,7 +218,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
                 )}
         </p>
       )}
-      {!mayEnrol && !isLoading && activeIn.size > 0 && (
+      {!(consented && optedIn) && !isLoading && activeIn.size > 0 && (
         <InlineNotification
           className={styles.notice}
           kind="warning"
@@ -223,7 +227,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
           title={t('stillActiveInAStudy', 'Still active in a study')}
           subtitle={t(
             'stillActiveInAStudyWithout',
-            'The patient is active in a study without registry consent and a Yes to research. If they have left the study, edit its status.',
+            'The patient is active in a study, which needs registry consent and a Yes to research. If they have left the study, edit its status.',
           )}
         />
       )}

@@ -293,7 +293,7 @@
   "startSomeoneOnCare": "Start someone on care",
   "status": "Status",
   "stillActiveInAStudy": "Still active in a study",
-  "stillActiveInAStudyWithout": "The patient is active in a study without registry consent and a Yes to research. If they have left the study, edit its status.",
+  "stillActiveInAStudyWithout": "The patient is active in a study, which needs registry consent and a Yes to research. If they have left the study, edit its status.",
   "studies": "Studies",
   "study": "Study",
   "studyId": "Study ID",

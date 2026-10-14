@@ -108,7 +108,7 @@ function StudyNameModal({ study, onClose, onSaved }: { study?: Study; onClose: (
   );
 }
 
-function StudiesTable({ rows }: { rows: Array<ReportRow> }) {
+function StudiesTable({ rows, onOpen }: { rows: Array<ReportRow>; onOpen: (study: Study) => void }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { studies, error, isLoading, mutate } = useStudies();
@@ -147,7 +147,11 @@ function StudiesTable({ rows }: { rows: Array<ReportRow> }) {
       <TableBody>
         {studies.map((study) => (
           <TableRow key={study.uuid}>
-            <TableCell>{study.name}</TableCell>
+            <TableCell>
+              <Button kind="ghost" size="sm" onClick={() => onOpen(study)}>
+                {study.name}
+              </Button>
+            </TableCell>
             <TableCell>{count(study, true)}</TableCell>
             <TableCell>{count(study, false)}</TableCell>
             <TableCell>
@@ -190,10 +194,23 @@ function StudiesTable({ rows }: { rows: Array<ReportRow> }) {
   );
 }
 
-function ParticipantsTable({ rows, isLoading, error }: { rows: Array<ReportRow>; isLoading: boolean; error?: Error }) {
+type Filters = Record<(typeof filterKeys)[number], string>;
+
+function ParticipantsTable({
+  rows,
+  isLoading,
+  error,
+  filters,
+  setFilters,
+}: {
+  rows: Array<ReportRow>;
+  isLoading: boolean;
+  error?: Error;
+  filters: Filters;
+  setFilters: (change: Partial<Filters>) => void;
+}) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const [filters, setFilters] = useUrlFilters(filterKeys);
   const shown = useMemo(() => rows.filter((row) => matchesColumns(row, filters, filterColumns)), [rows, filters]);
   const { results, paginationProps } = usePagedRows(shown, filters);
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
@@ -337,12 +354,13 @@ export default function Studies() {
   const { t } = useTranslation();
   const { participantsReport } = useConfig<Config>().studies;
   const { rows, isLoading, error } = useReportDataset(participantsReport);
+  const [filters, setFilters] = useUrlFilters(filterKeys);
   return (
     <>
       <ActPageHeader title={t('studies', 'Studies')} illustration={<CohortsPictogram />} />
       <div className={styles.studies}>
-        <StudiesTable rows={rows} />
-        <ParticipantsTable rows={rows} isLoading={isLoading} error={error} />
+        <StudiesTable rows={rows} onOpen={(study) => setFilters({ study: study.name, status: '' })} />
+        <ParticipantsTable rows={rows} isLoading={isLoading} error={error} filters={filters} setFilters={setFilters} />
       </div>
     </>
   );

@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { ErrorState, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import ResearchPage from './research-page.component';
 
@@ -60,7 +60,14 @@ function backendAnswers({
   consent = yes,
   dead = false,
   enrollments = [arcEnrollment, registryEnrollment],
-}: { optIn?: string | null; consent?: string | null; dead?: boolean; enrollments?: Array<unknown> } = {}) {
+  personFails = false,
+}: {
+  optIn?: string | null;
+  consent?: string | null;
+  dead?: boolean;
+  enrollments?: Array<unknown>;
+  personFails?: boolean;
+} = {}) {
   const posts: Array<{ url: string; body: unknown }> = [];
   mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
     if (init?.method === 'POST') {
@@ -74,6 +81,9 @@ function backendAnswers({
       return { data: { results: enrollments } } as never;
     }
     if (url.includes('/person/patient-1')) {
+      if (personFails) {
+        throw new Error('person fetch failed');
+      }
       return {
         data: {
           dead,
@@ -162,6 +172,27 @@ describe('Research participation', () => {
     expect(await screen.findByText('Still active in a study')).toBeInTheDocument();
   });
 
+  it('does not warn about a patient who has died while active in a study they consented to', async () => {
+    backendAnswers({ dead: true });
+
+    renderPage();
+
+    expect(await screen.findByText('The patient has died, so they cannot be enrolled in a study.')).toBeInTheDocument();
+    expect(screen.queryByText('Still active in a study')).not.toBeInTheDocument();
+  });
+
+  it("shows an error, not unrecorded answers, when the patient's answers cannot be loaded", async () => {
+    backendAnswers({ personFails: true });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(vi.mocked(ErrorState).mock.calls.map(([props]) => props.headerTitle)).toContain('Research participation'),
+    );
+    expect(screen.queryByText(/Not recorded/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Still active in a study')).not.toBeInTheDocument();
+  });
+
   it('saves the answer to being considered as the research opt-in', async () => {
     const posts = backendAnswers({ optIn: null, enrollments: [] });
     renderPage();
@@ -234,6 +265,35 @@ describe('Research participation', () => {
         },
       }),
     );
+  });
+
+  it('offers a withdrawn participant only Inactive statuses, as rejoining is a new enrolment', async () => {
+    backendAnswers({
+      enrollments: [
+        {
+          ...arcEnrollment,
+          dateCompleted: '2026-10-10T00:00:00.000+0000',
+          states: [
+            { ...arcEnrollment.states[0], endDate: '2026-10-10T00:00:00.000+0000' },
+            {
+              uuid: 's2',
+              startDate: '2026-10-10T00:00:00.000+0000',
+              endDate: null,
+              voided: false,
+              state: { uuid: 'arc-withdrawn' },
+            },
+          ],
+        },
+      ],
+    });
+    renderPage();
+    const row = await screen.findByRole('row', { name: /ARC/ });
+
+    await userEvent.click(within(row).getByRole('button', { name: 'Edit participation' }));
+
+    const status = screen.getByLabelText('Study status');
+    expect(status).toHaveValue('arc-withdrawn');
+    expect(within(status).queryByRole('option', { name: 'Active' })).not.toBeInTheDocument();
   });
 
   it('refuses an enrollment date in the future', async () => {
