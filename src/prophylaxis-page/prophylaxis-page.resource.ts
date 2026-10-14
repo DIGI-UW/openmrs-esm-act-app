@@ -24,6 +24,7 @@ export interface OralEntry {
   uuid: string;
   /** The Date of Adherence Estimate, or the encounter date for a report saved without one. */
   date: string;
+  encounterDatetime: string;
   adherence: number | null;
   basedOn: string | null;
   lowAdherenceReason: string | null;
@@ -59,7 +60,7 @@ export function useBpgInjections(patientUuid: string) {
   return { injections: data ?? [], error, isLoading };
 }
 
-/** The patient's Oral Adherence reports, newest first; a null patient fetches nothing. */
+/** The patient's Oral Adherence reports, latest estimate date first; a null patient fetches nothing. */
 export function useOralEntries(patientUuid: string | null) {
   const { prophylaxisPage } = useConfig<Config>();
   const { concepts } = prophylaxisPage;
@@ -81,6 +82,7 @@ export function useOralEntries(patientUuid: string | null) {
       return {
         uuid: encounter.uuid,
         date: estimateDate ? String(estimateDate.value) : encounter.encounterDatetime,
+        encounterDatetime: encounter.encounterDatetime,
         adherence: number(encounter, concepts.adherence),
         basedOn: answer(encounter, concepts.basedOn),
         lowAdherenceReason: answer(encounter, concepts.lowAdherenceReason),

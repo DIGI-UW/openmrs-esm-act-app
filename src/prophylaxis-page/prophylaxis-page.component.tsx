@@ -94,7 +94,7 @@ function BpgInjections({ patientUuid, leads }: SectionProps) {
   );
 }
 
-/** Below 80% is where the oral form asks why and ACT Core suggests reviewing the regimen. */
+/** Below 80% is where the oral form asks why adherence is low. */
 const LOW_ADHERENCE = 80;
 
 function OralEntries({ patientUuid, leads }: SectionProps) {

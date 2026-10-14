@@ -158,6 +158,33 @@ describe('ProphylaxisCard', () => {
     await waitFor(() => expect(field('on-time')).toHaveTextContent('70%'));
   });
 
+  it("shows a back-entered report's adherence, as ACT Core takes the latest report by encounter date", async () => {
+    const defaults = getDefaultsFromConfigSchema(configSchema) as Config;
+    const { adherence, estimateDate } = defaults.prophylaxisPage.concepts;
+    vi.mocked(useConfig<Config>).mockReturnValue(defaults);
+    const report = (entered: string, estimated: string, value: number) => ({
+      uuid: entered,
+      encounterDatetime: entered,
+      obs: [
+        { concept: { uuid: estimateDate }, value: estimated },
+        { concept: { uuid: adherence }, value },
+      ],
+    });
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('/actcore/prophylaxis')
+          ? { ...winnie, type: 'Oral', regimen: null, intervalDays: 0, onTime: null, status: 'ok' }
+          : {
+              results: [report('2026-09-01', '2026-09-01', 90), report('2026-09-20', '2026-08-15', 60)],
+              totalCount: 2,
+            },
+      })) as never);
+
+    renderCard();
+
+    await waitFor(() => expect(field('on-time')).toHaveTextContent('60%'));
+  });
+
   it('says -- for an oral regimen with no adherence reported', async () => {
     mockOpenmrsFetch.mockImplementation(((url: string) =>
       Promise.resolve({

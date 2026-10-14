@@ -56,7 +56,10 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   // An oral regimen has no doses to count on time, so the card shows the latest reported adherence instead.
   const oral = summary?.type === 'Oral';
   const { entries } = useOralEntries(oral ? patientUuid : null);
-  const latestAdherence = entries.find((entry) => entry.adherence != null)?.adherence;
+  // ACT Core takes the latest report by encounter date, not by estimate date.
+  const latestAdherence = entries
+    .filter((entry) => entry.adherence != null)
+    .sort((a, b) => b.encounterDatetime.localeCompare(a.encounterDatetime))[0]?.adherence;
 
   if (error) {
     return null;
