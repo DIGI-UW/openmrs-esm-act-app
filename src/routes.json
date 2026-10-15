@@ -335,13 +335,13 @@
         "slot": "act-studies-dashboard-slot",
         "title": "studies"
       },
-      "privileges": "Manage Locations"
+      "privileges": "App: act.studies"
     },
     {
       "name": "act-studies-dashboard",
       "slot": "act-studies-dashboard-slot",
       "component": "studiesDashboard",
-      "privileges": "Manage Locations"
+      "privileges": "App: act.studies"
     },
     {
       "name": "act-refresh-flags-dashboard-link",
@@ -507,6 +507,26 @@
         "Get Encounters",
         "Get Observations"
       ]
+    },
+    {
+      "name": "act-research-dashboard-link",
+      "component": "researchPageDashboardLink",
+      "meta": {
+        "slot": "act-research-dashboard-slot",
+        "path": "act-research",
+        "title": "Research participation",
+        "icon": "omrs-icon-microscope"
+      },
+      "privileges": "App: act.studies"
+    },
+    {
+      "name": "act-research-dashboard",
+      "slot": "act-research-dashboard-slot",
+      "component": "researchPageDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": "App: act.studies"
     },
     {
       "name": "act-cardiac-tests-dashboard-link",

@@ -135,7 +135,7 @@ export const configSchema = {
       '${openmrsBase}/admin/locations/location.list',
     ),
     studiesUrl: link(
-      "Where the left nav's Studies leads: the Studies dashboard in this app, for a user holding Manage Locations.",
+      "Where the left nav's Studies leads: the Studies dashboard in this app, for a user holding App: act.studies.",
       '${openmrsSpaBase}/home/act-studies',
     ),
     refreshFlagsUrl: link(
@@ -207,6 +207,36 @@ export const configSchema = {
       _description:
         'The Screen Positive, Pending Confirmation report, by uuid or name, whose rows the screen positive list shows.',
     },
+  },
+  studies: {
+    participantsReport: {
+      _type: Type.String,
+      _default: 'ea8687da-4bed-5e2b-bafa-7a11ad9bc3ae',
+      _description:
+        'The RHD Study Participants report, by uuid or name: one row per study enrolment, which Studies lists and counts.',
+    },
+    studyParticipantIdAttributeType: {
+      _type: Type.UUID,
+      _default: '7840ba5d-d927-52d6-907b-dd070bea6626',
+      _description: "The program attribute type that holds a participant's ID in a study, as ACT 2.0's Study ID.",
+    },
+    researchOptInAttributeType: {
+      _type: Type.UUID,
+      _default: 'a78f6ae3-faec-5db8-9493-53877985ca7f',
+      _description:
+        'The person attribute type, of Concept format, that records whether the patient would like to be considered for research.',
+    },
+    consentAttributeType: {
+      _type: Type.UUID,
+      _default: 'e15bf9b7-249e-5d75-907d-937b8d9b0c46',
+      _description:
+        'The person attribute type, of Concept format, that records registry consent at registration. A patient is enrolled in a study only after consenting, as ACT Core requires.',
+    },
+    yesConcept: concept(
+      'The Yes answer of registry consent and of the research opt-in.',
+      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    ),
+    noConcept: concept('The No answer of the research opt-in.', '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
   },
   programmeReport: {
     report: {
@@ -443,6 +473,14 @@ export interface Config {
   dueForProphylaxis: { report: string };
   screenPositive: { report: string };
   programmeReport: { report: string };
+  studies: {
+    participantsReport: string;
+    studyParticipantIdAttributeType: string;
+    researchOptInAttributeType: string;
+    consentAttributeType: string;
+    yesConcept: string;
+    noConcept: string;
+  };
   cardiacTests: {
     echoForm: string;
     echoEncounterType: string;

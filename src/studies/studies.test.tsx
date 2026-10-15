@@ -1,143 +1,276 @@
 import React from 'react';
-import dayjs from 'dayjs';
+import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Studies from './studies.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 
-const rows = [
-  {
-    facility: 'Akunalaber HCIII',
-    facility_uuid: 'akunalaber',
-    active_patients: 12,
-    due_this_week: 3,
-    overdue: 2,
-    bpg_on_time: 8,
-    bpg_timed: 10,
-    adherence: 91,
-    data_tag: 'Complete',
-  },
-  {
-    facility: 'Anyeke HCIV',
-    facility_uuid: 'anyeke',
-    active_patients: 5,
-    due_this_week: 1,
-    overdue: 4,
-    bpg_on_time: 1,
-    bpg_timed: 2,
-    adherence: 72,
-    data_tag: 'Duplicates',
-  },
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+
+const studies = [
+  { uuid: 'arc', name: 'ARC', states: [] },
+  { uuid: 'miller', name: 'Miller', states: [] },
 ];
 
-function dataset(value: Partial<ReturnType<typeof useReportDataset>> = {}) {
-  vi.mocked(useReportDataset).mockReturnValue({
-    columns: [],
-    rows,
-    isLoading: false,
-    error: undefined,
-    mutate: vi.fn(),
-    ...value,
+const participant = (overrides: Record<string, unknown>) => ({
+  patient_uuid: 'patient-1',
+  rhd_id: 'rhd00037',
+  full_name: 'Herman Muhereza',
+  study_uuid: 'arc',
+  study: 'ARC',
+  enrollment_uuid: 'enrollment-1',
+  study_id: 'ARC-0042',
+  date_enrolled: '2026-09-01T00:00:00.000+0000',
+  date_completed: null,
+  status: 'Active',
+  active: 1,
+  primary_care_clinic: 'Kiswa HC III',
+  cardiac_clinic: 'Mulago Cardiac Clinic',
+  ...overrides,
+});
+
+const rows = [
+  participant({}),
+  participant({
+    patient_uuid: 'patient-2',
+    full_name: 'Sarah Akello',
+    enrollment_uuid: 'enrollment-2',
+    study_id: 'ARC-0007',
+    status: 'Inactive - Voluntary withdrawal',
+    active: 0,
+    date_completed: '2026-10-10T00:00:00.000+0000',
+  }),
+  participant({
+    patient_uuid: 'patient-3',
+    full_name: 'John Okello',
+    enrollment_uuid: 'enrollment-3',
+    study_uuid: 'miller',
+    study: 'Miller',
+    study_id: 'M-1',
+  }),
+];
+
+/** `saveFails` is the REST error a failed save responds with. */
+function backendAnswers(saveFails?: Record<string, unknown>) {
+  const posts: Array<{ url: string; body: unknown }> = [];
+  mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
+    if (init?.method === 'POST') {
+      posts.push({ url, body: init.body });
+      if (saveFails) {
+        throw Object.assign(new Error('400'), { responseBody: { error: saveFails } });
+      }
+      return { data: {} } as never;
+    }
+    return { data: { results: studies } } as never;
   });
+  return posts;
 }
 
-const tile = (label: string) => screen.getAllByTestId('studies-tile').find((t) => t.textContent.startsWith(label));
+const studyRow = async (name: string) =>
+  within(await screen.findByRole('table', { name: 'Studies' })).getByRole('row', { name: new RegExp(`^${name}`) });
+
+function renderPage() {
+  return render(
+    <SWRConfig value={{ provider: () => new Map() }}>
+      <Studies />
+    </SWRConfig>,
+  );
+}
 
 describe('Studies', () => {
   beforeEach(async () => {
-    await signInWith(['Manage Locations']);
-    vi.mocked(useReportDataset).mockReset();
-    dataset();
+    vi.clearAllMocks();
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    await signInWith(['App: act.studies', 'Task: act.manageStudies', 'Task: act.lists.export']);
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
   });
 
-  it("totals the facilities' rows from the programme report in the KPI tiles", () => {
-    render(<Studies />);
+  it('lists each study with its active and all participants', async () => {
+    backendAnswers();
 
-    expect(screen.getByRole('heading', { name: 'Studies' })).toBeInTheDocument();
+    renderPage();
 
-    const tiles = screen.getAllByTestId('studies-tile');
-    expect(tiles).toHaveLength(4);
-    expect(tile('Active patients')).toHaveTextContent('Active patients17');
-    expect(tile('Due this week')).toHaveTextContent('Due this week4');
-    expect(tile('Overdue')).toHaveTextContent('Overdue6');
-    // 9 of 12 timed injections on time.
-    expect(tile('BPG on-time rate')).toHaveTextContent('BPG on-time rate75%');
+    const arc = await studyRow('ARC');
+    expect(
+      within(arc)
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent),
+    ).toEqual(['ARC', '1', '2', expect.anything()]);
+    const miller = await studyRow('Miller');
+    expect(
+      within(miller)
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent)
+        .slice(0, 3),
+    ).toEqual(['Miller', '1', '1']);
   });
 
-  it('shows no rate when no injection in the period was timed', () => {
-    dataset({
-      rows: [
-        { ...rows[0], bpg_on_time: 0, bpg_timed: 0 },
-        { ...rows[1], bpg_on_time: 0, bpg_timed: 0 },
-      ],
+  it.each([
+    ['loads', { isLoading: true, error: undefined }],
+    ['fails to load', { isLoading: false, error: new Error('report failed') }],
+  ])('shows no participant counts while the participants report %s', async (_, state) => {
+    backendAnswers();
+    vi.mocked(useReportDataset).mockReturnValue({ columns: [], rows: [], mutate: vi.fn(), ...state });
+
+    renderPage();
+
+    const arc = await studyRow('ARC');
+    expect(
+      within(arc)
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent)
+        .slice(0, 3),
+    ).toEqual(['ARC', '--', '--']);
+  });
+
+  it("says why a study could not be saved, from the server's exception when it has no validation errors", async () => {
+    backendAnswers({ message: '[Could not save the program]' });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
+    await userEvent.type(screen.getByLabelText('Study name'), 'Stage Study 2');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('[Could not save the program]')).toBeInTheDocument();
+  });
+
+  it('creates a study by name', async () => {
+    const posts = backendAnswers();
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByText('Enter a name for the study')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Study name'), '  Stage Study 2 ');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(posts).toEqual([{ url: '/ws/rest/v1/actcore/studies', body: { name: 'Stage Study 2' } }]),
+    );
+  });
+
+  it('reloads the participants after a rename, as their rows carry the study name', async () => {
+    const posts = backendAnswers();
+    renderPage();
+
+    const arc = await studyRow('ARC');
+    await userEvent.click(within(arc).getByRole('button', { name: 'Rename study' }));
+    await userEvent.clear(screen.getByLabelText('Study name'));
+    await userEvent.type(screen.getByLabelText('Study name'), 'ARC 2');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(posts).toEqual([{ url: '/ws/rest/v1/actcore/studies/arc', body: { name: 'ARC 2' } }]));
+    await waitFor(() => expect(vi.mocked(useReportDataset).mock.results[0].value.mutate).toHaveBeenCalled());
+  });
+
+  it("keeps showing an opened study's participants after it is renamed", async () => {
+    backendAnswers();
+    const view = renderPage();
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'ARC' }));
+
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'Rename study' }));
+    await userEvent.clear(screen.getByLabelText('Study name'));
+    await userEvent.type(screen.getByLabelText('Study name'), 'ARC 2');
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: rows.map((row) => (row.study === 'ARC' ? { ...row, study: 'ARC 2' } : row)),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByLabelText('Study name')).not.toBeInTheDocument());
+    view.rerender(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <Studies />
+      </SWRConfig>,
+    );
+
+    expect(screen.getByLabelText('Study')).toHaveValue('ARC 2');
+    expect(within(screen.getByRole('table', { name: 'Study participants' })).getAllByRole('row')).toHaveLength(3);
+  });
+
+  it("says why a study could not be renamed, in the server's words", async () => {
+    backendAnswers({ globalErrors: [{ message: 'A program is already named Miller' }] });
+    renderPage();
+
+    const arc = await studyRow('ARC');
+    await userEvent.click(within(arc).getByRole('button', { name: 'Rename study' }));
+    await userEvent.clear(screen.getByLabelText('Study name'));
+    await userEvent.type(screen.getByLabelText('Study name'), 'Miller');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('A program is already named Miller')).toBeInTheDocument();
+  });
+
+  it('offers neither create nor rename to a user who may not manage studies', async () => {
+    await signInWith(['App: act.studies']);
+    backendAnswers();
+
+    renderPage();
+
+    expect(await studyRow('ARC')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Create study/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rename study' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
+  });
+
+  it('lists every participant, filtered by study and by status', async () => {
+    backendAnswers();
+    renderPage();
+
+    const participants = screen.getByRole('table', { name: 'Study participants' });
+    expect(within(participants).getAllByRole('row')).toHaveLength(4);
+    const withdrawn = within(participants).getByRole('row', { name: /Sarah Akello/ });
+    expect(within(withdrawn).getByText('ARC-0007')).toBeInTheDocument();
+    expect(within(withdrawn).getByText('Inactive - Voluntary withdrawal')).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Study'), 'ARC');
+    expect(within(screen.getByRole('table', { name: 'Study participants' })).getAllByRole('row')).toHaveLength(3);
+    await userEvent.selectOptions(screen.getByLabelText('Study status'), 'Active');
+    const filtered = screen.getByRole('table', { name: 'Study participants' });
+    expect(within(filtered).getAllByRole('row')).toHaveLength(2);
+    expect(within(filtered).getByText('Herman Muhereza')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download CSV' })).toBeEnabled();
+  });
+
+  it("opens a study's participants from its row", async () => {
+    backendAnswers();
+    renderPage();
+    await userEvent.selectOptions(screen.getByLabelText('Study status'), 'Active');
+
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'ARC' }));
+
+    expect(screen.getByLabelText('Study')).toHaveValue('ARC');
+    expect(screen.getByLabelText('Study status')).toHaveValue('');
+    const participants = screen.getByRole('table', { name: 'Study participants' });
+    expect(within(participants).getAllByRole('row')).toHaveLength(3);
+    expect(within(participants).queryByText('John Okello')).not.toBeInTheDocument();
+  });
+
+  it('says so when no one is enrolled in a study yet', async () => {
+    backendAnswers();
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
     });
 
-    render(<Studies />);
+    renderPage();
 
-    expect(tile('BPG on-time rate')).toHaveTextContent('BPG on-time rate–');
-  });
-
-  it('shows loading skeletons in every tile while the report is loading', () => {
-    dataset({ rows: [], isLoading: true });
-
-    render(<Studies />);
-
-    const tiles = screen.getAllByTestId('studies-tile');
-    tiles.forEach((t) => expect(within(t).queryByText(/^\d/)).not.toBeInTheDocument());
-  });
-
-  it('shows an error notification and nothing else when the report cannot be loaded', () => {
-    dataset({ rows: [], error: new Error('boom') });
-
-    render(<Studies />);
-
-    expect(screen.getByText('Could not load the report')).toBeInTheDocument();
-    expect(screen.queryAllByTestId('studies-tile')).toHaveLength(0);
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
-
-  it('runs the programme report over the current month', () => {
-    render(<Studies />);
-
-    const [, params] = vi.mocked(useReportDataset).mock.calls.at(-1);
-    expect(params.startDate).toBe(dayjs().startOf('month').format('YYYY-MM-DD'));
-    expect(params.endDate).toBe(dayjs().endOf('month').format('YYYY-MM-DD'));
-  });
-
-  it("shows a By facility table listing each programme-report row's facility, active patients, adherence and data tag, as Reports does", () => {
-    render(<Studies />);
-
-    expect(screen.getByText('By facility')).toBeInTheDocument();
-    const table = screen.getByRole('table');
-    expect(
-      within(table)
-        .getAllByRole('columnheader')
-        .map((header) => header.textContent),
-    ).toEqual(['Facility', 'Patients', 'Adherence', 'Data']);
-    expect(
-      within(table)
-        .getAllByRole('row')
-        .slice(1)
-        .map((row) =>
-          within(row)
-            .getAllByRole('cell')
-            .map((cell) => cell.textContent),
-        ),
-    ).toEqual([
-      ['Akunalaber HCIII', '12 active', '91%', 'Complete'],
-      ['Anyeke HCIV', '5 active', '72%', 'Duplicates'],
-    ]);
-  });
-
-  it('says there are no active patients when the report has no rows for the month', () => {
-    dataset({ rows: [] });
-
-    render(<Studies />);
-
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByText('There are no active patients')).toBeInTheDocument();
+    expect(screen.getByText('There are no study participants to display')).toBeInTheDocument();
   });
 });
