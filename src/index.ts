@@ -18,6 +18,7 @@ import patientsOnProphylaxisDashboardLinkComponent from './enter-prophylaxis/pat
 import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
+import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
@@ -132,6 +133,13 @@ export const facilityReportsDashboard = getAsyncLifecycle(
   options,
 );
 
+export const instanceAdminDashboardLink = getSyncLifecycle(instanceAdminDashboardLinkComponent, options);
+
+export const instanceAdminDashboard = getAsyncLifecycle(
+  () => import('./instance-admin/instance-admin-dashboard.component'),
+  options,
+);
+
 export const studiesDashboardLink = getAsyncLifecycle(
   () => import('./studies/studies-dashboard-link.component'),
   options,
@@ -187,6 +195,19 @@ export const communityHomeQuickActions = getAsyncLifecycle(
   options,
 );
 
+export const instanceAdminQuickActions = getAsyncLifecycle(
+  () => quickActions().then(({ InstanceAdminQuickActions }) => ({ default: InstanceAdminQuickActions })),
+  options,
+);
+
+export const instanceAdminKpis = getAsyncLifecycle(
+  () =>
+    import('./instance-admin/instance-admin-kpis.component').then(({ InstanceAdminKpis }) => ({
+      default: InstanceAdminKpis,
+    })),
+  options,
+);
+
 const quickActionTiles = () => import('./quick-actions/quick-action-tiles.component');
 
 export const registerPatientQuickAction = getAsyncLifecycle(
@@ -216,5 +237,20 @@ export const findPatientQuickAction = getAsyncLifecycle(
 
 export const facilityReportQuickAction = getAsyncLifecycle(
   () => quickActionTiles().then(({ FacilityReportAction }) => ({ default: FacilityReportAction })),
+  options,
+);
+
+export const formsAndSitesQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ FormsAndSitesAction }) => ({ default: FormsAndSitesAction })),
+  options,
+);
+
+export const rolePermissionsQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ RolePermissionsAction }) => ({ default: RolePermissionsAction })),
+  options,
+);
+
+export const researchParticipationQuickAction = getAsyncLifecycle(
+  () => quickActionTiles().then(({ ResearchParticipationAction }) => ({ default: ResearchParticipationAction })),
   options,
 );

@@ -6,6 +6,7 @@ import {
   PRIVILEGE_DUE_LIST,
   PRIVILEGE_COMMUNITY_HOME,
   PRIVILEGE_DATA_CLERK,
+  PRIVILEGE_INSTANCE_ADMIN,
   PRIVILEGE_REGISTRY,
   PRIVILEGE_REPORTS,
   PRIVILEGE_SCREEN_POSITIVE,
@@ -24,6 +25,7 @@ const screenPrivileges = {
   dataClerk: PRIVILEGE_DATA_CLERK,
   communityHome: PRIVILEGE_COMMUNITY_HOME,
   reports: PRIVILEGE_REPORTS,
+  instanceAdmin: PRIVILEGE_INSTANCE_ADMIN,
 };
 
 const routes = routeFile as {
@@ -72,6 +74,13 @@ describe('routes.json privileges', () => {
     ['act-reports-dashboard', screenPrivileges.reports],
     ['act-facility-reports-dashboard-link', screenPrivileges.dataClerk],
     ['act-facility-reports-dashboard', screenPrivileges.dataClerk],
+    ['act-instance-admin-dashboard-link', screenPrivileges.instanceAdmin],
+    ['act-instance-admin-dashboard', screenPrivileges.instanceAdmin],
+    ['act-instance-admin-quick-actions', screenPrivileges.instanceAdmin],
+    ['act-instance-admin-kpis', screenPrivileges.instanceAdmin],
+    ['act-instance-admin-forms-and-sites', screenPrivileges.instanceAdmin],
+    ['act-instance-admin-role-permissions', screenPrivileges.instanceAdmin],
+    ['act-instance-admin-research-participation', screenPrivileges.instanceAdmin],
     ['act-studies-dashboard-link', 'Manage Locations'],
     ['act-studies-dashboard', 'Manage Locations'],
     ['act-refresh-flags-dashboard-link', 'Task: act.refreshFlags'],
@@ -127,6 +136,18 @@ describe('routes.json privileges', () => {
         'act-worklist-pregnancy-outcome',
         'act-worklist-inr-review',
         'act-worklist-waiting-list',
+      ],
+    ],
+    [
+      'act-instance-admin-widgets-slot',
+      ['act-instance-admin-quick-actions', 'act-instance-admin-kpis'],
+    ],
+    [
+      'act-instance-admin-quick-actions-slot',
+      [
+        'act-instance-admin-forms-and-sites',
+        'act-instance-admin-role-permissions',
+        'act-instance-admin-research-participation',
       ],
     ],
   ])("fills %s in the mockup's order", (slot, names) => {

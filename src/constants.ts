@@ -6,6 +6,7 @@ export const PRIVILEGE_WAITING_LIST = 'App: act.waitingList';
 export const PRIVILEGE_SCREEN_POSITIVE = 'App: act.screenPositive';
 export const PRIVILEGE_DUE_LIST = 'App: act.dueList';
 export const PRIVILEGE_DATA_CLERK = 'App: act.dataClerk';
+export const PRIVILEGE_INSTANCE_ADMIN = 'App: act.instanceAdmin';
 export const PRIVILEGE_COMMUNITY_HOME = 'App: act.communityHome';
 export const PRIVILEGE_STATUS_FLAGS = 'App: act.statusFlags';
 export const PRIVILEGE_REPORTS = 'App: act.reports';
