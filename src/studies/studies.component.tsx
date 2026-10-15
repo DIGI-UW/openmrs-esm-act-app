@@ -32,6 +32,7 @@ import { PRIVILEGE_MANAGE_STUDIES } from '../constants';
 import { patientChartUrl } from '../patient-chart-url';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
+import { restErrorMessage } from '../rest-error-message';
 import { distinctValues, matchesColumns } from '../table-filters/distinct-values';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
@@ -70,7 +71,7 @@ function StudyNameModal({ study, onClose, onSaved }: { study?: Study; onClose: (
       onSaved();
       onClose();
     } catch (e) {
-      setSaveError(e?.responseBody?.error?.globalErrors?.[0]?.message ?? e?.message ?? String(e));
+      setSaveError(restErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -110,10 +111,13 @@ function StudyNameModal({ study, onClose, onSaved }: { study?: Study; onClose: (
 
 function StudiesTable({
   rows,
+  countsUnknown,
   onOpen,
   onSaved,
 }: {
   rows: Array<ReportRow>;
+  /** The participants are loading or failed to load, so no count is shown. */
+  countsUnknown: boolean;
   onOpen: (study: Study) => void;
   /** Reloads the participants, whose rows carry the study's name. */
   onSaved: () => void;
@@ -123,7 +127,9 @@ function StudiesTable({
   const { studies, error, isLoading, mutate } = useStudies();
   const [editing, setEditing] = useState<Study | 'new' | null>(null);
   const count = (study: Study, activeOnly: boolean) =>
-    rows.filter((row) => row.study_uuid === study.uuid && (!activeOnly || Number(row.active) === 1)).length;
+    countsUnknown
+      ? '--'
+      : rows.filter((row) => row.study_uuid === study.uuid && (!activeOnly || Number(row.active) === 1)).length;
 
   const table = error ? (
     <InlineNotification
@@ -373,6 +379,7 @@ export default function Studies() {
       <div className={styles.studies}>
         <StudiesTable
           rows={rows}
+          countsUnknown={isLoading || !!error}
           onOpen={(study) => setFilters({ study: study.name, status: '' })}
           onSaved={() => mutate()}
         />

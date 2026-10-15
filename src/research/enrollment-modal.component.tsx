@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Form, InlineNotification, Modal, Select, SelectItem, Stack, TextInput } from '@carbon/react';
 import { OpenmrsDatePicker, parseDate, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { restErrorMessage } from '../rest-error-message';
 import { type Study } from '../studies/studies.resource';
 import { type EnrollmentInput, saveEnrollment, type StudyEnrollment } from './research.resource';
 
@@ -82,7 +83,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
       onSaved();
       onClose();
     } catch (e) {
-      setSaveError(e?.responseBody?.error?.globalErrors?.[0]?.message ?? e?.message ?? String(e));
+      setSaveError(restErrorMessage(e));
     } finally {
       setSaving(false);
     }

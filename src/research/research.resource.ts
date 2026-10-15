@@ -1,4 +1,5 @@
 import useSWR from 'swr';
+import dayjs from 'dayjs';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { type Study, useStudies } from '../studies/studies.resource';
@@ -15,6 +16,7 @@ interface RestEnrollment {
     endDate: string | null;
     voided: boolean;
     state: { uuid: string };
+    auditInfo: { dateCreated: string };
   }>;
 }
 
@@ -26,14 +28,19 @@ export interface StudyEnrollment {
   studyIdAttributeUuid: string | null;
   dateEnrolled: string;
   dateCompleted: string | null;
-  /** The current Study status: the one still open, else the one that started last, an Inactive one on a tie. */
+  /**
+   * The current Study status: the one still open, else the one that started last; on a tie an Inactive one, then the
+   * one recorded last.
+   */
   stateUuid: string | null;
   /** The patient state recording the current status, to change an Inactive reason in place. */
   patientStateUuid: string | null;
+  /** Whether the current status is open and began on the enrolment date, so its start moves with that date. */
+  stateStartsOnEnrollment: boolean;
 }
 
 const enrollmentRep =
-  'custom:(uuid,program:(uuid),dateEnrolled,dateCompleted,attributes:(uuid,value,voided,attributeType:(uuid)),states:(uuid,startDate,endDate,voided,state:(uuid)))';
+  'custom:(uuid,program:(uuid),dateEnrolled,dateCompleted,attributes:(uuid,value,voided,attributeType:(uuid)),states:(uuid,startDate,endDate,voided,state:(uuid),auditInfo:(dateCreated)))';
 
 function currentState(states: RestEnrollment['states'], study: Study) {
   const terminal = (state: RestEnrollment['states'][number]) =>
@@ -47,7 +54,9 @@ function currentState(states: RestEnrollment['states'], study: Study) {
           new Date(b.startDate).getTime() - new Date(a.startDate).getTime() ||
           // A same-day enrolment and withdrawal shows the withdrawal, not Active.
           terminal(b) - terminal(a) ||
-          // REST lists states in no fixed order, so the chart would flip between same-day ones.
+          // Two same-day Inactive reasons show the one recorded last, as the participants report does.
+          new Date(b.auditInfo.dateCreated).getTime() - new Date(a.auditInfo.dateCreated).getTime() ||
+          // REST lists states in no fixed order, so the chart would flip between ones recorded in the same second.
           a.uuid.localeCompare(b.uuid),
       )[0] ?? null
   );
@@ -80,6 +89,8 @@ export function useStudyEnrollments(patientUuid: string) {
         dateCompleted: enrollment.dateCompleted,
         stateUuid: state?.state.uuid ?? null,
         patientStateUuid: state?.uuid ?? null,
+        stateStartsOnEnrollment:
+          !!state && state.endDate === null && dayjs(state.startDate).isSame(enrollment.dateEnrolled, 'day'),
       };
     })
     .sort((a, b) => new Date(b.dateEnrolled).getTime() - new Date(a.dateEnrolled).getTime());
@@ -106,7 +117,8 @@ const json = { 'Content-Type': 'application/json' };
 
 /**
  * Enrols the patient in a study, or saves the changes to their enrolment. A new status starts on the enrolment
- * date, or for an Inactive one on the completion date, which core then records as the enrolment's end.
+ * date, or for an Inactive one on the completion date, which core then records as the enrolment's end. The open
+ * status that began on the enrolment date starts on a changed enrolment date too.
  */
 export async function saveEnrollment(
   patientUuid: string,
@@ -137,6 +149,14 @@ export async function saveEnrollment(
     !!existing.dateCompleted &&
     !!existing.patientStateUuid &&
     existing.study.states.some((s) => s.uuid === existing.stateUuid && s.terminal);
+  // Moved first, as core refuses to end a status on a date before it started.
+  if (existing.stateStartsOnEnrollment && input.dateEnrolled !== dayjs(existing.dateEnrolled).format('YYYY-MM-DD')) {
+    await openmrsFetch(`${restBaseUrl}/programenrollment/${existing.uuid}/state/${existing.patientStateUuid}`, {
+      method: 'POST',
+      headers: json,
+      body: { startDate: input.dateEnrolled },
+    });
+  }
   await openmrsFetch(`${restBaseUrl}/programenrollment/${existing.uuid}`, {
     method: 'POST',
     headers: json,

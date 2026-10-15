@@ -55,13 +55,14 @@ const rows = [
   }),
 ];
 
-function backendAnswers(saveFails?: string) {
+/** `saveFails` is the REST error a failed save responds with. */
+function backendAnswers(saveFails?: Record<string, unknown>) {
   const posts: Array<{ url: string; body: unknown }> = [];
   mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
     if (init?.method === 'POST') {
       posts.push({ url, body: init.body });
       if (saveFails) {
-        throw Object.assign(new Error('400'), { responseBody: { error: { globalErrors: [{ message: saveFails }] } } });
+        throw Object.assign(new Error('400'), { responseBody: { error: saveFails } });
       }
       return { data: {} } as never;
     }
@@ -115,6 +116,35 @@ describe('Studies', () => {
     ).toEqual(['Miller', '1', '1']);
   });
 
+  it.each([
+    ['loads', { isLoading: true, error: undefined }],
+    ['fails to load', { isLoading: false, error: new Error('report failed') }],
+  ])('shows no participant counts while the participants report %s', async (_, state) => {
+    backendAnswers();
+    vi.mocked(useReportDataset).mockReturnValue({ columns: [], rows: [], mutate: vi.fn(), ...state });
+
+    renderPage();
+
+    const arc = await studyRow('ARC');
+    expect(
+      within(arc)
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent)
+        .slice(0, 3),
+    ).toEqual(['ARC', '--', '--']);
+  });
+
+  it("says why a study could not be saved, from the server's exception when it has no validation errors", async () => {
+    backendAnswers({ message: '[Could not save the program]' });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
+    await userEvent.type(screen.getByLabelText('Study name'), 'Stage Study 2');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('[Could not save the program]')).toBeInTheDocument();
+  });
+
   it('creates a study by name', async () => {
     const posts = backendAnswers();
     renderPage();
@@ -145,7 +175,7 @@ describe('Studies', () => {
   });
 
   it("says why a study could not be renamed, in the server's words", async () => {
-    backendAnswers('A program is already named Miller');
+    backendAnswers({ globalErrors: [{ message: 'A program is already named Miller' }] });
     renderPage();
 
     const arc = await studyRow('ARC');

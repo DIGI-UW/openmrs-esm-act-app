@@ -44,6 +44,7 @@ const arcEnrollment = {
       endDate: null,
       voided: false,
       state: { uuid: 'arc-active' },
+      auditInfo: { dateCreated: '2026-09-01T09:00:00.000+0000' },
     },
   ],
 };
@@ -62,17 +63,23 @@ function backendAnswers({
   dead = false,
   enrollments = [arcEnrollment, registryEnrollment],
   personFails = false,
+  saveFails,
 }: {
   optIn?: string | null;
   consent?: string | null;
   dead?: boolean;
   enrollments?: Array<unknown>;
   personFails?: boolean;
+  /** The REST error body a failed save responds with. */
+  saveFails?: unknown;
 } = {}) {
   const posts: Array<{ url: string; body: unknown }> = [];
   mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
     if (init?.method === 'POST') {
       posts.push({ url, body: init.body });
+      if (saveFails) {
+        throw Object.assign(new Error('Server responded with 400 (Bad Request)'), { responseBody: saveFails });
+      }
       return { data: {} } as never;
     }
     if (url.endsWith('/actcore/studies')) {
@@ -103,12 +110,13 @@ function backendAnswers({
 }
 
 /** A status that started and ended on the day given, as core closes the one that completes an enrolment. */
-const closedState = (uuid: string, state: string, day: string) => ({
+const closedState = (uuid: string, state: string, day: string, recorded = `${day}T09:00:00.000+0000`) => ({
   uuid,
   startDate: `${day}T00:00:00.000+0000`,
   endDate: `${day}T00:00:00.000+0000`,
   voided: false,
   state: { uuid: state },
+  auditInfo: { dateCreated: recorded },
 });
 
 /** Matches the paragraph whose whole text this is, across the label and answer it is split into. */
@@ -277,6 +285,95 @@ describe('Research participation', () => {
     );
   });
 
+  it("corrects an active participant's Study ID, keeping them Active", async () => {
+    const posts = backendAnswers();
+    renderPage();
+    const row = await screen.findByRole('row', { name: /ARC/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Edit participation' }));
+
+    expect(screen.getByLabelText('Study status')).toHaveValue('arc-active');
+    await userEvent.clear(screen.getByLabelText('Study ID'));
+    await userEvent.type(screen.getByLabelText('Study ID'), 'ARC-0043');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(posts).toEqual([
+        {
+          url: '/ws/rest/v1/programenrollment/enrollment-arc',
+          body: { dateEnrolled: '2026-09-01', dateCompleted: null },
+        },
+        { url: '/ws/rest/v1/programenrollment/enrollment-arc/attribute/attr-1', body: { value: 'ARC-0043' } },
+      ]),
+    );
+  });
+
+  it('moves the Active status to an earlier enrollment date, so a withdrawal before the old date saves', async () => {
+    const posts = backendAnswers();
+    renderPage();
+    const row = await screen.findByRole('row', { name: /ARC/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Edit participation' }));
+
+    fireEvent.change(screen.getByLabelText('Enrollment date'), { target: { value: '2026-08-01' } });
+    await userEvent.selectOptions(screen.getByLabelText('Study status'), 'Inactive - Voluntary withdrawal');
+    fireEvent.change(screen.getByLabelText('Completion date'), { target: { value: '2026-08-15' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(posts).toEqual([
+        { url: '/ws/rest/v1/programenrollment/enrollment-arc/state/s1', body: { startDate: '2026-08-01' } },
+        {
+          url: '/ws/rest/v1/programenrollment/enrollment-arc',
+          body: {
+            dateEnrolled: '2026-08-01',
+            dateCompleted: '2026-08-15',
+            states: [{ state: 'arc-withdrawn', startDate: '2026-08-15' }],
+          },
+        },
+      ]),
+    );
+  });
+
+  it('moves the Active status to a later enrollment date, so it does not start before the enrolment', async () => {
+    const posts = backendAnswers();
+    renderPage();
+    const row = await screen.findByRole('row', { name: /ARC/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Edit participation' }));
+
+    fireEvent.change(screen.getByLabelText('Enrollment date'), { target: { value: '2026-09-20' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(posts).toEqual([
+        { url: '/ws/rest/v1/programenrollment/enrollment-arc/state/s1', body: { startDate: '2026-09-20' } },
+        {
+          url: '/ws/rest/v1/programenrollment/enrollment-arc',
+          body: { dateEnrolled: '2026-09-20', dateCompleted: null },
+        },
+      ]),
+    );
+  });
+
+  it("says why a participation could not be saved, in the server's words for a status error", async () => {
+    backendAnswers({
+      saveFails: {
+        error: {
+          message: 'Invalid Submission',
+          globalErrors: [],
+          fieldErrors: { states: [{ code: 'PatientProgram.error.foundOverlappingStates', message: 'States overlap' }] },
+        },
+      },
+    });
+    renderPage();
+    const row = await screen.findByRole('row', { name: /ARC/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Edit participation' }));
+
+    await userEvent.selectOptions(screen.getByLabelText('Study status'), 'Inactive - Voluntary withdrawal');
+    fireEvent.change(screen.getByLabelText('Completion date'), { target: { value: '2026-10-10' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('States overlap')).toBeInTheDocument();
+  });
+
   it('offers a withdrawn participant only Inactive statuses, as rejoining is a new enrolment', async () => {
     backendAnswers({
       enrollments: [
@@ -291,6 +388,7 @@ describe('Research participation', () => {
               endDate: null,
               voided: false,
               state: { uuid: 'arc-withdrawn' },
+              auditInfo: { dateCreated: '2026-10-10T09:00:00.000+0000' },
             },
           ],
         },
@@ -360,9 +458,12 @@ describe('Research participation', () => {
   );
 
   it.each([false, true])(
-    'shows one of two same-day Inactive reasons, whatever order they arrive in (reversed: %s)',
+    'shows the later recorded of two same-day Inactive reasons, as the participants report does (reversed: %s)',
     async (reversed) => {
-      const sameDay = [closedState('s2', 'arc-withdrawn', '2026-10-10'), closedState('s3', 'arc-lost', '2026-10-10')];
+      const sameDay = [
+        closedState('s2', 'arc-withdrawn', '2026-10-10', '2026-10-10T09:00:00.000+0000'),
+        closedState('s3', 'arc-lost', '2026-10-10', '2026-10-11T09:00:00.000+0000'),
+      ];
       backendAnswers({
         enrollments: [
           {
@@ -379,7 +480,7 @@ describe('Research participation', () => {
       renderPage();
 
       const row = await screen.findByRole('row', { name: /ARC/ });
-      expect(within(row).getByText('Inactive - Voluntary withdrawal')).toBeInTheDocument();
+      expect(within(row).getByText('Inactive - Lost to follow-up')).toBeInTheDocument();
     },
   );
 
