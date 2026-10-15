@@ -26,22 +26,30 @@ export interface StudyEnrollment {
   studyIdAttributeUuid: string | null;
   dateEnrolled: string;
   dateCompleted: string | null;
-  /** The current Study status: the one still open, else the one that started last. */
+  /** The current Study status: the one still open, else the one that started last, an Inactive one on a tie. */
   stateUuid: string | null;
+  /** The patient state recording the current status, to change an Inactive reason in place. */
+  patientStateUuid: string | null;
 }
 
 const enrollmentRep =
   'custom:(uuid,program:(uuid),dateEnrolled,dateCompleted,attributes:(uuid,value,voided,attributeType:(uuid)),states:(uuid,startDate,endDate,voided,state:(uuid)))';
 
-function currentState(states: RestEnrollment['states']) {
+function currentState(states: RestEnrollment['states'], study: Study) {
+  const terminal = (state: RestEnrollment['states'][number]) =>
+    Number(study.states.some((s) => s.uuid === state.state.uuid && s.terminal));
   return (
     states
       .filter((state) => !state.voided)
       .sort(
         (a, b) =>
           Number(a.endDate !== null) - Number(b.endDate !== null) ||
-          new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
-      )[0]?.state.uuid ?? null
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime() ||
+          // A same-day enrolment and withdrawal shows the withdrawal, not Active.
+          terminal(b) - terminal(a) ||
+          // REST lists states in no fixed order, so the chart would flip between same-day ones.
+          a.uuid.localeCompare(b.uuid),
+      )[0] ?? null
   );
 }
 
@@ -58,17 +66,20 @@ export function useStudyEnrollments(patientUuid: string) {
   const enrollments: Array<StudyEnrollment> = (data ?? [])
     .filter((enrollment) => byUuid.has(enrollment.program.uuid))
     .map((enrollment) => {
+      const study = byUuid.get(enrollment.program.uuid);
+      const state = currentState(enrollment.states, study);
       const studyId = enrollment.attributes.find(
         (attribute) => !attribute.voided && attribute.attributeType.uuid === studyParticipantIdAttributeType,
       );
       return {
         uuid: enrollment.uuid,
-        study: byUuid.get(enrollment.program.uuid),
+        study,
         studyId: studyId?.value ?? null,
         studyIdAttributeUuid: studyId?.uuid ?? null,
         dateEnrolled: enrollment.dateEnrolled,
         dateCompleted: enrollment.dateCompleted,
-        stateUuid: currentState(enrollment.states),
+        stateUuid: state?.state.uuid ?? null,
+        patientStateUuid: state?.uuid ?? null,
       };
     })
     .sort((a, b) => new Date(b.dateEnrolled).getTime() - new Date(a.dateEnrolled).getTime());
@@ -120,15 +131,28 @@ export async function saveEnrollment(
     return;
   }
   const statusChanged = input.stateUuid !== existing.stateUuid;
+  // Core adds a new status beside a closed Inactive one rather than ending it, which leaves two reasons.
+  const reasonChanged =
+    statusChanged &&
+    !!existing.dateCompleted &&
+    !!existing.patientStateUuid &&
+    existing.study.states.some((s) => s.uuid === existing.stateUuid && s.terminal);
   await openmrsFetch(`${restBaseUrl}/programenrollment/${existing.uuid}`, {
     method: 'POST',
     headers: json,
     body: {
       dateEnrolled: input.dateEnrolled,
       dateCompleted: input.dateCompleted,
-      ...(statusChanged ? { states: [{ state: input.stateUuid, startDate: stateStart }] } : {}),
+      ...(statusChanged && !reasonChanged ? { states: [{ state: input.stateUuid, startDate: stateStart }] } : {}),
     },
   });
+  if (reasonChanged) {
+    await openmrsFetch(`${restBaseUrl}/programenrollment/${existing.uuid}/state/${existing.patientStateUuid}`, {
+      method: 'POST',
+      headers: json,
+      body: { state: input.stateUuid },
+    });
+  }
   if (input.studyId !== existing.studyId) {
     await openmrsFetch(
       existing.studyIdAttributeUuid

@@ -108,7 +108,16 @@ function StudyNameModal({ study, onClose, onSaved }: { study?: Study; onClose: (
   );
 }
 
-function StudiesTable({ rows, onOpen }: { rows: Array<ReportRow>; onOpen: (study: Study) => void }) {
+function StudiesTable({
+  rows,
+  onOpen,
+  onSaved,
+}: {
+  rows: Array<ReportRow>;
+  onOpen: (study: Study) => void;
+  /** Reloads the participants, whose rows carry the study's name. */
+  onSaved: () => void;
+}) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { studies, error, isLoading, mutate } = useStudies();
@@ -187,7 +196,10 @@ function StudiesTable({ rows, onOpen }: { rows: Array<ReportRow>; onOpen: (study
         <StudyNameModal
           study={editing === 'new' ? undefined : editing}
           onClose={() => setEditing(null)}
-          onSaved={() => mutate()}
+          onSaved={() => {
+            mutate();
+            onSaved();
+          }}
         />
       )}
     </section>
@@ -353,13 +365,17 @@ function ParticipantsTable({
 export default function Studies() {
   const { t } = useTranslation();
   const { participantsReport } = useConfig<Config>().studies;
-  const { rows, isLoading, error } = useReportDataset(participantsReport);
+  const { rows, isLoading, error, mutate } = useReportDataset(participantsReport);
   const [filters, setFilters] = useUrlFilters(filterKeys);
   return (
     <>
       <ActPageHeader title={t('studies', 'Studies')} illustration={<CohortsPictogram />} />
       <div className={styles.studies}>
-        <StudiesTable rows={rows} onOpen={(study) => setFilters({ study: study.name, status: '' })} />
+        <StudiesTable
+          rows={rows}
+          onOpen={(study) => setFilters({ study: study.name, status: '' })}
+          onSaved={() => mutate()}
+        />
         <ParticipantsTable rows={rows} isLoading={isLoading} error={error} filters={filters} setFilters={setFilters} />
       </div>
     </>

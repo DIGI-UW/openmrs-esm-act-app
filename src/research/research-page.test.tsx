@@ -18,6 +18,7 @@ const studyIdType = '7840ba5d-d927-52d6-907b-dd070bea6626';
 const states = [
   { uuid: 'arc-active', name: 'Active', initial: true, terminal: false },
   { uuid: 'arc-withdrawn', name: 'Inactive - Voluntary withdrawal', initial: false, terminal: true },
+  { uuid: 'arc-lost', name: 'Inactive - Lost to follow-up', initial: false, terminal: true },
 ];
 const studies = [
   { uuid: 'arc', name: 'ARC', states },
@@ -100,6 +101,15 @@ function backendAnswers({
   });
   return posts;
 }
+
+/** A status that started and ended on the day given, as core closes the one that completes an enrolment. */
+const closedState = (uuid: string, state: string, day: string) => ({
+  uuid,
+  startDate: `${day}T00:00:00.000+0000`,
+  endDate: `${day}T00:00:00.000+0000`,
+  voided: false,
+  state: { uuid: state },
+});
 
 /** Matches the paragraph whose whole text this is, across the label and answer it is split into. */
 const paragraph = (text: string) => (_: string, element: Element | null) =>
@@ -295,6 +305,83 @@ describe('Research participation', () => {
     expect(status).toHaveValue('arc-withdrawn');
     expect(within(status).queryByRole('option', { name: 'Active' })).not.toBeInTheDocument();
   });
+
+  it("changes a withdrawn participant's Inactive reason in place, leaving one reason", async () => {
+    const posts = backendAnswers({
+      enrollments: [
+        {
+          ...arcEnrollment,
+          dateCompleted: '2026-10-10T00:00:00.000+0000',
+          states: [
+            { ...arcEnrollment.states[0], endDate: '2026-10-10T00:00:00.000+0000' },
+            closedState('s2', 'arc-withdrawn', '2026-10-10'),
+          ],
+        },
+      ],
+    });
+    renderPage();
+    const row = await screen.findByRole('row', { name: /ARC/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Edit participation' }));
+
+    await userEvent.selectOptions(screen.getByLabelText('Study status'), 'Inactive - Lost to follow-up');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(posts).toEqual([
+        {
+          url: '/ws/rest/v1/programenrollment/enrollment-arc',
+          body: { dateEnrolled: '2026-09-01', dateCompleted: '2026-10-10' },
+        },
+        { url: '/ws/rest/v1/programenrollment/enrollment-arc/state/s2', body: { state: 'arc-lost' } },
+      ]),
+    );
+  });
+
+  it.each([false, true])(
+    'shows a same-day enrolment and withdrawal as withdrawn, whatever order the states arrive in (reversed: %s)',
+    async (reversed) => {
+      const sameDay = [closedState('s1', 'arc-active', '2026-10-10'), closedState('s2', 'arc-withdrawn', '2026-10-10')];
+      backendAnswers({
+        enrollments: [
+          {
+            ...arcEnrollment,
+            dateEnrolled: '2026-10-10T00:00:00.000+0000',
+            dateCompleted: '2026-10-10T00:00:00.000+0000',
+            states: reversed ? sameDay.reverse() : sameDay,
+          },
+        ],
+      });
+
+      renderPage();
+
+      const row = await screen.findByRole('row', { name: /ARC/ });
+      expect(within(row).getByText('Inactive - Voluntary withdrawal')).toBeInTheDocument();
+    },
+  );
+
+  it.each([false, true])(
+    'shows one of two same-day Inactive reasons, whatever order they arrive in (reversed: %s)',
+    async (reversed) => {
+      const sameDay = [closedState('s2', 'arc-withdrawn', '2026-10-10'), closedState('s3', 'arc-lost', '2026-10-10')];
+      backendAnswers({
+        enrollments: [
+          {
+            ...arcEnrollment,
+            dateCompleted: '2026-10-10T00:00:00.000+0000',
+            states: [
+              { ...arcEnrollment.states[0], endDate: '2026-10-10T00:00:00.000+0000' },
+              ...(reversed ? sameDay.reverse() : sameDay),
+            ],
+          },
+        ],
+      });
+
+      renderPage();
+
+      const row = await screen.findByRole('row', { name: /ARC/ });
+      expect(within(row).getByText('Inactive - Voluntary withdrawal')).toBeInTheDocument();
+    },
+  );
 
   it('refuses an enrollment date in the future', async () => {
     backendAnswers();

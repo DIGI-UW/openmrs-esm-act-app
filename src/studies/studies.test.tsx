@@ -130,6 +130,20 @@ describe('Studies', () => {
     );
   });
 
+  it('reloads the participants after a rename, as their rows carry the study name', async () => {
+    const posts = backendAnswers();
+    renderPage();
+
+    const arc = await studyRow('ARC');
+    await userEvent.click(within(arc).getByRole('button', { name: 'Rename study' }));
+    await userEvent.clear(screen.getByLabelText('Study name'));
+    await userEvent.type(screen.getByLabelText('Study name'), 'ARC 2');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(posts).toEqual([{ url: '/ws/rest/v1/actcore/studies/arc', body: { name: 'ARC 2' } }]));
+    await waitFor(() => expect(vi.mocked(useReportDataset).mock.results[0].value.mutate).toHaveBeenCalled());
+  });
+
   it("says why a study could not be renamed, in the server's words", async () => {
     backendAnswers('A program is already named Miller');
     renderPage();
