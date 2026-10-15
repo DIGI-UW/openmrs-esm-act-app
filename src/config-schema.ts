@@ -111,6 +111,20 @@ export const configSchema = {
       '${openmrsSpaBase}/home/act-facility-reports',
     ),
   },
+  instanceAdminQuickActions: {
+    formsAndSitesUrl: link(
+      "Where the Forms & sites quick action on the Instance dashboard leads: OpenMRS's system administration, for a user holding App: act.instanceAdmin.",
+      '${openmrsBase}/admin/index.htm',
+    ),
+    rolePermissionsUrl: link(
+      "Where the Role permissions quick action on the Instance dashboard leads: OpenMRS's roles and their privileges, which open for a user holding Manage Roles.",
+      '${openmrsBase}/admin/users/role.list',
+    ),
+    researchParticipationUrl: link(
+      "Where the Research participation quick action on the Instance dashboard leads: OpenMRS's module configuration, for a user holding App: act.instanceAdmin.",
+      '${openmrsBase}/admin/maintenance/settings.list',
+    ),
+  },
   adminLinks: {
     usersUrl: link(
       "Where the left nav's Users and roles leads: OpenMRS's user management, for a user holding Edit Users.",
@@ -446,6 +460,11 @@ export interface Config {
   };
   dataClerkQuickActions: {
     facilityReportUrl: string;
+  };
+  instanceAdminQuickActions: {
+    formsAndSitesUrl: string;
+    rolePermissionsUrl: string;
+    researchParticipationUrl: string;
   };
   adminLinks: { usersUrl: string; clinicsUrl: string; studiesUrl: string; refreshFlagsUrl: string };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };

@@ -275,6 +275,58 @@
       "privileges": "App: act.dataClerk"
     },
     {
+      "name": "act-instance-admin-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "instanceAdminDashboardLink",
+      "meta": {
+        "name": "act-instance-admin",
+        "slot": "act-instance-admin-dashboard-slot",
+        "title": "home"
+      },
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-dashboard",
+      "slot": "act-instance-admin-dashboard-slot",
+      "component": "instanceAdminDashboard",
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-quick-actions",
+      "slot": "act-instance-admin-widgets-slot",
+      "component": "instanceAdminQuickActions",
+      "order": 1,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-kpis",
+      "slot": "act-instance-admin-widgets-slot",
+      "component": "instanceAdminKpis",
+      "order": 2,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-forms-and-sites",
+      "slot": "act-instance-admin-quick-actions-slot",
+      "component": "formsAndSitesQuickAction",
+      "order": 1,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-role-permissions",
+      "slot": "act-instance-admin-quick-actions-slot",
+      "component": "rolePermissionsQuickAction",
+      "order": 2,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-research-participation",
+      "slot": "act-instance-admin-quick-actions-slot",
+      "component": "researchParticipationQuickAction",
+      "order": 3,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
       "name": "act-studies-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "studiesDashboardLink",

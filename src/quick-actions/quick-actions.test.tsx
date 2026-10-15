@@ -19,9 +19,12 @@ import {
   EnterProphylaxisAction,
   FacilityReportAction,
   FindPatientAction,
+  FormsAndSitesAction,
   RecordBpgAction,
   RecordOralAction,
   RegisterPatientAction,
+  ResearchParticipationAction,
+  RolePermissionsAction,
 } from './quick-action-tiles.component';
 
 vi.mock('../visits/open-form-in-chart', () => ({ openFormInChart: vi.fn() }));
@@ -195,6 +198,9 @@ describe('Home quick action tiles', () => {
     { Tile: RegisterPatientAction, label: 'Register patient', subtitle: 'Start someone on care' },
     { Tile: FindPatientAction, label: 'Find a patient', subtitle: 'Name or ACT ID' },
     { Tile: FacilityReportAction, label: 'Facility report', subtitle: 'Monthly · quarterly' },
+    { Tile: FormsAndSitesAction, label: 'Forms & sites', subtitle: 'Configure instance' },
+    { Tile: RolePermissionsAction, label: 'Role permissions', subtitle: 'Who sees what' },
+    { Tile: ResearchParticipationAction, label: 'Research participation', subtitle: 'Governed · OFF by default' },
   ])('labels $label with $subtitle', ({ Tile, label, subtitle }) => {
     render(<Tile />);
 
@@ -229,11 +235,15 @@ describe('Home quick action tiles', () => {
     },
   );
 
-  it('links Register patient and Facility report to their configured screens', () => {
+  it('links Register patient, Facility report, Forms & sites, Role permissions and Research participation to their configured screens', () => {
+    window.openmrsBase = '/openmrs';
     render(
       <>
         <RegisterPatientAction />
         <FacilityReportAction />
+        <FormsAndSitesAction />
+        <RolePermissionsAction />
+        <ResearchParticipationAction />
       </>,
     );
 
@@ -244,6 +254,15 @@ describe('Home quick action tiles', () => {
     expect(screen.getByRole('link', { name: /Facility report/ })).toHaveAttribute(
       'href',
       '/openmrs/spa/home/act-facility-reports',
+    );
+    expect(screen.getByRole('link', { name: /Forms & sites/ })).toHaveAttribute('href', '/openmrs/admin/index.htm');
+    expect(screen.getByRole('link', { name: /Role permissions/ })).toHaveAttribute(
+      'href',
+      '/openmrs/admin/users/role.list',
+    );
+    expect(screen.getByRole('link', { name: /Research participation/ })).toHaveAttribute(
+      'href',
+      '/openmrs/admin/maintenance/settings.list',
     );
   });
 
