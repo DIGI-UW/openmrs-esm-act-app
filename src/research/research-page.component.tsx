@@ -109,7 +109,8 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
   const { enrollments, studies, mutate } = participation;
   const error = participation.error ?? answers.error;
   const isLoading = participation.isLoading || answers.isLoading;
-  const [editing, setEditing] = useState<StudyEnrollment | 'new' | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const edited = enrollments.find((enrollment) => enrollment.uuid === editing);
   const title = t('researchParticipation', 'Research participation');
   const headers = [
     t('study', 'Study'),
@@ -179,7 +180,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
                     hasIconOnly
                     renderIcon={Edit}
                     iconDescription={t('editParticipation', 'Edit participation')}
-                    onClick={() => setEditing(enrollment)}
+                    onClick={() => setEditing(enrollment.uuid)}
                   />
                 </UserHasAccess>
               </TableCell>
@@ -232,11 +233,11 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
         />
       )}
       {body}
-      {editing && (
+      {(editing === 'new' || edited) && (
         <EnrollmentModal
           patientUuid={patientUuid}
           studies={available}
-          enrollment={editing === 'new' ? undefined : editing}
+          enrollment={edited}
           onClose={() => setEditing(null)}
           onSaved={() => mutate()}
         />

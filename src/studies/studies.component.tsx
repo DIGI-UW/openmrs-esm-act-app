@@ -50,7 +50,15 @@ const reportDate = (value: unknown) => {
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 };
 
-function StudyNameModal({ study, onClose, onSaved }: { study?: Study; onClose: () => void; onSaved: () => void }) {
+function StudyNameModal({
+  study,
+  onClose,
+  onSaved,
+}: {
+  study?: Study;
+  onClose: () => void;
+  onSaved: (name: string) => void;
+}) {
   const { t } = useTranslation();
   const [name, setName] = useState(study?.name ?? '');
   const [submitted, setSubmitted] = useState(false);
@@ -68,7 +76,7 @@ function StudyNameModal({ study, onClose, onSaved }: { study?: Study; onClose: (
     try {
       await saveStudy(name.trim(), study?.uuid);
       showSnackbar({ kind: 'success', title: t('studySaved', 'Study saved') });
-      onSaved();
+      onSaved(name.trim());
       onClose();
     } catch (e) {
       setSaveError(restErrorMessage(e));
@@ -120,7 +128,7 @@ function StudiesTable({
   countsUnknown: boolean;
   onOpen: (study: Study) => void;
   /** Reloads the participants, whose rows carry the study's name. */
-  onSaved: () => void;
+  onSaved: (renamed?: { from: string; to: string }) => void;
 }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
@@ -202,9 +210,9 @@ function StudiesTable({
         <StudyNameModal
           study={editing === 'new' ? undefined : editing}
           onClose={() => setEditing(null)}
-          onSaved={() => {
+          onSaved={(name) => {
             mutate();
-            onSaved();
+            onSaved(editing === 'new' ? undefined : { from: editing.name, to: name });
           }}
         />
       )}
@@ -381,7 +389,12 @@ export default function Studies() {
           rows={rows}
           countsUnknown={isLoading || !!error}
           onOpen={(study) => setFilters({ study: study.name, status: '' })}
-          onSaved={() => mutate()}
+          onSaved={(renamed) => {
+            mutate();
+            if (renamed && filters.study === renamed.from) {
+              setFilters({ study: renamed.to });
+            }
+          }}
         />
         <ParticipantsTable rows={rows} isLoading={isLoading} error={error} filters={filters} setFilters={setFilters} />
       </div>

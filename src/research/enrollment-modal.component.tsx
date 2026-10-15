@@ -15,7 +15,7 @@ interface EnrollmentModalProps {
   patientUuid: string;
   /** The studies a new enrolment may be in: those the patient is not active in. */
   studies: Array<Study>;
-  /** The enrolment to edit; a new one when absent. */
+  /** The enrolment to edit, as last loaded; a new one when absent. */
   enrollment?: StudyEnrollment;
   onClose: () => void;
   onSaved: () => void;
@@ -84,6 +84,8 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
       onClose();
     } catch (e) {
       setSaveError(restErrorMessage(e));
+      // Some requests may have saved before the failure, so a retry is planned from the reloaded enrolment.
+      onSaved();
     } finally {
       setSaving(false);
     }

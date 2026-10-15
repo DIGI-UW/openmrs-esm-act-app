@@ -109,7 +109,7 @@ export interface EnrollmentInput {
   /** yyyy-MM-dd */
   dateEnrolled: string;
   stateUuid: string;
-  /** yyyy-MM-dd; the date an Inactive status took effect, which completes the enrolment. */
+  /** yyyy-MM-dd; the end of the enrolment, on which a new Inactive status starts. */
   dateCompleted: string | null;
 }
 
@@ -118,7 +118,8 @@ const json = { 'Content-Type': 'application/json' };
 /**
  * Enrols the patient in a study, or saves the changes to their enrolment. A new status starts on the enrolment
  * date, or for an Inactive one on the completion date, which core then records as the enrolment's end. The open
- * status that began on the enrolment date starts on a changed enrolment date too.
+ * status that began on the enrolment date starts on a changed enrolment date too, but a changed completion date
+ * leaves the closed statuses' dates as they were: the chart and report read the completion date from the enrolment.
  */
 export async function saveEnrollment(
   patientUuid: string,

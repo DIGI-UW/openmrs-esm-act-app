@@ -174,6 +174,33 @@ describe('Studies', () => {
     await waitFor(() => expect(vi.mocked(useReportDataset).mock.results[0].value.mutate).toHaveBeenCalled());
   });
 
+  it("keeps showing an opened study's participants after it is renamed", async () => {
+    backendAnswers();
+    const view = renderPage();
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'ARC' }));
+
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'Rename study' }));
+    await userEvent.clear(screen.getByLabelText('Study name'));
+    await userEvent.type(screen.getByLabelText('Study name'), 'ARC 2');
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: rows.map((row) => (row.study === 'ARC' ? { ...row, study: 'ARC 2' } : row)),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByLabelText('Study name')).not.toBeInTheDocument());
+    view.rerender(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <Studies />
+      </SWRConfig>,
+    );
+
+    expect(screen.getByLabelText('Study')).toHaveValue('ARC 2');
+    expect(within(screen.getByRole('table', { name: 'Study participants' })).getAllByRole('row')).toHaveLength(3);
+  });
+
   it("says why a study could not be renamed, in the server's words", async () => {
     backendAnswers({ globalErrors: [{ message: 'A program is already named Miller' }] });
     renderPage();

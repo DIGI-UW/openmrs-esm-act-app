@@ -374,6 +374,53 @@ describe('Research participation', () => {
     expect(await screen.findByText('States overlap')).toBeInTheDocument();
   });
 
+  it('retries a save that failed partway from what was saved, not resending the withdrawal', async () => {
+    const posts = backendAnswers();
+    const answer = mockOpenmrsFetch.getMockImplementation();
+    const withdrawn = {
+      ...arcEnrollment,
+      dateCompleted: '2026-10-10T00:00:00.000+0000',
+      states: [
+        { ...arcEnrollment.states[0], endDate: '2026-10-10T00:00:00.000+0000' },
+        closedState('s2', 'arc-withdrawn', '2026-10-10'),
+      ],
+    };
+    let attributeFails = true;
+    mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
+      if (init?.method === 'POST' && url.includes('/attribute/') && attributeFails) {
+        attributeFails = false;
+        posts.push({ url, body: init.body });
+        throw Object.assign(new Error('Server responded with 500'), { responseBody: { error: { message: 'Down' } } });
+      }
+      if (!init?.method && url.includes('/programenrollment?patient=patient-1') && posts.length) {
+        return { data: { results: [withdrawn] } } as never;
+      }
+      return answer(url, init);
+    });
+    renderPage();
+    const row = await screen.findByRole('row', { name: /ARC/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Edit participation' }));
+
+    await userEvent.clear(screen.getByLabelText('Study ID'));
+    await userEvent.type(screen.getByLabelText('Study ID'), 'ARC-0043');
+    await userEvent.selectOptions(screen.getByLabelText('Study status'), 'Inactive - Voluntary withdrawal');
+    fireEvent.change(screen.getByLabelText('Completion date'), { target: { value: '2026-10-10' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Down')).toBeInTheDocument();
+    await waitFor(() => expect(within(row).getByText('Inactive - Voluntary withdrawal')).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(posts.slice(2)).toEqual([
+        {
+          url: '/ws/rest/v1/programenrollment/enrollment-arc',
+          body: { dateEnrolled: '2026-09-01', dateCompleted: '2026-10-10' },
+        },
+        { url: '/ws/rest/v1/programenrollment/enrollment-arc/attribute/attr-1', body: { value: 'ARC-0043' } },
+      ]),
+    );
+  });
+
   it('offers a withdrawn participant only Inactive statuses, as rejoining is a new enrolment', async () => {
     backendAnswers({
       enrollments: [
@@ -438,7 +485,7 @@ describe('Research participation', () => {
   it.each([false, true])(
     'shows a same-day enrolment and withdrawal as withdrawn, whatever order the states arrive in (reversed: %s)',
     async (reversed) => {
-      const sameDay = [closedState('s1', 'arc-active', '2026-10-10'), closedState('s2', 'arc-withdrawn', '2026-10-10')];
+      const sameDay = [closedState('s2', 'arc-active', '2026-10-10'), closedState('s1', 'arc-withdrawn', '2026-10-10')];
       backendAnswers({
         enrollments: [
           {
@@ -461,8 +508,8 @@ describe('Research participation', () => {
     'shows the later recorded of two same-day Inactive reasons, as the participants report does (reversed: %s)',
     async (reversed) => {
       const sameDay = [
-        closedState('s2', 'arc-withdrawn', '2026-10-10', '2026-10-10T09:00:00.000+0000'),
-        closedState('s3', 'arc-lost', '2026-10-10', '2026-10-11T09:00:00.000+0000'),
+        closedState('s3', 'arc-withdrawn', '2026-10-10', '2026-10-10T09:00:00.000+0000'),
+        closedState('s2', 'arc-lost', '2026-10-10', '2026-10-11T09:00:00.000+0000'),
       ];
       backendAnswers({
         enrollments: [
