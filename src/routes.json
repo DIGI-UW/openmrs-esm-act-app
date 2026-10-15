@@ -421,10 +421,11 @@
       "privileges": "Get Patients"
     },
     {
-      "name": "act-prophylaxis-status-tag",
+      "name": "act-patient-status-flags",
       "slot": "patient-banner-tags-slot",
-      "component": "prophylaxisStatusTag",
+      "component": "patientStatusFlags",
       "privileges": [
+        "App: act.statusFlags",
         "Get Encounters",
         "Get Observations"
       ]

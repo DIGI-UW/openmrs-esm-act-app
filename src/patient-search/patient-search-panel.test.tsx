@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
+import dayjs from 'dayjs';
 import {
   age,
   getDefaultsFromConfigSchema,
@@ -30,7 +31,8 @@ function patient(uuid: string, name: string, actId: string, gender = 'F') {
 
 const grace = patient('grace', 'Grace Achieng', 'rhd00008');
 const esther = patient('esther', 'Esther Nambi', 'rhd00001');
-const statusOf: Record<string, string> = { grace: 'overdue', esther: 'ok' };
+// Each patient's next dose, in days from today.
+const dueIn: Record<string, number> = { grace: -3, esther: 20 };
 let searchTotal: number | undefined;
 
 let visited = 'esther';
@@ -47,7 +49,12 @@ function serve() {
     }
     if (url.includes('/actcore/prophylaxis')) {
       const uuid = new URL(url, 'http://x').searchParams.get('patient');
-      return Promise.resolve({ data: { status: statusOf[uuid] ?? 'none' } });
+      return Promise.resolve({
+        data:
+          uuid in dueIn
+            ? { status: 'ok', nextDue: dayjs().add(dueIn[uuid], 'day').format('YYYY-MM-DD') }
+            : { status: 'none', nextDue: null },
+      });
     }
     const one = url.match(/\/patient\/([^?]+)\?/);
     if (one) {
@@ -92,7 +99,7 @@ describe('PatientSearchPanel', () => {
     expect(screen.getByText('Recently viewed patients')).toBeInTheDocument();
     const row = await screen.findByRole('button', { name: /Esther Nambi/ });
     expect(row).toHaveTextContent('Female · 15 yrs · 14-Mar-2011 · ACT ID rhd00001');
-    expect(await within(row).findByText('Up to date')).toBeInTheDocument();
+    expect(await within(row).findByText('Prophylaxis up to date')).toBeInTheDocument();
   });
 
   it('finds a patient by name, with their ACT ID and prophylaxis status', async () => {
@@ -102,7 +109,7 @@ describe('PatientSearchPanel', () => {
 
     const row = await screen.findByRole('button', { name: /Grace Achieng/ });
     expect(row).toHaveTextContent('ACT ID rhd00008');
-    expect(await within(row).findByText('Overdue')).toBeInTheDocument();
+    expect(await within(row).findByText('Prophylaxis overdue')).toBeInTheDocument();
     expect(screen.getByText('1 search results')).toBeInTheDocument();
   });
 
@@ -181,13 +188,13 @@ describe('PatientSearchPanel', () => {
     expect(screen.queryByText('Sorry, no patient charts were found')).not.toBeInTheDocument();
   });
 
-  it('marks a dose due soon as up to date', async () => {
-    statusOf.esther = 'dueSoon';
+  it('marks a dose due in the next 48 hours yellow, as the patient banner does', async () => {
+    dueIn.esther = 2;
     renderPanel();
 
     const row = await screen.findByRole('button', { name: /Esther Nambi/ });
-    expect(await within(row).findByText('Up to date')).toBeInTheDocument();
-    statusOf.esther = 'ok';
+    expect(await within(row).findByTestId('prophylaxis-status')).toHaveAttribute('data-tone', 'yellow');
+    dueIn.esther = 20;
   });
 
   it('keeps listing recently viewed patients, and searches nothing, for one character', async () => {

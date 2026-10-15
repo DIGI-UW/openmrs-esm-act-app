@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Tag } from '@carbon/react';
 import { formatDate, parseDate, showSnackbar } from '@openmrs/esm-framework';
-import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
+import { type ProphylaxisSummary, useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
+import { useNextCardiologyVisit } from './cardiology.resource';
+import { pillsClassName } from './status-pill.component';
+import { CardiologyPill, ProphylaxisPill } from './status-pills.component';
 
-interface ProphylaxisStatusTagProps {
+interface PatientStatusFlagsProps {
   patientUuid: string;
   patient?: fhir.Patient;
 }
@@ -36,26 +38,20 @@ function useNextDueSnackbar(summary: ProphylaxisSummary | undefined) {
   }, [summary, lastGiven, t]);
 }
 
-/** The patient banner's Overdue or Due today tag; up to date, unknown, unreadable or deceased shows none. */
-export default function ProphylaxisStatusTag({ patientUuid, patient }: ProphylaxisStatusTagProps) {
-  const { t } = useTranslation();
+/** The patient banner's prophylaxis and cardiology visit pills; a deceased patient, or one with neither date, shows none. */
+export default function PatientStatusFlags({ patientUuid, patient }: PatientStatusFlagsProps) {
   const deceased = Boolean(patient?.deceasedBoolean || patient?.deceasedDateTime);
   const { summary } = useProphylaxisSummary(deceased ? null : patientUuid);
+  const { nextDue } = useNextCardiologyVisit(deceased ? null : patientUuid);
   useNextDueSnackbar(summary);
 
-  if (summary?.status === 'overdue') {
-    return (
-      <Tag data-testid="prophylaxis-status" type="red">
-        {t('overdue', 'Overdue')}
-      </Tag>
-    );
+  if (deceased) {
+    return null;
   }
-  if (summary?.status === 'dueToday') {
-    return (
-      <Tag data-testid="prophylaxis-status" type="blue">
-        {t('dueToday', 'Due today')}
-      </Tag>
-    );
-  }
-  return null;
+  return (
+    <span className={pillsClassName}>
+      <ProphylaxisPill summary={summary} />
+      <CardiologyPill nextDue={nextDue} />
+    </span>
+  );
 }
