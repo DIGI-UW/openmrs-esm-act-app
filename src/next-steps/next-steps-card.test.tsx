@@ -138,6 +138,19 @@ describe('NextStepsCard', () => {
     expect(launchWorkspace2).toHaveBeenCalledWith('clinical-forms-workspace');
   });
 
+  it('counts the forms the forms list offers this patient, which can leave out some of the published forms', async () => {
+    const pregnancy = { uuid: 'pregnancy', published: true, retired: false, encounterType: { editPrivilege: null } };
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('/actcore/nextsteps')
+          ? { steps }
+          : { results: url.includes('/form?patient=grace&') ? forms : [...forms, pregnancy] },
+      })) as never);
+    renderCard();
+
+    expect(await screen.findByRole('button', { name: 'All forms (1)' })).toBeInTheDocument();
+  });
+
   it('marks a new step New, and shows a done step Completed after the rest', async () => {
     steps = [
       {

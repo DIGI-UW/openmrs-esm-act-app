@@ -28,9 +28,12 @@ interface ListedForm {
   encounterType: { editPrivilege: { display: string } | null } | null;
 }
 
-/** The published forms, with the edit privilege each one's encounter type needs. */
-export function usePublishedForms(enabled: boolean) {
-  const url = `${restBaseUrl}/form?v=custom:(uuid,published,retired,encounterType:(editPrivilege:(display)))`;
+/**
+ * The published forms the patient chart's forms list offers the patient, with the edit privilege each one's
+ * encounter type needs. ACT Core's patient search leaves out forms that don't apply, such as RHD Pregnancy for a man.
+ */
+export function usePublishedForms(patientUuid: string, enabled: boolean) {
+  const url = `${restBaseUrl}/form?patient=${patientUuid}&v=custom:(uuid,published,retired,encounterType:(editPrivilege:(display)))`;
   const { data } = useSWR<FetchResponse<{ results: Array<ListedForm> }>, Error>(enabled ? url : null, openmrsFetch, {
     shouldRetryOnError: false,
   });
