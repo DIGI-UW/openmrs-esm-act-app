@@ -138,7 +138,7 @@ describe('Registry flags column', () => {
     ['namePrefix', { namePrefix: 'RHD prophylaxis', names: [] }],
   ])('shows only the flags the configuration selects by %s', async (_, selection) => {
     await signInWith(['App: act.registry'], {
-      flagLists: { riskFlags: ['RHD prophylaxis overdue'], flagForms: [], ...selection },
+      flagLists: { riskFlags: ['RHD prophylaxis overdue'], earlyWarningFlags: [], flagForms: [], ...selection },
     });
 
     render(<Registry />);
@@ -148,13 +148,46 @@ describe('Registry flags column', () => {
 
   it('takes the risk flags from the configuration', async () => {
     await signInWith(['App: act.registry'], {
-      flagLists: { namePrefix: 'RHD ', names: [], riskFlags: ['RHD INR target missing'], flagForms: [] },
+      flagLists: {
+        namePrefix: 'RHD ',
+        names: [],
+        riskFlags: ['RHD INR target missing'],
+        earlyWarningFlags: [],
+        flagForms: [],
+      },
     });
 
     render(<Registry />);
 
     expect(flagsOf('Patient 1')).toEqual([['2 flags', 'risk', true]]);
     expect(flagsOf('Patient 4')).toEqual([['RHD INR target missing', 'risk', true]]);
+  });
+
+  it('shows an early warning flag blue, as the chart does, and several such flags as a blue "N flags" unless one is a risk', async () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: withFlags([
+        'RHD cardiology follow-up due',
+        'RHD INR review due|RHD no data for 5 months',
+        'RHD INR target missing|RHD cardiology follow-up due',
+        'RHD cardiology follow-up due|RHD prophylaxis overdue',
+      ]),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<Registry />);
+
+    const blue = (name: string) =>
+      within(screen.getByRole('row', { name: new RegExp(`${name}\\b`) }))
+        .getAllByTestId('registry-flag')
+        .map((tag) => [tag.textContent, tag.getAttribute('data-priority'), tag.className.includes('cds--tag--blue')]);
+    expect(blue('Patient 1')).toEqual([['RHD cardiology follow-up due', 'earlyWarning', true]]);
+    expect(blue('Patient 2')).toEqual([['2 flags', 'earlyWarning', true]]);
+    // Care coming due outranks missing data; a risk outranks both.
+    expect(blue('Patient 3')).toEqual([['2 flags', 'earlyWarning', true]]);
+    expect(flagsOf('Patient 4')).toEqual([['2 flags', 'risk', true]]);
   });
 });
 
@@ -204,6 +237,7 @@ describe('Registry flag filter', () => {
     await signInWith(['App: act.registry'], {
       flagLists: {
         riskFlags: ['RHD prophylaxis overdue'],
+        earlyWarningFlags: [],
         namePrefix: 'RHD ',
         names: ['RHD prophylaxis overdue'],
         flagForms: [],
