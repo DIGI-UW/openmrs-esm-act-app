@@ -16,6 +16,9 @@ const activityKey = 'act-session-last-activity';
 
 const SHARE_MS = 5000;
 
+/** Where a tab that signs out tells the others, which otherwise learn of it only when their next request fails. */
+const signedOutKey = 'act-session-signed-out';
+
 /** The seconds left as m:ss. */
 export function countdown(ms: number) {
   const seconds = Math.max(0, Math.ceil(ms / 1000));
@@ -72,6 +75,11 @@ export default function SessionTimeout() {
   const signOut = useCallback(() => {
     warningSince.current = null;
     setWarning(null);
+    try {
+      window.localStorage.setItem(signedOutKey, String(Date.now()));
+    } catch {
+      // The other tabs then find out from their next request.
+    }
     navigate({ to: '${openmrsSpaBase}/logout' });
   }, []);
 
@@ -80,6 +88,13 @@ export default function SessionTimeout() {
       return;
     }
     const onOtherTab = (event: StorageEvent) => {
+      if (event.key === signedOutKey && event.newValue) {
+        // The session is gone for this tab too; the login page is better than a failed save.
+        warningSince.current = null;
+        setWarning(null);
+        navigate({ to: '${openmrsSpaBase}/login' });
+        return;
+      }
       const activeAt = Number(event.newValue);
       if (event.key !== activityKey || !(activeAt > lastActivity.current)) {
         return;
