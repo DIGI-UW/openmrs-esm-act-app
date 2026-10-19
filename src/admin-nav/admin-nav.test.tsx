@@ -57,6 +57,16 @@ describe('AdminNav', () => {
     hidden.forEach((name) => expect(screen.queryByRole('link', { name })).not.toBeInTheDocument());
   });
 
+  it('offers Admin to an administrator whose home is not ACT home, such as the Instance Administrator', async () => {
+    await signInWith(['App: act.instanceAdmin', 'Edit Users', 'Task: act.refreshFlags']);
+
+    render(<AdminNav />);
+
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Users and roles' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Flags and adherence' })).toBeInTheDocument();
+  });
+
   it('shows nothing, not even its heading, to a user who may manage neither', async () => {
     await signInWith([homePrivilege]);
 
