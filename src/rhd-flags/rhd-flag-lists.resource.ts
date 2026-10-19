@@ -3,11 +3,14 @@ import { restBaseUrl } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
 
-/** One of the configured RHD flags, and whether it is a risk or a data quality flag. */
+/** One of the configured RHD flags, and whether it is a risk, an early warning or a data quality flag. */
 export interface RhdFlagList {
   flagName: string;
-  priority: 'risk' | 'dataQuality';
+  priority: 'risk' | 'earlyWarning' | 'dataQuality';
 }
+
+/** The priorities from the most to the least pressing, the order a patient's several flags are summed up in. */
+export const flagPriorities: Array<RhdFlagList['priority']> = ['risk', 'earlyWarning', 'dataQuality'];
 
 /** Lists are read as cohorts: the flags themselves are readable only with privileges that run SQL. */
 function searchLists(text: string) {
@@ -21,8 +24,19 @@ export function isListedFlag({ names, namePrefix }: Config['flagLists'], flagNam
   return names.length ? names.includes(flagName) : flagName.startsWith(namePrefix);
 }
 
-export function flagPriority({ riskFlags }: Config['flagLists'], flagName: string): RhdFlagList['priority'] {
-  return riskFlags.includes(flagName) ? 'risk' : 'dataQuality';
+export function flagPriority(
+  { riskFlags, earlyWarningFlags }: Config['flagLists'],
+  flagName: string,
+): RhdFlagList['priority'] {
+  if (riskFlags.includes(flagName)) {
+    return 'risk';
+  }
+  return earlyWarningFlags.includes(flagName) ? 'earlyWarning' : 'dataQuality';
+}
+
+/** The most pressing of several flags' priorities, for the one tag that stands for them all. */
+export function highestPriority(flags: Array<Pick<RhdFlagList, 'priority'>>): RhdFlagList['priority'] {
+  return flagPriorities.find((priority) => flags.some((flag) => flag.priority === priority)) ?? 'dataQuality';
 }
 
 /** The list ACT Core keeps for the flag with this name; no list when the flag has none. */

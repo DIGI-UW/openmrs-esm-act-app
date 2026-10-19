@@ -98,6 +98,9 @@ function RegistryTable() {
   const csvColumns: Array<{ header: string; text: (row: ReportRow) => string }> = [
     { header: t('name', 'Name'), text: text('full_name') },
     { header: t('actId', 'ACT ID'), text: text('rhd_id') },
+    // The identifiers a facility's own register knows the patient by, so an export can be matched back to it.
+    { header: t('alternateId', 'Alternate ID'), text: text('external_id') },
+    { header: t('nationalId', 'National ID'), text: text('national_id') },
     { header: t('age', 'Age'), text: text('age_years') },
     { header: t('sex', 'Sex'), text: text('sex') },
     { header: t('diagnosisCategory', 'Diagnosis category'), text: text('diagnosis_category') },

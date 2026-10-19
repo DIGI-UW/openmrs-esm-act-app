@@ -150,7 +150,7 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
                 `${entry.adherence}%`
               )}
             </TableCell>
-            <TableCell>{entry.basedOn ?? '--'}</TableCell>
+            <TableCell>{entry.basedOn.length ? entry.basedOn.join(', ') : '--'}</TableCell>
             <TableCell>{entry.lowAdherenceReason ?? '--'}</TableCell>
             <TableCell>{entry.newPrescription ?? '--'}</TableCell>
           </TableRow>

@@ -26,7 +26,8 @@ export interface OralEntry {
   date: string;
   encounterDatetime: string;
   adherence: number | null;
-  basedOn: string | null;
+  /** Every Based on answer ticked: the form saves one obs per answer. */
+  basedOn: Array<string>;
   lowAdherenceReason: string | null;
   newPrescription: string | null;
 }
@@ -84,7 +85,7 @@ export function useOralEntries(patientUuid: string | null) {
         date: estimateDate ? String(estimateDate.value) : encounter.encounterDatetime,
         encounterDatetime: encounter.encounterDatetime,
         adherence: number(encounter, concepts.adherence),
-        basedOn: answer(encounter, concepts.basedOn),
+        basedOn: answersTo(encounter, concepts.basedOn).map((o) => (o.value as { display: string }).display),
         lowAdherenceReason: answer(encounter, concepts.lowAdherenceReason),
         newPrescription: answer(encounter, concepts.newPrescription),
       };

@@ -12,7 +12,8 @@ describe('configSchema', () => {
       flagLists: {
         namePrefix: 'RHD ',
         names: [],
-        riskFlags: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
+        riskFlags: ['RHD prophylaxis overdue', 'RHD oral prophylaxis overdue', 'RHD lost to follow-up'],
+        earlyWarningFlags: ['RHD cardiology follow-up due', 'RHD INR review due', 'RHD no data for 5 months'],
         flagForms: [
           {
             flag: 'b1f7a2c0-0005-4a00-9000-000000000005',
