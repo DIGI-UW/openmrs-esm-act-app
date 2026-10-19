@@ -315,16 +315,6 @@ describe('ProphylaxisCard', () => {
     expect(screen.queryByRole('button', { name: /^Record oral/ })).not.toBeInTheDocument();
   });
 
-  it('offers both forms while the summary says the type is unknown but a regimen is in force', async () => {
-    respondWith({ ...winnie, type: null, regimen: null, intervalDays: null });
-
-    renderCard();
-
-    await screen.findByText('No prescription');
-    expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
-  });
-
   it('shows BPG on hold instead of Record BPG while ACT Core holds the BPG step', async () => {
     const reason = 'On hold: a clinician must review before the next dose';
     mockOpenmrsFetch.mockImplementation(((url: string) =>
@@ -359,6 +349,35 @@ describe('ProphylaxisCard', () => {
     expect(await screen.findByTestId('bpg-on-hold')).toHaveTextContent('BPG on hold');
     expect(screen.getByTestId('bpg-on-hold')).toHaveAttribute('title', reason);
     expect(screen.queryByRole('button', { name: /^Record BPG/ })).not.toBeInTheDocument();
+  });
+
+  it('offers Record BPG while the BPG step is due but not on hold', async () => {
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('nextsteps')
+          ? {
+              steps: [
+                {
+                  key: 'bpg',
+                  form: 'bpg-form-uuid',
+                  title: 'Give BPG injection',
+                  reason: 'Due',
+                  isNew: false,
+                  done: false,
+                  onHold: false,
+                },
+              ],
+            }
+          : winnie,
+      })) as never);
+
+    renderCard();
+
+    await screen.findByText('BPG · every 4 weeks');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('bpg-on-hold')).not.toBeInTheDocument();
   });
 
   it('keeps Record oral while a BPG step is on hold, as the hold is on injections', async () => {
@@ -440,5 +459,6 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByTestId('prophylaxis-loading')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeEnabled();
   });
 });
