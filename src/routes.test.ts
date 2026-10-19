@@ -69,7 +69,6 @@ describe('routes.json privileges', () => {
     ['act-home-enter-prophylaxis', ['Add Encounters', screenPrivileges.registry]],
     ['act-home-find-patient', 'Get Patients'],
     ['act-back-to-act-link', 'Get Patients'],
-    ['act-admin-nav', screenPrivileges.home],
     ['act-reports-dashboard-link', screenPrivileges.reports],
     ['act-reports-dashboard', screenPrivileges.reports],
     ['act-facility-reports-dashboard-link', screenPrivileges.dataClerk],
@@ -140,10 +139,7 @@ describe('routes.json privileges', () => {
         'act-worklist-waiting-list',
       ],
     ],
-    [
-      'act-instance-admin-widgets-slot',
-      ['act-instance-admin-quick-actions', 'act-instance-admin-kpis'],
-    ],
+    ['act-instance-admin-widgets-slot', ['act-instance-admin-quick-actions', 'act-instance-admin-kpis']],
     [
       'act-instance-admin-quick-actions-slot',
       [
@@ -189,7 +185,11 @@ describe('routes.json privileges', () => {
     }
   });
 
-  it('declares a privilege on every extension, so none shows to every signed-in user', () => {
-    expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([]);
+  it('declares a privilege on every extension but the Admin nav, so none shows to every signed-in user', () => {
+    // The Admin nav gates each of its links on that page's privilege and renders nothing without one, so it is not
+    // gated on ACT home: the Instance Administrator, whose home is the Instance dashboard, needs it too.
+    expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
+      'act-admin-nav',
+    ]);
   });
 });
