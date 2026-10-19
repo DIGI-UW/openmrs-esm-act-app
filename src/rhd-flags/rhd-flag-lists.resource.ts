@@ -9,8 +9,11 @@ export interface RhdFlagList {
   priority: 'risk' | 'earlyWarning' | 'dataQuality';
 }
 
-/** The priorities from the most to the least pressing, the order a patient's several flags are summed up in. */
-export const flagPriorities: Array<RhdFlagList['priority']> = ['risk', 'earlyWarning', 'dataQuality'];
+/**
+ * Most to least pressing, the order several flags are summed up in. Unlike the distro's rank, Early
+ * Warning outranks Data Quality: care coming due is clinical, missing data is clerical.
+ */
+const flagPriorities: Array<RhdFlagList['priority']> = ['risk', 'earlyWarning', 'dataQuality'];
 
 /** Lists are read as cohorts: the flags themselves are readable only with privileges that run SQL. */
 function searchLists(text: string) {

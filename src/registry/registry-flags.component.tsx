@@ -10,7 +10,7 @@ type Flag = Pick<RhdFlagList, 'flagName' | 'priority'>;
 // Leftwards, as Flags is the table's last column.
 const align = 'bottom-end';
 
-// Red, blue and orange, as the chart draws the distro's RHD High, RHD Early Warning and RHD Data Quality priorities.
+// Red and blue as the chart draws RHD High and Early Warning; registry.scss makes warm-gray orange.
 const tagTypes: Record<Flag['priority'], 'red' | 'blue' | 'warm-gray'> = {
   risk: 'red',
   earlyWarning: 'blue',
