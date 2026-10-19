@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { InlineNotification, SkeletonText } from '@carbon/react';
-import { formatDate, toOmrsIsoString, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { ActHomeCard } from './act-home-card.component';
@@ -11,9 +11,9 @@ import styles from './care-cascade.scss';
 function Cascade() {
   const { t } = useTranslation();
   const { careCascade } = useConfig<Config>();
-  // The reports app runs a date as that day's midnight, so the counts match the report run for today.
+  // Send a plain date: the server runs on UTC, so a local-midnight timestamp east of UTC lands on yesterday.
   const today = useMemo(() => dayjs().startOf('day'), []);
-  const { rows, isLoading, error } = useReportDataset(careCascade.report, { endDate: toOmrsIsoString(today.toDate()) });
+  const { rows, isLoading, error } = useReportDataset(careCascade.report, { endDate: today.format('YYYY-MM-DD') });
   // The cascade descriptor names its columns step and patients, one row per step.
   const byStep = new Map(rows.map((row) => [String(row.step), Number(row.patients)]));
   const steps = careCascade.steps
