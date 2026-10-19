@@ -66,9 +66,11 @@ describe('SessionTimeout', () => {
   it('signs the user out when the countdown ends', async () => {
     render(<SessionTimeout />);
 
-    // The warning opens on the tick at 27 minutes and the sign-out on the first tick three minutes after it.
+    // The warning opens on the tick at 27 minutes, and the sign-out comes three minutes later.
     await passMinutes(30.1);
+    await passMinutes(1);
 
+    expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/logout' });
   });
 
@@ -87,6 +89,17 @@ describe('SessionTimeout', () => {
     expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
     await passMinutes(1);
     expect(screen.getByText('Still there?')).toBeInTheDocument();
+  });
+
+  it('signs out when staying signed in finds the server session already ended', async () => {
+    render(<SessionTimeout />);
+    await passMinutes(27);
+    mockOpenmrsFetch.mockResolvedValue({ data: { authenticated: false } } as never);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stay signed in' }));
+    await passMinutes(0);
+
+    expect(navigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/logout' });
   });
 
   it('signs out at once from the warning', async () => {
@@ -154,13 +167,27 @@ describe('SessionTimeout', () => {
   it('signs out at once when the timer wakes after the whole idle time, as from a sleeping laptop', async () => {
     render(<SessionTimeout />);
 
-    vi.setSystemTime(Date.now() + 60 * MINUTE);
+    vi.setSystemTime(Date.now() + 30 * MINUTE);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
     expect(navigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/logout' });
     expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
+  });
+
+  it('signs out at once when input after a sleeping laptop reaches the app before the timer', async () => {
+    render(<SessionTimeout />);
+
+    vi.setSystemTime(Date.now() + 30 * MINUTE);
+    fireEvent.mouseMove(document);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
+    expect(sharedActivity()).toBeNull();
   });
 
   it('keeps the server session alive every ten minutes while the user is active without saving', async () => {

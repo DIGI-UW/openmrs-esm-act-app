@@ -39,16 +39,35 @@ export default function SessionTimeout() {
   const lastShared = useRef(0);
   const lastRequest = useRef(Date.now());
   const warningSince = useRef<number | null>(null);
+  const signingOut = useRef(false);
   const [warning, setWarning] = useState<{ since: number; now: number } | null>(null);
+
+  const signOut = useCallback(() => {
+    // A logout that fails leaves the timer past the idle time, which would navigate again every tick.
+    if (signingOut.current) {
+      return;
+    }
+    signingOut.current = true;
+    warningSince.current = null;
+    setWarning(null);
+    navigate({ to: '${openmrsSpaBase}/logout' });
+  }, []);
 
   const keepAlive = useCallback(() => {
     lastRequest.current = Date.now();
-    // A failed request changes nothing here: an expired session answers the next real request with the login page.
-    openmrsFetch(`${restBaseUrl}/session`).catch(() => undefined);
-  }, []);
+    // A session that has already ended still answers 200, saying it is not authenticated.
+    openmrsFetch<{ authenticated?: boolean }>(`${restBaseUrl}/session`)
+      .then(({ data }) => data?.authenticated === false && signOut())
+      .catch(() => undefined);
+  }, [signOut]);
 
   const recordActivity = useCallback(() => {
     const now = Date.now();
+    // Input after a sleep past the idle time can reach here before the timer does.
+    if (now - lastActivity.current >= idleMs) {
+      signOut();
+      return;
+    }
     lastActivity.current = now;
     // An open warning waits for a choice, so a nudge here leaves other tabs' warnings open too.
     if (warningSince.current !== null || now - lastShared.current < SHARE_MS) {
@@ -60,7 +79,7 @@ export default function SessionTimeout() {
     } catch {
       // Without local storage each tab keeps its own clock, as if it were the only one open.
     }
-  }, []);
+  }, [idleMs, signOut]);
 
   const staySignedIn = useCallback(() => {
     warningSince.current = null;
@@ -68,12 +87,6 @@ export default function SessionTimeout() {
     recordActivity();
     keepAlive();
   }, [recordActivity, keepAlive]);
-
-  const signOut = useCallback(() => {
-    warningSince.current = null;
-    setWarning(null);
-    navigate({ to: '${openmrsSpaBase}/logout' });
-  }, []);
 
   useEffect(() => {
     if (!enabled) {
@@ -110,7 +123,7 @@ export default function SessionTimeout() {
         }
         return;
       }
-      // A tab whose timer slept past the idle time finds the server session already ended.
+      // Past the idle time there is nothing left to warn about.
       if (now - lastActivity.current >= idleMs) {
         signOut();
         return;
@@ -120,7 +133,7 @@ export default function SessionTimeout() {
         setWarning({ since: now, now });
         return;
       }
-      // Active, with no request of their own for a while: keep the server's clock from running out.
+      // While the user is active, keep the server's clock from running out.
       if (now - lastRequest.current >= keepAliveMs && now - lastActivity.current < keepAliveMs) {
         keepAlive();
       }

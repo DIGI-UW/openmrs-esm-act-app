@@ -411,7 +411,7 @@ export const configSchema = {
       _type: Type.Number,
       _default: 10,
       _description:
-        "Minutes of activity without a request after which the session is asked for, so a long form entered without saving does not let the server's clock run out.",
+        "How often, in minutes, the session is asked for while the user is active, so a long form entered without saving does not let the server's clock run out. Keep it below idleMinutes.",
     },
   },
   urgencyBands: {
