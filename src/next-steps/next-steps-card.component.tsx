@@ -124,6 +124,11 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
                         {t('new', 'New')}
                       </Tag>
                     )}
+                    {step.onHold && !step.done && (
+                      <Tag type="gray" size="sm" className={styles.newTag} data-testid="step-on-hold">
+                        {t('onHold', 'On hold')}
+                      </Tag>
+                    )}
                   </span>
                   <span className={styles.reason}>{step.reason}</span>
                 </div>

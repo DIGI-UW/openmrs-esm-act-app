@@ -334,14 +334,15 @@ describe('ProphylaxisPage', () => {
     expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
   });
 
-  it('says so when a patient with no prescription has no BPG injection, offering both forms', async () => {
-    serve({ injections: [], summary: { type: null } });
+  it('says so when a patient with no prescription has no BPG injection, saying Needs prescription', async () => {
+    serve({ injections: [], summary: { type: null, status: 'none' } });
 
     renderPage();
 
     expect(await screen.findByTestId('table-empty-state')).toHaveTextContent('There are no BPG injections to display');
-    expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
+    expect(screen.getByTestId('needs-prescription')).toHaveTextContent('Needs prescription');
+    expect(screen.queryByRole('button', { name: /^Record BPG/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Record oral/ })).not.toBeInTheDocument();
   });
 
   it('says so when the injections cannot be loaded', async () => {

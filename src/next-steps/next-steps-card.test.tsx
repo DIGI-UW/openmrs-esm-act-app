@@ -203,6 +203,37 @@ describe('NextStepsCard', () => {
     expect(within(rows()[0]).queryByRole('button')).not.toBeInTheDocument();
   });
 
+  it('marks a BPG step ACT Core holds back as On hold, with no action, beside the referral it waits for', async () => {
+    steps = [
+      {
+        key: 'refer',
+        form: null,
+        title: 'Refer to clinician',
+        reason: 'Anaphylaxis reported: a clinician must review before the next dose',
+        isNew: true,
+        done: false,
+      },
+      {
+        key: 'bpg',
+        form: null,
+        title: 'Give BPG injection',
+        reason: 'On hold: a clinician must review before the next dose',
+        isNew: false,
+        done: false,
+        onHold: true,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Give BPG injection');
+    const [refer, bpg] = rows();
+    expect(within(bpg).getByTestId('step-on-hold')).toHaveTextContent('On hold');
+    expect(within(bpg).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(refer).queryByTestId('step-on-hold')).not.toBeInTheDocument();
+  });
+
   it('says so when nothing is due', async () => {
     steps = [];
     respond();

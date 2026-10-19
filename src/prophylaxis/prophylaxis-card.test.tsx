@@ -84,6 +84,10 @@ function navHas(links: Array<object>, groups: Record<string, Array<object>> = {}
 
 const field = (name: string) => screen.getByTestId(`prophylaxis-${name}`);
 
+// The card also reads the next steps, for a held BPG; these count the summary's own requests.
+const summaryRequests = () =>
+  mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).includes('/actcore/prophylaxis')).length;
+
 describe('ProphylaxisCard', () => {
   beforeEach(async () => {
     await signInWith(['Add Encounters']);
@@ -300,14 +304,121 @@ describe('ProphylaxisCard', () => {
     expect(screen.getByRole('button', { name: new RegExp(`^${action}`) })).toBeInTheDocument();
   });
 
-  it('offers both forms to a patient with no prescription', async () => {
+  it('says Needs prescription instead of offering a form to a patient with no prescription in force', async () => {
     respondWith({ ...winnie, type: null, regimen: null, intervalDays: null, status: 'none' });
 
     renderCard();
 
     await screen.findByText('No prescription');
+    expect(screen.getByTestId('needs-prescription')).toHaveTextContent('Needs prescription');
+    expect(screen.queryByRole('button', { name: /^Record BPG/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Record oral/ })).not.toBeInTheDocument();
+  });
+
+  it('shows BPG on hold instead of Record BPG while ACT Core holds the BPG step', async () => {
+    const reason = 'On hold: a clinician must review before the next dose';
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('nextsteps')
+          ? {
+              steps: [
+                {
+                  key: 'refer',
+                  form: null,
+                  title: 'Refer to clinician',
+                  reason: 'Anaphylaxis',
+                  isNew: true,
+                  done: false,
+                },
+                {
+                  key: 'bpg',
+                  form: null,
+                  title: 'Give BPG injection',
+                  reason,
+                  isNew: false,
+                  done: false,
+                  onHold: true,
+                },
+              ],
+            }
+          : winnie,
+      })) as never);
+
+    renderCard();
+
+    expect(await screen.findByTestId('bpg-on-hold')).toHaveTextContent('BPG on hold');
+    expect(screen.getByTestId('bpg-on-hold')).toHaveAttribute('title', reason);
+    expect(screen.queryByRole('button', { name: /^Record BPG/ })).not.toBeInTheDocument();
+  });
+
+  it('offers Record BPG while the BPG step is due but not on hold', async () => {
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('nextsteps')
+          ? {
+              steps: [
+                {
+                  key: 'bpg',
+                  form: 'bpg-form-uuid',
+                  title: 'Give BPG injection',
+                  reason: 'Due',
+                  isNew: false,
+                  done: false,
+                  onHold: false,
+                },
+              ],
+            }
+          : winnie,
+      })) as never);
+
+    renderCard();
+
+    await screen.findByText('BPG · every 4 weeks');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
     expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('bpg-on-hold')).not.toBeInTheDocument();
+  });
+
+  it('keeps Record oral while a BPG step is on hold, as the hold is on injections', async () => {
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('nextsteps')
+          ? {
+              steps: [
+                {
+                  key: 'bpg',
+                  form: null,
+                  title: 'Give BPG injection',
+                  reason: 'On hold',
+                  isNew: false,
+                  done: false,
+                  onHold: true,
+                },
+              ],
+            }
+          : { ...winnie, type: 'Oral', regimen: 'Oral penicillin V', intervalDays: 0, onTime: null },
+      })) as never);
+
+    renderCard();
+
+    expect(await screen.findByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('bpg-on-hold')).not.toBeInTheDocument();
+  });
+
+  it('does not ask for the next steps when nextSteps.enabled is false', async () => {
+    const defaults = getDefaultsFromConfigSchema(configSchema) as Config;
+    vi.mocked(useConfig<Config>).mockReturnValue({ ...defaults, nextSteps: { enabled: false } });
+    respondWith(winnie);
+
+    renderCard();
+    await screen.findByText('BPG · every 4 weeks');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockOpenmrsFetch.mock.calls.map(([url]) => String(url))).not.toContainEqual(
+      expect.stringContaining('/actcore/nextsteps'),
+    );
+    expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
   });
 
   it('asks for the summary again when a form save invalidates the patient encounters', async () => {
@@ -322,7 +433,7 @@ describe('ProphylaxisCard', () => {
 
     await waitFor(() => expect(field('last-dose')).toHaveTextContent(/^28-Sept?-2026$/));
     expect(field('next-due')).toHaveAttribute('data-overdue', 'false');
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    expect(summaryRequests()).toBe(2);
   });
 
   it('does not ask again when another patient encounters are invalidated', async () => {
@@ -333,7 +444,7 @@ describe('ProphylaxisCard', () => {
     await invalidatePatientEncounters('someone-else');
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(summaryRequests()).toBe(1);
   });
 
   it('asks for the summary once on mount', async () => {
@@ -343,7 +454,7 @@ describe('ProphylaxisCard', () => {
     await screen.findByText('BPG · every 4 weeks');
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(summaryRequests()).toBe(1);
   });
 
   it('disables the Record actions while a form is being opened', async () => {
@@ -363,5 +474,6 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByTestId('prophylaxis-loading')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeEnabled();
   });
 });
