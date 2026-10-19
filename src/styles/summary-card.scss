@@ -14,6 +14,14 @@
   gap: layout.$spacing-03;
 }
 
+// In the header where the Record buttons would be, as the due lists word it.
+.needsPrescription {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  padding: 0 layout.$spacing-03;
+  white-space: nowrap;
+}
+
 // Sits with the header's ghost buttons, at their text size.
 .headerLink {
   @include type.type-style('body-compact-01');

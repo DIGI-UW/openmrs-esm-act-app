@@ -1,7 +1,10 @@
 import useSWR from 'swr';
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-/** A step from ACT Core's GET /actcore/nextsteps; form is null for a step no form records, such as a referral. */
+/**
+ * A step from ACT Core's GET /actcore/nextsteps; form is null for a step no form records, such as a referral, or
+ * for a dose on hold.
+ */
 export interface NextStep {
   key: string;
   form: string | null;
@@ -9,6 +12,13 @@ export interface NextStep {
   reason: string;
   isNew: boolean;
   done: boolean;
+  /** A BPG step held back after an anaphylaxis no consultation has reviewed yet; its reason says so. */
+  onHold?: boolean;
+}
+
+/** The held BPG step among the patient's next steps, if ACT Core holds one. */
+export function heldBpgStep(steps: Array<NextStep> | undefined) {
+  return steps?.find((step) => step.key === 'bpg' && step.onHold) ?? null;
 }
 
 export function useNextSteps(patientUuid: string) {
