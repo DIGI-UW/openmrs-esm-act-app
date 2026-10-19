@@ -406,6 +406,21 @@ describe('ProphylaxisCard', () => {
     expect(screen.queryByTestId('bpg-on-hold')).not.toBeInTheDocument();
   });
 
+  it('does not ask for the next steps when nextSteps.enabled is false', async () => {
+    const defaults = getDefaultsFromConfigSchema(configSchema) as Config;
+    vi.mocked(useConfig<Config>).mockReturnValue({ ...defaults, nextSteps: { enabled: false } });
+    respondWith(winnie);
+
+    renderCard();
+    await screen.findByText('BPG · every 4 weeks');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockOpenmrsFetch.mock.calls.map(([url]) => String(url))).not.toContainEqual(
+      expect.stringContaining('/actcore/nextsteps'),
+    );
+    expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
+  });
+
   it('asks for the summary again when a form save invalidates the patient encounters', async () => {
     respondWith(winnie);
     renderCard();

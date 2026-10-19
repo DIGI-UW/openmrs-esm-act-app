@@ -10,18 +10,15 @@ import { useProphylaxisSummary } from './prophylaxis.resource';
 import styles from '../styles/summary-card.scss';
 
 /**
- * Record BPG and Record oral, or only the one for the type prescribed once the summary says which. A patient with no
- * prescription in force gets Needs prescription instead, as Enter prophylaxis labels them: a dose recorded then has
- * no regimen to count against. While ACT Core holds the BPG step, after an anaphylaxis no consultation has reviewed,
- * BPG on hold stands in for Record BPG, as the Next steps card offers no form either; a withheld dose is still
- * recorded from All forms.
+ * Record BPG and Record oral, or only the one for the type prescribed once the summary says which. A held BPG drops
+ * only this button: a withheld dose is still recorded from All forms.
  */
 export function RecordProphylaxisButtons({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { prophylaxisCard } = useConfig<Config>();
+  const { prophylaxisCard, nextSteps } = useConfig<Config>();
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
   const { summary } = useProphylaxisSummary(patientUuid);
-  const held = heldBpgStep(useNextSteps(patientUuid).steps);
+  const held = heldBpgStep(useNextSteps(nextSteps.enabled ? patientUuid : null).steps);
   const prescribed = summary?.type;
 
   if (summary?.status === 'none') {
