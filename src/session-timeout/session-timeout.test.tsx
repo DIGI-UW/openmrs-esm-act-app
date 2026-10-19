@@ -164,6 +164,22 @@ describe('SessionTimeout', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it('tells other tabs when it signs out, and leaves for the login page when another tab signed out', async () => {
+    render(<SessionTimeout />);
+    await passMinutes(27);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(window.localStorage.getItem('act-session-signed-out')).toBe(String(Date.now()));
+
+    vi.mocked(navigate).mockReset();
+    await act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', { key: 'act-session-signed-out', newValue: String(Date.now()) }),
+      );
+    });
+    expect(navigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+  });
+
   it('signs out at once when the timer wakes after the whole idle time, as from a sleeping laptop', async () => {
     render(<SessionTimeout />);
 
