@@ -14,6 +14,13 @@ const passMinutes = async (minutes: number) => {
   });
 };
 
+const activityInOtherTab = (at: number) =>
+  act(() => {
+    window.dispatchEvent(new StorageEvent('storage', { key: 'act-session-last-activity', newValue: String(at) }));
+  });
+
+const sharedActivity = () => window.localStorage.getItem('act-session-last-activity');
+
 const sessionRequests = () =>
   mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).endsWith('/ws/rest/v1/session')).length;
 
@@ -25,6 +32,7 @@ describe('SessionTimeout', () => {
     mockOpenmrsFetch.mockReset();
     mockOpenmrsFetch.mockResolvedValue({ data: {} } as never);
     vi.mocked(navigate).mockReset();
+    window.localStorage.clear();
   });
 
   afterEach(() => {
@@ -73,6 +81,7 @@ describe('SessionTimeout', () => {
 
     expect(sessionRequests()).toBe(1);
     expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
+    expect(sharedActivity()).toBe(String(Date.now()));
     // The idle clock starts again from the choice.
     await passMinutes(26);
     expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
@@ -97,6 +106,61 @@ describe('SessionTimeout', () => {
     await passMinutes(1);
 
     expect(screen.getByText('Still there?')).toBeInTheDocument();
+    expect(sharedActivity()).toBeNull();
+  });
+
+  it('tells other tabs when the user is active here', async () => {
+    render(<SessionTimeout />);
+    await passMinutes(5);
+
+    fireEvent.keyDown(document);
+
+    expect(sharedActivity()).toBe(String(Date.now()));
+  });
+
+  it('counts activity in another tab, since signing out ends the session in every tab', async () => {
+    render(<SessionTimeout />);
+    await passMinutes(20);
+
+    activityInOtherTab(Date.now());
+    await passMinutes(10.1);
+
+    expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('ignores another tab reporting activity older than this one', async () => {
+    render(<SessionTimeout />);
+    await passMinutes(20);
+    fireEvent.keyDown(document);
+
+    activityInOtherTab(Date.now() - 19 * MINUTE);
+    await passMinutes(10.1);
+
+    expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
+  });
+
+  it('closes the warning when the user is active in another tab', async () => {
+    render(<SessionTimeout />);
+    await passMinutes(27);
+
+    activityInOtherTab(Date.now());
+
+    expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
+    await passMinutes(4);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('signs out at once when the timer wakes after the whole idle time, as from a sleeping laptop', async () => {
+    render(<SessionTimeout />);
+
+    vi.setSystemTime(Date.now() + 60 * MINUTE);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(navigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/logout' });
+    expect(screen.queryByTestId('session-timeout')).not.toBeInTheDocument();
   });
 
   it('keeps the server session alive every ten minutes while the user is active without saving', async () => {

@@ -11,6 +11,11 @@ const TICK_MS = 1000;
 
 const MINUTE_MS = 60_000;
 
+/** Where each tab tells the others when the user was last active, since a sign-out ends the session for all of them. */
+const activityKey = 'act-session-last-activity';
+
+const SHARE_MS = 5000;
+
 /** The seconds left as m:ss. */
 export function countdown(ms: number) {
   const seconds = Math.max(0, Math.ceil(ms / 1000));
@@ -18,12 +23,8 @@ export function countdown(ms: number) {
 }
 
 /**
- * Warns before the session times out, as ACT 2.0 did. The server ends a session left idle for its timeout, and the
- * app then learns of it only from the next request, which lands on the login page with any open form lost. This
- * extension sits in the top navigation on every page and keeps time on the user's side: once they have been idle
- * for the idle time less the warning time, a modal counts the warning time down and signs them out at zero unless
- * they choose to stay, which asks the server for the session so it starts its clock again. While the user is active
- * the session is kept alive every few minutes too, as a long form entered without a save makes no request of its own.
+ * Warns before the server's idle timeout signs the user out, as ACT 2.0 did, and keeps the session alive while they
+ * are active, since a long unsaved form makes no request of its own.
  */
 export default function SessionTimeout() {
   const { t } = useTranslation();
@@ -33,8 +34,9 @@ export default function SessionTimeout() {
   const warningMs = sessionTimeout.warningMinutes * MINUTE_MS;
   const keepAliveMs = sessionTimeout.keepAliveMinutes * MINUTE_MS;
   const enabled = authenticated && idleMs > 0 && warningMs > 0 && warningMs < idleMs;
-  // The clock's state lives in refs, read by the timer as it runs; the state below only draws the modal.
+  // The timer reads the clock from refs; `warning` only draws the modal.
   const lastActivity = useRef(Date.now());
+  const lastShared = useRef(0);
   const lastRequest = useRef(Date.now());
   const warningSince = useRef<number | null>(null);
   const [warning, setWarning] = useState<{ since: number; now: number } | null>(null);
@@ -45,12 +47,27 @@ export default function SessionTimeout() {
     openmrsFetch(`${restBaseUrl}/session`).catch(() => undefined);
   }, []);
 
+  const recordActivity = useCallback(() => {
+    const now = Date.now();
+    lastActivity.current = now;
+    // An open warning waits for a choice, so a nudge here leaves other tabs' warnings open too.
+    if (warningSince.current !== null || now - lastShared.current < SHARE_MS) {
+      return;
+    }
+    lastShared.current = now;
+    try {
+      window.localStorage.setItem(activityKey, String(now));
+    } catch {
+      // Without local storage each tab keeps its own clock, as if it were the only one open.
+    }
+  }, []);
+
   const staySignedIn = useCallback(() => {
-    lastActivity.current = Date.now();
     warningSince.current = null;
     setWarning(null);
+    recordActivity();
     keepAlive();
-  }, [keepAlive]);
+  }, [recordActivity, keepAlive]);
 
   const signOut = useCallback(() => {
     warningSince.current = null;
@@ -62,12 +79,22 @@ export default function SessionTimeout() {
     if (!enabled) {
       return;
     }
-    const onActivity = () => {
-      lastActivity.current = Date.now();
+    const onOtherTab = (event: StorageEvent) => {
+      const activeAt = Number(event.newValue);
+      if (event.key !== activityKey || !(activeAt > lastActivity.current)) {
+        return;
+      }
+      lastActivity.current = activeAt;
+      warningSince.current = null;
+      setWarning(null);
     };
-    ACTIVITY_EVENTS.forEach((event) => document.addEventListener(event, onActivity, { passive: true }));
-    return () => ACTIVITY_EVENTS.forEach((event) => document.removeEventListener(event, onActivity));
-  }, [enabled]);
+    ACTIVITY_EVENTS.forEach((event) => document.addEventListener(event, recordActivity, { passive: true }));
+    window.addEventListener('storage', onOtherTab);
+    return () => {
+      ACTIVITY_EVENTS.forEach((event) => document.removeEventListener(event, recordActivity));
+      window.removeEventListener('storage', onOtherTab);
+    };
+  }, [enabled, recordActivity]);
 
   useEffect(() => {
     if (!enabled) {
@@ -81,6 +108,11 @@ export default function SessionTimeout() {
         } else {
           setWarning({ since: warningSince.current, now });
         }
+        return;
+      }
+      // A tab whose timer slept past the idle time finds the server session already ended.
+      if (now - lastActivity.current >= idleMs) {
+        signOut();
         return;
       }
       if (now - lastActivity.current >= idleMs - warningMs) {

@@ -126,7 +126,8 @@ from the next request, which lands on the login page with any open form lost. Th
 the top navigation's `top-nav-actions-slot` on every page, warns before that: once the user has been idle for the idle
 time less the warning time, a modal counts the warning time down and signs them out at zero unless they choose Stay
 signed in, which asks the server for the session so its clock starts again. While the user is active it also keeps
-the session alive every few minutes, as a long form entered without saving makes no request of its own. The times are
+the session alive every few minutes, as a long form entered without saving makes no request of its own. Activity in
+one tab counts in every tab, since signing out in one ends the session they share. The times are
 `sessionTimeout.idleMinutes` (30; 0 switches the warning off), `warningMinutes` (3) and `keepAliveMinutes` (10), and
 `idleMinutes` should match the server's session timeout.
 

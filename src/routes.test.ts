@@ -186,9 +186,7 @@ describe('routes.json privileges', () => {
   });
 
   it('declares a privilege on every extension but the Admin nav and the session timeout, so none shows to every signed-in user', () => {
-    // The Admin nav gates each of its links on that page's privilege and renders nothing without one, so it is not
-    // gated on ACT home: the Instance Administrator, whose home is the Instance dashboard, needs it too. The session
-    // timeout warning is for every signed-in user.
+    // Both gate themselves: the Admin nav per link, the session timeout on being signed in.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-admin-nav',
       'act-session-timeout',
