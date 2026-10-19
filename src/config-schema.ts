@@ -113,12 +113,12 @@ export const configSchema = {
   },
   instanceAdminQuickActions: {
     formsAndSitesUrl: link(
-      "Where the Forms & sites quick action on the Instance dashboard leads: OpenMRS's system administration, for a user holding App: act.instanceAdmin.",
-      '${openmrsBase}/admin/index.htm',
+      "Where the Forms & sites quick action on the Instance dashboard leads: OpenMRS's forms list, for a user holding App: act.instanceAdmin.",
+      '${openmrsBase}/admin/forms/form.list',
     ),
     rolePermissionsUrl: link(
-      "Where the Role permissions quick action on the Instance dashboard leads: OpenMRS's roles and their privileges, which open for a user holding Manage Roles.",
-      '${openmrsBase}/admin/users/role.list',
+      "Where the Role permissions quick action on the Instance dashboard leads: OpenMRS's user management, the same page the left nav's Users and roles opens.",
+      '${openmrsBase}/admin/users/users.list',
     ),
     researchParticipationUrl: link(
       "Where the Research participation quick action on the Instance dashboard leads: OpenMRS's module configuration, for a user holding App: act.instanceAdmin.",

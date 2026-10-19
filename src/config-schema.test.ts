@@ -36,8 +36,8 @@ describe('configSchema', () => {
         facilityReportUrl: '${openmrsSpaBase}/home/act-facility-reports',
       },
       instanceAdminQuickActions: {
-        formsAndSitesUrl: '${openmrsBase}/admin/index.htm',
-        rolePermissionsUrl: '${openmrsBase}/admin/users/role.list',
+        formsAndSitesUrl: '${openmrsBase}/admin/forms/form.list',
+        rolePermissionsUrl: '${openmrsBase}/admin/users/users.list',
         researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
       },
       adminLinks: {

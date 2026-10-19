@@ -255,10 +255,10 @@ describe('Home quick action tiles', () => {
       'href',
       '/openmrs/spa/home/act-facility-reports',
     );
-    expect(screen.getByRole('link', { name: /Forms & sites/ })).toHaveAttribute('href', '/openmrs/admin/index.htm');
+    expect(screen.getByRole('link', { name: /Forms & sites/ })).toHaveAttribute('href', '/openmrs/admin/forms/form.list');
     expect(screen.getByRole('link', { name: /Role permissions/ })).toHaveAttribute(
       'href',
-      '/openmrs/admin/users/role.list',
+      '/openmrs/admin/users/users.list',
     );
     expect(screen.getByRole('link', { name: /Research participation/ })).toHaveAttribute(
       'href',
