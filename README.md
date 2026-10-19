@@ -119,6 +119,17 @@ pages. A distro adds a page's link to the chart's `patient-chart-dashboard-slot`
   mitral and aortic valve findings and left ventricular ejection fraction; Add opens the echo form, starting a visit
   when the patient has none. The form, its encounter type and the concepts are in `cardiacTests`.
 
+## Session timeout warning
+
+The server ends a session left idle for its timeout (Tomcat's default is 30 minutes), and the app learns of it only
+from the next request, which lands on the login page with any open form lost. The `act-session-timeout` extension, in
+the top navigation's `top-nav-actions-slot` on every page, warns before that: once the user has been idle for the idle
+time less the warning time, a modal counts the warning time down and signs them out at zero unless they choose Stay
+signed in, which asks the server for the session so its clock starts again. While the user is active it also keeps
+the session alive every few minutes, as a long form entered without saving makes no request of its own. The times are
+`sessionTimeout.idleMinutes` (30; 0 switches the warning off), `warningMinutes` (3) and `keepAliveMinutes` (10), and
+`idleMinutes` should match the server's session timeout.
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, ACT Core with the gap look-up, cohort 3.7.3 or later for the RHD flag
