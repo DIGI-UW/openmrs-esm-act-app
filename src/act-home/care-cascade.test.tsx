@@ -114,7 +114,7 @@ describe('CareCascade', () => {
     expect(widths).toEqual(['100%', '85%', '55%', '45%', '0%']);
   });
 
-  it('evaluates the configured report up to the start of today, as the reports app runs it for today', () => {
+  it('evaluates the configured report for today as a plain date', () => {
     vi.useFakeTimers({ now: new Date(2026, 8, 28, 10, 30) });
     dataset({ rows: cascade });
 
@@ -123,7 +123,7 @@ describe('CareCascade', () => {
     vi.useRealTimers();
     const [report, params] = mockUseReportDataset.mock.calls.at(-1);
     expect(report).toBe('9c6751ae-65fc-5f25-9aa6-8c65cb1dff68');
-    expect(new Date(params.endDate).getTime()).toBe(new Date(2026, 8, 28).getTime());
+    expect(params.endDate).toBe('2026-09-28');
   });
 
   it('evaluates the report set in the config', async () => {
