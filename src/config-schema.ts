@@ -41,8 +41,16 @@ export const configSchema = {
     riskFlags: {
       _type: Type.Array,
       _elements: { _type: Type.String },
-      _default: ['RHD prophylaxis overdue', 'RHD lost to follow-up', 'RHD no data for 5 months'],
-      _description: 'The flags, by name, that mark a clinical risk. The lists of every other flag are missing data.',
+      _default: ['RHD prophylaxis overdue', 'RHD oral prophylaxis overdue', 'RHD lost to follow-up'],
+      _description:
+        'The flags, by name, that mark a clinical risk: red in the registry. Every other flag is missing data, orange, unless earlyWarningFlags names it.',
+    },
+    earlyWarningFlags: {
+      _type: Type.Array,
+      _elements: { _type: Type.String },
+      _default: ['RHD cardiology follow-up due', 'RHD INR review due', 'RHD no data for 5 months'],
+      _description:
+        "The flags, by name, that warn of care coming due rather than of missing data: blue in the registry, as the chart draws the distro's RHD Early Warning priority. A flag listed here and in riskFlags counts as a risk.",
     },
     flagForms: {
       _type: Type.Array,
@@ -448,6 +456,7 @@ export interface Config {
     namePrefix: string;
     names: Array<string>;
     riskFlags: Array<string>;
+    earlyWarningFlags: Array<string>;
     flagForms: Array<{ flag: string; form: string; concept: string }>;
   };
   quickActions: {

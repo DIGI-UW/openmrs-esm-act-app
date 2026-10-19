@@ -65,7 +65,9 @@ const oral = [
     obs: [
       obs(estimateDate, '2026-05-10T00:00:00.000+0000'),
       obs(adherence, 85),
+      // Based on is a checkbox question since distro #137: one obs per answer ticked.
       obs(basedOn, { uuid: 'calendar', display: 'Calendar' }),
+      obs(basedOn, { uuid: 'pill-count', display: 'Pill count' }),
       obs(newPrescription, { uuid: 'three-months', display: '3 months' }),
     ],
   },
@@ -220,7 +222,7 @@ describe('ProphylaxisPage', () => {
     ).toEqual(['Date', 'Adherence', 'Based on', 'Reason if below 80%', 'New prescription']);
     expect(rows(table)).toEqual([
       ['10-Aug-2026', '65%', '--', 'Could not afford medication', '1 month'],
-      ['10-May-2026', '85%', 'Calendar', '--', '3 months'],
+      ['10-May-2026', '85%', 'Calendar, Pill count', '--', '3 months'],
     ]);
     expect(within(table).getByTestId('low-adherence')).toHaveTextContent('65%');
   });
