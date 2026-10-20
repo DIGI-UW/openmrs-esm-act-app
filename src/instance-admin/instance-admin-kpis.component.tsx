@@ -71,7 +71,8 @@ export function InstanceAdminKpis() {
     {
       label: t('enteredThisWeek', 'Entered this week'),
       value: entered.error ? '–' : entered.rows.length,
-      caption: t('formsSavedLastSevenDays', 'forms saved in the last 7 days'),
+      // The encounters export filters on each form's own date, not the day it was saved.
+      caption: t('formsDatedLastSevenDays', 'forms dated in the last 7 days'),
       tone: styles.info,
       loading: entered.isLoading,
     },

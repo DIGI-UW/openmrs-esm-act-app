@@ -173,7 +173,7 @@
   "flagsRefreshed": "Flags and adherence refreshed",
   "form": "Form",
   "formsAndSites": "Forms & sites",
-  "formsSavedLastSevenDays": "forms saved in the last 7 days",
+  "formsDatedLastSevenDays": "forms dated in the last 7 days",
   "formsShowUpWhenNeeded": "Forms show up here only when {{name}} needs them",
   "fromDate": "From",
   "given": "Given",

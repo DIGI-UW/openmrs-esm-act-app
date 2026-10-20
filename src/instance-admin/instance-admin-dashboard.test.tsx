@@ -131,7 +131,7 @@ describe('InstanceAdminDashboard', () => {
     expect(kpis.map((kpi) => kpi.textContent)).toEqual([
       'Active patients17across your sites',
       'Overdue prophylaxis6needs follow-up',
-      'Entered this week5forms saved in the last 7 days',
+      'Entered this week5forms dated in the last 7 days',
       'Data completeness75%active patients with no missing data',
     ]);
   });
@@ -150,6 +150,20 @@ describe('InstanceAdminDashboard', () => {
     expect(screen.getAllByTestId('instance-admin-kpi')[3]).toHaveTextContent('Data completeness–');
   });
 
+  it("shows the other tiles' figures when only one report fails", () => {
+    dataset({}, [ENCOUNTERS]);
+
+    render(<InstanceAdminKpis />);
+
+    const kpis = screen.getAllByTestId('instance-admin-kpi');
+    expect(kpis.map((kpi) => kpi.textContent)).toEqual([
+      'Active patients17across your sites',
+      'Overdue prophylaxis6needs follow-up',
+      'Entered this week–forms dated in the last 7 days',
+      'Data completeness75%active patients with no missing data',
+    ]);
+  });
+
   it('keeps every tile when a report fails, with a dash where its figure would go', () => {
     dataset({}, [PROGRAMME, ENCOUNTERS, REGISTRY]);
 
@@ -160,7 +174,7 @@ describe('InstanceAdminDashboard', () => {
     expect(kpis.map((kpi) => kpi.textContent)).toEqual([
       'Active patients–across your sites',
       'Overdue prophylaxis–needs follow-up',
-      'Entered this week–forms saved in the last 7 days',
+      'Entered this week–forms dated in the last 7 days',
       'Data completeness–active patients with no missing data',
     ]);
   });
