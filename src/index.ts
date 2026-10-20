@@ -23,7 +23,7 @@ import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin
 import { trackActReturn } from './back-to-act/act-return';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
-const moduleName = '@mherman22/esm-act-app';
+const moduleName = '@act-registry/esm-act-app';
 
 const options = {
   featureName: 'act',
@@ -163,6 +163,20 @@ export const refreshFlagsDashboard = getAsyncLifecycle(
   () => import('./refresh-flags/refresh-flags.component'),
   options,
 );
+
+export const downloadDashboardLink = getAsyncLifecycle(
+  () => import('./download/download-dashboard-link.component'),
+  options,
+);
+
+export const downloadDashboard = getAsyncLifecycle(() => import('./download/download.component'), options);
+
+export const downloadLogDashboardLink = getAsyncLifecycle(
+  () => import('./download/download-log-dashboard-link.component'),
+  options,
+);
+
+export const downloadLogDashboard = getAsyncLifecycle(() => import('./download/download-log.component'), options);
 
 export const patientsOnProphylaxisDashboardLink = getSyncLifecycle(
   patientsOnProphylaxisDashboardLinkComponent,

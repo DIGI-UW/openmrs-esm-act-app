@@ -40,6 +40,7 @@ import {
   filterRegistry,
   registryFilterColumns,
   type RegistryFilters,
+  rowFlagDays,
   rowFlags,
   useRegistryFilters,
 } from './registry-filters';
@@ -123,7 +124,7 @@ function RegistryTable() {
   const flagsOf = (row: ReportRow) =>
     rowFlags(row)
       .filter((flagName) => isListedFlag(flagLists, flagName))
-      .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName) }));
+      .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName), days: rowFlagDays(row, flagName) }));
   const flagOptions = [...new Set(rows.flatMap((row) => flagsOf(row).map((list) => list.flagName)))].sort();
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
   // The CSV keeps each report field in its own column.

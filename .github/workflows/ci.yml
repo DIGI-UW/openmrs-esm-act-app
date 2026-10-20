@@ -13,8 +13,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
 
 env:
-  ESM_NAME: "@mherman22/esm-act-app"
-  JS_NAME: "mherman22-esm-act-app.js"
+  ESM_NAME: "@act-registry/esm-act-app"
+  JS_NAME: "act-registry-esm-act-app.js"
 
 jobs:
   build:

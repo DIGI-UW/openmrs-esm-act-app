@@ -14,6 +14,7 @@ vi.mock('../access/may-enter-form', () => ({
 }));
 vi.mock('./flag-gaps.resource', () => ({
   usePatientFlagGaps: vi.fn(),
+  useRaisedFlags: () => ({ raisedFlags: [], isLoading: false, error: undefined }),
   fetchForm: vi.fn(),
 }));
 

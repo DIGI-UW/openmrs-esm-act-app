@@ -133,6 +133,14 @@ export const configSchema = {
       '${openmrsBase}/admin/maintenance/settings.list',
     ),
   },
+  instanceAdminKpis: {
+    encountersReport: {
+      _type: Type.String,
+      _default: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+      _description:
+        'The RHD Encounters Export report, by uuid or name, one row per RHD encounter in a date range: the Instance dashboard counts its rows for the last seven days as the forms saved this week.',
+    },
+  },
   adminLinks: {
     usersUrl: link(
       "Where the left nav's Users and roles leads: OpenMRS's user management, for a user holding Edit Users.",
@@ -149,6 +157,22 @@ export const configSchema = {
     refreshFlagsUrl: link(
       "Where the left nav's Flags and adherence leads: the page that refreshes them now, for a user holding Task: act.refreshFlags.",
       '${openmrsSpaBase}/home/act-refresh-flags',
+    ),
+    userActivityUrl: link(
+      "Where the left nav's User activity leads: the audit log app's page of what each user created, edited and deleted, such as forms, for a user holding View Audit Logs.",
+      '${openmrsSpaBase}/audit-logs',
+    ),
+    patientsOpenedUrl: link(
+      "Where the left nav's Patients opened leads: the audit log module's read audit page, of the patients' records each user read, for a user holding View Read Audit Logs.",
+      '${openmrsBase}/module/auditlogweb/readauditlogs.form',
+    ),
+    downloadUrl: link(
+      "Where the left nav's Download data leads: the download of a form's fields in this app, for a user holding Task: act.downloadData or Task: act.downloadResearchData.",
+      '${openmrsSpaBase}/home/act-download',
+    ),
+    downloadLogUrl: link(
+      "Where the left nav's Download log leads: who downloaded which form's fields, in this app, for a user holding View Read Audit Logs.",
+      '${openmrsSpaBase}/home/act-download-log',
     ),
   },
   careCascade: {
@@ -494,7 +518,17 @@ export interface Config {
     rolePermissionsUrl: string;
     researchParticipationUrl: string;
   };
-  adminLinks: { usersUrl: string; clinicsUrl: string; studiesUrl: string; refreshFlagsUrl: string };
+  instanceAdminKpis: { encountersReport: string };
+  adminLinks: {
+    usersUrl: string;
+    clinicsUrl: string;
+    studiesUrl: string;
+    refreshFlagsUrl: string;
+    userActivityUrl: string;
+    patientsOpenedUrl: string;
+    downloadUrl: string;
+    downloadLogUrl: string;
+  };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
   waitingList: { report: string };

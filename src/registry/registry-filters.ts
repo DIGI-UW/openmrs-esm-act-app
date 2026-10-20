@@ -1,5 +1,6 @@
 import { useClinicFilterDefaults } from '../session-clinic';
 import { type ReportRow } from '../reports/report-dataset.resource';
+import { parseReportDate } from '../reports/report-date';
 import { matchesColumns } from '../table-filters/distinct-values';
 import { type FilterDefaults, useUrlFilters } from '../table-filters/url-filters';
 
@@ -26,6 +27,22 @@ function useRegistryDefaults(): FilterDefaults<(typeof keys)[number]> {
 /** The registry's filters, kept in the page's URL so a view can be bookmarked. */
 export function useRegistryFilters() {
   return useUrlFilters(keys, useRegistryDefaults());
+}
+
+/**
+ * Whole days since the patient joined the flag's list, which ACT Core dates from when it first found the flag raised,
+ * from the report's name=YYYY-MM-DD pairs; undefined when the report gives no date.
+ */
+export function rowFlagDays(row: ReportRow, flag: string, now = new Date()) {
+  const pair = String(row.rhd_flag_dates ?? '')
+    .split('|')
+    .find((p) => p.slice(0, p.lastIndexOf('=')) === flag);
+  const since = pair && parseReportDate(pair.slice(pair.lastIndexOf('=') + 1));
+  if (!since) {
+    return undefined;
+  }
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((today.getTime() - since.getTime()) / (24 * 60 * 60 * 1000));
 }
 
 /** The RHD flags whose patient lists a patient is on, which the report separates by |. */

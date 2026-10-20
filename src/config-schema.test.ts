@@ -41,11 +41,16 @@ describe('configSchema', () => {
         rolePermissionsUrl: '${openmrsBase}/admin/users/users.list',
         researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
       },
+      instanceAdminKpis: { encountersReport: 'd4e5f6a7-b8c9-0123-def0-456789012cde' },
       adminLinks: {
         usersUrl: '${openmrsBase}/admin/users/users.list',
         clinicsUrl: '${openmrsBase}/admin/locations/location.list',
         studiesUrl: '${openmrsSpaBase}/home/act-studies',
         refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',
+        userActivityUrl: '${openmrsSpaBase}/audit-logs',
+        patientsOpenedUrl: '${openmrsBase}/module/auditlogweb/readauditlogs.form',
+        downloadUrl: '${openmrsSpaBase}/home/act-download',
+        downloadLogUrl: '${openmrsSpaBase}/home/act-download-log',
       },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',

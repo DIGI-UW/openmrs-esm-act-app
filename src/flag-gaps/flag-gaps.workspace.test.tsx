@@ -4,8 +4,16 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
-import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
-import FlagGapsWorkspace, { daysPending, type FlagActionWorkspaceProps } from './flag-gaps.workspace';
+import {
+  dismissFlag,
+  fetchForm,
+  type FlagGap,
+  type FlagGaps,
+  type RaisedFlag,
+  usePatientFlagGaps,
+  useRaisedFlags,
+} from './flag-gaps.resource';
+import FlagGapsWorkspace, { daysOpen, daysPending, type FlagActionWorkspaceProps } from './flag-gaps.workspace';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 
@@ -16,6 +24,8 @@ vi.mock('../access/may-enter-form', () => ({
 }));
 vi.mock('./flag-gaps.resource', () => ({
   usePatientFlagGaps: vi.fn(),
+  useRaisedFlags: vi.fn(),
+  dismissFlag: vi.fn(),
   fetchForm: vi.fn(),
 }));
 // Starting a visit for a new form is open-form-in-visit's own test; here the opener is watched.
@@ -23,6 +33,7 @@ vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }))
 
 const mockUsePatientFlagGaps = vi.mocked(usePatientFlagGaps);
 const mockFetchForm = vi.mocked(fetchForm);
+const mockDismissFlag = vi.mocked(dismissFlag);
 const openNewForm = vi.fn();
 
 // The flag the default configuration maps to a form, and that form.
@@ -48,6 +59,7 @@ const secondGap: FlagGap = { ...firstGap, encounter: 'encounter-2', encounterDat
 function showWorkspace(
   launchChildWorkspace = vi.fn(),
   props: Partial<FlagActionWorkspaceProps> | null = workspaceProps,
+  closeWorkspace = vi.fn(),
 ) {
   render(
     <FlagGapsWorkspace
@@ -55,7 +67,7 @@ function showWorkspace(
       windowProps={null}
       groupProps={{ patientUuid: 'patient-uuid' }}
       launchChildWorkspace={launchChildWorkspace}
-      closeWorkspace={vi.fn()}
+      closeWorkspace={closeWorkspace}
       workspaceName="rhd-flag-gaps-workspace"
       windowName="patient-chart-clinical-forms"
       isRootWorkspace
@@ -86,7 +98,19 @@ function gapsReturned({
   flagsReturned(error ? [] : [flagWith(gaps, { configured })], { error });
 }
 
+function raisedFlagsReturned(raisedFlags: Array<RaisedFlag>) {
+  vi.mocked(useRaisedFlags).mockReturnValue({ raisedFlags, isLoading: false, error: undefined });
+}
+
+const raisedFlag: RaisedFlag = {
+  flag: 'flag-uuid',
+  display: 'RHD perfusion issues not recorded',
+  raisedSince: '2026-09-05T08:00:00.000+0000',
+  dismissible: true,
+};
+
 beforeEach(() => {
+  raisedFlagsReturned([]);
   vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
   vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openNewForm, isOpening: false });
 });
@@ -261,6 +285,84 @@ describe('flag gaps workspace', () => {
     expect(screen.getByText(/none of this patient's flags lists its missing data/i)).toBeInTheDocument();
   });
 
+  it('says how many days the flag has been open, from the day ACT Core first found it raised', () => {
+    raisedFlagsReturned([{ ...raisedFlag, dismissible: false }]);
+    gapsReturned({ gaps: [firstGap] });
+
+    showWorkspace();
+
+    expect(screen.getByText(/open for 20 days, since/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
+  });
+
+  it('asks before it dismisses the clicked flag, then closes the workspace', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockDismissFlag.mockResolvedValue(undefined);
+    raisedFlagsReturned([raisedFlag]);
+    gapsReturned({ gaps: [firstGap] });
+
+    const closeWorkspace = vi.fn();
+    showWorkspace(vi.fn(), workspaceProps, closeWorkspace);
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(mockDismissFlag).not.toHaveBeenCalled();
+    expect(screen.getByText(/stays dismissed until the data no longer raises it/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /dismiss flag/i }));
+
+    expect(mockDismissFlag).toHaveBeenCalledWith('patient-uuid', 'flag-uuid', expect.any(Function));
+    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success', title: 'Flag dismissed' }));
+    expect(closeWorkspace).toHaveBeenCalled();
+  });
+
+  it('leaves the flag in place when the dismissal is cancelled', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    raisedFlagsReturned([raisedFlag]);
+    gapsReturned({ gaps: [firstGap] });
+
+    showWorkspace();
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(mockDismissFlag).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
+  });
+
+  it('keeps the workspace open, listing every flag, after one of them is dismissed', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockDismissFlag.mockResolvedValue(undefined);
+    raisedFlagsReturned([raisedFlag]);
+    flagsReturned([flagWith([firstGap])]);
+
+    const closeWorkspace = vi.fn();
+    showWorkspace(vi.fn(), null, closeWorkspace);
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await user.click(screen.getByRole('button', { name: /dismiss flag/i }));
+
+    expect(mockDismissFlag).toHaveBeenCalledWith('patient-uuid', 'flag-uuid', expect.any(Function));
+    expect(closeWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('says why when the flag cannot be dismissed', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockDismissFlag.mockRejectedValue({
+      message: 'Bad request',
+      responseBody: {
+        error: { message: "The flag 'RHD perfusion issues not recorded' is not raised for this patient" },
+      },
+    });
+    raisedFlagsReturned([raisedFlag]);
+    gapsReturned({ gaps: [firstGap] });
+
+    const closeWorkspace = vi.fn();
+    showWorkspace(vi.fn(), workspaceProps, closeWorkspace);
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await user.click(screen.getByRole('button', { name: /dismiss flag/i }));
+
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'error', subtitle: expect.stringContaining('is not raised for this patient') }),
+    );
+    expect(closeWorkspace).not.toHaveBeenCalled();
+  });
+
   it('says so when the gaps cannot be loaded', () => {
     gapsReturned({ error: new Error('Privilege required: View Patient Flags') });
 
@@ -293,6 +395,12 @@ describe('daysPending', () => {
     showWorkspace();
 
     expect(screen.getByRole('table')).toHaveClass(`cds--data-table--${size}`);
+  });
+
+  it('counts whole days from the day the flag was raised, whatever its hour', () => {
+    expect(daysOpen('2026-09-24T23:00:00.000Z', new Date('2026-09-25T00:30:00.000Z'))).toBe(1);
+    expect(daysOpen('2026-09-25T00:10:00.000Z', new Date('2026-09-25T23:00:00.000Z'))).toBe(0);
+    expect(daysOpen('2026-09-05T08:00:00.000+0000', new Date('2026-09-25T12:00:00.000Z'))).toBe(20);
   });
 
   it('counts whole days since the encounter', () => {

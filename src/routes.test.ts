@@ -86,6 +86,8 @@ describe('routes.json privileges', () => {
     ['act-research-dashboard', 'App: act.studies'],
     ['act-refresh-flags-dashboard-link', 'Task: act.refreshFlags'],
     ['act-refresh-flags-dashboard', 'Task: act.refreshFlags'],
+    ['act-download-log-dashboard-link', 'View Read Audit Logs'],
+    ['act-download-log-dashboard', 'View Read Audit Logs'],
     ['act-home-due-for-prophylaxis', 'App: act.dueList'],
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
     ['act-patient-status-flags', [PRIVILEGE_STATUS_FLAGS, 'Get Encounters', 'Get Observations']],
@@ -185,9 +187,12 @@ describe('routes.json privileges', () => {
     }
   });
 
-  it('declares a privilege on every extension but the Admin nav and the session timeout, so none shows to every signed-in user', () => {
-    // Both gate themselves: the Admin nav per link, the session timeout on being signed in.
+  it('declares a privilege on every extension but Download data, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
+    // They gate themselves: Download data on either of its two privileges, the Admin nav per link, the session
+    // timeout on being signed in.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
+      'act-download-dashboard-link',
+      'act-download-dashboard',
       'act-admin-nav',
       'act-session-timeout',
     ]);
