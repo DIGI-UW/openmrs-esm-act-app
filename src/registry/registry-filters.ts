@@ -1,10 +1,9 @@
-import { useSession } from '@openmrs/esm-framework';
-import { useSessionClinicKind } from '../session-clinic';
+import { useClinicFilterDefaults } from '../session-clinic';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { matchesColumns } from '../table-filters/distinct-values';
 import { type FilterDefaults, useUrlFilters } from '../table-filters/url-filters';
 
-const keys = ['status', 'cardiac', 'primaryCare', 'category', 'bpg', 'flag', 'q'] as const;
+const keys = ['status', 'cardiac', 'primaryCare', 'category', 'prophylaxis', 'bpg', 'flag', 'q'] as const;
 
 export type RegistryFilters = Record<(typeof keys)[number], string>;
 
@@ -14,17 +13,14 @@ export const registryFilterColumns = {
   cardiac: 'cardiac_clinic',
   primaryCare: 'primary_care_clinic',
   category: 'diagnosis_category',
+  prophylaxis: 'prophylaxis_regimen',
   bpg: 'bpg_status',
 } as const;
 
-/** Active patients, at the session location when it is a cardiac clinic, as the report names its clinics. */
+/** Active patients at the session's clinic, cardiac or primary care, as the report names its clinics. */
 function useRegistryDefaults(): FilterDefaults<(typeof keys)[number]> {
-  const { sessionLocation } = useSession();
-  const kind = useSessionClinicKind();
-  if (kind === 'pending') {
-    return 'pending';
-  }
-  return kind === 'cardiac' ? { status: 'Active', cardiac: sessionLocation.display } : { status: 'Active' };
+  const clinic = useClinicFilterDefaults();
+  return clinic === 'pending' ? 'pending' : { status: 'Active', ...clinic };
 }
 
 /** The registry's filters, kept in the page's URL so a view can be bookmarked. */

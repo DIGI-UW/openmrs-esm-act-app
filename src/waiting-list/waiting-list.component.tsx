@@ -27,6 +27,7 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
+import { useSessionClinicKind } from '../session-clinic';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
@@ -51,7 +52,8 @@ export function WaitingListTable() {
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
-  const [filters, setFilters] = useWaitingListFilters();
+  const [filters, setFilters, filtersPending] = useWaitingListFilters();
+  const clinicKind = useSessionClinicKind();
   const ranked = useMemo(
     () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),
     [rows, filters, urgencyBands],
@@ -117,7 +119,8 @@ export function WaitingListTable() {
     { header: t('suitableForRepair', 'Suitable for repair'), text: text('suitable_for_repair') },
   ];
 
-  if (error) {
+  // Where the session location's kind cannot be read, opening on every clinic would show patients not its own.
+  if (error || clinicKind === 'error') {
     return (
       <InlineNotification
         kind="error"
@@ -127,7 +130,8 @@ export function WaitingListTable() {
       />
     );
   }
-  if (isLoading) {
+  // Until the session's clinic is known, the list would show every clinic's recommendations.
+  if (isLoading || filtersPending) {
     return (
       <DataTableSkeleton
         role="progressbar"

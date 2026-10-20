@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { useProgrammeScope } from '../programme-report/programme-scope';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { useSessionClinicScope } from '../session-clinic';
 import { ActHomeCard } from './act-home-card.component';
 import styles from './care-cascade.scss';
 
@@ -13,7 +15,24 @@ function Cascade() {
   const { careCascade } = useConfig<Config>();
   // Send a plain date: the server runs on UTC, so a local-midnight timestamp east of UTC lands on yesterday.
   const today = useMemo(() => dayjs().startOf('day'), []);
-  const { rows, isLoading, error } = useReportDataset(careCascade.report, { endDate: today.format('YYYY-MM-DD') });
+  // The session's clinic, as Reports counts it; while its kind is unknown or cannot be read, nothing is evaluated.
+  const scope = useProgrammeScope(false);
+  const clinic = useSessionClinicScope();
+  const clinicName = clinic.status === 'ready' ? clinic.clinic?.name : null;
+  const { cardiacClinic, primaryCareClinic } = scope.status === 'ready' ? scope.params : {};
+  const params = useMemo(
+    () => ({
+      endDate: today.format('YYYY-MM-DD'),
+      ...(cardiacClinic && { cardiacClinic }),
+      ...(primaryCareClinic && { primaryCareClinic }),
+    }),
+    [today, cardiacClinic, primaryCareClinic],
+  );
+  const report = useReportDataset(scope.status === 'ready' ? careCascade.report : null, params);
+  const { rows } = report;
+  const error =
+    report.error ?? (scope.status === 'error' ? new Error('The session location could not be read') : undefined);
+  const isLoading = report.isLoading || scope.status === 'pending';
   // The cascade descriptor names its columns step and patients, one row per step.
   const byStep = new Map(rows.map((row) => [String(row.step), Number(row.patients)]));
   const steps = careCascade.steps
@@ -26,6 +45,11 @@ function Cascade() {
       title={t('careCascade', 'Care cascade')}
       link={{ label: t('report', 'Report'), to: careCascade.reportUrl }}
     >
+      {clinicName && (
+        <p className={styles.caption}>
+          {t('patientsEnrolledAt', 'Patients enrolled at {{clinic}}', { clinic: clinicName })}
+        </p>
+      )}
       {error ? (
         <InlineNotification
           kind="error"

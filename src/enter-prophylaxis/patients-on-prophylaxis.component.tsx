@@ -8,7 +8,7 @@ import { DueForProphylaxisTable } from '../due-for-prophylaxis/due-for-prophylax
 import { DueListToolbar } from '../due-for-prophylaxis/due-list-toolbar.component';
 import { useDueFilter } from '../due-for-prophylaxis/due-list';
 import { useRecordedToday } from '../due-for-prophylaxis/recorded-today.resource';
-import { onRegistryNow, useRegistryReport } from '../registry/registry.resource';
+import { bothClinics, onRegistryNow, useRegistryReport, useSessionClinicReport } from '../registry/registry.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { asProphylaxisRow } from './patients-on-prophylaxis';
@@ -17,7 +17,7 @@ import styles from './patients-on-prophylaxis.scss';
 function PatientsOnProphylaxis() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const registry = useRegistryReport();
+  const registry = useSessionClinicReport(useRegistryReport(), bothClinics);
   const [search, setSearch] = useState('');
   // Only patients enrolled now and alive may have a dose recorded.
   const rows = useMemo(

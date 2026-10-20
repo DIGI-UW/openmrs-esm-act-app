@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { navigate } from '@openmrs/esm-framework';
-import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import OverdueConsultation from './overdue-consultation.component';
 
@@ -52,6 +52,20 @@ describe('Overdue for consultation', () => {
       'Patient 1rhd00001',
     ]);
     expect(within(rows[0]).getByText('108 days')).toBeInTheDocument();
+  });
+
+  it("lists only the patients of the session's cardiac clinic", async () => {
+    registry([
+      { ...row(1, daysAgo(8)), cardiac_clinic: 'Gulu RRH' },
+      { ...row(2, daysAgo(30)), cardiac_clinic: 'Lira RRH' },
+    ]);
+    atSessionLocation('Gulu RRH', ['RHD District']);
+
+    render(<OverdueConsultation />);
+
+    expect(await screen.findByText(/^1 patients?$/)).toBeInTheDocument();
+    const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1);
+    expect(rows.map((r) => within(r).getAllByRole('cell')[0].textContent)).toEqual(['Patient 1rhd00001']);
   });
 
   it('leaves out a completed enrolment and a patient who has died', () => {

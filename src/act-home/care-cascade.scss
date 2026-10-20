@@ -40,3 +40,9 @@
 .empty {
   @include type.type-style('body-compact-01');
 }
+
+.caption {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin-bottom: layout.$spacing-05;
+}
