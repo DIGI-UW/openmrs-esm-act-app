@@ -4,55 +4,83 @@ import dayjs from 'dayjs';
 import { SkeletonText, Tile } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { rowFlags } from '../registry/registry-filters';
+import { onRegistryNow, useRegistryReport } from '../registry/registry.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { flagPriority } from '../rhd-flags/rhd-flag-lists.resource';
 import styles from './instance-admin-kpis.scss';
 
 const sum = (reportRows: Array<ReportRow>, column: string) =>
   reportRows.reduce((total, row) => total + Number(row[column] ?? 0), 0);
 
 /**
- * Four at-a-glance tiles: Active patients and Overdue prophylaxis read from the programme report; Entered this week and
- * Data completeness are placeholders matching the prototype until their endpoints land.
+ * The share of patients on the registry now, and alive, who carry no missing-data flag, as a whole percentage; null
+ * with nobody to count.
+ */
+export function dataCompleteness(rows: Array<ReportRow>, flagLists: Config['flagLists']) {
+  const active = rows.filter(onRegistryNow);
+  if (!active.length) {
+    return null;
+  }
+  const complete = active.filter(
+    (row) => !rowFlags(row).some((flag) => flagPriority(flagLists, flag) === 'dataQuality'),
+  ).length;
+  return Math.round((100 * complete) / active.length);
+}
+
+/**
+ * Four at-a-glance tiles. Active patients and Overdue prophylaxis total the programme report for this month over every
+ * clinic; Entered this week counts the RHD encounters of the last seven days; Data completeness is the share of
+ * active patients with no missing-data flag.
  */
 export function InstanceAdminKpis() {
   const { t } = useTranslation();
-  const { programmeReport } = useConfig<Config>();
+  const { programmeReport, instanceAdminKpis, flagLists } = useConfig<Config>();
 
-  // The current month, as plain dates so the server reads them the same whatever its time zone.
-  const params = useMemo(
+  // Plain dates, so the server reads them the same whatever its time zone.
+  const month = useMemo(
     () => ({
       startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
       endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
     }),
     [],
   );
-  const { rows, isLoading, error } = useReportDataset(programmeReport.report, params);
+  const week = useMemo(
+    () => ({ startDate: dayjs().subtract(6, 'day').format('YYYY-MM-DD'), endDate: dayjs().format('YYYY-MM-DD') }),
+    [],
+  );
+  const programme = useReportDataset(programmeReport.report, month);
+  const entered = useReportDataset(instanceAdminKpis.encountersReport, week);
+  const registry = useRegistryReport();
+  const completeness = useMemo(() => dataCompleteness(registry.rows, flagLists), [registry.rows, flagLists]);
 
   const kpis = [
     {
       label: t('activePatients', 'Active patients'),
-      value: error ? '–' : sum(rows, 'active_patients'),
+      value: programme.error ? '–' : sum(programme.rows, 'active_patients'),
       caption: t('acrossYourSites', 'across your sites'),
+      loading: programme.isLoading,
     },
     {
       label: t('overdueProphylaxis', 'Overdue prophylaxis'),
-      value: error ? '–' : sum(rows, 'overdue'),
+      value: programme.error ? '–' : sum(programme.rows, 'overdue'),
       caption: t('needsFollowUp', 'needs follow-up'),
       tone: styles.alert,
+      loading: programme.isLoading,
     },
     {
       label: t('enteredThisWeek', 'Entered this week'),
-      value: 218,
-      caption: t('formsSaved', 'forms saved'),
+      value: entered.error ? '–' : entered.rows.length,
+      caption: t('formsSavedLastSevenDays', 'forms saved in the last 7 days'),
       tone: styles.info,
-      static: true,
+      loading: entered.isLoading,
     },
     {
       label: t('dataCompleteness', 'Data completeness'),
-      value: '94%',
-      caption: t('keyFields', 'key fields'),
+      value: registry.error || completeness === null ? '–' : `${completeness}%`,
+      caption: t('activePatientsWithNoMissingData', 'active patients with no missing data'),
       tone: styles.success,
-      static: true,
+      loading: registry.isLoading,
     },
   ];
   return (
@@ -60,7 +88,7 @@ export function InstanceAdminKpis() {
       {kpis.map((kpi) => (
         <Tile key={kpi.label} className={styles.kpi} data-testid="instance-admin-kpi">
           <span className={styles.label}>{kpi.label}</span>
-          {isLoading && !kpi.static ? (
+          {kpi.loading ? (
             <SkeletonText heading width="40%" />
           ) : (
             <span className={`${styles.value} ${kpi.tone ?? ''}`}>{kpi.value}</span>

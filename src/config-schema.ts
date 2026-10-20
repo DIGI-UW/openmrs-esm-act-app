@@ -133,6 +133,14 @@ export const configSchema = {
       '${openmrsBase}/admin/maintenance/settings.list',
     ),
   },
+  instanceAdminKpis: {
+    encountersReport: {
+      _type: Type.String,
+      _default: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+      _description:
+        'The RHD Encounters Export report, by uuid or name, one row per RHD encounter in a date range: the Instance dashboard counts its rows for the last seven days as the forms saved this week.',
+    },
+  },
   adminLinks: {
     usersUrl: link(
       "Where the left nav's Users and roles leads: OpenMRS's user management, for a user holding Edit Users.",
@@ -510,6 +518,7 @@ export interface Config {
     rolePermissionsUrl: string;
     researchParticipationUrl: string;
   };
+  instanceAdminKpis: { encountersReport: string };
   adminLinks: {
     usersUrl: string;
     clinicsUrl: string;
