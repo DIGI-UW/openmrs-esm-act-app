@@ -18,6 +18,9 @@ export const PRIVILEGE_ENTER_CLINICAL_FORMS = 'Task: act.enterClinicalForms';
 // The audit log module's (auditlogweb): changes such as saved forms, and reads such as opened patients.
 export const PRIVILEGE_VIEW_AUDIT_LOGS = 'View Audit Logs';
 export const PRIVILEGE_VIEW_READ_AUDIT_LOGS = 'View Read Audit Logs';
+export const PRIVILEGE_DOWNLOAD_DATA = 'Task: act.downloadData';
+export const PRIVILEGE_DOWNLOAD_IDENTIFIERS = 'Task: act.downloadIdentifiers';
+export const PRIVILEGE_DOWNLOAD_RESEARCH_DATA = 'Task: act.downloadResearchData';
 
 // OpenMRS core privileges for the actions ACT offers, as the services that carry them out require.
 export const PRIVILEGE_ADD_PATIENTS = 'Add Patients';

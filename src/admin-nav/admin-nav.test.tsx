@@ -31,7 +31,7 @@ describe('AdminNav', () => {
     );
   });
 
-  it("leads User activity to the audit log app and Patients opened to the audit log module's read audit", async () => {
+  it("leads User activity to the audit log app, Patients opened to the audit log module's read audit and Download log to ACT's", async () => {
     await signInWith([homePrivilege, 'View Audit Logs', 'View Read Audit Logs']);
 
     render(<AdminNav />);
@@ -40,6 +40,10 @@ describe('AdminNav', () => {
     expect(screen.getByRole('link', { name: 'Patients opened' })).toHaveAttribute(
       'href',
       '/openmrs/module/auditlogweb/readauditlogs.form',
+    );
+    expect(screen.getByRole('link', { name: 'Download log' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/home/act-download-log',
     );
   });
 
@@ -67,8 +71,34 @@ describe('AdminNav', () => {
     },
     {
       privilege: 'View Read Audit Logs',
-      shown: ['Patients opened'],
-      hidden: ['Users and roles', 'User activity', 'Clinics', 'Studies', 'Flags and adherence'],
+      shown: ['Patients opened', 'Download log'],
+      hidden: ['Users and roles', 'User activity', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
+    },
+    {
+      privilege: 'Task: act.downloadData',
+      shown: ['Download data'],
+      hidden: [
+        'Users and roles',
+        'User activity',
+        'Patients opened',
+        'Download log',
+        'Clinics',
+        'Studies',
+        'Flags and adherence',
+      ],
+    },
+    {
+      privilege: 'Task: act.downloadResearchData',
+      shown: ['Download data'],
+      hidden: [
+        'Users and roles',
+        'User activity',
+        'Patients opened',
+        'Download log',
+        'Clinics',
+        'Studies',
+        'Flags and adherence',
+      ],
     },
   ])('offers only $shown to a user holding $privilege', async ({ privilege, shown, hidden }) => {
     await signInWith([homePrivilege, privilege]);

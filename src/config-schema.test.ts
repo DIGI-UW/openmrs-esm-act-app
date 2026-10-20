@@ -48,6 +48,8 @@ describe('configSchema', () => {
         refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',
         userActivityUrl: '${openmrsSpaBase}/audit-logs',
         patientsOpenedUrl: '${openmrsBase}/module/auditlogweb/readauditlogs.form',
+        downloadUrl: '${openmrsSpaBase}/home/act-download',
+        downloadLogUrl: '${openmrsSpaBase}/home/act-download-log',
       },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',

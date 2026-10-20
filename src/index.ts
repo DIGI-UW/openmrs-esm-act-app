@@ -164,6 +164,20 @@ export const refreshFlagsDashboard = getAsyncLifecycle(
   options,
 );
 
+export const downloadDashboardLink = getAsyncLifecycle(
+  () => import('./download/download-dashboard-link.component'),
+  options,
+);
+
+export const downloadDashboard = getAsyncLifecycle(() => import('./download/download.component'), options);
+
+export const downloadLogDashboardLink = getAsyncLifecycle(
+  () => import('./download/download-log-dashboard-link.component'),
+  options,
+);
+
+export const downloadLogDashboard = getAsyncLifecycle(() => import('./download/download-log.component'), options);
+
 export const patientsOnProphylaxisDashboardLink = getSyncLifecycle(
   patientsOnProphylaxisDashboardLinkComponent,
   options,
