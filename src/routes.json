@@ -472,6 +472,12 @@
       "privileges": "Get Patients"
     },
     {
+      "name": "act-session-timeout",
+      "slot": "top-nav-actions-slot",
+      "component": "sessionTimeout",
+      "order": 99
+    },
+    {
       "name": "act-patient-status-flags",
       "slot": "patient-banner-tags-slot",
       "component": "patientStatusFlags",
