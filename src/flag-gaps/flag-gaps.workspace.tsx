@@ -1,5 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import {
   Button,
@@ -22,7 +23,16 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { fetchForm, type FlagGap, type FlagGaps, usePatientFlagGaps } from './flag-gaps.resource';
+import {
+  dismissFlag,
+  fetchForm,
+  type FlagGap,
+  type FlagGaps,
+  type RaisedFlag,
+  usePatientFlagGaps,
+  useRaisedFlags,
+} from './flag-gaps.resource';
+import { restErrorMessage } from '../rest-error-message';
 import { MayEnterForm } from '../access/may-enter-form';
 import { type FormLauncher, useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { openEncounterForm } from './open-encounter-form';
@@ -45,6 +55,77 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function daysPending(encounterDatetime: string, now = new Date()) {
   return Math.floor((now.getTime() - new Date(encounterDatetime).getTime()) / DAY_MS);
+}
+
+/** Whole days from the day the flag was raised to today, as ACT 2.0 counted a critical data flag's days pending. */
+export function daysOpen(raisedSince: string, now = new Date()) {
+  const since = new Date(raisedSince);
+  const raisedDay = new Date(since.getFullYear(), since.getMonth(), since.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((today.getTime() - raisedDay.getTime()) / DAY_MS);
+}
+
+/** How long the flag has been open and, for a user who may, Dismiss, which asks before it dismisses. */
+function FlagStatus({
+  patientUuid,
+  raised,
+  onDismissed,
+}: {
+  patientUuid: string;
+  raised: RaisedFlag;
+  onDismissed: () => void;
+}) {
+  const { t } = useTranslation();
+  const [confirming, setConfirming] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
+  const { mutate } = useSWRConfig();
+
+  const dismiss = async () => {
+    setDismissing(true);
+    try {
+      await dismissFlag(patientUuid, raised.flag, mutate);
+      showSnackbar({ kind: 'success', title: t('flagDismissed', 'Flag dismissed') });
+      onDismissed();
+    } catch (e) {
+      showSnackbar({
+        kind: 'error',
+        title: t('couldNotDismissFlag', 'Could not dismiss the flag'),
+        subtitle: restErrorMessage(e),
+      });
+      setDismissing(false);
+    }
+  };
+
+  return (
+    <div className={styles.status}>
+      {raised.raisedSince ? (
+        <p className={styles.message}>
+          {t('openForDays', 'Open for {{count}} days, since {{date}}', {
+            count: daysOpen(raised.raisedSince),
+            date: formatDate(new Date(raised.raisedSince), { mode: 'standard', time: false }),
+          })}
+        </p>
+      ) : null}
+      {raised.dismissible && confirming ? (
+        <div className={styles.confirm}>
+          <p className={styles.message}>
+            {t('confirmDismissFlag', 'Dismiss this flag? It stays dismissed until the data no longer raises it.')}
+          </p>
+          <Button kind="danger" size="sm" disabled={dismissing} onClick={dismiss}>
+            {t('dismissFlag', 'Dismiss flag')}
+          </Button>
+          <Button kind="ghost" size="sm" disabled={dismissing} onClick={() => setConfirming(false)}>
+            {t('cancel', 'Cancel')}
+          </Button>
+        </div>
+      ) : null}
+      {raised.dismissible && !confirming ? (
+        <Button kind="ghost" size="sm" onClick={() => setConfirming(true)}>
+          {t('dismiss', 'Dismiss')}
+        </Button>
+      ) : null}
+    </div>
+  );
 }
 
 /**
@@ -76,7 +157,7 @@ function NewFormButton({
 
 const FlagGapsWorkspace: React.FC<
   Workspace2DefinitionProps<Partial<FlagActionWorkspaceProps>, object, PatientChartGroupProps>
-> = ({ workspaceProps, groupProps, launchChildWorkspace }) => {
+> = ({ workspaceProps, groupProps, launchChildWorkspace, closeWorkspace }) => {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { flagForms } = useConfig<Config>().flagLists;
@@ -85,11 +166,10 @@ const FlagGapsWorkspace: React.FC<
     ? { uuid: workspaceProps.flagUuid, name: workspaceProps.flagName }
     : undefined;
   const { flagGaps, isLoading, error } = usePatientFlagGaps(patientUuid, clickedFlag);
+  const { raisedFlags } = useRaisedFlags(patientUuid);
   // A flag whose criteria name no form rows, such as a risk flag over the adherence table, still opens the form
   // configured for it.
-  const listed = flagGaps.filter(
-    (flag) => flag.configured || flagForms.some((entry) => entry.flag === flag.flagUuid),
-  );
+  const listed = flagGaps.filter((flag) => flag.configured || flagForms.some((entry) => entry.flag === flag.flagUuid));
 
   const openGap = useCallback(
     async (gap: FlagGap) => {
@@ -130,12 +210,23 @@ const FlagGapsWorkspace: React.FC<
         </p>
       );
     }
-    return listed.map((flag) => (
-      <section key={flag.flagUuid} className={styles.flag}>
-        {clickedFlag ? null : <h4 className={styles.flagName}>{flag.flagName}</h4>}
-        {renderGaps(flag)}
-      </section>
-    ));
+    return listed.map((flag) => {
+      const raised = raisedFlags.find((candidate) => candidate.flag === flag.flagUuid);
+      return (
+        <section key={flag.flagUuid} className={styles.flag}>
+          {clickedFlag ? null : <h4 className={styles.flagName}>{flag.flagName}</h4>}
+          {raised ? (
+            <FlagStatus
+              patientUuid={patientUuid}
+              raised={raised}
+              // The clicked flag is gone once dismissed; with every flag listed, the list reloads without it.
+              onDismissed={() => (clickedFlag ? closeWorkspace() : undefined)}
+            />
+          ) : null}
+          {renderGaps(flag)}
+        </section>
+      );
+    });
   };
 
   const renderGaps = ({ flagUuid, gaps }: FlagGaps) => {

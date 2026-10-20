@@ -127,6 +127,36 @@ describe('Registry flags column', () => {
     },
   );
 
+  it("gives each flag's days open in the tooltip, from the day the patient joined its list, even for one flag", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 8, 25, 12));
+    setLayout('small-desktop');
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: withFlags(['RHD INR target missing|RHD prophylaxis overdue', 'RHD INR target missing']).map((row, i) => ({
+        ...row,
+        rhd_flag_dates: [
+          'RHD INR target missing=2026-09-05|RHD prophylaxis overdue=2026-09-24',
+          'RHD INR target missing=2026-09-15',
+        ][i],
+      })),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<Registry />);
+    vi.useRealTimers();
+
+    expect(flagsTag()).toHaveAccessibleDescription(
+      'RHD INR target missing (20 days), RHD prophylaxis overdue (1 days)',
+    );
+    const oneFlag = within(screen.getByRole('row', { name: /Patient 2\b/ })).getByRole('button', {
+      name: 'RHD INR target missing',
+    });
+    expect(oneFlag).toHaveAccessibleDescription('RHD INR target missing (10 days)');
+  });
+
   it('renders the "N flags" tag as a span, as the content of its tooltip button must be', () => {
     render(<Registry />);
 

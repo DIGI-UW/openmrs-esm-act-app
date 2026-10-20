@@ -17,3 +17,14 @@
   @include type.type-style('heading-compact-02');
   margin-bottom: layout.$spacing-03;
 }
+
+.status {
+  margin-bottom: layout.$spacing-03;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
