@@ -36,7 +36,7 @@ import { DownloadCsvButton } from '../table-filters/download-csv-button.componen
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { filterRegistry, registryFilterColumns, rowFlags, useRegistryFilters } from './registry-filters';
+import { filterRegistry, registryFilterColumns, rowFlagDays, rowFlags, useRegistryFilters } from './registry-filters';
 import { AdherenceRing } from './adherence-ring.component';
 import { BpgStatusTag, bpgStatuses, useBpgStatusLabel } from './bpg-status-tag.component';
 import { RegistryFlags } from './registry-flags.component';
@@ -91,7 +91,7 @@ function RegistryTable() {
   const flagsOf = (row: ReportRow) =>
     rowFlags(row)
       .filter((flagName) => isListedFlag(flagLists, flagName))
-      .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName) }));
+      .map((flagName) => ({ flagName, priority: flagPriority(flagLists, flagName), days: rowFlagDays(row, flagName) }));
   const flagOptions = [...new Set(rows.flatMap((row) => flagsOf(row).map((list) => list.flagName)))].sort();
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
   // The CSV keeps each report field in its own column.

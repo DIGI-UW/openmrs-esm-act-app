@@ -1,7 +1,10 @@
+import React from 'react';
+import { SWRConfig, useSWRConfig } from 'swr';
 import { describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { openmrsFetch } from '@openmrs/esm-framework';
-import { usePatientFlagGaps } from './flag-gaps.resource';
+import { useNextSteps } from '../next-steps/next-steps.resource';
+import { dismissFlag, usePatientFlagGaps, useRaisedFlags } from './flag-gaps.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -53,5 +56,68 @@ describe('usePatientFlagGaps', () => {
     expect(result.current.flagGaps[0]).toMatchObject({ flagUuid: 'death', flagName: 'RHD death', configured: false });
     const urls = mockOpenmrsFetch.mock.calls.map(([url]) => url);
     expect(urls.some((url) => url.includes('/patientflags/patientflag'))).toBe(false);
+  });
+});
+
+describe('useRaisedFlags', () => {
+  it("reads the patient's raised flags from ACT Core", async () => {
+    const raised = {
+      flag: 'perfusion',
+      display: 'RHD perfusion',
+      raisedSince: '2026-09-05T08:00:00.000+0000',
+      dismissible: true,
+    };
+    respondWith(() => ({ results: [raised] }));
+
+    const { result } = renderHook(() => useRaisedFlags('patient-3'));
+
+    await waitFor(() => expect(result.current.raisedFlags).toEqual([raised]));
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/actcore/raisedflags?patient=patient-3'));
+  });
+});
+
+describe('dismissFlag', () => {
+  it('asks ACT Core to dismiss the flag for the patient, then reloads their flags and Next steps', async () => {
+    mockOpenmrsFetch.mockClear();
+    respondWith((url) =>
+      url.includes('/patientflags/patientflag')
+        ? { results: [{ voided: false, flag: { uuid: 'perfusion', display: 'RHD perfusion' } }] }
+        : { configured: true, results: [] },
+    );
+    // A cache given through a provider, as O3 gives every extension, which swr's global mutate does not reach.
+    const cache = new Map();
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(SWRConfig, { value: { provider: () => cache } }, children);
+    const { result } = renderHook(
+      () => ({
+        gaps: usePatientFlagGaps('patient-4'),
+        steps: useNextSteps('patient-4'),
+        mutate: useSWRConfig().mutate,
+      }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.gaps.flagGaps).toHaveLength(1));
+    const fetchesBefore = mockOpenmrsFetch.mock.calls.length;
+
+    await dismissFlag('patient-4', 'perfusion', result.current.mutate);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/actcore/raisedflags/dismiss'),
+      expect.objectContaining({ method: 'POST', body: { patient: 'patient-4', flag: 'perfusion' } }),
+    );
+    await waitFor(() =>
+      expect(
+        mockOpenmrsFetch.mock.calls
+          .slice(fetchesBefore)
+          .some(([url]) => String(url).includes('/patientflags/patientflag?patient=patient-4')),
+      ).toBe(true),
+    );
+    await waitFor(() =>
+      expect(
+        mockOpenmrsFetch.mock.calls
+          .slice(fetchesBefore)
+          .some(([url]) => String(url).includes('/actcore/nextsteps?patient=patient-4')),
+      ).toBe(true),
+    );
   });
 });

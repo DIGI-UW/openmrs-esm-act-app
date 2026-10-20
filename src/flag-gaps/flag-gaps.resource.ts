@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { type ScopedMutator } from 'swr';
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 /** One piece of data missing behind a flag, as the ACT Core gap endpoint returns it. */
@@ -61,6 +61,47 @@ export function usePatientFlagGaps(patientUuid: string, clickedFlag?: { uuid: st
   );
 
   return { flagGaps: data ?? [], isLoading, error };
+}
+
+/** One of the patient's raised flags as ACT Core keeps it: since when it is raised, and whether the user may dismiss it. */
+export interface RaisedFlag {
+  flag: string;
+  display: string;
+  raisedSince: string | null;
+  dismissible: boolean;
+}
+
+export function useRaisedFlags(patientUuid: string) {
+  const { data, error, isLoading } = useSWR<Array<RaisedFlag>, Error>(
+    patientUuid ? ['act-raised-flags', patientUuid] : null,
+    async () => {
+      const { data } = await openmrsFetch<{ results: Array<RaisedFlag> }>(
+        `${restBaseUrl}/actcore/raisedflags?patient=${patientUuid}`,
+      );
+      return data.results;
+    },
+  );
+  return { raisedFlags: data ?? [], isLoading, error };
+}
+
+/**
+ * Dismisses the flag for the patient until the data no longer raises it, then reloads what lists the patient's
+ * flags (the banner's and this workspace's) and Next steps, which a dismissed flag no longer raises. `mutate` is the caller's `useSWRConfig().mutate`: O3 gives every extension
+ * one SWR cache through a provider, which swr's own global `mutate` does not reach.
+ */
+export async function dismissFlag(patientUuid: string, flagUuid: string, mutate: ScopedMutator) {
+  await openmrsFetch(`${restBaseUrl}/actcore/raisedflags/dismiss`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { patient: patientUuid, flag: flagUuid },
+  });
+  const patientFlags = `${restBaseUrl}/patientflags/patientflag?patient=${patientUuid}`;
+  const nextSteps = `${restBaseUrl}/encounter?patient=${patientUuid}&for=actcore-nextsteps`;
+  await mutate(
+    (key) =>
+      (typeof key === 'string' && (key.startsWith(patientFlags) || key === nextSteps)) ||
+      (Array.isArray(key) && ['rhd-flag-gaps', 'act-raised-flags'].includes(key[0]) && key[1] === patientUuid),
+  );
 }
 
 export async function fetchForm(formUuid: string) {
