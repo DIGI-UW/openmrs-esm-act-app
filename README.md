@@ -37,7 +37,7 @@ needs. So what each user sees follows their privileges, and a distro plugs actio
 config, the O3 way, without code:
 
 ```json
-"@mherman22/esm-act-app": {
+"@act-registry/esm-act-app": {
   "extensionSlots": {
     "act-home-quick-actions-slot": { "add": ["act-community-home-record-bpg"], "order": ["act-home-register-patient"] }
   }
@@ -165,19 +165,19 @@ On Node 25 or later, run the tests with `NODE_OPTIONS=--no-experimental-webstora
 
 ## Adding it to a distro
 
-The module is published to npm as `@mherman22/esm-act-app`. A distro lists it in
+The module is published to npm as `@act-registry/esm-act-app`. A distro lists it in
 `frontend/spa-assemble-config.json`, taking `next` for the newest prerelease or a release version:
 
 ```json
 "frontendModules": {
-  "@mherman22/esm-act-app": "next"
+  "@act-registry/esm-act-app": "next"
 }
 ```
 
 ## Releasing
 
 CI publishes with the `NPM_AUTH_TOKEN` repository secret, an npm token that can publish to the
-`@mherman22` scope.
+`@act-registry` scope.
 
 - A push to main publishes a prerelease, such as `1.0.1-pre.42`, under the `next` tag. Runs on main
   queue in push order, and a run still waiting when a newer push lands is skipped.

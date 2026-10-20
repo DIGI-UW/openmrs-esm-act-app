@@ -23,7 +23,7 @@ import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin
 import { trackActReturn } from './back-to-act/act-return';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
-const moduleName = '@mherman22/esm-act-app';
+const moduleName = '@act-registry/esm-act-app';
 
 const options = {
   featureName: 'act',
