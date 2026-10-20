@@ -395,6 +395,25 @@ export const configSchema = {
     _default: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
     _description: 'The visit type an ACT screen starts when it opens a form for a patient with no active visit.',
   },
+  sessionTimeout: {
+    idleMinutes: {
+      _type: Type.Number,
+      _default: 30,
+      _description:
+        "Minutes a user may be idle before they are signed out, as the server's session timeout (Tomcat's default is 30). 0 switches the warning off.",
+    },
+    warningMinutes: {
+      _type: Type.Number,
+      _default: 3,
+      _description: 'Minutes before the idle time runs out that the warning opens, counting down to the sign-out.',
+    },
+    keepAliveMinutes: {
+      _type: Type.Number,
+      _default: 10,
+      _description:
+        "How often, in minutes, the session is asked for while the user is active, so a long form entered without saving does not let the server's clock run out. Keep it below idleMinutes.",
+    },
+  },
   urgencyBands: {
     _type: Type.Array,
     _elements: {
@@ -518,5 +537,6 @@ export interface Config {
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
   visitType: string;
+  sessionTimeout: { idleMinutes: number; warningMinutes: number; keepAliveMinutes: number };
   urgencyBands: Array<{ label?: string; shortLabel?: string; concept: string; deadlineDays: number }>;
 }

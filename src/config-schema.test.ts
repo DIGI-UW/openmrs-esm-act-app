@@ -126,6 +126,7 @@ describe('configSchema', () => {
       },
       actIdentifierType: '240f85fa-46e1-540e-9234-2796c623f7ea',
       visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
+      sessionTimeout: { idleMinutes: 30, warningMinutes: 3, keepAliveMinutes: 10 },
       urgencyBands: [
         {
           label: '1: Emergent (24 hours)',
