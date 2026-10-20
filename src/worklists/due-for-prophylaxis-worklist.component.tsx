@@ -10,7 +10,7 @@ import { Worklist, type WorklistState, WorklistTable } from './worklist.componen
 
 function DuePatients({ title }: { title: string }) {
   const { t } = useTranslation();
-  const { rows, recorded, checking, isLoading, error } = useDueList();
+  const { rows, recorded, isLoading, error } = useDueList();
   const { opening, record } = useRecordDose();
   const entries = rows.map((row) => ({
     row,
@@ -28,7 +28,7 @@ function DuePatients({ title }: { title: string }) {
         <RecordDoseAction
           row={row}
           recordedToday={recorded.has(String(row.patient_uuid))}
-          disabled={opening || checking}
+          disabled={opening}
           onRecord={record}
         />
       )}

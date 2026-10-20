@@ -103,12 +103,7 @@ describe('Enter prophylaxis', () => {
       error: undefined,
       mutate: vi.fn(),
     });
-    vi.mocked(useRecordedToday).mockReturnValue({
-      recorded: new Set(),
-      isLoading: false,
-      isValidating: false,
-      error: undefined,
-    });
+    vi.mocked(useRecordedToday).mockReturnValue({ recorded: new Set() });
   });
 
   it('lists every patient on prophylaxis, and those without a prescription, with what to record for each', () => {
@@ -130,21 +125,16 @@ describe('Enter prophylaxis', () => {
     expect(tableRows().map((row) => row[0])).not.toContain('Patient 7');
   });
 
-  it('gives each status as the registry has it in the CSV, as who was recorded today is known for the page shown only', async () => {
+  it('says Recorded today on screen and in the CSV, as the rows themselves say who was recorded today', async () => {
     await signInWith(['App: act.registry', 'Add Encounters', 'Task: act.lists.export']);
-    vi.mocked(useRecordedToday).mockReturnValue({
-      recorded: new Set(['patient-1']),
-      isLoading: false,
-      isValidating: false,
-      error: undefined,
-    });
+    vi.mocked(useRecordedToday).mockReturnValue({ recorded: new Set(['patient-1']) });
     render(<EnterProphylaxis />);
 
     expect(tableRows()[0][4]).toBe('Recorded today');
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
 
     expect(vi.mocked(downloadCsv).mock.lastCall[2].map((row) => [row[0], row[4]])).toEqual([
-      ['Patient 1', 'Overdue'],
+      ['Patient 1', 'Recorded today'],
       ['Patient 2', 'Up to date'],
       ['Patient 3', 'No prescription'],
       ['Patient 4', 'Due today'],

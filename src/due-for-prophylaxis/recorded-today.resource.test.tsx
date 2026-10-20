@@ -1,118 +1,55 @@
-import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { SWRConfig } from 'swr';
-import { openmrsFetch } from '@openmrs/esm-framework';
-import { signInWith } from '../access/sign-in.test-helper';
-import { useRecordedToday } from './recorded-today.resource';
+import { renderHook } from '@testing-library/react';
+import { type ReportRow } from '../reports/report-dataset.resource';
+import { recordedToday, useRecordedToday } from './recorded-today.resource';
 
-const bpgForm = '0119d2e6-e2e1-391c-9b88-d59a10b0780d';
-const oralForm = 'ba29e982-ce18-302a-9fc4-d4b2c3983465';
-const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const row = (patient: string, fields: Partial<ReportRow>): ReportRow => ({ patient_uuid: patient, ...fields });
 
-// A fresh cache per test, so one test's answer is not another's.
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <SWRConfig value={{ provider: () => new Map() }}>{children}</SWRConfig>
-);
-
-const injectionDate = '183fb30e-b861-5b7c-806f-7118a40f2b51';
-const dated = [{ concept: { uuid: injectionDate } }];
-
-function encountersByPatient(forms: Record<string, Array<string>>, obs: Array<{ concept: { uuid: string } }> = dated) {
-  mockOpenmrsFetch.mockImplementation((url: string) => {
-    const patient = new URL(url, 'http://localhost').searchParams.get('patient');
-    const results = (forms[patient] ?? []).map((form) => ({ uuid: `${patient}-${form}`, form: { uuid: form }, obs }));
-    return Promise.resolve({ data: { results } } as never);
-  });
-}
-
-describe('useRecordedToday', () => {
-  beforeEach(async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+describe('recordedToday', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 9, 6, 10, 30));
-    await signInWith([]);
-    mockOpenmrsFetch.mockReset();
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.unstubAllEnvs();
   });
 
-  it("asks for each patient's encounters since this morning, with each encounter's form", async () => {
-    encountersByPatient({});
-
-    renderHook(() => useRecordedToday(['patient-a', 'patient-b']), { wrapper });
-
-    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2));
-    const queries = mockOpenmrsFetch.mock.calls.map(([url]) => new URL(String(url), 'http://localhost').searchParams);
-    expect(queries.map((query) => query.get('patient'))).toEqual(['patient-a', 'patient-b']);
-    expect(queries.map((query) => query.get('fromdate'))).toEqual([
-      new Date(2026, 9, 6).toISOString(),
-      new Date(2026, 9, 6).toISOString(),
-    ]);
-    expect(queries[0].get('v')).toBe('custom:(uuid,form:(uuid),obs:(concept:(uuid)))');
+  it("takes the report's recorded_today column, which judges today on the server's clock, as its statuses are", () => {
+    expect(recordedToday(row('a', { recorded_today: 1, last_given: '2026-10-05T00:00:00.000+0000' }))).toBe(true);
+    expect(recordedToday(row('b', { recorded_today: 0, last_given: '2026-10-06T00:00:00.000+0000' }))).toBe(false);
+    expect(recordedToday(row('c', { recorded_today: '1' }))).toBe(true);
   });
 
-  it("asks from the clinic's midnight, not UTC's, outside UTC", async () => {
-    vi.stubEnv('TZ', 'Africa/Kampala');
-    expect(new Date(2026, 9, 6).getTimezoneOffset()).toBe(-180);
-    vi.setSystemTime(new Date('2026-10-05T22:00:00.000Z'));
-    encountersByPatient({});
-
-    renderHook(() => useRecordedToday(['patient-a']), { wrapper });
-
-    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
-    const query = new URL(String(mockOpenmrsFetch.mock.calls[0][0]), 'http://localhost').searchParams;
-    expect(query.get('fromdate')).toBe('2026-10-05T21:00:00.000Z');
+  it('falls back to the last dose falling on today, for a report without the column', () => {
+    expect(recordedToday(row('a', { last_given: '2026-10-06T00:00:00.000+0000' }))).toBe(true);
+    expect(recordedToday(row('b', { last_given: [2026, 10, 6] }))).toBe(true);
+    expect(recordedToday(row('c', { last_given: '2026-10-05T00:00:00.000+0000' }))).toBe(false);
+    expect(recordedToday(row('d', { last_given: null }))).toBe(false);
+    expect(recordedToday(row('e', {}))).toBe(false);
   });
 
-  it('counts a patient with a BPG or oral prophylaxis encounter dated today, and no one else', async () => {
-    encountersByPatient({ 'patient-bpg': [bpgForm], 'patient-oral': [oralForm], 'patient-other': ['another-form'] });
+  it('reads the fallback on the given day', () => {
+    expect(recordedToday(row('a', { last_given: '2026-10-05T00:00:00.000+0000' }), new Date(2026, 9, 5))).toBe(true);
+  });
+});
 
-    const { result } = renderHook(
-      () => useRecordedToday(['patient-bpg', 'patient-oral', 'patient-other', 'patient-none']),
-      {
-        wrapper,
-      },
-    );
+describe('useRecordedToday', () => {
+  it('collects the patients recorded today from the rows, with no request', () => {
+    const rows = [
+      row('patient-today', { recorded_today: 1 }),
+      row('patient-due', { recorded_today: 0 }),
+      row('patient-fallback', { last_given: new Date().toISOString() }),
+    ];
 
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect([...result.current.recorded].sort()).toEqual(['patient-bpg', 'patient-oral']);
+    const { result } = renderHook(() => useRecordedToday(rows));
+
+    expect([...result.current.recorded].sort()).toEqual(['patient-fallback', 'patient-today']);
   });
 
-  it('does not count a BPG visit with no Date of Injection, as the form records none when BPG is withheld', async () => {
-    encountersByPatient({ 'patient-withheld': [bpgForm], 'patient-oral': [oralForm] }, []);
+  it('has nobody when nothing is listed', () => {
+    const { result } = renderHook(() => useRecordedToday([]));
 
-    const { result } = renderHook(() => useRecordedToday(['patient-withheld', 'patient-oral']), { wrapper });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect([...result.current.recorded]).toEqual(['patient-oral']);
-  });
-
-  it('returns the error when a lookup fails', async () => {
-    mockOpenmrsFetch.mockRejectedValue(new Error('timeout'));
-
-    const { result } = renderHook(() => useRecordedToday(['patient-a']), { wrapper });
-
-    await waitFor(() => expect(result.current.error).toEqual(new Error('timeout')));
-    expect(result.current.recorded.size).toBe(0);
-  });
-
-  it('does not ask again after a failure, as each retry sends every lookup again', async () => {
-    mockOpenmrsFetch.mockRejectedValue(new Error('timeout'));
-
-    const { result } = renderHook(() => useRecordedToday(['patient-a', 'patient-b']), { wrapper });
-
-    await waitFor(() => expect(result.current.error).toEqual(new Error('timeout')));
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
-  });
-
-  it('asks nothing when nobody is listed', () => {
-    const { result } = renderHook(() => useRecordedToday([]), { wrapper });
-
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
     expect(result.current.recorded.size).toBe(0);
   });
 });

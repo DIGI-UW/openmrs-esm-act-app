@@ -308,8 +308,6 @@ describe('Due for prophylaxis worklist', () => {
     vi.mocked(useDueList).mockReturnValue({
       rows: dueRows,
       recorded: new Set(['patient-1']),
-      recordedError: undefined,
-      checking: false,
       waiting: 1,
       isLoading: false,
       error: undefined,

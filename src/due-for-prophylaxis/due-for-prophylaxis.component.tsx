@@ -14,7 +14,7 @@ import styles from './due-for-prophylaxis.scss';
 function DueList() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { rows, recorded, recordedError, checking, waiting, isLoading, error } = useDueList();
+  const { rows, recorded, waiting, isLoading, error } = useDueList();
   const { filter, setFilter, counts, filtered } = useDueFilter(rows);
   const filters = useMemo(() => ({ filter }), [filter]);
   const { results, paginationProps } = usePagedRows(filtered, filters);
@@ -54,12 +54,7 @@ function DueList() {
       <DueListToolbar filter={filter} counts={counts} onFilter={setFilter} rows={filtered} recorded={recorded} />
       {filtered.length ? (
         <>
-          <DueForProphylaxisTable
-            rows={results}
-            recorded={recorded}
-            recordedError={recordedError}
-            checking={checking}
-          />
+          <DueForProphylaxisTable rows={results} recorded={recorded} />
           <Pagination {...paginationProps} />
         </>
       ) : (

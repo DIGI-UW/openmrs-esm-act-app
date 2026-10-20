@@ -1,44 +1,28 @@
-import useSWR from 'swr';
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import { type Config } from '../config-schema';
+import { useMemo } from 'react';
+import { type ReportRow } from '../reports/report-dataset.resource';
+import { parseReportDate } from '../reports/report-date';
 
-interface EncounterForm {
-  uuid: string;
-  form: { uuid: string } | null;
-  obs: Array<{ concept: { uuid: string } }>;
-}
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 /**
- * The listed patients with an oral encounter, or a BPG one with a Date of Injection, dated since local midnight, which
- * the report cannot tell as ACT Core rebuilds due dates overnight. A failure is not retried, as each retry resends all.
+ * Whether the row's patient had a dose recorded today. ACT Core rewrites the patient's adherence row when a dose is
+ * saved, so the report's last dose is current: its `recorded_today` says so on the server's clock, the clock its
+ * statuses use; a report without that column is read by its `last_given` falling on today, here.
  */
-export function useRecordedToday(patientUuids: Array<string>) {
-  const { prophylaxisCard, prophylaxisPage } = useConfig<Config>();
-  // Local midnight as a UTC instant, as a bare date is read on the server's clock.
-  const since = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
-  const forms = [prophylaxisCard.bpgForm, prophylaxisCard.oralForm];
-  const injectionDate = prophylaxisPage.concepts.injectionDate;
-  const recorded = (encounter: EncounterForm) =>
-    encounter.form?.uuid === prophylaxisCard.oralForm ||
-    (encounter.form?.uuid === prophylaxisCard.bpgForm && encounter.obs.some((o) => o.concept.uuid === injectionDate));
-  const { data, isLoading, isValidating, error } = useSWR(
-    patientUuids.length ? ['act-recorded-today', since, injectionDate, ...forms, ...patientUuids] : null,
-    () =>
-      Promise.all(
-        patientUuids.map(async (patientUuid) => {
-          const params = new URLSearchParams({
-            patient: patientUuid,
-            fromdate: since,
-            v: 'custom:(uuid,form:(uuid),obs:(concept:(uuid)))',
-          });
-          const { data: page } = await openmrsFetch<{ results: Array<EncounterForm> }>(
-            `${restBaseUrl}/encounter?${params}`,
-          );
-          return page.results.some(recorded) ? patientUuid : null;
-        }),
-      ),
-    { shouldRetryOnError: false },
-  );
+export function recordedToday(row: ReportRow, today = new Date()) {
+  if (row.recorded_today !== undefined && row.recorded_today !== null && row.recorded_today !== '') {
+    return Number(row.recorded_today) === 1;
+  }
+  const lastGiven = parseReportDate(row.last_given);
+  return lastGiven !== null && sameDay(lastGiven, today);
+}
 
-  return { recorded: new Set((data ?? []).filter(Boolean)), isLoading, isValidating, error };
+/** The patients among the rows recorded today, by uuid, read from the rows themselves: no request per patient. */
+export function useRecordedToday(rows: Array<ReportRow>) {
+  const recorded = useMemo(
+    () => new Set(rows.filter((row) => recordedToday(row)).map((row) => String(row.patient_uuid))),
+    [rows],
+  );
+  return { recorded };
 }

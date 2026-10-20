@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { InlineNotification, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
 import { ConfigurableLink, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { patientChartUrl } from '../patient-chart-url';
 import { type ReportRow } from '../reports/report-dataset.resource';
@@ -8,21 +8,8 @@ import { adherence, type DueColumn, dueColumns, lowAdherence } from './due-list'
 import { RecordDoseAction, useRecordDose } from './record-dose.component';
 import styles from './due-for-prophylaxis.scss';
 
-/**
- * The due list's rows, each with the form that records its next dose, or View chart once recorded today. Record waits
- * while `checking`, as a cached answer may predate a dose just recorded.
- */
-export function DueForProphylaxisTable({
-  rows,
-  recorded,
-  recordedError,
-  checking,
-}: {
-  rows: Array<ReportRow>;
-  recorded: Set<string>;
-  recordedError?: Error;
-  checking?: boolean;
-}) {
+/** The due list's rows, each with the form that records its next dose, or View chart once recorded today. */
+export function DueForProphylaxisTable({ rows, recorded }: { rows: Array<ReportRow>; recorded: Set<string> }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { opening, record } = useRecordDose();
@@ -59,18 +46,6 @@ export function DueForProphylaxisTable({
 
   return (
     <>
-      {recordedError && (
-        <InlineNotification
-          kind="warning"
-          lowContrast
-          hideCloseButton
-          title={t('couldNotCheckRecordedToday', 'Could not check who was recorded today')}
-          subtitle={t(
-            'recordedTodayUnknown',
-            'A patient already recorded today may still show Record. Open their chart before recording.',
-          )}
-        />
-      )}
       <div className={styles.tableContainer}>
         <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
           <TableHead>
@@ -91,7 +66,7 @@ export function DueForProphylaxisTable({
                   <RecordDoseAction
                     row={row}
                     recordedToday={recorded.has(String(row.patient_uuid))}
-                    disabled={opening || checking}
+                    disabled={opening}
                     onRecord={record}
                   />
                 </TableCell>

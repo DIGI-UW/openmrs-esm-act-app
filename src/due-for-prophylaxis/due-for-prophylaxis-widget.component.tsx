@@ -16,7 +16,7 @@ const shownRows = 5;
 export default function DueForProphylaxisWidget() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { rows, recorded, recordedError, checking, waiting, isLoading, error } = useDueList();
+  const { rows, recorded, waiting, isLoading, error } = useDueList();
   const { filter, setFilter, counts, filtered } = useDueFilter(rows);
 
   return (
@@ -53,12 +53,7 @@ export default function DueForProphylaxisWidget() {
             recorded={recorded}
           />
           {filtered.length ? (
-            <DueForProphylaxisTable
-              rows={filtered.slice(0, shownRows)}
-              recorded={recorded}
-              recordedError={recordedError}
-              checking={checking}
-            />
+            <DueForProphylaxisTable rows={filtered.slice(0, shownRows)} recorded={recorded} />
           ) : (
             <TableEmptyState message={t('nobodyDueInThisList', 'No patients in this list')} />
           )}

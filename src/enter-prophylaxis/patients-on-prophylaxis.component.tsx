@@ -31,15 +31,8 @@ function PatientsOnProphylaxis() {
   const { filter, setFilter, counts, filtered } = useDueFilter(searched, 'all');
   const filters = useMemo(() => ({ filter, search }), [filter, search]);
   const { results, paginationProps } = usePagedRows(filtered, filters);
-  // Who was recorded today is looked up for the page shown, one request per patient.
-  const shownUuids = useMemo(
-    () => results.filter((row) => row.status !== 'no_prescription').map((row) => String(row.patient_uuid)),
-    [results],
-  );
-  const { recorded, isValidating: checking, error: recordedError } = useRecordedToday(shownUuids);
-  // The CSV holds every filtered row, but who was recorded today is known for the page shown only, so the CSV gives
-  // each patient's status as the registry report has it.
-  const notLookedUp = useMemo(() => new Set<string>(), []);
+  // Who was recorded today is read from the rows themselves, so the CSV knows it for every filtered row too.
+  const { recorded } = useRecordedToday(filtered);
 
   if (registry.error) {
     return (
@@ -67,7 +60,7 @@ function PatientsOnProphylaxis() {
           counts={counts}
           onFilter={setFilter}
           rows={filtered}
-          recorded={notLookedUp}
+          recorded={recorded}
         />
         {registry.isLoading ? (
           <DataTableSkeleton
@@ -80,12 +73,7 @@ function PatientsOnProphylaxis() {
           />
         ) : filtered.length ? (
           <>
-            <DueForProphylaxisTable
-              rows={results}
-              recorded={recorded}
-              recordedError={recordedError}
-              checking={checking}
-            />
+            <DueForProphylaxisTable rows={results} recorded={recorded} />
             {filtered.length > paginationProps.pageSizes[0] && <Pagination {...paginationProps} />}
           </>
         ) : (
