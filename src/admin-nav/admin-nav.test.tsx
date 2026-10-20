@@ -31,6 +31,18 @@ describe('AdminNav', () => {
     );
   });
 
+  it("leads User activity to the audit log app and Patients opened to the audit log module's read audit", async () => {
+    await signInWith([homePrivilege, 'View Audit Logs', 'View Read Audit Logs']);
+
+    render(<AdminNav />);
+
+    expect(screen.getByRole('link', { name: 'User activity' })).toHaveAttribute('href', '/openmrs/spa/audit-logs');
+    expect(screen.getByRole('link', { name: 'Patients opened' })).toHaveAttribute(
+      'href',
+      '/openmrs/module/auditlogweb/readauditlogs.form',
+    );
+  });
+
   it.each([
     { privilege: 'Edit Users', shown: ['Users and roles'], hidden: ['Clinics', 'Studies', 'Flags and adherence'] },
     {
@@ -47,6 +59,16 @@ describe('AdminNav', () => {
       privilege: 'Task: act.refreshFlags',
       shown: ['Flags and adherence'],
       hidden: ['Users and roles', 'Clinics', 'Studies'],
+    },
+    {
+      privilege: 'View Audit Logs',
+      shown: ['User activity'],
+      hidden: ['Users and roles', 'Patients opened', 'Clinics', 'Studies', 'Flags and adherence'],
+    },
+    {
+      privilege: 'View Read Audit Logs',
+      shown: ['Patients opened'],
+      hidden: ['Users and roles', 'User activity', 'Clinics', 'Studies', 'Flags and adherence'],
     },
   ])('offers only $shown to a user holding $privilege', async ({ privilege, shown, hidden }) => {
     await signInWith([homePrivilege, privilege]);
