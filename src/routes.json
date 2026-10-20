@@ -361,6 +361,38 @@
       "privileges": "Task: act.refreshFlags"
     },
     {
+      "name": "act-download-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "downloadDashboardLink",
+      "meta": {
+        "name": "act-download",
+        "slot": "act-download-dashboard-slot",
+        "title": "downloadData"
+      }
+    },
+    {
+      "name": "act-download-dashboard",
+      "slot": "act-download-dashboard-slot",
+      "component": "downloadDashboard"
+    },
+    {
+      "name": "act-download-log-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "downloadLogDashboardLink",
+      "meta": {
+        "name": "act-download-log",
+        "slot": "act-download-log-dashboard-slot",
+        "title": "downloadLog"
+      },
+      "privileges": "View Read Audit Logs"
+    },
+    {
+      "name": "act-download-log-dashboard",
+      "slot": "act-download-log-dashboard-slot",
+      "component": "downloadLogDashboard",
+      "privileges": "View Read Audit Logs"
+    },
+    {
       "name": "act-community-home-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "communityHomeDashboardLink",

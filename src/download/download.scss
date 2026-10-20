@@ -1,0 +1,69 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.page {
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: layout.$spacing-05;
+  max-width: 56rem;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+
+  > button {
+    align-self: flex-start;
+  }
+}
+
+.explanation {
+  @include type.type-style('body-01');
+  color: $text-02;
+}
+
+.dates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: layout.$spacing-05;
+}
+
+.fields {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legend {
+  @include type.type-style('heading-compact-01');
+  margin-bottom: layout.$spacing-03;
+}
+
+.fieldActions {
+  display: flex;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-03;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: layout.$spacing-02 layout.$spacing-05;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
+.logPage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
