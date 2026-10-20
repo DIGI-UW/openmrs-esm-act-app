@@ -32,6 +32,7 @@ import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
+import { useSessionClinicKind } from '../session-clinic';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
@@ -85,7 +86,8 @@ export function ScreenPositiveTable() {
       showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
     }
   };
-  const [filters, setFilters] = useScreenPositiveFilters();
+  const [filters, setFilters, filtersPending] = useScreenPositiveFilters();
+  const clinicKind = useSessionClinicKind();
   const shown = useMemo(() => filterScreenPositive(rows, filters), [rows, filters]);
   const { results, paginationProps } = usePagedRows(shown, filters);
   const filterSelect = (key: keyof ScreenPositiveFilters, label: string) => (
@@ -135,7 +137,8 @@ export function ScreenPositiveTable() {
     },
   ];
 
-  if (error) {
+  // Where the session location's kind cannot be read, opening on every clinic would show patients not its own.
+  if (error || clinicKind === 'error') {
     return (
       <InlineNotification
         kind="error"
@@ -145,7 +148,8 @@ export function ScreenPositiveTable() {
       />
     );
   }
-  if (isLoading) {
+  // Until the session's clinic is known, the list would show every clinic's patients.
+  if (isLoading || filtersPending) {
     return (
       <DataTableSkeleton
         role="progressbar"
@@ -169,6 +173,7 @@ export function ScreenPositiveTable() {
     <>
       <div className={styles.filters}>
         {filterSelect('cardiac', t('cardiacClinic', 'Cardiac clinic'))}
+        {filterSelect('primaryCare', t('primaryCareClinic', 'Primary care clinic'))}
         {filterSelect('sex', t('sex', 'Sex'))}
       </div>
       {shown.length ? (

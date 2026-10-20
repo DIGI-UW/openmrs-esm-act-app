@@ -1,8 +1,8 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { signInWith } from '../access/sign-in.test-helper';
+import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { useRecordedToday } from '../due-for-prophylaxis/recorded-today.resource';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { downloadCsv } from '../table-filters/csv';
@@ -116,6 +116,21 @@ describe('Enter prophylaxis', () => {
       ['Patient 3', 'rhd00003', 'None', '', 'No prescription', '', 'Needs prescription'],
       ['Patient 4', 'rhd00004', 'Oral penicillin', '', 'Due today', '88%', 'Record oral'],
     ]);
+  });
+
+  it("lists only the patients of the session's primary care clinic", async () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: rows.map((row, i) => ({ ...row, primary_care_clinic: i === 0 ? 'Kiswa HCIII' : 'Acimi HCIII' })),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    atSessionLocation('Kiswa HCIII', ['RHD Community']);
+
+    render(<EnterProphylaxis />);
+
+    await waitFor(() => expect(tableRows().map((row) => row[0])).toEqual(['Patient 1']));
   });
 
   it('leaves out completed enrolments and patients who have died, as no dose can be recorded for them', () => {

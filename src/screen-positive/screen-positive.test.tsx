@@ -2,7 +2,8 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { signInWith } from '../access/sign-in.test-helper';
+import { openmrsFetch } from '@openmrs/esm-framework';
+import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveRows } from './screen-positive.fixture';
@@ -66,6 +67,30 @@ describe('Diagnosis to confirm', () => {
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
     expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Echo booked', 'Enter diagnosis']);
+  });
+
+  it("opens on the patients of the session's primary care clinic", async () => {
+    dataset({ rows: screenPositiveRows });
+    atSessionLocation('Anyeke HCIV', ['RHD Community']);
+
+    render(<ScreenPositive />);
+
+    await waitFor(() => expect(screen.getByLabelText('Primary care clinic')).toHaveValue('Anyeke HCIV'));
+    const atClinic = screenPositiveRows.filter((row) => row.primary_care_clinic === 'Anyeke HCIV');
+    const names = atClinic.map((row) => row.full_name);
+    expect(shownNames().filter((name) => !names.includes(name))).toEqual([]);
+    expect(screen.getByText(new RegExp(`of ${atClinic.length} items`))).toBeInTheDocument();
+  });
+
+  it("says it could not load, rather than every clinic's patients, when the session location's kind cannot be read", async () => {
+    dataset({ rows: screenPositiveRows });
+    atSessionLocation('Anyeke HCIV', ['RHD Community'], 'unreadable-screen-positive');
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('Internal Server Error'));
+
+    render(<ScreenPositive />);
+
+    expect(await screen.findByText('Could not load the screen positive list')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
   it.each([

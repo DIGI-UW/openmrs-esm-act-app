@@ -1,7 +1,8 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { render, screen, waitFor } from '@testing-library/react';
+import { openmrsFetch } from '@openmrs/esm-framework';
+import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import CareCascade from './care-cascade.component';
 
@@ -34,6 +35,56 @@ describe('CareCascade', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     await signInWith(['App: act.registry']);
+  });
+
+  it.each([
+    ['primary care', ['RHD Community'], 'primaryCareClinic'],
+    ['cardiac', ['RHD District'], 'cardiacClinic'],
+  ])("counts the patients of the session's %s clinic, which it names", async (_, tags, param) => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', tags, `${param}-uuid`);
+
+    render(<CareCascade />);
+
+    expect(await screen.findByText('Patients enrolled at Kiswa HCIII')).toBeInTheDocument();
+    const [, params] = mockUseReportDataset.mock.lastCall;
+    expect(params).toEqual(expect.objectContaining({ [param]: `${param}-uuid` }));
+  });
+
+  it('evaluates nothing, rather than every clinic, while the session location is being looked up', async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', ['RHD Community'], 'pending-uuid');
+    vi.mocked(openmrsFetch).mockReturnValue(new Promise(() => {}) as never);
+
+    render(<CareCascade />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockUseReportDataset.mock.calls.length).toBeGreaterThan(0);
+    expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
+    expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
+  });
+
+  it("says it could not load, rather than counting every clinic, when the session location's kind cannot be read", async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', ['RHD Community'], 'unreadable-uuid');
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('Internal Server Error'));
+
+    render(<CareCascade />);
+
+    expect(await screen.findByText('Could not load the care cascade')).toBeInTheDocument();
+    expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
+  });
+
+  it('counts every clinic at a location of neither kind', async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Head office', [], 'head-office');
+
+    render(<CareCascade />);
+
+    await waitFor(() => expect(screen.getAllByTestId('cascade-step')).toHaveLength(5));
+    const [, params] = mockUseReportDataset.mock.lastCall;
+    expect(Object.keys(params)).toEqual(['endDate']);
+    expect(screen.queryByText(/Patients enrolled at/)).not.toBeInTheDocument();
   });
 
   it("draws the report's five cascade steps, leaving out its Oral and BPG split", () => {
