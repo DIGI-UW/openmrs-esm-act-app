@@ -4,38 +4,40 @@ import dayjs from 'dayjs';
 import { SkeletonText, Tile } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { rowFlags } from '../registry/registry-filters';
-import { onRegistryNow, useRegistryReport } from '../registry/registry.resource';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
-import { flagPriority } from '../rhd-flags/rhd-flag-lists.resource';
 import styles from './instance-admin-kpis.scss';
 
 const sum = (reportRows: Array<ReportRow>, column: string) =>
   reportRows.reduce((total, row) => total + Number(row[column] ?? 0), 0);
 
+/** A count column of the KPI report's one row, or null when the row or the column is missing. */
+const count = (row: ReportRow | undefined, column: string) => {
+  const value = row?.[column];
+  return value === null || value === undefined || value === '' || Number.isNaN(Number(value)) ? null : Number(value);
+};
+
 /**
  * The share of patients on the registry now, and alive, who carry no missing-data flag, as a whole percentage; null
  * with nobody to count.
  */
-export function dataCompleteness(rows: Array<ReportRow>, flagLists: Config['flagLists']) {
-  const active = rows.filter(onRegistryNow);
-  if (!active.length) {
+export function dataCompleteness(row: ReportRow | undefined) {
+  const active = count(row, 'active_patients');
+  const complete = count(row, 'active_complete');
+  if (!active || complete === null) {
     return null;
   }
-  const complete = active.filter(
-    (row) => !rowFlags(row).some((flag) => flagPriority(flagLists, flag) === 'dataQuality'),
-  ).length;
-  return Math.round((100 * complete) / active.length);
+  return Math.round((100 * complete) / active);
 }
 
 /**
  * Four at-a-glance tiles. Active patients and Overdue prophylaxis total the programme report for this month over every
- * clinic; Entered this week counts the RHD encounters of the last seven days; Data completeness is the share of
- * active patients with no missing-data flag.
+ * clinic. Entered this week and Data completeness read the KPI report's counts for the last seven days: the RHD
+ * encounters dated in them, and the share of active patients with no missing-data flag. Both reports return counts
+ * only, so the page downloads no patient rows.
  */
 export function InstanceAdminKpis() {
   const { t } = useTranslation();
-  const { programmeReport, instanceAdminKpis, flagLists } = useConfig<Config>();
+  const { programmeReport, instanceAdminKpis } = useConfig<Config>();
 
   // Plain dates, so the server reads them the same whatever its time zone.
   const month = useMemo(
@@ -50,9 +52,10 @@ export function InstanceAdminKpis() {
     [],
   );
   const programme = useReportDataset(programmeReport.report, month);
-  const entered = useReportDataset(instanceAdminKpis.encountersReport, week);
-  const registry = useRegistryReport();
-  const completeness = useMemo(() => dataCompleteness(registry.rows, flagLists), [registry.rows, flagLists]);
+  const counts = useReportDataset(instanceAdminKpis.report, week);
+  const row = counts.rows[0];
+  const entered = count(row, 'encounters');
+  const completeness = dataCompleteness(row);
 
   const kpis = [
     {
@@ -70,18 +73,18 @@ export function InstanceAdminKpis() {
     },
     {
       label: t('enteredThisWeek', 'Entered this week'),
-      value: entered.error ? '–' : entered.rows.length,
-      // The encounters export filters on each form's own date, not the day it was saved.
+      value: counts.error || entered === null ? '–' : entered,
+      // The report filters on each form's own date, not the day it was saved, as the encounters export does.
       caption: t('formsDatedLastSevenDays', 'forms dated in the last 7 days'),
       tone: styles.info,
-      loading: entered.isLoading,
+      loading: counts.isLoading,
     },
     {
       label: t('dataCompleteness', 'Data completeness'),
-      value: registry.error || completeness === null ? '–' : `${completeness}%`,
+      value: counts.error || completeness === null ? '–' : `${completeness}%`,
       caption: t('activePatientsWithNoMissingData', 'active patients with no missing data'),
       tone: styles.success,
-      loading: registry.isLoading,
+      loading: counts.isLoading,
     },
   ];
   return (
