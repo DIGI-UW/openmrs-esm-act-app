@@ -307,9 +307,11 @@ export const configSchema = {
         nextPeriod: '1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         medication: '0734567e-4f0a-5090-9d74-b953921a30e6',
         medicationDose: '8879385e-d35e-50a3-a3d0-4333d95d4878',
+        recommendation: 'ce93d393-1df5-587f-bf11-c373eac2ccf4',
+        completed: '1632f8dc-195d-5d67-a52e-6c7a057cb536',
       },
       _description:
-        "The consultation's questions: Date of Consultation Visit, NYHA Classification, Secondary Antibiotic Prophylaxis (the group and its regimen share the concept), Date Stopped, Next Consultation Time Amount and Period, Cardiac Medication (group and medicine share the concept) and its Dosing.",
+        "The consultation's questions: Date of Consultation Visit, NYHA Classification, Secondary Antibiotic Prophylaxis (the group and its regimen share the concept), Date Stopped, Next Consultation Time Amount and Period, Cardiac Medication (group and medicine share the concept) and its Dosing, and Interventional Recommendation(s) (group and procedure share the concept) with its Completed answer.",
     },
     vitaminKAntagonists: {
       _type: Type.Array,
@@ -690,7 +692,16 @@ export interface Config {
     encounterType: string;
     form: string;
     concepts: Record<
-      'date' | 'nyha' | 'prophylaxis' | 'dateStopped' | 'nextAmount' | 'nextPeriod' | 'medication' | 'medicationDose',
+      | 'date'
+      | 'nyha'
+      | 'prophylaxis'
+      | 'dateStopped'
+      | 'nextAmount'
+      | 'nextPeriod'
+      | 'medication'
+      | 'medicationDose'
+      | 'recommendation'
+      | 'completed',
       string
     >;
     vitaminKAntagonists: Array<string>;
