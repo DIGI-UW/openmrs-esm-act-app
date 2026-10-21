@@ -30,10 +30,8 @@ export function dataCompleteness(row: ReportRow | undefined) {
 }
 
 /**
- * Four at-a-glance tiles. Active patients and Overdue prophylaxis total the programme report for this month over every
- * clinic. Entered this week and Data completeness read the KPI report's counts for the last seven days: the RHD
- * encounters dated in them, and the share of active patients with no missing-data flag. Both reports return counts
- * only, so the page downloads no patient rows.
+ * Four at-a-glance tiles, from the programme report for the month and the KPI report for the last seven days. Both
+ * return counts only, so the page downloads no patient rows.
  */
 export function InstanceAdminKpis() {
   const { t } = useTranslation();
