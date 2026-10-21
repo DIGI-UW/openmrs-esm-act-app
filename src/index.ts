@@ -155,6 +155,10 @@ export const instanceAdminDashboard = getAsyncLifecycle(
   options,
 );
 
+export const usersDashboardLink = getAsyncLifecycle(() => import('./users/users-dashboard-link.component'), options);
+
+export const usersDashboard = getAsyncLifecycle(() => import('./users/users.component'), options);
+
 export const studiesDashboardLink = getAsyncLifecycle(
   () => import('./studies/studies-dashboard-link.component'),
   options,

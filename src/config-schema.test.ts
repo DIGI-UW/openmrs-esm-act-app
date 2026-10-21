@@ -42,8 +42,40 @@ describe('configSchema', () => {
         researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
       },
       instanceAdminKpis: { report: '6494be01-b4ae-46af-8d7f-058a2f95c115' },
+      users: {
+        roleChoices: [
+          {
+            administratorRole: 'c95f35f4-0422-46a3-a593-a6615fab90bc',
+            roles: [
+              'b9ab4b76-e7b9-46a7-b4ec-5b7fdd8fa540',
+              '61e9bb28-11df-4df1-965d-11ef928d5239',
+              '60625a0c-3cea-4fe5-b6ca-615c743ad9d4',
+              'a1295a20-7273-4339-b5df-2f8a3a841c77',
+              '07a7affa-b7de-46d9-9faa-aac4ef2eccba',
+              'c95f35f4-0422-46a3-a593-a6615fab90bc',
+            ],
+          },
+          {
+            administratorRole: '07a7affa-b7de-46d9-9faa-aac4ef2eccba',
+            roles: [
+              'b9ab4b76-e7b9-46a7-b4ec-5b7fdd8fa540',
+              '61e9bb28-11df-4df1-965d-11ef928d5239',
+              '60625a0c-3cea-4fe5-b6ca-615c743ad9d4',
+              'a1295a20-7273-4339-b5df-2f8a3a841c77',
+            ],
+          },
+          {
+            administratorRole: 'a1295a20-7273-4339-b5df-2f8a3a841c77',
+            roles: [
+              'b9ab4b76-e7b9-46a7-b4ec-5b7fdd8fa540',
+              '61e9bb28-11df-4df1-965d-11ef928d5239',
+              '60625a0c-3cea-4fe5-b6ca-615c743ad9d4',
+            ],
+          },
+        ],
+      },
       adminLinks: {
-        usersUrl: '${openmrsBase}/admin/users/users.list',
+        usersUrl: '${openmrsSpaBase}/home/act-users',
         clinicsUrl: '${openmrsBase}/admin/locations/location.list',
         studiesUrl: '${openmrsSpaBase}/home/act-studies',
         refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',

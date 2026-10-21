@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { limitRows, useClinicLimit } from '../clinic-limit';
 import { isUuid } from '../uuid';
 import { fetchAll } from '../fetch-all';
 
@@ -39,6 +41,8 @@ async function evaluateReport(reportUuidOrName: string, params: Record<string, s
  * Evaluates a report, given by uuid or by name, and returns its first dataset, and `mutate` to evaluate it again.
  * A failure is not retried.
  * The server sends `columns` only with rows, so an empty dataset has none and a screen defines its own headers.
+ * For an administrator limited to their clinics (useClinicLimit), only the rows of those clinics are returned, so
+ * every list and filter built on a report holds them alone.
  */
 export function useReportDataset(reportUuidOrName: string | null, params: Record<string, string> = {}) {
   const { data, error, isLoading, mutate } = useSWR(
@@ -47,5 +51,14 @@ export function useReportDataset(reportUuidOrName: string | null, params: Record
     { shouldRetryOnError: false },
   );
 
-  return { columns: data?.metadata.columns ?? [], rows: data?.rows ?? [], isLoading, error, mutate };
+  const limit = useClinicLimit();
+  const rows = useMemo(() => limitRows(data?.rows ?? [], limit), [data?.rows, limit]);
+
+  return {
+    columns: data?.metadata.columns ?? [],
+    rows,
+    isLoading: isLoading || (Boolean(reportUuidOrName) && limit.status === 'pending'),
+    error,
+    mutate,
+  };
 }
