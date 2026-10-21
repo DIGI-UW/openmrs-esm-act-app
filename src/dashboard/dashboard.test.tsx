@@ -9,6 +9,12 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+// The run charts have their own tests; here, only that they get the clinic chosen.
+vi.mock('./run-chart.component', () => ({
+  default: ({ scope }: { scope: Record<string, string> }) => (
+    <p>{`Run charts of ${scope.cardiacClinic ?? 'every clinic'}`}</p>
+  ),
+}));
 
 const REGISTRY = 'f1a2b3c4-d5e6-7890-abcd-ef1234567890';
 const WAITLIST = '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10';
@@ -153,6 +159,7 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('Active registrants: 1')).toBeInTheDocument();
     expect(screen.getByText('Procedural waitlist: 1')).toBeInTheDocument();
+    expect(await screen.findByText('Run charts of lira')).toBeInTheDocument();
     expect(vi.mocked(useReportDataset)).toHaveBeenLastCalledWith(
       DIAGNOSES,
       expect.objectContaining({ cardiacClinic: 'lira' }),

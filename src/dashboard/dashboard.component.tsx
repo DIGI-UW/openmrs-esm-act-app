@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -24,6 +24,9 @@ import { type Count, ofClinics, registrantCounts, waitlistCounts } from './dashb
 import styles from './dashboard.scss';
 
 type Scope = Record<string, string>;
+
+// The run charts bring the charts library, so they load only when the Dashboard does.
+const RunCharts = lazy(() => import('./run-chart.component'));
 
 /** Horizontal bars, each scaled to the largest, as the care cascade draws them. */
 function Bars({ counts, testId }: { counts: Array<Count>; testId: string }) {
@@ -285,6 +288,9 @@ export default function Dashboard() {
               <Waitlist scope={scope} />
               <Optimisation params={params} />
               <Screening params={params} />
+              <Suspense fallback={<SkeletonText paragraph lineCount={5} />}>
+                <RunCharts scope={scope} />
+              </Suspense>
             </div>
           </>
         )}

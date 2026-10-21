@@ -84,3 +84,21 @@
   @include type.type-style('body-compact-01');
   color: $text-02;
 }
+
+.runChartFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+  align-items: flex-end;
+
+  > :first-child {
+    flex: 1 1 20rem;
+  }
+}
+
+.note {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-top: layout.$spacing-03;
+}

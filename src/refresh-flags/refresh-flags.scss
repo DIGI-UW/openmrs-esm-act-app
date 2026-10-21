@@ -3,6 +3,8 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
 .page {
+  display: grid;
+  gap: layout.$spacing-05;
   padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
 }
 

@@ -54,6 +54,37 @@ describe('Flags and adherence', () => {
     }
   });
 
+  it("takes today's run chart snapshot now, and says when one was already being taken", async () => {
+    mockOpenmrsFetch.mockImplementation((async (url: string) => ({
+      data: url.endsWith('/actcore/runchart')
+        ? { snapshotTaken: true, rows: 3, lastSnapshot: null }
+        : { lastRefreshed: earlier, running: false },
+    })) as never);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Take snapshot now' }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ title: "Today's run chart snapshot taken" })),
+    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringMatching(/\/ws\/rest\/v1\/actcore\/runchart$/), {
+      method: 'POST',
+    });
+
+    mockOpenmrsFetch.mockImplementation((async (url: string) => ({
+      data: url.endsWith('/actcore/runchart')
+        ? { snapshotTaken: false, rows: null, lastSnapshot: null }
+        : { lastRefreshed: earlier, running: false },
+    })) as never);
+    await userEvent.click(screen.getByRole('button', { name: 'Take snapshot now' }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'A snapshot is already being taken' }),
+      ),
+    );
+  });
+
   it('says so when no refresh has finished yet', async () => {
     backendAnswers({ lastRefreshed: null, running: false }, vi.fn());
 
