@@ -102,6 +102,11 @@ describe('configSchema', () => {
         report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
         showBpgColumns: false,
       },
+      dashboard: {
+        medicalOptimisationReport: '733a512c-3243-4e91-a44a-06a8e5384606',
+        screeningCascadeReport: '8b257a0c-7e96-5a01-9672-975cae3b0419',
+        screeningDiagnosesReport: '6ddf6b36-2789-4733-8433-a877d54795cf',
+      },
       waitingList: {
         report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
       },

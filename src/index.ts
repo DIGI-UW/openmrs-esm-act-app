@@ -159,6 +159,10 @@ export const usersDashboardLink = getAsyncLifecycle(() => import('./users/users-
 
 export const usersDashboard = getAsyncLifecycle(() => import('./users/users.component'), options);
 
+export const dashboardLink = getAsyncLifecycle(() => import('./dashboard/dashboard-link.component'), options);
+
+export const dashboard = getAsyncLifecycle(() => import('./dashboard/dashboard.component'), options);
+
 export const studiesDashboardLink = getAsyncLifecycle(
   () => import('./studies/studies-dashboard-link.component'),
   options,

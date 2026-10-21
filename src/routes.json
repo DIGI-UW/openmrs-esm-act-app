@@ -241,6 +241,23 @@
       "privileges": "App: act.screenPositive"
     },
     {
+      "name": "act-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "dashboardLink",
+      "meta": {
+        "name": "act-dashboard",
+        "slot": "act-dashboard-slot",
+        "title": "dashboard"
+      },
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-dashboard",
+      "slot": "act-dashboard-slot",
+      "component": "dashboard",
+      "privileges": "App: act.reports"
+    },
+    {
       "name": "act-reports-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "reportsDashboardLink",
