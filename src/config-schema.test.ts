@@ -41,7 +41,7 @@ describe('configSchema', () => {
         rolePermissionsUrl: '${openmrsBase}/admin/users/users.list',
         researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
       },
-      instanceAdminKpis: { encountersReport: 'd4e5f6a7-b8c9-0123-def0-456789012cde' },
+      instanceAdminKpis: { report: '6494be01-b4ae-46af-8d7f-058a2f95c115' },
       adminLinks: {
         usersUrl: '${openmrsBase}/admin/users/users.list',
         clinicsUrl: '${openmrsBase}/admin/locations/location.list',
