@@ -134,11 +134,11 @@ export const configSchema = {
     ),
   },
   instanceAdminKpis: {
-    encountersReport: {
+    report: {
       _type: Type.String,
-      _default: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+      _default: '6494be01-b4ae-46af-8d7f-058a2f95c115',
       _description:
-        'The RHD Encounters Export report, by uuid or name, one row per RHD encounter in a date range: the Instance dashboard counts its rows for the last seven days as the forms saved this week.',
+        "The RHD Instance KPIs report, by uuid or name, run for the last seven days: one row whose encounters column is Entered this week (RHD forms dated in the range), and whose active_patients and active_complete columns give Data completeness (the patients on the registry now, and those of them on no Critical data flag's list).",
     },
   },
   adminLinks: {
@@ -525,7 +525,7 @@ export interface Config {
     rolePermissionsUrl: string;
     researchParticipationUrl: string;
   };
-  instanceAdminKpis: { encountersReport: string };
+  instanceAdminKpis: { report: string };
   adminLinks: {
     usersUrl: string;
     clinicsUrl: string;

@@ -13,44 +13,20 @@ vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn()
 const mockUseAssignedExtensions = vi.mocked(useAssignedExtensions);
 
 const PROGRAMME = 'c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31';
-const ENCOUNTERS = 'd4e5f6a7-b8c9-0123-def0-456789012cde';
-const REGISTRY = 'f1a2b3c4-d5e6-7890-abcd-ef1234567890';
+const KPIS = '6494be01-b4ae-46af-8d7f-058a2f95c115';
 
 const programmeRows = [
   { facility: 'Akunalaber HCIII', active_patients: 12, overdue: 2 },
   { facility: 'Anyeke HCIV', active_patients: 5, overdue: 4 },
 ];
-// Four on the registry now: one with a missing-data flag, one with a risk flag only; a completed enrolment and a death.
-const registryRows = [
-  { patient_uuid: 'p1', enrollment_status: 'Active', deceased: 0, rhd_flags: null },
-  {
-    patient_uuid: 'p2',
-    enrollment_status: 'Active',
-    deceased: 0,
-    rhd_flags: 'RHD INR target missing|RHD prophylaxis overdue',
-  },
-  { patient_uuid: 'p3', enrollment_status: 'Active', deceased: 0, rhd_flags: 'RHD prophylaxis overdue' },
-  { patient_uuid: 'p4', enrollment_status: 'Active', deceased: 0, rhd_flags: 'RHD cardiology follow-up due' },
-  { patient_uuid: 'p5', enrollment_status: 'Completed', deceased: 0, rhd_flags: 'RHD INR target missing' },
-  { patient_uuid: 'p6', enrollment_status: 'Active', deceased: 1, rhd_flags: 'RHD INR target missing' },
-];
-const encounterRows = Array.from({ length: 5 }, (_, i) => ({
-  rhd_id: `rhd0000${i}`,
-  encounter_type: 'RHD BPG Delivery',
-}));
+// Five forms this week; three of the four patients on the registry now carry no missing-data flag.
+const kpiRows = [{ encounters: 5, active_patients: 4, active_complete: 3 }];
 
-/** Each report answered by uuid: the programme report, the encounters export and the registry. */
+/** Each report answered by uuid: the programme report and the KPI report. */
 function dataset(value: Partial<ReturnType<typeof useReportDataset>> = {}, failing: Array<string> = []) {
   vi.mocked(useReportDataset).mockImplementation((report) => ({
     columns: [],
-    rows:
-      report === PROGRAMME
-        ? programmeRows
-        : report === ENCOUNTERS
-          ? encounterRows
-          : report === REGISTRY
-            ? registryRows
-            : [],
+    rows: report === PROGRAMME ? programmeRows : report === KPIS ? kpiRows : [],
     isLoading: false,
     error: failing.includes(String(report)) ? new Error('boom') : undefined,
     mutate: vi.fn(),
@@ -120,14 +96,15 @@ describe('InstanceAdminDashboard', () => {
     );
   });
 
-  it("totals the programme report's active and overdue patients over every clinic for the month, counts the week's encounters, and the share of active patients with no missing data", () => {
+  it("totals the programme report's active and overdue patients over every clinic for the month, and reads the week's forms and the share of active patients with no missing data from the KPI report's counts", () => {
     render(<InstanceAdminKpis />);
 
     expect(useReportDataset).toHaveBeenCalledWith(PROGRAMME, { startDate: '2026-09-01', endDate: '2026-09-30' });
     // The last seven days, today included.
-    expect(useReportDataset).toHaveBeenCalledWith(ENCOUNTERS, { startDate: '2026-09-22', endDate: '2026-09-28' });
+    expect(useReportDataset).toHaveBeenCalledWith(KPIS, { startDate: '2026-09-22', endDate: '2026-09-28' });
+    // Counts only: no patient list is downloaded for the figures.
+    expect(vi.mocked(useReportDataset).mock.calls.map(([report]) => report)).toEqual([PROGRAMME, KPIS]);
     const kpis = screen.getAllByTestId('instance-admin-kpi');
-    // p1, p3 and p4 of the four active patients: a risk or early warning flag is not missing data.
     expect(kpis.map((kpi) => kpi.textContent)).toEqual([
       'Active patients17across your sites',
       'Overdue prophylaxis6needs follow-up',
@@ -136,10 +113,10 @@ describe('InstanceAdminDashboard', () => {
     ]);
   });
 
-  it('shows a dash for completeness with nobody on the registry', () => {
+  it('shows a dash for completeness with nobody on the registry, and counts a week with no forms as 0', () => {
     vi.mocked(useReportDataset).mockImplementation((report) => ({
       columns: [],
-      rows: report === REGISTRY ? [] : report === PROGRAMME ? programmeRows : encounterRows,
+      rows: report === PROGRAMME ? programmeRows : [{ encounters: 0, active_patients: 0, active_complete: 0 }],
       isLoading: false,
       error: undefined,
       mutate: vi.fn(),
@@ -147,11 +124,30 @@ describe('InstanceAdminDashboard', () => {
 
     render(<InstanceAdminKpis />);
 
-    expect(screen.getAllByTestId('instance-admin-kpi')[3]).toHaveTextContent('Data completeness–');
+    const kpis = screen.getAllByTestId('instance-admin-kpi');
+    expect(kpis[2]).toHaveTextContent('Entered this week0');
+    expect(kpis[3]).toHaveTextContent('Data completeness–');
+  });
+
+  it('shows dashes for the KPI figures when the report returns no row, as on a distro without it', () => {
+    vi.mocked(useReportDataset).mockImplementation((report) => ({
+      columns: [],
+      rows: report === PROGRAMME ? programmeRows : [],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    }));
+
+    render(<InstanceAdminKpis />);
+
+    const kpis = screen.getAllByTestId('instance-admin-kpi');
+    expect(kpis[0]).toHaveTextContent('Active patients17');
+    expect(kpis[2]).toHaveTextContent('Entered this week–');
+    expect(kpis[3]).toHaveTextContent('Data completeness–');
   });
 
   it("shows the other tiles' figures when only one report fails", () => {
-    dataset({}, [ENCOUNTERS]);
+    dataset({}, [KPIS]);
 
     render(<InstanceAdminKpis />);
 
@@ -160,12 +156,12 @@ describe('InstanceAdminDashboard', () => {
       'Active patients17across your sites',
       'Overdue prophylaxis6needs follow-up',
       'Entered this week–forms dated in the last 7 days',
-      'Data completeness75%active patients with no missing data',
+      'Data completeness–active patients with no missing data',
     ]);
   });
 
   it('keeps every tile when a report fails, with a dash where its figure would go', () => {
-    dataset({}, [PROGRAMME, ENCOUNTERS, REGISTRY]);
+    dataset({}, [PROGRAMME, KPIS]);
 
     render(<InstanceAdminKpis />);
 
