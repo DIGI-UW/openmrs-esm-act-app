@@ -510,6 +510,23 @@
       "order": 99
     },
     {
+      "name": "act-scan-patient-card-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "scanPatientCardDashboardLink",
+      "meta": {
+        "name": "act-scan-patient-card",
+        "slot": "act-scan-patient-card-dashboard-slot",
+        "title": "scanPatientCard"
+      },
+      "privileges": "Task: act.enterProphylaxis"
+    },
+    {
+      "name": "act-scan-patient-card-dashboard",
+      "slot": "act-scan-patient-card-dashboard-slot",
+      "component": "scanPatientCardDashboard",
+      "privileges": "Task: act.enterProphylaxis"
+    },
+    {
       "name": "act-patient-status-flags",
       "slot": "patient-banner-tags-slot",
       "component": "patientStatusFlags",

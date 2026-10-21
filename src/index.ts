@@ -20,6 +20,7 @@ import communityHomeDashboardLinkComponent from './community-home/community-home
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
 import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
+import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
@@ -46,6 +47,13 @@ export const sessionTimeout = getAsyncLifecycle(() => import('./session-timeout/
 
 export const nextStepsCard = getAsyncLifecycle(() => import('./next-steps/next-steps-card.component'), options);
 export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
+
+export const scanPatientCardDashboardLink = getSyncLifecycle(scanPatientCardDashboardLinkComponent, options);
+
+export const scanPatientCardDashboard = getAsyncLifecycle(
+  () => import('./scan-patient-card/scan-patient-card.component'),
+  options,
+);
 
 export const patientStatusFlags = getAsyncLifecycle(
   () => import('./patient-status/patient-status-flags.component'),

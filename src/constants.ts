@@ -15,6 +15,7 @@ export const PRIVILEGE_REFRESH_FLAGS = 'Task: act.refreshFlags';
 export const PRIVILEGE_STUDIES = 'App: act.studies';
 export const PRIVILEGE_MANAGE_STUDIES = 'Task: act.manageStudies';
 export const PRIVILEGE_ENTER_CLINICAL_FORMS = 'Task: act.enterClinicalForms';
+export const PRIVILEGE_ENTER_PROPHYLAXIS = 'Task: act.enterProphylaxis';
 // The audit log module's (auditlogweb): changes such as saved forms, and reads such as opened patients.
 export const PRIVILEGE_VIEW_AUDIT_LOGS = 'View Audit Logs';
 export const PRIVILEGE_VIEW_READ_AUDIT_LOGS = 'View Read Audit Logs';
