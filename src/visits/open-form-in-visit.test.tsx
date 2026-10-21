@@ -19,6 +19,22 @@ vi.mock('../flag-gaps/focus-question', () => ({ focusFormQuestion: vi.fn() }));
 
 const bpgForm = { uuid: '0119d2e6-e2e1-391c-9b88-d59a10b0780d', name: 'RHD BPG Delivery', display: 'RHD BPG Delivery' };
 const newVisit = { uuid: 'new-visit', visitType: { display: 'RHD Clinic Visit' } };
+const patientInformation = {
+  uuid: 'a6646c51-130d-3b59-a442-959bea93487d',
+  name: 'RHD Patient Information',
+  display: 'RHD Patient Information',
+  encounterType: { uuid: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0' },
+};
+
+/** The server: the Patient Information form, and these saved encounters of its type. */
+function patientInformationWith(encounters: Array<{ uuid: string; encounterDatetime: string }>) {
+  vi.mocked(openmrsFetch).mockImplementation((async (url: string) =>
+    url.includes('/encounter?')
+      ? { data: { results: encounters } }
+      : {
+          data: url.includes('/form/') && url.includes(patientInformation.uuid) ? patientInformation : bpgForm,
+        }) as never);
+}
 
 let chart: ReturnType<typeof createGlobalStore<Record<string, unknown>>>;
 const mutateVisit = vi.fn();
@@ -59,6 +75,56 @@ describe('useOpenFormInVisit', () => {
         }),
       ],
     ]);
+  });
+
+  it("edits the patient's latest Patient Information, without starting a visit, rather than adding a second", async () => {
+    patientInformationWith([
+      { uuid: 'older', encounterDatetime: '2026-03-01T09:00:00.000+0300' },
+      { uuid: 'latest', encounterDatetime: '2026-09-15T09:00:00.000+0300' },
+      { uuid: 'middle', encounterDatetime: '2026-06-01T09:00:00.000+0300' },
+    ]);
+    const { result } = renderHook(() => useOpenFormInVisit('winnie'));
+
+    await act(() => result.current.open(patientInformation.uuid));
+
+    expect(saveVisit).not.toHaveBeenCalled();
+    expect(vi.mocked(openmrsFetch).mock.calls.map(([url]) => url)).toContainEqual(
+      expect.stringContaining('/encounter?patient=winnie&encounterType=ffdc883f-f99f-496a-83f9-2c3c581e1af0'),
+    );
+    expect(openedForms()).toEqual([
+      [
+        'patient-form-entry-workspace',
+        expect.objectContaining({
+          form: patientInformation,
+          encounterUuid: 'latest',
+          additionalProps: expect.objectContaining({ mode: 'edit' }),
+        }),
+      ],
+    ]);
+  });
+
+  it('starts Patient Information afresh, in a visit, for a patient who has none', async () => {
+    patientInformationWith([]);
+    chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
+    const { result } = renderHook(() => useOpenFormInVisit('winnie'));
+
+    await act(() => result.current.open(patientInformation.uuid));
+
+    expect(openedForms()).toEqual([
+      [
+        'patient-form-entry-workspace',
+        expect.objectContaining({ encounterUuid: '', additionalProps: expect.objectContaining({ mode: 'enter' }) }),
+      ],
+    ]);
+  });
+
+  it('looks up no saved encounter for a form that is filled in at every visit', async () => {
+    chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });
+    const { result } = renderHook(() => useOpenFormInVisit('winnie'));
+
+    await act(() => result.current.open(bpgForm.uuid));
+
+    expect(vi.mocked(openmrsFetch).mock.calls.some(([url]) => String(url).includes('/encounter?'))).toBe(false);
   });
 
   it('opens the form through the launcher given, as a child of a workspace that shares the window', async () => {

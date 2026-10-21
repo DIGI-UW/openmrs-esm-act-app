@@ -463,6 +463,13 @@ export const configSchema = {
     _default: '240f85fa-46e1-540e-9234-2796c623f7ea',
     _description: "The identifier type ACT's patient search shows as the patient's ACT ID.",
   },
+  singleRecordForms: {
+    _type: Type.Array,
+    _elements: { _type: Type.UUID },
+    _default: ['a6646c51-130d-3b59-a442-959bea93487d', '7807da80-ee71-3900-bbce-a026e4a8d54d'],
+    _description:
+      "Forms, by uuid, that hold one current record per patient, as ACT 2.0 kept Patient Information and Research Participation on the patient: ACT's buttons for them (Next steps, a flag's Open form) edit the patient's latest encounter of the form's type when they have one, rather than add a second. The chart's own Clinical forms list still starts a new one. By default RHD Patient Information and RHD Research Participation.",
+  },
   visitType: {
     _type: Type.UUID,
     _default: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
@@ -620,6 +627,7 @@ export interface Config {
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
+  singleRecordForms: Array<string>;
   visitType: string;
   sessionTimeout: { idleMinutes: number; warningMinutes: number; keepAliveMinutes: number };
   urgencyBands: Array<{ label?: string; shortLabel?: string; concept: string; deadlineDays: number }>;

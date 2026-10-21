@@ -2,6 +2,8 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   getGlobalStore,
+  openmrsFetch,
+  restBaseUrl,
   showSnackbar,
   useConfig,
   useSession,
@@ -42,6 +44,22 @@ function chartTakes(visitUuid: string) {
   });
 }
 
+/**
+ * The patient's latest saved encounter of the form's encounter type, for a form that holds one current record per
+ * patient; null when they have none.
+ */
+export async function latestEncounterOf(patientUuid: string, encounterTypeUuid: string) {
+  const { data } = await openmrsFetch<{ results?: Array<{ uuid: string; encounterDatetime: string }> }>(
+    `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=custom:(uuid,encounterDatetime)`,
+  );
+  const encounters = data?.results ?? [];
+  return encounters.reduce<{ uuid: string; encounterDatetime: string } | null>(
+    (latest, encounter) =>
+      !latest || new Date(encounter.encounterDatetime) > new Date(latest.encounterDatetime) ? encounter : latest,
+    null,
+  );
+}
+
 /** Launches the form entry workspace; a workspace that is already open in that window passes its launchChildWorkspace. */
 export type FormLauncher = (workspaceName: string, workspaceProps: object) => unknown;
 
@@ -52,10 +70,12 @@ export type FormLauncher = (workspaceName: string, workspaceProps: object) => un
  * From a workspace that shares the form entry window, pass its launchChildWorkspace: launching the form as a new
  * root workspace there closes the window and reopens it, and the reopened window comes up hidden. It is not used after
  * starting a visit, as the chart has closed that workspace by then.
+ * A form in `singleRecordForms`, such as Patient Information, holds one current record per patient: for a patient who
+ * has one, it opens their latest for editing, without starting a visit, rather than adding a second.
  */
 export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = launchInClinicalFormsWindow) {
   const { t } = useTranslation();
-  const { visitType } = useConfig<Config>();
+  const { visitType, singleRecordForms } = useConfig<Config>();
   const { sessionLocation } = useSession();
   const { activeVisit, isLoading, mutate } = useVisit(patientUuid);
   const forms = useRef(new Map<string, ReturnType<typeof fetchForm>>());
@@ -81,6 +101,22 @@ export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = l
           forms.current.delete(formUuid);
           throw e;
         });
+        const latest =
+          singleRecordForms.includes(formUuid) && form.encounterType?.uuid
+            ? await latestEncounterOf(patientUuid, form.encounterType.uuid)
+            : null;
+        if (latest) {
+          const launched = await launch('patient-form-entry-workspace', {
+            workspaceTitle: form.display,
+            form,
+            encounterUuid: latest.uuid,
+            additionalProps: { mode: 'edit', openClinicalFormsWorkspaceOnFormClose: false },
+          });
+          if (focusConcept && launched !== false) {
+            focusFormQuestion(form, focusConcept).catch(() => undefined);
+          }
+          return;
+        }
         if (!hasVisit) {
           const visit = await startVisit(t, patientUuid, visitType, sessionLocation?.uuid);
           mutate();
@@ -112,7 +148,7 @@ export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = l
         setIsOpening(false);
       }
     },
-    [activeVisit, launch, mutate, patientUuid, sessionLocation?.uuid, t, visitType],
+    [activeVisit, launch, mutate, patientUuid, sessionLocation?.uuid, singleRecordForms, t, visitType],
   );
 
   return { open, isOpening: isOpening || isLoading };
