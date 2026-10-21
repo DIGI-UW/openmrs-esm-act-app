@@ -18,7 +18,7 @@ describe('AdminNav', () => {
     expect(screen.getByText('Admin')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Users and roles' })).toHaveAttribute(
       'href',
-      '/openmrs/admin/users/users.list',
+      '/openmrs/spa/home/act-users',
     );
     expect(screen.getByRole('link', { name: 'Clinics' })).toHaveAttribute(
       'href',
