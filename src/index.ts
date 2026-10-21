@@ -11,6 +11,7 @@ import registryDashboardLinkComponent from './registry/registry-dashboard-link.c
 import worklistsDashboardLinkComponent from './worklists/worklists-dashboard-link.component';
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
+import { consultationsDashboardMeta } from './consultations/consultations.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import { researchPageDashboardMeta } from './research/research-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
@@ -70,6 +71,30 @@ export const prophylaxisPageDashboard = getAsyncLifecycle(
 export const researchPageDashboardLink = getSyncLifecycle(createDashboard(researchPageDashboardMeta), options);
 
 export const researchPageDashboard = getAsyncLifecycle(() => import('./research/research-page.component'), options);
+
+export const consultationsDashboardLink = getSyncLifecycle(createDashboard(consultationsDashboardMeta), options);
+
+export const consultationsDashboard = getAsyncLifecycle(
+  () => import('./consultations/consultations.component'),
+  options,
+);
+
+export const inrReviewsDashboardLink = getAsyncLifecycle(() => import('./inr/inr-dashboard-link.component'), options);
+
+export const inrReviewsDashboard = getAsyncLifecycle(() => import('./inr/inr-reviews.component'), options);
+
+export const consultationCard = getAsyncLifecycle(() => import('./consultations/consultation-card.component'), options);
+
+export const inrStatusFlag = getAsyncLifecycle(() => import('./inr/inr-status-flag.component'), options);
+
+export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
+
+export const contactCard = getAsyncLifecycle(() => import('./contact/contact-card.component'), options);
+
+export const cliniciansOnlyNote = getAsyncLifecycle(
+  () => import('./chart-note/clinicians-only-note.component'),
+  options,
+);
 
 export const cardiacTestsDashboardLink = getSyncLifecycle(createDashboard(cardiacTestsDashboardMeta), options);
 

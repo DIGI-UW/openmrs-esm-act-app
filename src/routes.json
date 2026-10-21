@@ -571,6 +571,16 @@
       ]
     },
     {
+      "name": "act-inr-status-flag",
+      "slot": "patient-banner-tags-slot",
+      "component": "inrStatusFlag",
+      "privileges": [
+        "App: act.statusFlags",
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-prophylaxis-dashboard-link",
       "component": "prophylaxisPageDashboardLink",
       "meta": {
@@ -615,6 +625,91 @@
         "fullWidth": true
       },
       "privileges": "App: act.studies"
+    },
+    {
+      "name": "act-consultations-dashboard-link",
+      "component": "consultationsDashboardLink",
+      "meta": {
+        "slot": "act-consultations-dashboard-slot",
+        "path": "act-consultations",
+        "title": "Consultation visits",
+        "icon": "omrs-icon-calendar-heat-map"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-consultations-dashboard",
+      "slot": "act-consultations-dashboard-slot",
+      "component": "consultationsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-reviews-dashboard-link",
+      "component": "inrReviewsDashboardLink",
+      "meta": {
+        "slot": "act-inr-reviews-dashboard-slot",
+        "path": "act-inr-reviews",
+        "title": "INR reviews",
+        "icon": "omrs-icon-chart-average"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-reviews-dashboard",
+      "slot": "act-inr-reviews-dashboard-slot",
+      "component": "inrReviewsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-consultation-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "consultationCard",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "inrCard",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-contact-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "contactCard",
+      "privileges": [
+        "Get People"
+      ]
+    },
+    {
+      "name": "act-clinicians-only-note",
+      "component": "cliniciansOnlyNote",
+      "privileges": [
+        "Get Patients"
+      ]
     },
     {
       "name": "act-cardiac-tests-dashboard-link",
