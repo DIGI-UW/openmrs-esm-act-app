@@ -196,14 +196,15 @@ describe('routes.json privileges', () => {
     expect(routeFile).not.toHaveProperty('modals');
   });
 
-  it('declares a privilege on every extension but Download data, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
+  it('declares a privilege on every extension but Download data, the Admin nav, the session timeout and the help-menu Docs, so none shows to every signed-in user', () => {
     // They gate themselves: Download data on either of its two privileges, the Admin nav per link, the session
-    // timeout on being signed in.
+    // timeout on being signed in, and the help-menu Docs on the help menu being open at all.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',
       'act-admin-nav',
       'act-session-timeout',
+      'act-help-docs',
     ]);
   });
 });

@@ -544,6 +544,11 @@
       "order": 99
     },
     {
+      "name": "act-help-docs",
+      "slot": "help-menu-slot",
+      "component": "actHelpDocs"
+    },
+    {
       "name": "act-scan-patient-card-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "scanPatientCardDashboardLink",
