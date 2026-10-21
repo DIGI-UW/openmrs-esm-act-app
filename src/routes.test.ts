@@ -6,6 +6,7 @@ import {
   PRIVILEGE_DUE_LIST,
   PRIVILEGE_COMMUNITY_HOME,
   PRIVILEGE_DATA_CLERK,
+  PRIVILEGE_ENTER_PROPHYLAXIS,
   PRIVILEGE_INSTANCE_ADMIN,
   PRIVILEGE_REGISTRY,
   PRIVILEGE_REPORTS,
@@ -91,6 +92,9 @@ describe('routes.json privileges', () => {
     ['act-home-due-for-prophylaxis', 'App: act.dueList'],
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
     ['act-patient-status-flags', [PRIVILEGE_STATUS_FLAGS, 'Get Encounters', 'Get Observations']],
+    // The roles that record BPG Delivery, whose form a scanned patient card opens.
+    ['act-scan-patient-card-dashboard-link', PRIVILEGE_ENTER_PROPHYLAXIS],
+    ['act-scan-patient-card-dashboard', PRIVILEGE_ENTER_PROPHYLAXIS],
   ])("declares %s behind its screen's privilege", (name, privilege) => {
     expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
   });
@@ -185,6 +189,11 @@ describe('routes.json privileges', () => {
       expect(evaluate(expression, roles('Organizational: ACT Community Clinician'))).toBe(cc);
       expect(evaluate(expression, roles('Organizational: ACT Site Administrator'))).toBe(!cc);
     }
+  });
+
+  it("adds no patient banner action or modal, as OpenMRS prints the patient's identifier sticker", () => {
+    expect(routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot')).toEqual([]);
+    expect(routeFile).not.toHaveProperty('modals');
   });
 
   it('declares a privilege on every extension but Download data, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
