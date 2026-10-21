@@ -36,13 +36,15 @@ const sum = (rows: Array<ReportRow>, column: string) =>
 
 const clinicKeys = ['cardiacClinic', 'primaryCareClinic'] as const;
 
-/** Reports' clinic filters, as ACT 2.0's dashboard had: each any clinic of its kind, or all. */
-function ClinicFilters({
+/** Reports' and the Dashboard's clinic filters, as ACT 2.0's dashboard had: each any clinic of its kind, or all. */
+export function ClinicFilters({
   scope,
   onChange,
+  idPrefix = 'programme-report',
 }: {
   scope: Record<string, string>;
   onChange: (scope: Record<string, string>) => void;
+  idPrefix?: string;
 }) {
   const { t } = useTranslation();
   const { clinicLocationTags } = useConfig<Config>();
@@ -60,7 +62,7 @@ function ClinicFilters({
       {clinicKeys.map((key) => (
         <Select
           key={key}
-          id={`programme-report-${key}`}
+          id={`${idPrefix}-${key}`}
           className={styles.clinicSelect}
           labelText={labels[key]}
           size="sm"

@@ -266,6 +266,25 @@ export const configSchema = {
         "Show the report's bpg_status and adherence columns and a BPG status filter. Turn on once the report returns them.",
     },
   },
+  dashboard: {
+    medicalOptimisationReport: {
+      _type: Type.String,
+      _default: '733a512c-3243-4e91-a44a-06a8e5384606',
+      _description:
+        "The RHD Medical Optimisation report, by uuid or name: one row per measure (its measure, done and not_done columns), for the Dashboard's Medical optimisation.",
+    },
+    screeningCascadeReport: {
+      _type: Type.String,
+      _default: '8b257a0c-7e96-5a01-9672-975cae3b0419',
+      _description: "The RHD Screening Cascade report, by uuid or name, for the Dashboard's screening cascade.",
+    },
+    screeningDiagnosesReport: {
+      _type: Type.String,
+      _default: '6ddf6b36-2789-4733-8433-a877d54795cf',
+      _description:
+        'The RHD Screening Diagnoses report, by uuid or name: the diagnosis categories and RHD details of the screen-detected, for the Dashboard.',
+    },
+  },
   waitingList: {
     report: {
       _type: Type.String,
@@ -588,6 +607,7 @@ export interface Config {
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
+  dashboard: { medicalOptimisationReport: string; screeningCascadeReport: string; screeningDiagnosesReport: string };
   waitingList: { report: string };
   dueForProphylaxis: { report: string };
   screenPositive: { report: string };
