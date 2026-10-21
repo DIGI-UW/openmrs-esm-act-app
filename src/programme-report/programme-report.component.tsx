@@ -37,7 +37,7 @@ const sum = (rows: Array<ReportRow>, column: string) =>
 const clinicKeys = ['cardiacClinic', 'primaryCareClinic'] as const;
 
 /** Reports' clinic filters, as ACT 2.0's dashboard had: each any clinic of its kind, or all. */
-function ClinicFilters({
+export function ClinicFilters({
   scope,
   onChange,
 }: {

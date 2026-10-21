@@ -270,6 +270,30 @@ export const configSchema = {
     ),
     noConcept: concept('The No answer of the research opt-in.', '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
   },
+  dashboard: {
+    registrantsReport: {
+      _type: Type.String,
+      _default: 'a2ca1cb0-e35e-4c42-8ffb-398283396165',
+      _description:
+        "The RHD Dashboard Registrants report, by uuid or name: patients by status, age band, sex and diagnosis, for the Dashboard's Registrants and Demographics.",
+    },
+    careReport: {
+      _type: Type.String,
+      _default: '39c9d8ce-433f-449c-a0c5-ffb8e075207b',
+      _description:
+        "The RHD Dashboard Care report, by uuid or name: the Dashboard's Procedural waitlist and Medical optimisation.",
+    },
+    screeningReport: {
+      _type: Type.String,
+      _default: '324be9a8-b377-4c57-88a2-0bff6bc271fc',
+      _description: "The RHD Dashboard Screening report, by uuid or name: the Dashboard's Screening.",
+    },
+    screeningCascadeReport: {
+      _type: Type.String,
+      _default: '8b257a0c-7e96-5a01-9672-975cae3b0419',
+      _description: "The RHD Screening Cascade report, by uuid or name: the Dashboard's Screening cascade.",
+    },
+  },
   programmeReport: {
     report: {
       _type: Type.String,
@@ -535,6 +559,12 @@ export interface Config {
   dueForProphylaxis: { report: string };
   screenPositive: { report: string };
   programmeReport: { report: string };
+  dashboard: {
+    registrantsReport: string;
+    careReport: string;
+    screeningReport: string;
+    screeningCascadeReport: string;
+  };
   studies: {
     participantsReport: string;
     studyParticipantIdAttributeType: string;

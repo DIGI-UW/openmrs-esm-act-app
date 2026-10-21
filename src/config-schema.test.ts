@@ -79,6 +79,12 @@ describe('configSchema', () => {
       screenPositive: {
         report: 'e3b8f7a2-6c41-4d9e-8a57-1f0c2d4b9e63',
       },
+      dashboard: {
+        registrantsReport: 'a2ca1cb0-e35e-4c42-8ffb-398283396165',
+        careReport: '39c9d8ce-433f-449c-a0c5-ffb8e075207b',
+        screeningReport: '324be9a8-b377-4c57-88a2-0bff6bc271fc',
+        screeningCascadeReport: '8b257a0c-7e96-5a01-9672-975cae3b0419',
+      },
       programmeReport: {
         report: 'c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31',
       },
