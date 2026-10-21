@@ -344,6 +344,12 @@
       "privileges": "App: act.instanceAdmin"
     },
     {
+      "name": "act-instance-admin-nav",
+      "slot": "homepage-dashboard-slot",
+      "component": "instanceAdminNav",
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
       "name": "act-users-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "usersDashboardLink",
