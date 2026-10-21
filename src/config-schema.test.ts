@@ -107,6 +107,42 @@ describe('configSchema', () => {
         screeningCascadeReport: '8b257a0c-7e96-5a01-9672-975cae3b0419',
         screeningDiagnosesReport: '6ddf6b36-2789-4733-8433-a877d54795cf',
       },
+      consultations: {
+        encounterType: 'c2503561-c00d-5460-8157-43d594472b4a',
+        form: '4b063fc7-996f-3001-8500-8940e201be8f',
+        concepts: {
+          date: 'c3edefd2-5777-5084-b01e-fd4ca0e40162',
+          nyha: '2f51b894-383c-53bb-9997-583e9761d132',
+          prophylaxis: '668e0221-8b41-5669-9ad8-78e193d42494',
+          dateStopped: 'd75edc42-3213-5a06-9228-4e5735b9594b',
+          nextAmount: 'ba4b8a87-2ce8-559e-9a30-45504a9b6c1f',
+          nextPeriod: '1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          medication: '0734567e-4f0a-5090-9d74-b953921a30e6',
+          medicationDose: '8879385e-d35e-50a3-a3d0-4333d95d4878',
+        },
+        vitaminKAntagonists: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
+      },
+      inrReviews: {
+        encounterType: 'b4bb88a3-9a04-5142-85bd-bb63c270f632',
+        form: 'fe4848b2-a0b4-329f-a6a3-6ffc298e09a9',
+        concepts: {
+          target: '0778ce12-ddba-5e22-b5fd-92424e8747b4',
+          group: 'bd88ecf3-eac2-516a-8949-a93f90d6483b',
+          dateTested: 'be9041b1-3948-5de0-a8b1-974e84b95715',
+          value: '161482AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          newDose: 'f27f6ed2-48db-5be7-91da-3e2483915462',
+          nextInr: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+      },
+      contactCard: {
+        attributeTypes: {
+          phone: '542c6fd2-05ca-53e3-a4f5-cd23bc1abd8f',
+          phoneOwner: 'ea3cb7ae-ffbe-5aee-8343-44977898f675',
+          primaryCareClinic: '695f2990-236f-5d7c-b8aa-ddbdb22400f4',
+          cardiacClinic: 'fe261119-2911-5b36-be40-8f9827826987',
+        },
+      },
+      clinicianPrivilege: 'Task: act.enterClinicalForms',
       waitingList: {
         report: '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10',
       },
