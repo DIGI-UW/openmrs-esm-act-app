@@ -581,6 +581,15 @@
       ]
     },
     {
+      "name": "act-clinical-flags",
+      "slot": "patient-banner-tags-slot",
+      "component": "clinicalFlags",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-prophylaxis-dashboard-link",
       "component": "prophylaxisPageDashboardLink",
       "meta": {

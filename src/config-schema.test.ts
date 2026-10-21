@@ -119,6 +119,8 @@ describe('configSchema', () => {
           nextPeriod: '1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           medication: '0734567e-4f0a-5090-9d74-b953921a30e6',
           medicationDose: '8879385e-d35e-50a3-a3d0-4333d95d4878',
+          recommendation: 'ce93d393-1df5-587f-bf11-c373eac2ccf4',
+          completed: '1632f8dc-195d-5d67-a52e-6c7a057cb536',
         },
         vitaminKAntagonists: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
       },
