@@ -338,8 +338,11 @@ describe('Due for prophylaxis page', () => {
     await renderPage();
 
     await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
+    // The download is recorded through ACT Core before the file is made.
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
 
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
     expect(vi.mocked(downloadCsv)).toHaveBeenCalledWith(
       expect.stringMatching(/^due-for-prophylaxis-oral-/),
       ['Patient', 'ACT ID', 'Prescription', 'Last dose', 'Status', 'Adherence'],
@@ -411,12 +414,16 @@ describe('Due for prophylaxis widget', () => {
     dataset({ rows: dueRows });
     render(<DueForProphylaxisWidget />);
     const csvNames = () => vi.mocked(downloadCsv).mock.lastCall[2].map((row) => row[0]);
+    // The download is recorded through ACT Core before the file is made.
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
 
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalledTimes(1));
     expect(csvNames()).toEqual(['Amina Nakato', 'Abebe Zeleke', 'Peter Mugisha']);
 
     await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalledTimes(2));
     expect(csvNames()).toEqual(['Joan Apio']);
   });
 

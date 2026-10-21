@@ -233,7 +233,10 @@ describe('Flag worklist', () => {
 
     expect(screen.getByRole('heading', { name: 'Lost to follow-up' })).toBeInTheDocument();
     expect(tableRows()).toEqual([['Patient 1rhd00001', '11 M', 'RHD B', 'Q28 day BPG', 'On the list for 12 days']]);
+    // The download is recorded through ACT Core before the file is made.
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
     expect(vi.mocked(downloadCsv)).toHaveBeenCalledWith(
       expect.stringMatching(/^rhd-lost-to-follow-up-/),
       ['Patient', 'ACT ID', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Why on this list'],

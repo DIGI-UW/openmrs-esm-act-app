@@ -29,6 +29,14 @@
   overflow-x: auto;
 }
 
+// The user's log opens beside the table, as the prototype's dialog sat over the users dashboard.
+.withPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+  gap: layout.$spacing-05;
+  align-items: start;
+}
+
 .actions {
   white-space: nowrap;
   text-align: right;

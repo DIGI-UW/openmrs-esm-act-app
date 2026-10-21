@@ -87,8 +87,6 @@ describe('routes.json privileges', () => {
     ['act-research-dashboard', 'App: act.studies'],
     ['act-refresh-flags-dashboard-link', 'Task: act.refreshFlags'],
     ['act-refresh-flags-dashboard', 'Task: act.refreshFlags'],
-    ['act-download-log-dashboard-link', 'View Read Audit Logs'],
-    ['act-download-log-dashboard', 'View Read Audit Logs'],
     ['act-home-due-for-prophylaxis', 'App: act.dueList'],
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
     ['act-patient-status-flags', [PRIVILEGE_STATUS_FLAGS, 'Get Encounters', 'Get Observations']],
@@ -196,14 +194,36 @@ describe('routes.json privileges', () => {
     expect(routeFile).not.toHaveProperty('modals');
   });
 
-  it('declares a privilege on every extension but Download data, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
-    // They gate themselves: Download data on either of its two privileges, the Admin nav per link, the session
-    // timeout on being signed in.
+  it('declares a privilege on every extension but Download data, Logs, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
+    // They gate themselves: Download data on either of its two privileges, Logs on either audit privilege, the Admin
+    // nav per link, the session timeout on being signed in.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',
+      'act-logs-dashboard-link',
+      'act-logs-dashboard',
       'act-admin-nav',
       'act-session-timeout',
     ]);
   });
+
+  it.each(['act-logs-dashboard-link', 'act-logs-dashboard'])(
+    'shows %s to a user holding any of the three audit privileges, or to a super user, and to no one else',
+    (name) => {
+      const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
+      const session = (privileges: Array<string>, roles: Array<string> = []) => ({
+        session: {
+          user: {
+            privileges: privileges.map((display) => ({ display })),
+            roles: roles.map((display) => ({ display })),
+          },
+        },
+      });
+      expect(evaluate(expression, session(['View Audit Logs']))).toBe(true);
+      expect(evaluate(expression, session(['View Read Audit Logs']))).toBe(true);
+      expect(evaluate(expression, session(['View Security Audit Logs']))).toBe(true);
+      expect(evaluate(expression, session([], ['System Developer']))).toBe(true);
+      expect(evaluate(expression, session(['App: act.home'], ['Organizational: ACT Clinician']))).toBe(false);
+    },
+  );
 });

@@ -207,21 +207,25 @@ export const configSchema = {
       "Where the left nav's Flags and adherence leads: the page that refreshes them now, for a user holding Task: act.refreshFlags.",
       '${openmrsSpaBase}/home/act-refresh-flags',
     ),
-    userActivityUrl: link(
-      "Where the left nav's User activity leads: the audit log app's page of what each user created, edited and deleted, such as forms, for a user holding View Audit Logs.",
-      '${openmrsSpaBase}/audit-logs',
+    logsUrl: link(
+      "Where the left nav's Logs leads: ACT's Logs page (Activity, Patients opened, Downloads and Sign-ins), for a user holding View Audit Logs, View Read Audit Logs or View Security Audit Logs.",
+      '${openmrsSpaBase}/home/act-logs',
     ),
-    patientsOpenedUrl: link(
-      "Where the left nav's Patients opened leads: the audit log module's read audit page, of the patients' records each user read, for a user holding View Read Audit Logs.",
+    auditLogsUrl: link(
+      "Where the Activity tab's links to the audit module lead: the module's own Audit Logs page, which lists every revision of every entity, including the server's own setup. A row's link adds the user as its username filter.",
+      '${openmrsBase}/module/auditlogweb/auditlogs.form',
+    ),
+    readAuditUrl: link(
+      "Where the Patients opened tab's link to the audit module leads: the module's read audit page, with every read.",
       '${openmrsBase}/module/auditlogweb/readauditlogs.form',
+    ),
+    securityAuditUrl: link(
+      "Where the Sign-ins tab's link to the audit module leads: the module's security log page, with locked accounts and the full security record.",
+      '${openmrsBase}/module/auditlogweb/securityauditlogs.form',
     ),
     downloadUrl: link(
       "Where the left nav's Download data leads: the download of a form's fields in this app, for a user holding Task: act.downloadData or Task: act.downloadResearchData.",
       '${openmrsSpaBase}/home/act-download',
-    ),
-    downloadLogUrl: link(
-      "Where the left nav's Download log leads: who downloaded which form's fields, in this app, for a user holding View Read Audit Logs.",
-      '${openmrsSpaBase}/home/act-download-log',
     ),
   },
   careCascade: {
@@ -680,10 +684,11 @@ export interface Config {
     clinicsUrl: string;
     studiesUrl: string;
     refreshFlagsUrl: string;
-    userActivityUrl: string;
-    patientsOpenedUrl: string;
+    logsUrl: string;
+    auditLogsUrl: string;
+    readAuditUrl: string;
+    securityAuditUrl: string;
     downloadUrl: string;
-    downloadLogUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
