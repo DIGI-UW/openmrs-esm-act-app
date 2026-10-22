@@ -216,12 +216,9 @@ export const downloadDashboardLink = getAsyncLifecycle(
 
 export const downloadDashboard = getAsyncLifecycle(() => import('./download/download.component'), options);
 
-export const downloadLogDashboardLink = getAsyncLifecycle(
-  () => import('./download/download-log-dashboard-link.component'),
-  options,
-);
+export const logsDashboardLink = getAsyncLifecycle(() => import('./logs/logs-dashboard-link.component'), options);
 
-export const downloadLogDashboard = getAsyncLifecycle(() => import('./download/download-log.component'), options);
+export const logsDashboard = getAsyncLifecycle(() => import('./logs/logs.component'), options);
 
 export const patientsOnProphylaxisDashboardLink = getSyncLifecycle(
   patientsOnProphylaxisDashboardLinkComponent,

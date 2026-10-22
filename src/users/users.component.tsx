@@ -21,7 +21,7 @@ import {
   TextInput,
   Toggle,
 } from '@carbon/react';
-import { Add, Edit, Locked, Password } from '@carbon/react/icons';
+import { Add, Catalog, Edit, Locked, Password } from '@carbon/react/icons';
 import {
   isDesktop,
   RegistrationPictogram,
@@ -29,11 +29,18 @@ import {
   useConfig,
   useLayoutType,
   UserHasAccess,
+  userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
+import {
+  PRIVILEGE_VIEW_AUDIT_LOGS,
+  PRIVILEGE_VIEW_READ_AUDIT_LOGS,
+  PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS,
+} from '../constants';
+import { UserLogPanel } from '../logs/user-log-panel.component';
 import { useClinics } from '../programme-report/clinics.resource';
 import { restErrorMessage } from '../rest-error-message';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -390,10 +397,22 @@ export default function Users() {
   const [editing, setEditing] = useState<ActUser | 'new' | null>(null);
   const [resetting, setResetting] = useState<ActUser | null>(null);
   const [disabling, setDisabling] = useState<ActUser | null>(null);
+  const [logOf, setLogOf] = useState<ActUser | null>(null);
   const clinicName = useMemo(
     () => new Map(clinicChoices.map((clinic) => [clinic.uuid, clinic.display])),
     [clinicChoices],
   );
+  const clinicNames = (user: ActUser) =>
+    clinicsOf(user)
+      .map((uuid) => clinicName.get(uuid))
+      .filter(Boolean)
+      .join(', ');
+  // The Log action reads the user's entries from the sources the signed-in administrator may read.
+  const mayReadLogs =
+    !!me &&
+    [PRIVILEGE_VIEW_AUDIT_LOGS, PRIVILEGE_VIEW_READ_AUDIT_LOGS, PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS].some((one) =>
+      userHasAccess(one, me),
+    );
 
   const shown = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -450,12 +469,7 @@ export default function Users() {
                   <TableCell>{fullName(user)}</TableCell>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.roles.map((role) => roleLabel(role.display)).join(', ')}</TableCell>
-                  <TableCell>
-                    {clinicsOf(user)
-                      .map((uuid) => clinicName.get(uuid))
-                      .filter(Boolean)
-                      .join(', ')}
-                  </TableCell>
+                  <TableCell>{clinicNames(user)}</TableCell>
                   <TableCell>
                     <Tag size="sm" type={user.retired ? 'gray' : 'green'}>
                       {user.retired ? t('disabled', 'Disabled') : t('enabled', 'Enabled')}
@@ -491,6 +505,16 @@ export default function Users() {
                           onClick={() => setDisabling(user)}
                         />
                       </>
+                    )}
+                    {mayReadLogs && (
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Catalog}
+                        iconDescription={t('log', 'Log')}
+                        onClick={() => setLogOf(user)}
+                      />
                     )}
                   </TableCell>
                 </TableRow>
@@ -540,7 +564,25 @@ export default function Users() {
             </Button>
           </UserHasAccess>
         </div>
-        {body}
+        {logOf ? (
+          <div className={styles.withPanel}>
+            {body}
+            <UserLogPanel
+              username={logOf.username}
+              name={fullName(logOf) || logOf.username}
+              subtitle={[
+                logOf.username,
+                logOf.roles.map((role) => roleLabel(role.display)).join(', '),
+                clinicNames(logOf),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              onClose={() => setLogOf(null)}
+            />
+          </div>
+        ) : (
+          body
+        )}
       </div>
       {editing && (
         <UserModal user={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} onSaved={mutate} />

@@ -161,6 +161,9 @@ export function WaitingListTable() {
       <div className={styles.actions}>
         <DownloadCsvButton
           name="waiting-list"
+          list={`worklist:${t('waitingList', 'Procedural waiting list')}`}
+          identifiers
+          filters={filters}
           headers={columns.map((column) => column.header)}
           rows={() => ranked.map((waiting) => columns.map((column) => column.text(waiting)))}
           disabled={!ranked.length}

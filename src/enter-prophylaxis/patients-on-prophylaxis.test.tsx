@@ -2,6 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { openmrsFetch } from '@openmrs/esm-framework';
 import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { useRecordedToday } from '../due-for-prophylaxis/recorded-today.resource';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -146,8 +147,11 @@ describe('Enter prophylaxis', () => {
     render(<EnterProphylaxis />);
 
     expect(tableRows()[0][4]).toBe('Recorded today');
+    // The download is recorded through ACT Core before the file is made.
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
 
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
     expect(vi.mocked(downloadCsv).mock.lastCall[2].map((row) => [row[0], row[4]])).toEqual([
       ['Patient 1', 'Recorded today'],
       ['Patient 2', 'Up to date'],

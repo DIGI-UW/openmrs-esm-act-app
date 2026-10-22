@@ -113,18 +113,10 @@ export interface DownloadLogDetail {
 
 export interface DownloadLogEntry {
   date: string;
-  user: { uuid: string; username: string };
-  /** Null once the form is purged. */
+  user: { uuid: string; username: string; display?: string | null; role?: string | null };
+  /** Null once the form is purged, and for a list. */
   form: { uuid: string; name: string } | null;
+  /** The list a CSV the app made itself was of: the registry, a worklist or a Logs tab. */
+  list?: { name: string; kind: string } | null;
   detail: DownloadLogDetail | null;
-}
-
-/** Everyone's latest downloads, newest first. */
-export function useDownloadLog() {
-  const url = `${restBaseUrl}/actcore/download`;
-  const { data, error, isLoading } = useSWR<Array<DownloadLogEntry>, Error>(
-    url,
-    async () => (await openmrsFetch<{ results: Array<DownloadLogEntry> }>(url)).data.results,
-  );
-  return { entries: data ?? [], error, isLoading };
 }
