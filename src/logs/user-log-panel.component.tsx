@@ -74,8 +74,9 @@ export function UserLogPanel({
   const failed = sources.find((one) => one.error)?.error;
 
   const entries: Array<PanelEntry> = [
-    ...(activity.page?.results ?? []).map((entry) => ({
-      key: `activity-${entry.revisionId}`,
+    ...(activity.page?.results ?? []).map((entry, index) => ({
+      // A flag dismissal has no revision id, so two of them are told apart by their place in the page.
+      key: `activity-${entry.revisionId ?? `row-${index}`}`,
       time: entry.time,
       source: 'activity' as const,
       text: (

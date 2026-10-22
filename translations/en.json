@@ -218,6 +218,8 @@
   "facilityReports": "Facility reports",
   "failedSignInsLastWeek_one": "Failed sign-ins in the last 7 days: {{count}}",
   "failedSignInsLastWeek_other": "Failed sign-ins in the last 7 days: {{count}}",
+  "failedSignInsLastWeekByUser_one": "Failed sign-ins by {{user}} in the last 7 days: {{count}}",
+  "failedSignInsLastWeekByUser_other": "Failed sign-ins by {{user}} in the last 7 days: {{count}}",
   "familyName": "Family name",
   "female": "Female",
   "fields": "Fields",

@@ -648,6 +648,24 @@ describe('Logs', () => {
       );
     });
 
+    it("counts the week's failures for the user the table is filtered to, and says so", async () => {
+      const calls = backend();
+      await signInWith(BOTH);
+      renderPage();
+      await open();
+
+      await userEvent.type(screen.getByLabelText('User'), 'dataClerk');
+
+      await waitFor(() =>
+        expect(lastUrl(calls, 'eventType=LOGIN_FAILURE')).toMatch(
+          /^\/ws\/rest\/v1\/securityauditlogs\?username=dataClerk&eventType=LOGIN_FAILURE&startDate=\d{2}%2F\d{2}%2F\d{4}&page=0&size=1$/,
+        ),
+      );
+      expect(await screen.findByTestId('failed-sign-ins')).toHaveTextContent(
+        'Failed sign-ins by dataClerk in the last 7 days: 9',
+      );
+    });
+
     it('expands a sign-in to its session, source and the link to the full security record', async () => {
       backend();
       await signInWith(BOTH);

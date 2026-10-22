@@ -69,7 +69,11 @@ export function SignInsTab({
   const [paging, setPaging] = useLogPaging(JSON.stringify(query));
   const { page, error, isLoading } = useSignIns(query, paging);
   const weekAgo = useMemo(() => dayjs().subtract(7, 'day').format('YYYY-MM-DD'), []);
-  const failures = useSignIns({ eventType: 'LOGIN_FAILURE', startDate: weekAgo }, { startIndex: 0, limit: 1 });
+  // Counted for the user the table is filtered to, when it is, so the line reads as the table does.
+  const failures = useSignIns(
+    { username: query.username, eventType: 'LOGIN_FAILURE', startDate: weekAgo },
+    { startIndex: 0, limit: 1 },
+  );
 
   const rows = (page?.results ?? []).map((entry) => ({
     key: String(entry.id),
@@ -157,9 +161,14 @@ export function SignInsTab({
       <p className={styles.explanation}>
         {failures.page && (
           <span data-testid="failed-sign-ins">
-            {t('failedSignInsLastWeek', 'Failed sign-ins in the last 7 days: {{count}}', {
-              count: failures.page.totalCount,
-            })}
+            {query.username
+              ? t('failedSignInsLastWeekByUser', 'Failed sign-ins by {{user}} in the last 7 days: {{count}}', {
+                  user: query.username,
+                  count: failures.page.totalCount,
+                })
+              : t('failedSignInsLastWeek', 'Failed sign-ins in the last 7 days: {{count}}', {
+                  count: failures.page.totalCount,
+                })}
             {'. '}
           </span>
         )}
