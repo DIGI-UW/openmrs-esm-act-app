@@ -81,6 +81,7 @@ describe('routes.json privileges', () => {
     ['act-instance-admin-forms-and-sites', screenPrivileges.instanceAdmin],
     ['act-instance-admin-role-permissions', screenPrivileges.instanceAdmin],
     ['act-instance-admin-research-participation', screenPrivileges.instanceAdmin],
+    ['act-instance-admin-nav', screenPrivileges.instanceAdmin],
     ['act-studies-dashboard-link', 'App: act.studies'],
     ['act-studies-dashboard', 'App: act.studies'],
     ['act-research-dashboard-link', 'App: act.studies'],
