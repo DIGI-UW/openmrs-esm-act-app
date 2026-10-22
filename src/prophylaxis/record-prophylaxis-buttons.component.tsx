@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Tag } from '@carbon/react';
-import { AddIcon, useConfig } from '@openmrs/esm-framework';
+import { AddIcon, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
 import { heldBpgStep, useNextSteps } from '../next-steps/next-steps.resource';
@@ -10,12 +10,14 @@ import { useProphylaxisSummary } from './prophylaxis.resource';
 import styles from '../styles/summary-card.scss';
 
 /**
- * Record BPG and Record oral, or only the one for the type prescribed once the summary says which. A held BPG drops
- * only this button: a withheld dose is still recorded from All forms.
+ * Record BPG and Record oral, or only the one for the type prescribed once the summary says which. A clinician, who may
+ * change the regimen, keeps both. A held BPG drops only this button: a withheld dose is still recorded from All forms.
  */
 export function RecordProphylaxisButtons({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { prophylaxisCard, nextSteps } = useConfig<Config>();
+  const { prophylaxisCard, nextSteps, clinicianPrivilege } = useConfig<Config>();
+  const { user } = useSession();
+  const clinician = Boolean(user) && userHasAccess(clinicianPrivilege, user);
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
   const { summary } = useProphylaxisSummary(patientUuid);
   const held = heldBpgStep(useNextSteps(nextSteps.enabled ? patientUuid : null).steps);
@@ -31,7 +33,7 @@ export function RecordProphylaxisButtons({ patientUuid }: { patientUuid: string 
   const buttons = [
     { type: 'BPG', label: t('recordBpg', 'Record BPG'), form: prophylaxisCard.bpgForm },
     { type: 'Oral', label: t('recordOral', 'Record oral'), form: prophylaxisCard.oralForm },
-  ].filter((button) => !prescribed || button.type === prescribed);
+  ].filter((button) => clinician || !prescribed || button.type === prescribed);
 
   return (
     <div className={styles.actions}>

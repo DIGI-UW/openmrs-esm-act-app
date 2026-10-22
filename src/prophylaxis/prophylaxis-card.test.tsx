@@ -304,6 +304,16 @@ describe('ProphylaxisCard', () => {
     expect(screen.getByRole('button', { name: new RegExp(`^${action}`) })).toBeInTheDocument();
   });
 
+  it.each(['BPG', 'Oral'])('offers a clinician both forms for a %s prescription, to change the regimen', async (type) => {
+    await signInWith(['Add Encounters', 'Task: act.enterClinicalForms']);
+    respondWith({ ...winnie, type });
+
+    renderCard();
+
+    expect(await screen.findByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
+  });
+
   it('says Needs prescription instead of offering a form to a patient with no prescription in force', async () => {
     respondWith({ ...winnie, type: null, regimen: null, intervalDays: null, status: 'none' });
 
