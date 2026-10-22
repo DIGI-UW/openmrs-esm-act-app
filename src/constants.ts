@@ -19,6 +19,7 @@ export const PRIVILEGE_ENTER_PROPHYLAXIS = 'Task: act.enterProphylaxis';
 // The audit log module's (auditlogweb): changes such as saved forms, and reads such as opened patients.
 export const PRIVILEGE_VIEW_AUDIT_LOGS = 'View Audit Logs';
 export const PRIVILEGE_VIEW_READ_AUDIT_LOGS = 'View Read Audit Logs';
+export const PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS = 'View Security Audit Logs';
 export const PRIVILEGE_DOWNLOAD_DATA = 'Task: act.downloadData';
 export const PRIVILEGE_DOWNLOAD_IDENTIFIERS = 'Task: act.downloadIdentifiers';
 export const PRIVILEGE_DOWNLOAD_RESEARCH_DATA = 'Task: act.downloadResearchData';

@@ -23,6 +23,7 @@ import facilityReportsDashboardLinkComponent from './programme-report/facility-r
 import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
 import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
+import { registerNextInjectionDue } from './prophylaxis/next-injection-due';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
 const moduleName = '@act-registry/esm-act-app';
@@ -40,6 +41,7 @@ export function startupApp() {
     defineExtensionConfigSchema(name, flagWorklistConfigSchema(defaults)),
   );
   trackActReturn();
+  registerNextInjectionDue();
 }
 
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);
@@ -214,12 +216,9 @@ export const downloadDashboardLink = getAsyncLifecycle(
 
 export const downloadDashboard = getAsyncLifecycle(() => import('./download/download.component'), options);
 
-export const downloadLogDashboardLink = getAsyncLifecycle(
-  () => import('./download/download-log-dashboard-link.component'),
-  options,
-);
+export const logsDashboardLink = getAsyncLifecycle(() => import('./logs/logs-dashboard-link.component'), options);
 
-export const downloadLogDashboard = getAsyncLifecycle(() => import('./download/download-log.component'), options);
+export const logsDashboard = getAsyncLifecycle(() => import('./logs/logs.component'), options);
 
 export const patientsOnProphylaxisDashboardLink = getSyncLifecycle(
   patientsOnProphylaxisDashboardLinkComponent,

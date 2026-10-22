@@ -297,6 +297,9 @@ function RegistryTable() {
       <div className={styles.actions}>
         <DownloadCsvButton
           name="registry"
+          list="registry"
+          identifiers
+          filters={filters}
           headers={csvColumns.map((column) => column.header)}
           rows={() => shown.map((row) => csvColumns.map((column) => column.text(row)))}
           disabled={!shown.length}

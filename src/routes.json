@@ -416,21 +416,21 @@
       "component": "downloadDashboard"
     },
     {
-      "name": "act-download-log-dashboard-link",
+      "name": "act-logs-dashboard-link",
       "slot": "homepage-dashboard-slot",
-      "component": "downloadLogDashboardLink",
+      "component": "logsDashboardLink",
       "meta": {
-        "name": "act-download-log",
-        "slot": "act-download-log-dashboard-slot",
-        "title": "downloadLog"
+        "name": "act-logs",
+        "slot": "act-logs-dashboard-slot",
+        "title": "logs"
       },
-      "privileges": "View Read Audit Logs"
+      "displayExpression": "session.user.privileges.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
     },
     {
-      "name": "act-download-log-dashboard",
-      "slot": "act-download-log-dashboard-slot",
-      "component": "downloadLogDashboard",
-      "privileges": "View Read Audit Logs"
+      "name": "act-logs-dashboard",
+      "slot": "act-logs-dashboard-slot",
+      "component": "logsDashboard",
+      "displayExpression": "session.user.privileges.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-community-home-dashboard-link",

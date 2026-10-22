@@ -44,7 +44,10 @@ async function downloadedCsv() {
   const createObjectURL = vi.fn((blob: Blob) => 'blob:waiting-list');
   window.URL.createObjectURL = createObjectURL as never;
   window.URL.revokeObjectURL = vi.fn();
+  // The download is recorded through ACT Core before the file is made.
+  vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
   await userEvent.click(screen.getByRole('button', { name: /download csv/i }));
+  await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
   return (createObjectURL.mock.calls[0][0] as Blob).text();
 }
 

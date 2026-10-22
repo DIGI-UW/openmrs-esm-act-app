@@ -46,6 +46,9 @@ export function DueListToolbar({
         </ContentSwitcher>
         <DownloadCsvButton
           name={`${csvName}-${filter}`}
+          list={`worklist:${t('dueForProphylaxis', 'Due for prophylaxis')}`}
+          identifiers
+          filters={{ filter }}
           headers={columns.map((column) => column.header)}
           rows={() => rows.map((row) => columns.map((column) => column.text(row)))}
           disabled={!rows.length}

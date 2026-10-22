@@ -327,6 +327,9 @@ function ParticipantsTable({
           />
           <DownloadCsvButton
             name="study-participants"
+            list={`worklist:${t('studyParticipants', 'Study participants')}`}
+            identifiers
+            filters={filters}
             headers={columns.map((column) => column.header)}
             rows={() => shown.map((row) => columns.map((column) => column.csv(row)))}
             disabled={!shown.length}

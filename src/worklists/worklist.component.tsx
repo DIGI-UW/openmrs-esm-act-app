@@ -236,6 +236,8 @@ export function WorklistTable({
       actions={
         <DownloadCsvButton
           name={csvName}
+          list={`worklist:${title}`}
+          identifiers
           headers={columns.map((column) => column.header)}
           rows={() => entries.map((entry) => columns.map((column) => column.text(entry)))}
           disabled={!entries.length}

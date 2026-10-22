@@ -11,6 +11,7 @@ import {
   PRIVILEGE_STUDIES,
   PRIVILEGE_VIEW_AUDIT_LOGS,
   PRIVILEGE_VIEW_READ_AUDIT_LOGS,
+  PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS,
 } from '../constants';
 import styles from './admin-nav.scss';
 
@@ -24,14 +25,9 @@ export default function AdminNav() {
   const links = [
     { privilege: PRIVILEGE_EDIT_USERS, to: adminLinks.usersUrl, label: t('usersAndRoles', 'Users and roles') },
     {
-      privilege: PRIVILEGE_VIEW_AUDIT_LOGS,
-      to: adminLinks.userActivityUrl,
-      label: t('userActivity', 'User activity'),
-    },
-    {
-      privilege: PRIVILEGE_VIEW_READ_AUDIT_LOGS,
-      to: adminLinks.patientsOpenedUrl,
-      label: t('patientsOpened', 'Patients opened'),
+      privilege: [PRIVILEGE_VIEW_AUDIT_LOGS, PRIVILEGE_VIEW_READ_AUDIT_LOGS, PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS],
+      to: adminLinks.logsUrl,
+      label: t('logs', 'Logs'),
     },
     { privilege: PRIVILEGE_MANAGE_LOCATIONS, to: adminLinks.clinicsUrl, label: t('clinics', 'Clinics') },
     { privilege: PRIVILEGE_STUDIES, to: adminLinks.studiesUrl, label: t('studies', 'Studies') },
@@ -44,11 +40,6 @@ export default function AdminNav() {
       privilege: [PRIVILEGE_DOWNLOAD_DATA, PRIVILEGE_DOWNLOAD_RESEARCH_DATA],
       to: adminLinks.downloadUrl,
       label: t('downloadData', 'Download data'),
-    },
-    {
-      privilege: PRIVILEGE_VIEW_READ_AUDIT_LOGS,
-      to: adminLinks.downloadLogUrl,
-      label: t('downloadLog', 'Download log'),
     },
   ].filter(({ privilege }) => user && [privilege].flat().some((one) => userHasAccess(one, user)));
 
