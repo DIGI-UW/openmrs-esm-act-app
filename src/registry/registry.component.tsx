@@ -61,6 +61,11 @@ function nextConsultation(row: ReportRow) {
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 }
 
+function reportDate(value: unknown) {
+  const date = parseReportDate(value);
+  return date ? formatDate(date, { time: false, noToday: true }) : '';
+}
+
 function RegistryTable() {
   const { t } = useTranslation();
   const { registry, flagLists } = useConfig<Config>();
@@ -153,6 +158,8 @@ function RegistryTable() {
           },
         ]
       : []),
+    { header: t('lastUpdated', 'Last updated'), text: (row) => reportDate(row.last_updated) },
+    { header: t('procedureDue', 'Procedure due'), text: (row) => reportDate(row.earliest_procedure_due) },
     {
       header: t('flags', 'Flags'),
       text: (row) =>
@@ -210,6 +217,16 @@ function RegistryTable() {
           },
         ]
       : []),
+    {
+      header: t('lastUpdated', 'Last updated'),
+      sortKey: 'lastUpdated',
+      render: (row) => reportDate(row.last_updated),
+    },
+    {
+      header: t('procedureDue', 'Procedure due'),
+      sortKey: 'procedureDue',
+      render: (row) => reportDate(row.earliest_procedure_due),
+    },
     {
       header: t('flags', 'Flags'),
       render: (row, index) => <RegistryFlags flags={flagsOf(row)} rowsBelow={results.length - 1 - index} />,

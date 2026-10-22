@@ -1,11 +1,12 @@
 import { type ReportRow } from '../reports/report-dataset.resource';
 
 export interface RegistrySort {
-  key: 'name' | 'age' | 'bpg' | 'adherence';
+  key: 'name' | 'age' | 'bpg' | 'adherence' | 'lastUpdated' | 'procedureDue';
   direction: 'ASC' | 'DESC';
 }
 
 const number = (value: unknown) => (value == null || value === '' ? null : Number(value));
+const date = (value: unknown) => (typeof value === 'string' && value ? value.slice(0, 10) : null);
 
 /** BPG status sorts by days until the next dose; a patient with no next dose has none. */
 const sortValue: Record<RegistrySort['key'], (row: ReportRow) => string | number | null> = {
@@ -13,6 +14,8 @@ const sortValue: Record<RegistrySort['key'], (row: ReportRow) => string | number
   age: (row) => number(row.age_years),
   bpg: (row) => number(row.days_until_due),
   adherence: (row) => number(row.adherence),
+  lastUpdated: (row) => date(row.last_updated),
+  procedureDue: (row) => date(row.earliest_procedure_due),
 };
 
 /** The rows in the chosen order, patients without a value last either way; no sort keeps the report's order. */
