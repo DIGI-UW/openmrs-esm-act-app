@@ -40,13 +40,22 @@ describe('Registry', () => {
     render(<Registry />);
 
     const headers = columnHeaders();
-    expect(headers).toEqual(['', 'Patient', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Flags']);
+    expect(headers).toEqual([
+      '',
+      'Patient',
+      'Age, sex',
+      'Diagnosis',
+      'Prophylaxis',
+      'Last updated',
+      'Procedure due',
+      'Flags',
+    ]);
     const first = screen.getByRole('row', { name: /Patient 1\b/ });
     expect(
       within(first)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['', 'Patient 1rhd00001', '10 F', 'RHD A', 'Q28 day BPG', '']);
+    ).toEqual(['', 'Patient 1rhd00001', '10 F', 'RHD A', 'Q28 day BPG', '', '', '']);
     const [, patient] = within(first).getAllByRole('cell');
     expect(within(patient).getByRole('link', { name: 'Patient 1' })).toHaveAttribute(
       'href',
@@ -178,7 +187,7 @@ describe('Registry', () => {
       const { rerender } = render(<Registry />);
 
       const { skeleton, rows, columns } = tableSkeleton();
-      expect({ rows, columns }).toEqual({ rows: 10, columns: 5 });
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 7 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: registryRows });
       rerender(<Registry />);

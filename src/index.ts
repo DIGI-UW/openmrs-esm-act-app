@@ -249,6 +249,11 @@ export const communityHomeDashboardLink = getSyncLifecycle(communityHomeDashboar
 
 export const adminNav = getAsyncLifecycle(() => import('./admin-nav/admin-nav.component'), options);
 
+export const instanceAdminNav = getAsyncLifecycle(
+  () => import('./instance-admin/instance-admin-nav.component'),
+  options,
+);
+
 export const communityHomeDashboard = getAsyncLifecycle(
   () => import('./community-home/community-home-dashboard.component'),
   options,
