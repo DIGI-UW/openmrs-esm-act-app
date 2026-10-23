@@ -177,6 +177,10 @@ const stateOf = (report: { isLoading: boolean; error?: Error; mutate: () => unkn
 
 const allZero = (counts: Array<Count>) => counts.every((count) => !count.value);
 
+// The care cascade counts these from ACT Core's adherence as of its last run, whatever the end date.
+const stepsCountedToday = ['Covered today', 'Adherent (80%+)', 'Adherent'];
+const earliestAsOf = '1900-01-01';
+
 function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onShowAll: () => void }) {
   const { t } = useTranslation();
   const { careCascade, dashboard, waitingList } = useConfig<Config>();
@@ -192,10 +196,12 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   }, [registry.rows, clinics]);
 
   const cascadeReport = useReportDataset(careCascade.report, params);
-  const cascade = useMemo(
-    () => cascadeSteps(cascadeReport.rows, careCascade.steps),
-    [cascadeReport.rows, careCascade.steps],
-  );
+  const isPast = asOf < dayjs().format('YYYY-MM-DD');
+  const { cascade, leftOutToday } = useMemo(() => {
+    const steps = cascadeSteps(cascadeReport.rows, careCascade.steps);
+    const dated = isPast ? steps.filter(({ step }) => !stepsCountedToday.includes(step)) : steps;
+    return { cascade: dated, leftOutToday: dated.length < steps.length };
+  }, [cascadeReport.rows, careCascade.steps, isPast]);
 
   const waitlistReport = useReportDataset(waitingList.report);
   const waitlist = useMemo(() => {
@@ -299,7 +305,14 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         </Section>
         <Section
           title={t('rhdCareCascade', 'RHD care cascade')}
-          description={t('careCascadeDescription', 'Active RHD patients; each step is a share of the one before')}
+          description={
+            leftOutToday
+              ? t(
+                  'careCascadePastDescription',
+                  'Active RHD patients; each step is a share of the one before. Coverage and adherence are left out, as ACT Core keeps them only for today.',
+                )
+              : t('careCascadeDescription', 'Active RHD patients; each step is a share of the one before')
+          }
           state={stateOf(cascadeReport, allZero(cascade))}
           {...section}
         >
@@ -508,8 +521,15 @@ export default function Dashboard() {
                 id="dashboard-as-of"
                 labelText={t('figuresAsOf', 'Figures as of')}
                 value={dayjs(asOf).toDate()}
+                minDate={dayjs(earliestAsOf).toDate()}
                 maxDate={new Date()}
-                onChange={(date) => date && setAsOf(dayjs(date).format('YYYY-MM-DD'))}
+                onChange={(date) => {
+                  const day = date && dayjs(date).format('YYYY-MM-DD');
+                  // The picker reports a year at each digit typed, as 0002, 0020 and 0202 on the way to 2026.
+                  if (day && day >= earliestAsOf) {
+                    setAsOf(day);
+                  }
+                }}
               />
             </div>
             <Figures scope={scope} asOf={asOf} onShowAll={() => setChosenScope({})} />

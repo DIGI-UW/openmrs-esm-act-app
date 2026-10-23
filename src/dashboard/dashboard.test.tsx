@@ -163,6 +163,12 @@ function chartData(chart: unknown, title: string) {
   return calls.filter((props) => props.options?.accessibility?.svgAriaLabel === title).at(-1)?.data;
 }
 
+function chartOptions(chart: unknown, title: string) {
+  const calls = vi.mocked(chart as typeof DonutChart).mock.calls.map(([props]) => props);
+  const options = calls.filter((props) => props.options?.accessibility?.svgAriaLabel === title).at(-1)?.options;
+  return options as { axes: Record<string, object>; legend: object };
+}
+
 const paramsOf = (report: string) =>
   vi
     .mocked(useReportDataset)
@@ -343,6 +349,68 @@ describe('Dashboard', () => {
     expect(paramsOf(SCREENING)).toEqual({ endDate: '2026-01-15' });
     expect(paramsOf(DIAGNOSES)).toEqual({ endDate: '2026-01-15' });
     expect(paramsOf(REGISTRY)).toEqual({ startDate: '1900-01-01', endDate: today });
+  });
+
+  it('leaves out the cascade steps ACT Core counts only today when the date chosen is past, and says why', async () => {
+    await signIn();
+    renderPage();
+    expect(await screen.findAllByTestId('dashboard-cascade-step')).toHaveLength(5);
+    expect(screen.queryByText(/ACT Core keeps them only for today/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Figures as of'), { target: { value: '2026-01-15' } });
+
+    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Prescribed375%', 'Initiated267%']);
+    expect(chartData(SimpleBarChart, 'RHD care cascade')).toEqual([
+      { group: 'Active', value: 4 },
+      { group: 'Prescribed', value: 3 },
+      { group: 'Initiated', value: 2 },
+    ]);
+    expect(screen.getByText(/ACT Core keeps them only for today/)).toBeInTheDocument();
+  });
+
+  it('writes out every procedure, measure and step name on the chart axes and legends, rather than cutting it short', async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-cascade-step');
+
+    const whole = { type: 'none' };
+    const waitlist = chartOptions(StackedBarChart, 'Procedural waitlist');
+    expect(waitlist.axes.bottom).toMatchObject({ mapsTo: 'key', truncation: whole });
+    expect(waitlist.legend).toMatchObject({ truncation: whole });
+    const optimisation = chartOptions(StackedBarChart, 'Medical optimisation');
+    expect(optimisation.axes.left).toMatchObject({ mapsTo: 'key', truncation: whole });
+    expect(optimisation.legend).toMatchObject({ truncation: whole });
+    expect(chartOptions(SimpleBarChart, 'RHD care cascade').axes.bottom).toMatchObject({
+      mapsTo: 'group',
+      truncation: whole,
+    });
+  });
+
+  it('leaves out the Adherent step of the older cascade report, too, when the date chosen is past', async () => {
+    await signIn(undefined, {
+      [CARE_CASCADE]: [
+        { step: 'Active', patients: 4 },
+        { step: 'Initiated BPG', patients: 2 },
+        { step: 'Adherent', patients: 1 },
+      ],
+    });
+    renderPage();
+    expect(await screen.findAllByTestId('dashboard-cascade-step')).toHaveLength(3);
+
+    fireEvent.change(screen.getByLabelText('Figures as of'), { target: { value: '2026-01-15' } });
+
+    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Initiated250%']);
+  });
+
+  it('evaluates no report for a date before 1900, such as a year still being typed', async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-cascade-step');
+
+    fireEvent.change(screen.getByLabelText('Figures as of'), { target: { value: '0202-01-01' } });
+
+    expect(vi.mocked(useReportDataset).mock.calls.some(([, params]) => params?.endDate === '0202-01-01')).toBe(false);
+    expect(paramsOf(CARE_CASCADE)).toEqual({ endDate: today });
   });
 
   it('narrows every section to the clinic chosen', async () => {

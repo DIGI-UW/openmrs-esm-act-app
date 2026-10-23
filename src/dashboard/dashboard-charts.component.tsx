@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DonutChart, ScaleTypes, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
+import { DonutChart, ScaleTypes, SimpleBarChart, StackedBarChart, TruncationTypes } from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
 import { type Count, cascadeShares, share } from './dashboard-counts';
 import styles from './dashboard.scss';
@@ -24,6 +24,9 @@ function useStable<T>(value: T): T {
   }
   return stable.current;
 }
+
+// Carbon cuts a long label short by default, and names sharing a prefix then read the same.
+const whole = { type: TruncationTypes.NONE };
 
 const base = (name: string, height: string) => ({
   accessibility: { svgAriaLabel: name },
@@ -91,7 +94,7 @@ export function CascadeBars({ name, steps, testId }: { name: string; steps: Arra
     legend: { enabled: false },
     axes: {
       left: { mapsTo: 'value' },
-      bottom: { mapsTo: 'group', scaleType: ScaleTypes.LABELS },
+      bottom: { mapsTo: 'group', scaleType: ScaleTypes.LABELS, truncation: whole },
     },
   });
   return (
@@ -127,7 +130,7 @@ export function StackedBars({
   colours: 'urgency' | 'doneNotDone';
   height: string;
 }) {
-  const keys = { mapsTo: 'key', scaleType: ScaleTypes.LABELS };
+  const keys = { mapsTo: 'key', scaleType: ScaleTypes.LABELS, truncation: whole };
   const values = { mapsTo: 'value', stacked: true };
   const numbered = (group: string) => urgencyColours[parseInt(group, 10) - 1];
   const scale =
@@ -144,6 +147,7 @@ export function StackedBars({
   const options = useStable({
     ...base(name, height),
     color: { scale },
+    legend: { truncation: whole },
     axes: horizontal ? { left: keys, bottom: values } : { left: values, bottom: keys },
   });
   return (

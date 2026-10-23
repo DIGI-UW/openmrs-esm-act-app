@@ -70,6 +70,7 @@
   "cardiologyVisitOverdue": "Cardiology visit overdue",
   "careCascade": "Care cascade",
   "careCascadeDescription": "Active RHD patients; each step is a share of the one before",
+  "careCascadePastDescription": "Active RHD patients; each step is a share of the one before. Coverage and adherence are left out, as ACT Core keeps them only for today.",
   "cascade": "Cascade",
   "cascadeReportDate": "Report date: {{date}}",
   "categoryAtDiagnosis": "Category at diagnosis",
