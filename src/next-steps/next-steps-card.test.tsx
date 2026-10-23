@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
 import {
@@ -11,6 +11,7 @@ import {
   showSnackbar,
   useConfig,
   usePatient,
+  useSession,
 } from '@openmrs/esm-framework';
 import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
@@ -225,11 +226,14 @@ describe('NextStepsCard', () => {
     it('records a referral at the session location and shows the step Completed after asking again', async () => {
       renderCard();
 
+      mockOpenmrsFetch.mockImplementation(((url: string, options?: { method?: string }) => {
+        if (options?.method === 'POST') {
+          steps = [refer(true)];
+        }
+        return Promise.resolve({ data: url.includes('/actcore/nextsteps') ? { steps } : { results: forms } });
+      }) as never);
+
       await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
-      steps = [refer(true)];
-      mockOpenmrsFetch.mockClear();
-      respond();
-      await invalidatePatientEncounters();
 
       expect(await screen.findByText('Completed')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
@@ -254,19 +258,61 @@ describe('NextStepsCard', () => {
       );
     });
 
-    it('says so, and keeps the button, when the referral cannot be saved', async () => {
+    it('says why, and keeps the button, when the referral cannot be saved', async () => {
       mockOpenmrsFetch.mockImplementation(((url: string, options?: { method?: string }) =>
         options?.method === 'POST'
-          ? Promise.reject(new Error('refused'))
+          ? Promise.reject({
+              message: 'Server responded with 403',
+              responseBody: { error: { message: 'Privileges required: Add Encounters' } },
+            })
           : Promise.resolve({ data: url.includes('/actcore/nextsteps') ? { steps } : { results: forms } })) as never);
       renderCard();
 
       await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
 
       await waitFor(() =>
-        expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })),
+        expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(
+          expect.objectContaining({ kind: 'error', subtitle: 'Privileges required: Add Encounters' }),
+        ),
       );
       expect(screen.getByRole('button', { name: 'Send referral' })).toBeEnabled();
+    });
+
+    it('posts once for two clicks in the same tick', async () => {
+      renderCard();
+      const button = await screen.findByRole('button', { name: 'Send referral' });
+
+      act(() => {
+        button.click();
+        button.click();
+      });
+
+      await screen.findByText('Completed').catch(() => undefined);
+      expect(
+        mockOpenmrsFetch.mock.calls.filter(([, options]) => (options as { method?: string })?.method === 'POST'),
+      ).toHaveLength(1);
+    });
+
+    it('does not post, and says why, when the session has no location', async () => {
+      vi.mocked(useSession).mockReturnValue({ ...vi.mocked(useSession)(), sessionLocation: undefined } as never);
+      renderCard();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+
+      expect(
+        mockOpenmrsFetch.mock.calls.some(([, options]) => (options as { method?: string })?.method === 'POST'),
+      ).toBe(false);
+      expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'error', subtitle: 'Choose a login location first' }),
+      );
+    });
+
+    it('offers no button to a user holding the referral privilege without Add Encounters', async () => {
+      await signInWith(['Task: act.sendReferral']);
+      renderCard();
+
+      await screen.findByText('Refer to clinician');
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
     });
 
     it('offers no button to a user without the privilege to send a referral', async () => {

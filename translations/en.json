@@ -480,6 +480,7 @@
   "recordInr": "Record INR",
   "recordOral": "Record oral",
   "recordOralProphylaxis": "Record oral prophylaxis",
+  "referralNeedsLocation": "Choose a login location first",
   "referralNotSent": "The referral could not be sent",
   "referralSent": "Referral sent",
   "referralSentSubtitle": "The cardiac clinic will see it on their worklist",

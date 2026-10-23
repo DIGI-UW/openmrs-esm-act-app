@@ -12,22 +12,15 @@ import {
   UserFollow,
 } from '@carbon/react/icons';
 import { useSWRConfig } from 'swr';
-import {
-  CardHeader,
-  restBaseUrl,
-  showSnackbar,
-  useConfig,
-  usePatient,
-  useSession,
-  userHasAccess,
-} from '@openmrs/esm-framework';
+import { CardHeader, showSnackbar, useConfig, usePatient, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_SEND_REFERRAL } from '../constants';
 import { mayEnter } from '../access/may-enter-form';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { launchInClinicalFormsWindow } from '../visits/launch-in-clinical-forms-window';
+import { restErrorMessage } from '../rest-error-message';
 import { sendReferral } from './send-referral';
-import { type NextStep, useNextSteps, usePublishedForms } from './next-steps.resource';
+import { type NextStep, nextStepsKey, useNextSteps, usePublishedForms } from './next-steps.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './next-steps-card.scss';
 
@@ -78,6 +71,7 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
   const { user, sessionLocation } = useSession();
   const { mutate } = useSWRConfig();
   const [sending, setSending] = useState(false);
+  const sendingNow = useRef(false);
   const maySendReferral = Boolean(user) && userHasAccess([PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_SEND_REFERRAL], user);
   const formCount = useFormCount(patientUuid, nextSteps.enabled);
   const previous = useRef<Array<NextStep>>(null);
@@ -104,22 +98,41 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
   const firstName = patient?.name?.[0]?.given?.[0] ?? '';
 
   const send = async (referralType: string) => {
+    // State disables the button only after a render, so a second click in the same tick needs the ref.
+    if (sendingNow.current) {
+      return;
+    }
+    if (!sessionLocation?.uuid) {
+      showSnackbar({
+        kind: 'error',
+        title: t('referralNotSent', 'The referral could not be sent'),
+        subtitle: t('referralNeedsLocation', 'Choose a login location first'),
+      });
+      return;
+    }
+    sendingNow.current = true;
     setSending(true);
     try {
-      await sendReferral(patientUuid, referralType, sessionLocation?.uuid);
-      await mutate(`${restBaseUrl}/encounter?patient=${patientUuid}&for=actcore-nextsteps`);
-      showSnackbar({
-        kind: 'success',
-        title: t('referralSent', 'Referral sent'),
-        subtitle: t('referralSentSubtitle', 'The cardiac clinic will see it on their worklist'),
-      });
+      await sendReferral(patientUuid, referralType, sessionLocation.uuid);
     } catch (e) {
       showSnackbar({
         kind: 'error',
         title: t('referralNotSent', 'The referral could not be sent'),
-        subtitle: e?.message,
+        subtitle: restErrorMessage(e),
       });
+      sendingNow.current = false;
+      setSending(false);
+      return;
+    }
+    showSnackbar({
+      kind: 'success',
+      title: t('referralSent', 'Referral sent'),
+      subtitle: t('referralSentSubtitle', 'The cardiac clinic will see it on their worklist'),
+    });
+    try {
+      await mutate(nextStepsKey(patientUuid));
     } finally {
+      sendingNow.current = false;
       setSending(false);
     }
   };
