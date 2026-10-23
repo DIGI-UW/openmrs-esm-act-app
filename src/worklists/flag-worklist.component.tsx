@@ -8,7 +8,7 @@ import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { useRhdFlagList } from '../rhd-flags/rhd-flag-lists.resource';
 import { type FlagWorklistConfig } from './flag-worklists';
-import { Worklist, type WorklistState, WorklistTable } from './worklist.component';
+import { Worklist, type WorklistState, WorklistTable, whyKey } from './worklist.component';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -57,6 +57,7 @@ export default function FlagWorklist(state: WorklistState) {
         .map((row) => ({
           row,
           why: dueDateColumn ? dueBy(t, row[dueDateColumn]) : onListSince(t, row, flag),
+          whyKey: dueDateColumn ? whyKey('', parseReportDate(row[dueDateColumn])) : undefined,
         })),
     [registry.rows, flag, dueDateColumn, t],
   );

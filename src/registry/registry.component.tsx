@@ -50,7 +50,8 @@ import { RegistryFlags } from './registry-flags.component';
 import { RegistryDetails } from './registry-details.component';
 import { useRegistryReport } from './registry.resource';
 import { useSessionClinicScope } from '../session-clinic';
-import { nextSort, type RegistrySort, sortRegistry } from './registry-sort';
+import { type RegistrySort, sortRegistry } from './registry-sort';
+import { sortHeaderProps } from '../table-filters/column-sort';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import styles from './registry.scss';
 
@@ -201,7 +202,7 @@ function RegistryTable() {
       render: (row) => [text('age_years')(row), text('sex')(row)].filter(Boolean).join(' '),
     },
     { header: t('diagnosis', 'Diagnosis'), render: diagnosis },
-    { header: t('prophylaxis', 'Prophylaxis'), render: text('prophylaxis_regimen') },
+    { header: t('prophylaxis', 'Prophylaxis'), sortKey: 'prophylaxis', render: text('prophylaxis_regimen') },
     ...(registry.showBpgColumns
       ? [
           {
@@ -316,12 +317,7 @@ function RegistryTable() {
                 <TableExpandHeader aria-label={t('details', 'Details')} />
                 {columns.map((column) =>
                   column.sortKey ? (
-                    <TableHeader
-                      key={column.header}
-                      isSortable
-                      sortDirection={sort?.key === column.sortKey ? sort.direction : 'NONE'}
-                      onClick={() => setSort(nextSort(sort, column.sortKey))}
-                    >
+                    <TableHeader key={column.header} {...sortHeaderProps(sort, column.sortKey, setSort)}>
                       {column.header}
                     </TableHeader>
                   ) : (

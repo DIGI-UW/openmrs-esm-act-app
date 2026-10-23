@@ -123,7 +123,8 @@ describe('Reports', () => {
     renderPage();
 
     await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
-    expect(tile('Due this week')).toHaveTextContent('4');
+    expect(tile('Prophylaxis due this week')).toHaveTextContent('4');
+    expect(tile('Prophylaxis due this week')).toHaveTextContent('Next dose due within 7 days');
     expect(tile('Overdue')).toHaveTextContent('6');
     // 9 of 12 timed injections on time.
     expect(tile('BPG on-time rate')).toHaveTextContent(`75%${dayjs().format('MMM YYYY')}`);
@@ -288,6 +289,16 @@ describe('Reports', () => {
     expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
     expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('says what a facility row is: a primary care clinic, with its patients, adherence and data status', async () => {
+    await atLocation(['RHD Tertiary']);
+
+    renderPage();
+
+    expect(
+      await screen.findByText(/Each patient's primary care clinic: active patients, mean adherence and data status/),
+    ).toBeInTheDocument();
   });
 
   it('lists each facility with its active patients, adherence and data tag', async () => {
