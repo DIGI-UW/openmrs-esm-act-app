@@ -10,6 +10,7 @@ import {
   Pills,
   Stethoscope,
   UserFollow,
+  UserMultiple,
 } from '@carbon/react/icons';
 import { useSWRConfig } from 'swr';
 import { CardHeader, showSnackbar, useConfig, usePatient, useSession, userHasAccess } from '@openmrs/esm-framework';
@@ -32,6 +33,7 @@ const icons = {
   procedures: Hospital,
   inr: Chemistry,
   refer: UserFollow,
+  pregnancy: UserMultiple,
 };
 
 function useActionLabel() {

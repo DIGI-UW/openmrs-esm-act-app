@@ -399,6 +399,28 @@ describe('NextStepsCard', () => {
     );
   });
 
+  it('lists a pregnancy step from the delivery outcome flag with its own icon and the default action', async () => {
+    const pregnancyForm = 'f3bfa5d3-5bfd-3c82-9c71-dbe3bc01e8e4';
+    steps = [
+      {
+        key: 'pregnancy',
+        form: pregnancyForm,
+        title: 'Pregnancy',
+        reason: 'Delivery outcome due',
+        isNew: false,
+        done: false,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Pregnancy');
+    expect(rows().map((row) => row.textContent)).toEqual(['PregnancyDelivery outcome dueStart']);
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }));
+    expect(openForm).toHaveBeenCalledWith(pregnancyForm);
+  });
+
   it('shows nothing when turned off', async () => {
     vi.mocked(useConfig<Config>).mockReturnValue({
       ...(getDefaultsFromConfigSchema(configSchema) as Config),
