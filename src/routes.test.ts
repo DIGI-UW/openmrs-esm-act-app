@@ -3,6 +3,7 @@ import { evaluate } from '@openmrs/esm-expression-evaluator';
 import routeFile from './routes.json';
 import {
   PRIVILEGE_ACT_HOME,
+  PRIVILEGE_DASHBOARD,
   PRIVILEGE_DUE_LIST,
   PRIVILEGE_COMMUNITY_HOME,
   PRIVILEGE_DATA_CLERK,
@@ -26,6 +27,7 @@ const screenPrivileges = {
   dataClerk: PRIVILEGE_DATA_CLERK,
   communityHome: PRIVILEGE_COMMUNITY_HOME,
   reports: PRIVILEGE_REPORTS,
+  dashboard: PRIVILEGE_DASHBOARD,
   instanceAdmin: PRIVILEGE_INSTANCE_ADMIN,
 };
 
@@ -72,6 +74,8 @@ describe('routes.json privileges', () => {
     ['act-back-to-act-link', 'Get Patients'],
     ['act-reports-dashboard-link', screenPrivileges.reports],
     ['act-reports-dashboard', screenPrivileges.reports],
+    ['act-dashboard-link', screenPrivileges.dashboard],
+    ['act-dashboard', screenPrivileges.dashboard],
     ['act-facility-reports-dashboard-link', screenPrivileges.dataClerk],
     ['act-facility-reports-dashboard', screenPrivileges.dataClerk],
     ['act-instance-admin-dashboard-link', screenPrivileges.instanceAdmin],

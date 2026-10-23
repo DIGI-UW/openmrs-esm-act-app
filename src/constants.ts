@@ -10,6 +10,7 @@ export const PRIVILEGE_INSTANCE_ADMIN = 'App: act.instanceAdmin';
 export const PRIVILEGE_COMMUNITY_HOME = 'App: act.communityHome';
 export const PRIVILEGE_STATUS_FLAGS = 'App: act.statusFlags';
 export const PRIVILEGE_REPORTS = 'App: act.reports';
+export const PRIVILEGE_DASHBOARD = 'App: act.dashboard';
 export const PRIVILEGE_EXPORT_LISTS = 'Task: act.lists.export';
 export const PRIVILEGE_REFRESH_FLAGS = 'Task: act.refreshFlags';
 export const PRIVILEGE_STUDIES = 'App: act.studies';

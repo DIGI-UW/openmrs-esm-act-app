@@ -107,3 +107,8 @@ export function waitlistCounts(rows: Array<ReportRow>) {
   }));
   return { urgencies, rows: cells, total: rows.length };
 }
+
+export const share = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : 0);
+
+export const cascadeShares = (steps: Array<Count>) =>
+  steps.map((step, index) => ({ ...step, share: index ? share(step.value, steps[index - 1].value) : null }));

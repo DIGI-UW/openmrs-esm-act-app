@@ -249,13 +249,13 @@
         "slot": "act-dashboard-slot",
         "title": "dashboard"
       },
-      "privileges": "App: act.reports"
+      "privileges": "App: act.dashboard"
     },
     {
       "name": "act-dashboard",
       "slot": "act-dashboard-slot",
       "component": "dashboard",
-      "privileges": "App: act.reports"
+      "privileges": "App: act.dashboard"
     },
     {
       "name": "act-reports-dashboard-link",

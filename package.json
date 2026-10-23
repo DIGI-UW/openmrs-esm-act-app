@@ -41,6 +41,7 @@
     "url": "https://github.com/DIGI-UW/openmrs-esm-act-app/issues"
   },
   "dependencies": {
+    "@carbon/charts-react": "1.27.22",
     "@carbon/react": "^1.83.0",
     "@zxing/browser": "0.2.1",
     "@zxing/library": "0.23.0",
