@@ -21,6 +21,7 @@ import { FacilityPictogram, isDesktop, useConfig, useLayoutType, useSession } fr
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { CareCascadeCard } from '../act-home/care-cascade.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
+import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -147,6 +148,9 @@ export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; i
   );
 }
 
+/** A value no location uuid takes, for the cascade of a limited administrator whose account holds no clinic. */
+const NO_CLINIC = 'none';
+
 function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   const { t } = useTranslation();
   const { programmeReport } = useConfig<Config>();
@@ -168,6 +172,15 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
     [period, scope],
   );
   const { rows, isLoading, error } = useReportDataset(scope ? programmeReport.report : null, params);
+  const limit = useClinicLimit();
+  // The cascade rows name no clinic, so a limited administrator's clinics go to the report.
+  const cascadeScope = useMemo(() => {
+    if (!scope || limit.status === 'pending') {
+      return null;
+    }
+    const atOneClinic = scope.cardiacClinic || scope.primaryCareClinic;
+    return limit.status === 'none' || atOneClinic ? scope : { ...scope, clinics: limit.uuids.join(',') || NO_CLINIC };
+  }, [scope, limit]);
 
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
@@ -239,7 +252,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
             ))}
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
-          <CareCascadeCard scope={scope ?? null} />
+          {clinicFilters && <CareCascadeCard scope={cascadeScope} />}
         </>
       )}
     </>

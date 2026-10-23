@@ -11,7 +11,7 @@ import { ActHomeCard } from './act-home-card.component';
 import styles from './care-cascade.scss';
 
 /**
- * The care cascade as of today at one clinic scope, the report's clinic parameters; `null` while the scope is not
+ * The care cascade as of today at one clinic scope, the report's clinic parameters (clinics, for a limited administrator); `null` while the scope is not
  * known, when nothing is evaluated. ACT home and Reports draw it alike, so they count alike.
  */
 export function CareCascadeCard({
@@ -29,14 +29,15 @@ export function CareCascadeCard({
   const { careCascade } = useConfig<Config>();
   // Send a plain date: the server runs on UTC, so a local-midnight timestamp east of UTC lands on yesterday.
   const today = useMemo(() => dayjs().startOf('day'), []);
-  const { cardiacClinic, primaryCareClinic } = scope ?? {};
+  const { cardiacClinic, primaryCareClinic, clinics } = scope ?? {};
   const params = useMemo(
     () => ({
       endDate: today.format('YYYY-MM-DD'),
       ...(cardiacClinic && { cardiacClinic }),
       ...(primaryCareClinic && { primaryCareClinic }),
+      ...(clinics && { clinics }),
     }),
-    [today, cardiacClinic, primaryCareClinic],
+    [today, cardiacClinic, primaryCareClinic, clinics],
   );
   const report = useReportDataset(scope ? careCascade.report : null, params);
   const { rows } = report;

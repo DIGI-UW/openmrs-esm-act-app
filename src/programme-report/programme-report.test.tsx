@@ -7,12 +7,14 @@ import { SWRConfig, useSWRConfig } from 'swr';
 import { DashboardExtension, getDefaultsFromConfigSchema, openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { type ClinicLimit, useClinicLimit } from '../clinic-limit';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Reports from './reports.component';
 import FacilityReports from './facility-reports.component';
 import FacilityReportsDashboardLink from './facility-reports-dashboard-link.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+vi.mock('../clinic-limit', () => ({ useClinicLimit: vi.fn() }));
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   DashboardExtension: vi.fn(() => null),
@@ -101,6 +103,7 @@ function renderPage(Page: React.ComponentType = Reports) {
   );
 }
 
+const limitTo = (limit: ClinicLimit) => vi.mocked(useClinicLimit).mockReturnValue(limit);
 const reportCalls = (report: string) => vi.mocked(useReportDataset).mock.calls.filter(([uuid]) => uuid === report);
 const programmeUuid = () => (getDefaultsFromConfigSchema(configSchema) as Config).programmeReport.report;
 const cascadeUuid = () => (getDefaultsFromConfigSchema(configSchema) as Config).careCascade.report;
@@ -111,6 +114,7 @@ describe('Reports', () => {
   beforeEach(() => {
     vi.mocked(useReportDataset).mockReset();
     dataset();
+    limitTo({ status: 'none' });
   });
 
   it("totals the facilities' rows in the tiles, the on-time rate over the period's timed injections", async () => {
@@ -167,12 +171,72 @@ describe('Reports', () => {
     expect(screen.queryByRole('link', { name: /Report/ })).not.toBeInTheDocument();
   });
 
-  it('draws the care cascade on Facility reports too', async () => {
+  it('leaves the care cascade off Facility reports', async () => {
     await atLocation(['RHD Community'], ['App: act.reports']);
 
     renderPage(FacilityReports);
 
-    expect(await screen.findAllByTestId('cascade-step')).toHaveLength(5);
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it("holds the care cascade to a limited administrator's clinics when the page is at every clinic", async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'ready', uuids: ['gulu', 'acimi'], names: ['Gulu RRH', 'Acimi HCIII'] });
+
+    renderPage();
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      clinics: 'gulu,acimi',
+    });
+  });
+
+  it('sends no clinics to the care cascade for a user who is not limited', async () => {
+    await atLocation(['Visit Location']);
+
+    renderPage();
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({ endDate: dayjs().format('YYYY-MM-DD') });
+  });
+
+  it('keeps the clinic the care cascade is for, for a limited administrator', async () => {
+    await atLocation(['RHD Community']);
+    limitTo({ status: 'ready', uuids: ['session-location'], names: ['Gulu RRH'] });
+
+    renderPage();
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      primaryCareClinic: 'session-location',
+    });
+  });
+
+  it('counts the care cascade for no clinic when a limited administrator has none', async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'ready', uuids: [], names: [] });
+
+    renderPage();
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      clinics: 'none',
+    });
+  });
+
+  it('waits for the limit before evaluating the care cascade', async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'pending' });
+
+    renderPage();
+
+    expect(await screen.findByTestId('cascade-loading')).toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 
   it('lists each facility with its active patients, adherence and data tag', async () => {
