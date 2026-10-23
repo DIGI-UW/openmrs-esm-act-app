@@ -342,6 +342,24 @@ export const configSchema = {
         'The RHD Screening Diagnoses report, by uuid or name: the diagnosis categories and RHD details of the screen-detected, for the Dashboard.',
     },
   },
+  procedures: {
+    encounterType: {
+      _type: Type.UUID,
+      _default: 'c9b87090-8768-50be-987e-8ca0a8983429',
+      _description:
+        "Procedures and Outcomes' encounter type. A procedure recorded there completes the matching interventional recommendation (AR-162).",
+    },
+    concepts: {
+      _type: Type.Object,
+      _default: {
+        date: '6cbb5176-144a-576b-9b3d-c9e9d6bc5f5a',
+        surgeryType: '46f4af80-b783-59f4-beb1-81144ccf3084',
+        catheterizationType: 'bb4a77ee-836a-57e7-a262-632fa22288d2',
+      },
+      _description:
+        "Procedures and Outcomes' Date of Procedure, Surgery Type and Catheterization Type. The two types' answers are the consultation's Interventional Recommendation(s) answers, so a recorded procedure matches its recommendation.",
+    },
+  },
   consultations: {
     encounterType: {
       _type: Type.UUID,
@@ -763,6 +781,10 @@ export interface Config {
     medicalOptimisationReport: string;
     screeningCascadeReport: string;
     screeningDiagnosesReport: string;
+  };
+  procedures: {
+    encounterType: string;
+    concepts: Record<'date' | 'surgeryType' | 'catheterizationType', string>;
   };
   consultations: {
     encounterType: string;
