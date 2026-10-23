@@ -497,7 +497,7 @@ function Figures({
                 <span className={styles.count}>
                   <CountLink
                     value={measure.done}
-                    onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, done: 'done' })}
+                    onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, outcome: 'done' })}
                   />
                   {measure.notDone !== null && (
                     <>
@@ -505,7 +505,7 @@ function Figures({
                       {t('doneComma', 'done,')}{' '}
                       <CountLink
                         value={measure.notDone}
-                        onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, done: 'notDone' })}
+                        onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' })}
                       />{' '}
                       {t('notDoneOf', 'not done, of {{total}}', { total: measure.done + measure.notDone })}
                     </>

@@ -850,7 +850,7 @@ describe('Dashboard', () => {
           /^Opened from the Dashboard: Medical optimisation, Consultations in the last year, 2 consultations/,
         ),
       ).toBeInTheDocument();
-      expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual({ endDate: today, measure: 'consultations', done: 'done' });
+      expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual({ endDate: today, measure: 'consultations', outcome: 'done' });
     });
 
     it('opens the recommendations of a waitlist procedure and the patients behind the waiting tile', async () => {

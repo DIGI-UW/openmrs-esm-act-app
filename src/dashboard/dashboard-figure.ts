@@ -5,8 +5,20 @@ import { type Config } from '../config-schema';
 
 export type Section = 'registrants' | 'waitlist' | 'cascade' | 'optimisation';
 
-/** The URL keys that name a figure: its section, then the patients report's own parameters. */
-export const figureKeys = ['figure', 'breakdown', 'label', 'procedure', 'urgency', 'step', 'measure', 'done'] as const;
+/**
+ * The URL keys that name a figure: its section, then the patients report's own parameters. None may take a value equal
+ * to its name, which reportingrest drops (done=done arrives as null), so the done or not done key is outcome.
+ */
+export const figureKeys = [
+  'figure',
+  'breakdown',
+  'label',
+  'procedure',
+  'urgency',
+  'step',
+  'measure',
+  'outcome',
+] as const;
 
 export type Figure = { figure: Section } & Partial<Record<Exclude<(typeof figureKeys)[number], 'figure'>, string>>;
 
@@ -83,7 +95,7 @@ export function figureNames(t: TFunction, figure: Figure) {
     case 'optimisation':
       return {
         section: t('medicalOptimisation', 'Medical optimisation'),
-        label: [measureLabel(t, figure.measure), figure.done === 'notDone' ? t('notDone', 'Not done') : undefined]
+        label: [measureLabel(t, figure.measure), figure.outcome === 'notDone' ? t('notDone', 'Not done') : undefined]
           .filter(Boolean)
           .join(', '),
       };
