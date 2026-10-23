@@ -626,5 +626,7 @@
   "wouldLikeToBeConsidered": "Would the patient like to be considered for research?",
   "yes": "Yes",
   "recordDiagnosis": "Record diagnosis",
-  "updateDiagnosis": "Update diagnosis"
+  "updateDiagnosis": "Update diagnosis",
+  "adherenceTwelveMonths": "Adherence (12 months)",
+  "onTimeCountMonths": "{{given}} of {{total}} on time, {{months}} months"
 }
