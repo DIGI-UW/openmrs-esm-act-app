@@ -600,13 +600,12 @@ const screenOrder = ['Yes', 'No', 'Not recorded'];
 const registrationAgeOrder = ['Children 0-9', 'Adolescents 10-19', 'Adults 20+', 'Age unknown'];
 const detectionOrder = ['School', 'Community', 'Health facility', 'Other', 'Not recorded'];
 
-/** The rows of a breakdown in the order given, leaving out the labels the report does not return. */
+/** The rows of a breakdown in the order given, a label the order does not name last. */
 const inOrder = (rows: Array<ReportRow>, breakdown: string, order: Array<string>): Array<Count> =>
-  order.flatMap((label) =>
-    rows
-      .filter((row) => row.breakdown === breakdown && row.label === label)
-      .map((row) => ({ label, value: Number(row.patients ?? 0) })),
-  );
+  rows
+    .filter((row) => row.breakdown === breakdown)
+    .map((row) => ({ label: String(row.label), value: Number(row.patients ?? 0) }))
+    .sort((a, b) => (order.indexOf(a.label) + 1 || 99) - (order.indexOf(b.label) + 1 || 99));
 
 /** The screening figures the registry can give until screening counts are decided (#184), for a registration period. */
 function ScreeningFromRegistrations({
@@ -624,7 +623,8 @@ function ScreeningFromRegistrations({
   const { dashboard } = useConfig<Config>();
   const [chosen, setChosen] = useState<{ start?: string; end?: string }>({});
   const end = chosen.end ?? asOf;
-  const start = chosen.start ?? dayjs(end).subtract(364, 'day').format('YYYY-MM-DD');
+  const start =
+    chosen.start && chosen.start <= end ? chosen.start : dayjs(end).subtract(364, 'day').format('YYYY-MM-DD');
   const params = useMemo(() => ({ startDate: start, endDate: end, ...scope }), [start, end, scope]);
   const { counted, countParams, pending } = useCountParams(params);
   const report = useReportDataset(counted ? dashboard.screeningReport : null, countParams);
@@ -705,7 +705,7 @@ function ScreeningFromRegistrations({
           <CountsDonut
             name={t('caseDetectedBy', 'Case detected by')}
             counts={inOrder(rows, 'detected', detectionOrder)}
-            centre={t('registered', 'Registered').toLowerCase()}
+            centre={t('registeredCentre', 'registered')}
             testId="dashboard-detected"
           />
         </div>

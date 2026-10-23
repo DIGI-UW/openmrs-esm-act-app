@@ -1135,6 +1135,46 @@ describe('Dashboard', () => {
       expect(texts('dashboard-detected')).toEqual(['School2', 'Community1', 'Other1', 'Not recorded1']);
     });
 
+    it('shows a label the report adds after the ones it knows, so the bars still sum to the registered', async () => {
+      const t = vi.spyOn(useTranslation(), 't');
+      await signIn(undefined, {
+        [SCREENING_REGISTRATIONS]: [
+          { breakdown: 'detected', label: 'Teacher referral', patients: 1 },
+          ...screeningRows,
+        ],
+      });
+      renderPage();
+
+      await screen.findByText('Screening, from registrations');
+      expect(texts('dashboard-detected')).toEqual([
+        'School2',
+        'Community1',
+        'Other1',
+        'Not recorded1',
+        'Teacher referral1',
+      ]);
+      expect(t).toHaveBeenCalledWith('registeredCentre', 'registered');
+      t.mockRestore();
+    });
+
+    it('counts the year to the date again when the date moves before the start chosen', async () => {
+      await signIn();
+      renderPage();
+      await screen.findByText('Screening, from registrations');
+
+      fireEvent.change(screen.getByLabelText('Registered from'), { target: { value: '2026-01-01' } });
+      await vi.waitFor(() => expect(paramsOf(SCREENING_REGISTRATIONS)?.startDate).toBe('2026-01-01'));
+      fireEvent.change(screen.getByLabelText('Figures as of'), { target: { value: '2025-12-01' } });
+
+      await vi.waitFor(() =>
+        expect(paramsOf(SCREENING_REGISTRATIONS)).toEqual({ startDate: '2024-12-02', endDate: '2025-12-01' }),
+      );
+      fireEvent.change(screen.getByLabelText('Registered from'), { target: { value: '2025-12-01' } });
+      await vi.waitFor(() =>
+        expect(paramsOf(SCREENING_REGISTRATIONS)).toEqual({ startDate: '2025-12-01', endDate: '2025-12-01' }),
+      );
+    });
+
     it('keeps the period to change when it counts nobody', async () => {
       await signIn();
       renderPage();

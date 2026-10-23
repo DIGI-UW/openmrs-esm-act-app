@@ -531,6 +531,7 @@
   "refreshNow": "Refresh now",
   "registered": "Registered",
   "registeredAPatient": "Registered a patient",
+  "registeredCentre": "registered",
   "registeredFrom": "Registered from",
   "registeredTarget": ", {{target}}",
   "registeredTo": "Registered to",
