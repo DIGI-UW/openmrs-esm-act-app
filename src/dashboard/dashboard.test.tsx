@@ -1135,6 +1135,18 @@ describe('Dashboard', () => {
       expect(texts('dashboard-detected')).toEqual(['School2', 'Community1', 'Other1', 'Not recorded1']);
     });
 
+    it('keeps the period to change when it counts nobody', async () => {
+      await signIn();
+      renderPage();
+      await screen.findByText('Screening, from registrations');
+
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+
+      await vi.waitFor(() => expect(screen.queryAllByTestId('dashboard-registration-tile')).toHaveLength(0));
+      expect(screen.getByLabelText('Registered from')).toBeInTheDocument();
+      expect(screen.getByLabelText('Registered to')).toBeInTheDocument();
+    });
+
     it('evaluates the period chosen and the clinics chosen', async () => {
       await signIn();
       renderPage();

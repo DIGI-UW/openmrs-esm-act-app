@@ -86,6 +86,7 @@ function Section({
   clinic,
   onShowAll,
   wide,
+  controls,
   children,
 }: {
   title: string;
@@ -96,6 +97,8 @@ function Section({
   clinic: string | null;
   onShowAll: () => void;
   wide?: boolean;
+  /** Shown whatever the state, so a period that counts nobody can still be changed. */
+  controls?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
@@ -103,6 +106,7 @@ function Section({
     <div className={wide ? styles.wide : undefined}>
       <ActHomeCard title={title}>
         {description && <p className={styles.description}>{description}</p>}
+        {controls}
         {state.error ? (
           <div className={styles.state}>
             <InlineNotification
@@ -645,34 +649,38 @@ function ScreeningFromRegistrations({
       clinic={clinic}
       onShowAll={onShowAll}
       wide
+      controls={
+        <div className={styles.registrationControls}>
+          <InlineNotification
+            kind="info"
+            lowContrast
+            hideCloseButton
+            title={t(
+              'registrationsNotScreening',
+              'Counts registered patients, not people screened: a screen-negative child is never registered.',
+            )}
+          />
+          <div className={styles.filters}>
+            <OpenmrsDatePicker
+              id="dashboard-registered-from"
+              labelText={t('registeredFrom', 'Registered from')}
+              value={dayjs(start).toDate()}
+              minDate={dayjs(earliestAsOf).toDate()}
+              maxDate={dayjs(end).toDate()}
+              onChange={pickDate('start')}
+            />
+            <OpenmrsDatePicker
+              id="dashboard-registered-to"
+              labelText={t('registeredTo', 'Registered to')}
+              value={dayjs(end).toDate()}
+              minDate={dayjs(start).toDate()}
+              maxDate={new Date()}
+              onChange={pickDate('end')}
+            />
+          </div>
+        </div>
+      }
     >
-      <InlineNotification
-        kind="info"
-        lowContrast
-        hideCloseButton
-        title={t(
-          'registrationsNotScreening',
-          'Counts registered patients, not people screened: a screen-negative child is never registered.',
-        )}
-      />
-      <div className={styles.filters}>
-        <OpenmrsDatePicker
-          id="dashboard-registered-from"
-          labelText={t('registeredFrom', 'Registered from')}
-          value={dayjs(start).toDate()}
-          minDate={dayjs(earliestAsOf).toDate()}
-          maxDate={dayjs(end).toDate()}
-          onChange={pickDate('start')}
-        />
-        <OpenmrsDatePicker
-          id="dashboard-registered-to"
-          labelText={t('registeredTo', 'Registered to')}
-          value={dayjs(end).toDate()}
-          minDate={dayjs(start).toDate()}
-          maxDate={new Date()}
-          onChange={pickDate('end')}
-        />
-      </div>
       <div className={styles.columns}>
         <div className={styles.registrationTiles}>
           <Tile className={styles.tile} data-testid="dashboard-registration-tile">

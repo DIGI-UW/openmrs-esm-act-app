@@ -122,6 +122,12 @@
   gap: layout.$spacing-07;
 }
 
+.registrationControls {
+  display: grid;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+}
+
 .registrationTiles {
   display: grid;
   gap: layout.$spacing-05;
