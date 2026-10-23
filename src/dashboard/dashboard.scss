@@ -168,6 +168,12 @@
   text-align: right;
 }
 
+// Carbon draws a link inline-flex, which breaks a sentence at each figure it holds.
+.count :global(.cds--link),
+.performed :global(.cds--link) {
+  display: inline;
+}
+
 .tableContainer {
   overflow-x: auto;
 }
