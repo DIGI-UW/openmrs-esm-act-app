@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { Link } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { useLayoutType } from '@openmrs/esm-framework';
 import { DonutChart, ScaleTypes, SimpleBarChart, StackedBarChart, TruncationTypes } from '@carbon/charts-react';
@@ -29,6 +30,24 @@ function useStable<T>(value: T): T {
 // Carbon cuts a long label short by default, and names sharing a prefix then read the same.
 const whole = { type: TruncationTypes.NONE };
 
+/** A count that opens the patients behind it, when it can. */
+export function CountLink({ value, onOpen }: { value: number | string; onOpen?: () => void }) {
+  if (!onOpen) {
+    return <>{value}</>;
+  }
+  return (
+    <Link
+      href="#"
+      onClick={(event) => {
+        event.preventDefault();
+        onOpen();
+      }}
+    >
+      {value}
+    </Link>
+  );
+}
+
 const base = (name: string, height: string) => ({
   accessibility: { svgAriaLabel: name },
   height,
@@ -42,12 +61,14 @@ export function CountsDonut({
   centre,
   testId,
   withShare,
+  onOpen,
 }: {
   name: string;
   counts: Array<Count>;
   centre: string;
   testId: string;
   withShare?: boolean;
+  onOpen?: (label: string) => void;
 }) {
   const { t } = useTranslation();
   const scale = scaleOf(counts.map(({ label }) => label));
@@ -73,7 +94,9 @@ export function CountsDonut({
           <li key={label} className={styles.legendRow} data-testid={testId}>
             <span className={styles.swatch} style={{ backgroundColor: scale[label] }} aria-hidden="true" />
             <span>{label}</span>
-            <span className={styles.count}>{value}</span>
+            <span className={styles.count}>
+              <CountLink value={value} onOpen={onOpen && (() => onOpen(label))} />
+            </span>
             {withShare && <span className={styles.share}>{share(value, total)}%</span>}
           </li>
         ))}
@@ -87,11 +110,13 @@ export function CascadeBars({
   steps,
   testId,
   shareOf,
+  onOpen,
 }: {
   name: string;
   steps: Array<Count>;
   testId: string;
   shareOf?: Record<string, string>;
+  onOpen?: (label: string) => void;
 }) {
   const data = useStable(steps.map(({ label, value }) => ({ group: label, value })));
   const options = useStable({
@@ -117,7 +142,9 @@ export function CascadeBars({
         {cascadeShares(steps, shareOf).map((step) => (
           <li key={step.label} className={styles.step} data-testid={testId}>
             <span>{step.label}</span>
-            <span className={styles.count}>{step.value}</span>
+            <span className={styles.count}>
+              <CountLink value={step.value} onOpen={onOpen && (() => onOpen(step.label))} />
+            </span>
             {step.share !== null && <span className={styles.share}>{step.share}%</span>}
           </li>
         ))}

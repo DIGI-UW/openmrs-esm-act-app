@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,18 +19,20 @@ import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
-import { useClinicLimit } from '../clinic-limit';
 import { useClinics } from '../programme-report/clinics.resource';
 import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
-import { CascadeBars, CountsDonut, StackedBars } from './dashboard-charts.component';
+import { useUrlFilters } from '../table-filters/url-filters';
+import { CascadeBars, CountLink, CountsDonut, StackedBars } from './dashboard-charts.component';
+import { type Figure, figureKeys, measureLabel, useCountParams } from './dashboard-figure';
+import { DashboardFigure } from './dashboard-figure.component';
 import { type Count, registrantCounts, share, waitlistCounts } from './dashboard-counts';
 import styles from './dashboard.scss';
 
 type Scope = Record<string, string>;
 
-function Bars({ counts, testId }: { counts: Array<Count>; testId: string }) {
+function Bars({ counts, testId, onOpen }: { counts: Array<Count>; testId: string; onOpen?: (label: string) => void }) {
   const { t } = useTranslation();
   if (!counts.length) {
     return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
@@ -44,7 +46,9 @@ function Bars({ counts, testId }: { counts: Array<Count>; testId: string }) {
           <span className={styles.track}>
             <span className={styles.fill} style={{ width: `${share(count.value, largest)}%` }} />
           </span>
-          <span className={styles.count}>{count.value}</span>
+          <span className={styles.count}>
+            <CountLink value={count.value} onOpen={onOpen && (() => onOpen(count.label))} />
+          </span>
         </div>
       ))}
     </div>
@@ -125,12 +129,14 @@ function FigureTile({
   note,
   isLoading,
   error,
+  onOpen,
 }: {
   label: string;
   value: number | null;
   note: string;
   isLoading: boolean;
   error?: Error;
+  onOpen?: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -141,7 +147,9 @@ function FigureTile({
           <SkeletonText heading width="4rem" />
         ) : (
           <>
-            <span className={styles.tileValue}>{error || value === null ? '–' : value}</span>
+            <span className={styles.tileValue}>
+              {error || value === null ? '–' : <CountLink value={value} onOpen={onOpen} />}
+            </span>
             <span className={styles.tileNote}>
               {error ? t('couldNotLoad', 'could not load') : value === null ? t('notReported', 'not reported') : note}
             </span>
@@ -182,29 +190,32 @@ const adherentSteps = ['Adherent (80%+)', 'Adherent'];
 const stepsCountedToday = ['Covered today', ...adherentSteps];
 const earliestAsOf = '1900-01-01';
 
-function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onShowAll: () => void }) {
+function Figures({
+  scope,
+  asOf,
+  onShowAll,
+  onOpen,
+}: {
+  scope: Scope;
+  asOf: string;
+  onShowAll: () => void;
+  onOpen: (figure: Figure) => void;
+}) {
   const { t } = useTranslation();
   const { careCascade, dashboard } = useConfig<Config>();
   const params = useMemo(() => ({ endDate: asOf, ...scope }), [asOf, scope]);
   const clinics = useClinicNames(scope);
   const clinic = [clinics.cardiac, clinics.primaryCare].filter(Boolean).join(', ') || null;
 
-  // A limited site administrator counts only its own clinics, and nobody while they load or with none.
-  const limit = useClinicLimit();
-  const limitedTo = limit.status === 'ready' ? limit.uuids : null;
-  const counted = limit.status === 'none' || Boolean(limitedTo?.length);
-  const countParams = useMemo(
-    () => (limitedTo?.length ? { ...params, clinics: limitedTo.join(',') } : params),
-    [params, limitedTo],
-  );
+  const { counted, countParams, pending } = useCountParams(params);
   const whileLimitRead = (report: ReturnType<typeof useReportDataset>) => ({
     ...report,
-    isLoading: report.isLoading || limit.status === 'pending',
+    isLoading: report.isLoading || pending,
   });
   const registrantsReport = whileLimitRead(useReportDataset(counted ? dashboard.registrantsReport : null, countParams));
   const registrants = useMemo(() => registrantCounts(registrantsReport.rows), [registrantsReport.rows]);
 
-  const cascadeReport = useReportDataset(careCascade.report, params);
+  const cascadeReport = whileLimitRead(useReportDataset(counted ? careCascade.report : null, countParams));
   const isPast = asOf < dayjs().format('YYYY-MM-DD');
   const { cascade, leftOutToday } = useMemo(() => {
     const steps = cascadeSteps(cascadeReport.rows, careCascade.steps);
@@ -222,22 +233,16 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const phone = useLayoutType() === 'phone';
   const [waitlistAsTable, setWaitlistAsTable] = useState(phone);
 
-  const optimisationReport = useReportDataset(dashboard.medicalOptimisationReport, params);
+  const optimisationReport = whileLimitRead(
+    useReportDataset(counted ? dashboard.medicalOptimisationReport : null, countParams),
+  );
   const screeningReport = useReportDataset(dashboard.screeningCascadeReport, params);
   const diagnosesReport = useReportDataset(dashboard.screeningDiagnosesReport, params);
 
-  const measureLabels: Record<string, string> = {
-    consultations: t('consultationsLastYear', 'Consultations in the last year'),
-    echocardiogram: t('echoLast13Months', 'Echocardiogram in the last 13 months'),
-    retainedInCare: t('retainedInCare', 'Retained in care (seen in the last 7 months)'),
-    interventionAssigned: t('interventionAssigned', 'Intervention assigned'),
-    interventions: t('interventionsCompleted', 'Interventions completed'),
-    warfarin: t('inrLast90Days', 'On warfarin, with an INR in the last 90 days'),
-  };
   const measures = optimisationReport.rows.map((row: ReportRow) => {
     const done = Number(row.done ?? 0);
     const notDone = row.not_done === null || row.not_done === undefined ? null : Number(row.not_done);
-    return { label: measureLabels[String(row.measure)] ?? String(row.measure), done, notDone };
+    return { measure: String(row.measure), label: measureLabel(t, String(row.measure)), done, notDone };
   });
 
   const screening = screeningReport.rows.map((row) => ({ label: String(row.step), value: Number(row.patients ?? 0) }));
@@ -256,6 +261,11 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const activeRhd = stepCount('Active');
   const prescribed = stepCount('Prescribed', 'Prescribed Prophylaxis');
   const section = { clinic, onShowAll };
+  const prescribedStep = cascadeReport.rows.find((row) =>
+    ['Prescribed', 'Prescribed Prophylaxis'].includes(String(row.step)),
+  );
+  const stepOfLabel = (label: string) => cascade.find((step) => step.label === label)?.step;
+  const registrantsBy = (breakdown: string) => (label: string) => onOpen({ figure: 'registrants', breakdown, label });
 
   return (
     <>
@@ -266,6 +276,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           note={t('everyStatus', 'every status')}
           isLoading={registrantsReport.isLoading}
           error={registrantsReport.error}
+          onOpen={() => onOpen({ figure: 'registrants', breakdown: 'registered' })}
         />
         <FigureTile
           label={t('active', 'Active')}
@@ -273,6 +284,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           note={t('enrolledAndAlive', 'enrolled and alive')}
           isLoading={registrantsReport.isLoading}
           error={registrantsReport.error}
+          onOpen={() => onOpen({ figure: 'registrants', breakdown: 'active' })}
         />
         <FigureTile
           label={t('onSecondaryProphylaxis', 'On secondary prophylaxis')}
@@ -284,6 +296,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           }
           isLoading={cascadeReport.isLoading}
           error={cascadeReport.error}
+          onOpen={prescribedStep && (() => onOpen({ figure: 'cascade', step: String(prescribedStep.step) }))}
         />
         <FigureTile
           label={t('waitingForAProcedure', 'Waiting for a procedure')}
@@ -291,6 +304,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           note={t('openRecommendations', '{{count}} open recommendations', { count: waitlist.total })}
           isLoading={waitlistReport.isLoading}
           error={waitlistReport.error}
+          onOpen={() => onOpen({ figure: 'waitlist', breakdown: 'total' })}
         />
       </div>
       <div className={styles.grid}>
@@ -308,6 +322,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             centre={t('registrants', 'registrants')}
             testId="dashboard-status"
             withShare
+            onOpen={registrantsBy('status')}
           />
         </Section>
         <Section
@@ -331,6 +346,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             steps={cascade}
             shareOf={adherentShare}
             testId="dashboard-cascade-step"
+            onOpen={(label) => onOpen({ figure: 'cascade', step: stepOfLabel(label) })}
           />
         </Section>
         <Section
@@ -344,15 +360,15 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           <div className={styles.columns}>
             <div>
               <h4 className={styles.subheading}>{t('sex', 'Sex')}</h4>
-              <Bars counts={registrants.sex} testId="dashboard-sex" />
+              <Bars counts={registrants.sex} testId="dashboard-sex" onOpen={registrantsBy('sex')} />
             </div>
             <div>
               <h4 className={styles.subheading}>{t('age', 'Age')}</h4>
-              <Bars counts={registrants.age} testId="dashboard-age" />
+              <Bars counts={registrants.age} testId="dashboard-age" onOpen={registrantsBy('age')} />
             </div>
             <div>
               <h4 className={styles.subheading}>{t('diseaseCategory', 'Disease category')}</h4>
-              <Bars counts={registrants.category} testId="dashboard-category" />
+              <Bars counts={registrants.category} testId="dashboard-category" onOpen={registrantsBy('disease')} />
             </div>
           </div>
         </Section>
@@ -384,7 +400,22 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                     <TableRow key={row.procedure} data-testid="dashboard-waitlist-row">
                       <TableCell>{row.procedure}</TableCell>
                       {row.counts.map((count, index) => (
-                        <TableCell key={waitlist.urgencies[index]}>{count}</TableCell>
+                        <TableCell key={waitlist.urgencies[index]}>
+                          <CountLink
+                            value={count}
+                            onOpen={
+                              count
+                                ? () =>
+                                    onOpen({
+                                      figure: 'waitlist',
+                                      breakdown: 'open',
+                                      procedure: row.procedure,
+                                      urgency: waitlist.urgencies[index],
+                                    })
+                                : undefined
+                            }
+                          />
+                        </TableCell>
                       ))}
                     </TableRow>
                   ))}
@@ -408,18 +439,31 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                 {waitlist.rows.map((row) => (
                   <li key={row.procedure} className={styles.legendRow} data-testid="dashboard-waitlist-total">
                     <span>{row.procedure}</span>
-                    <span className={styles.count}>{row.counts.reduce((sum, count) => sum + count, 0)}</span>
+                    <span className={styles.count}>
+                      <CountLink
+                        value={row.counts.reduce((sum, count) => sum + count, 0)}
+                        onOpen={() => onOpen({ figure: 'waitlist', breakdown: 'open', procedure: row.procedure })}
+                      />
+                    </span>
                   </li>
                 ))}
               </ul>
             </>
           )}
           <p className={styles.performed} data-testid="dashboard-performed">
-            {t(
-              'performedInYear',
-              'Performed in the 12 months to the date shown: mitral balloon valvuloplasty {{bmv}}, surgery {{surgery}}',
-              waitlist.performed,
-            )}
+            {t('performedInYear', 'Performed in the 12 months to the date shown:')}{' '}
+            {t('mitralBalloonValvuloplasty', 'mitral balloon valvuloplasty')}{' '}
+            <CountLink
+              value={waitlist.performed.bmv}
+              onOpen={() =>
+                onOpen({ figure: 'waitlist', breakdown: 'performed', procedure: 'Mitral balloon valvuloplasty' })
+              }
+            />
+            , {t('surgery', 'surgery')}{' '}
+            <CountLink
+              value={waitlist.performed.surgery}
+              onOpen={() => onOpen({ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' })}
+            />
           </p>
           <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
             {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
@@ -451,13 +495,21 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               <li key={measure.label} className={styles.legendRow} data-testid="dashboard-measure">
                 <span>{measure.label}</span>
                 <span className={styles.count}>
-                  {measure.notDone === null
-                    ? measure.done
-                    : t('doneNotDoneOf', '{{done}} done, {{notDone}} not done, of {{total}}', {
-                        done: measure.done,
-                        notDone: measure.notDone,
-                        total: measure.done + measure.notDone,
-                      })}
+                  <CountLink
+                    value={measure.done}
+                    onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, done: 'done' })}
+                  />
+                  {measure.notDone !== null && (
+                    <>
+                      {' '}
+                      {t('doneComma', 'done,')}{' '}
+                      <CountLink
+                        value={measure.notDone}
+                        onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, done: 'notDone' })}
+                      />{' '}
+                      {t('notDoneOf', 'not done, of {{total}}', { total: measure.done + measure.notDone })}
+                    </>
+                  )}
                 </span>
               </li>
             ))}
@@ -514,13 +566,40 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   );
 }
 
+const urlKeys = ['cardiacClinic', 'primaryCareClinic', 'asOf', ...figureKeys] as const;
+const noFigure = Object.fromEntries(figureKeys.map((key) => [key, ''])) as Record<(typeof figureKeys)[number], string>;
+
 export default function Dashboard() {
   const { t } = useTranslation();
   const sessionScope = useProgrammeScope(false);
-  const [chosenScope, setChosenScope] = useState<Scope>();
+  // Clinics, date and open figure live in the URL, so a list can be shared and Back keeps them.
+  const [url, setUrl, pending] = useUrlFilters(
+    urlKeys,
+    sessionScope.status === 'ready' ? sessionScope.params : sessionScope.status === 'error' ? {} : 'pending',
+  );
   // A plain date, as a zoned midnight reads as the day before on a server behind the browser's time zone.
-  const [asOf, setAsOf] = useState(() => dayjs().format('YYYY-MM-DD'));
-  const scope = chosenScope ?? (sessionScope.status === 'ready' ? sessionScope.params : undefined);
+  const today = dayjs().format('YYYY-MM-DD');
+  const asOf = url.asOf || today;
+  const setAsOf = (day: string) => setUrl({ asOf: day === today ? '' : day });
+  const scope = useMemo(
+    () =>
+      pending
+        ? undefined
+        : (Object.fromEntries(
+            Object.entries({ cardiacClinic: url.cardiacClinic, primaryCareClinic: url.primaryCareClinic }).filter(
+              ([, uuid]) => uuid,
+            ),
+          ) as Scope),
+    [pending, url.cardiacClinic, url.primaryCareClinic],
+  );
+  const setScope = useCallback(
+    (next: Scope) =>
+      setUrl({ cardiacClinic: next.cardiacClinic ?? '', primaryCareClinic: next.primaryCareClinic ?? '' }),
+    [setUrl],
+  );
+  const figure = url.figure ? ({ ...url, figure: url.figure } as Figure) : null;
+  const openFigure = (next: Figure) => setUrl({ ...noFigure, ...next });
+  const clinicNames = useClinicNames(scope ?? {});
 
   return (
     <div className={styles.page}>
@@ -535,10 +614,21 @@ export default function Dashboard() {
           />
         ) : !scope ? (
           <SkeletonText paragraph lineCount={6} />
+        ) : figure ? (
+          <DashboardFigure
+            figure={figure}
+            scope={scope}
+            asOf={asOf}
+            clinicNames={clinicNames}
+            onFigure={openFigure}
+            onScope={setScope}
+            onAsOf={setAsOf}
+            onBack={() => setUrl(noFigure)}
+          />
         ) : (
           <>
             <div className={styles.filters}>
-              <ClinicFilters scope={scope} onChange={setChosenScope} idPrefix="dashboard" />
+              <ClinicFilters scope={scope} onChange={setScope} idPrefix="dashboard" />
               <OpenmrsDatePicker
                 id="dashboard-as-of"
                 labelText={t('figuresAsOf', 'Figures as of')}
@@ -554,7 +644,7 @@ export default function Dashboard() {
                 }}
               />
             </div>
-            <Figures scope={scope} asOf={asOf} onShowAll={() => setChosenScope({})} />
+            <Figures scope={scope} asOf={asOf} onShowAll={() => setScope({})} onOpen={openFigure} />
           </>
         )}
       </div>

@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
 import { openmrsFetch, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
@@ -23,6 +24,21 @@ vi.mock('@carbon/charts-react', async () => ({
 const REGISTRY = 'f1a2b3c4-d5e6-7890-abcd-ef1234567890';
 const REGISTRANTS = '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71';
 const DASHBOARD_WAITLIST = '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52';
+const REGISTRANT_PATIENTS = 'e8296d2d-def8-5f8e-ba2d-78c59859b9e3';
+const WAITLIST_PATIENTS = 'bc987343-8b70-5f95-84a8-d017cffa14da';
+const OPTIMISATION_PATIENTS = '45c646b2-f223-585e-963a-3c74fe883ae4';
+
+const patientRow = (name: string, value: string, date: string | null = null) => ({
+  patient_uuid: `uuid-${name}`,
+  rhd_id: `rhd-${name}`,
+  full_name: name,
+  sex: 'F',
+  age_years: 14,
+  cardiac_clinic: 'Gulu RRH',
+  primary_care_clinic: 'Acimi HCIII',
+  figure_value: value,
+  figure_date: date,
+});
 const CARE_CASCADE = '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68';
 const WAITLIST = '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10';
 const OPTIMISATION = '733a512c-3243-4e91-a44a-06a8e5384606';
@@ -221,6 +237,8 @@ function renderPage() {
 
 describe('Dashboard', () => {
   beforeEach(() => {
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard');
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useReportDataset).mockReset();
     Object.keys(mutates).forEach((report) => delete mutates[report]);
   });
@@ -755,5 +773,161 @@ describe('Dashboard', () => {
 
     expect(await screen.findAllByTestId('dashboard-cascade-step')).toHaveLength(3);
     expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Initiated4100%', 'Adherent (80%+)125%']);
+  });
+
+  describe('the patients behind a figure', () => {
+    const figureRows = {
+      [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Voluntary inactivity')],
+      [WAITLIST_PATIENTS]: [patientRow('Okot Ojok', 'Mitral valve repair/replacement, 2: urgent (60 days/2 months)')],
+      [OPTIMISATION_PATIENTS]: [
+        patientRow('Lakot Lamwaka', 'Done', '2026-10-01'),
+        patientRow('Lakot Lamwaka', 'Done', '2026-07-01'),
+      ],
+    };
+
+    it('opens from a count with a banner, chips and the rows, and Back returns to the Dashboard as it was', async () => {
+      await signIn(undefined, figureRows);
+      renderPage();
+      await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'lira');
+      await screen.findByText('Active registrants: 1');
+
+      const statusRow = (await screen.findAllByTestId('dashboard-status'))[0];
+      await userEvent.click(within(statusRow).getByRole('link'));
+
+      expect(
+        await screen.findByText(/^Opened from the Dashboard: Registrant status, Active, 1 patient/),
+      ).toBeInTheDocument();
+      expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({
+        endDate: today,
+        cardiacClinic: 'lira',
+        breakdown: 'status',
+        label: 'Active',
+      });
+      expect(screen.getByRole('button', { name: /Registrant status: Active/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Cardiac clinic: Lira RRH/ })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'rhd-Akello Atoo' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Akello Atoo' })).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back to the Dashboard' }));
+
+      expect(await screen.findByLabelText('Cardiac clinic')).toHaveValue('lira');
+      expect(screen.queryByText(/Opened from the Dashboard/)).not.toBeInTheDocument();
+    });
+
+    it("widens the list as a chip is removed: the figure to the section's whole population, the clinic to every clinic", async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&figure=registrants&breakdown=sex&label=Female',
+      );
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: /Active registrants: Female/ }));
+      await vi.waitFor(() =>
+        expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({
+          endDate: today,
+          cardiacClinic: 'lira',
+          breakdown: 'registered',
+        }),
+      );
+
+      await userEvent.click(screen.getByRole('button', { name: /Cardiac clinic: Lira RRH/ }));
+      await vi.waitFor(() =>
+        expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'registered' }),
+      );
+    });
+
+    it('lists consultations, not patients, behind the consultations figure, and says so', async () => {
+      await signIn(undefined, figureRows);
+      renderPage();
+
+      const consultations = (await screen.findAllByTestId('dashboard-measure'))[0];
+      await userEvent.click(within(consultations).getByRole('link'));
+
+      expect(
+        await screen.findByText(
+          /^Opened from the Dashboard: Medical optimisation, Consultations in the last year, 2 consultations/,
+        ),
+      ).toBeInTheDocument();
+      expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual({ endDate: today, measure: 'consultations', done: 'done' });
+    });
+
+    it('opens the recommendations of a waitlist procedure and the patients behind the waiting tile', async () => {
+      await signIn(undefined, figureRows);
+      renderPage();
+
+      const total = (await screen.findAllByTestId('dashboard-waitlist-total'))[1];
+      await userEvent.click(within(total).getByRole('link'));
+      expect(
+        await screen.findByText(/Procedural waitlist, Mitral valve repair\/replacement, 1 recommendation/),
+      ).toBeInTheDocument();
+      expect(paramsOf(WAITLIST_PATIENTS)).toEqual({
+        endDate: today,
+        breakdown: 'open',
+        procedure: 'Mitral valve repair/replacement',
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back to the Dashboard' }));
+      const waiting = (await screen.findAllByTestId('dashboard-tile'))[3];
+      await userEvent.click(within(waiting).getByRole('link'));
+      await vi.waitFor(() => expect(paramsOf(WAITLIST_PATIENTS)).toEqual({ endDate: today, breakdown: 'total' }));
+    });
+
+    it('makes every count a link: the tiles, status, demographics, cascade, waitlist and medical optimisation', async () => {
+      await signIn();
+      renderPage();
+
+      await screen.findAllByTestId('dashboard-tile');
+      for (const testId of [
+        'dashboard-tile',
+        'dashboard-status',
+        'dashboard-sex',
+        'dashboard-age',
+        'dashboard-category',
+        'dashboard-cascade-step',
+        'dashboard-waitlist-total',
+        'dashboard-measure',
+      ]) {
+        screen
+          .getAllByTestId(testId)
+          .forEach((row) => expect(within(row).getAllByRole('link').length).toBeGreaterThan(0));
+      }
+      expect(within(screen.getByTestId('dashboard-performed')).getAllByRole('link')).toHaveLength(2);
+    });
+
+    it("records the figure's CSV in the download log, with the figure and the Dashboard's filters", async () => {
+      await signIn(undefined, figureRows);
+      await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
+      vi.mocked(useReportDataset).mockImplementation((report) => ({
+        columns: [],
+        rows: figureRows[String(report)] ?? [],
+        isLoading: false,
+        error: undefined,
+        mutate: vi.fn() as never,
+      }));
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?figure=registrants&breakdown=status&label=Active',
+      );
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Download CSV' }));
+
+      await vi.waitFor(() =>
+        expect(vi.mocked(openmrsFetch)).toHaveBeenCalledWith(
+          '/ws/rest/v1/actcore/download/record',
+          expect.objectContaining({
+            body: expect.objectContaining({
+              list: 'dashboard:registrants',
+              rows: 1,
+              identifiers: true,
+              filters: expect.objectContaining({ breakdown: 'status', label: 'Active', endDate: today }),
+            }),
+          }),
+        ),
+      );
+    });
   });
 });

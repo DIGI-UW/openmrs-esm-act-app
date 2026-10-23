@@ -288,6 +288,30 @@ export const configSchema = {
       _description:
         "The RHD Dashboard Waitlist report, by uuid or name: the open recommendations by procedure and urgency, the patients waiting and the balloon valvuloplasties and surgeries performed (its breakdown, procedure, urgency, patients and recommendations columns), for the Dashboard's waitlist.",
     },
+    registrantPatientsReport: {
+      _type: Type.String,
+      _default: 'e8296d2d-def8-5f8e-ba2d-78c59859b9e3',
+      _description:
+        "The RHD Dashboard Registrant Patients report, by uuid or name: the patients behind one of the registrants report's figures, for the Dashboard's links.",
+    },
+    waitlistPatientsReport: {
+      _type: Type.String,
+      _default: 'bc987343-8b70-5f95-84a8-d017cffa14da',
+      _description:
+        "The RHD Dashboard Waitlist Patients report, by uuid or name: the recommendations or patients behind one of the waitlist report's figures, for the Dashboard's links.",
+    },
+    cascadePatientsReport: {
+      _type: Type.String,
+      _default: '7c62fcfd-03b2-5d84-9cea-92a43b70ae76',
+      _description:
+        "The RHD Care Cascade Patients report, by uuid or name: the patients of one care cascade step, for the Dashboard's links.",
+    },
+    optimisationPatientsReport: {
+      _type: Type.String,
+      _default: '45c646b2-f223-585e-963a-3c74fe883ae4',
+      _description:
+        "The RHD Medical Optimisation Patients report, by uuid or name: the patients, consultations or recommendations behind one measure, for the Dashboard's links.",
+    },
     medicalOptimisationReport: {
       _type: Type.String,
       _default: '733a512c-3243-4e91-a44a-06a8e5384606',
@@ -718,6 +742,10 @@ export interface Config {
   dashboard: {
     registrantsReport: string;
     waitlistReport: string;
+    registrantPatientsReport: string;
+    waitlistPatientsReport: string;
+    cascadePatientsReport: string;
+    optimisationPatientsReport: string;
     medicalOptimisationReport: string;
     screeningCascadeReport: string;
     screeningDiagnosesReport: string;
