@@ -165,3 +165,9 @@
   @include type.type-style('body-compact-01');
   color: $text-02;
 }
+
+.performed {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-block: layout.$spacing-03;
+}

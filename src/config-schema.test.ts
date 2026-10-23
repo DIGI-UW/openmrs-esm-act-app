@@ -109,6 +109,8 @@ describe('configSchema', () => {
         showBpgColumns: false,
       },
       dashboard: {
+        registrantsReport: '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71',
+        waitlistReport: '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52',
         medicalOptimisationReport: '733a512c-3243-4e91-a44a-06a8e5384606',
         screeningCascadeReport: '8b257a0c-7e96-5a01-9672-975cae3b0419',
         screeningDiagnosesReport: '6ddf6b36-2789-4733-8433-a877d54795cf',

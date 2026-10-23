@@ -82,7 +82,17 @@ export function CountsDonut({
   );
 }
 
-export function CascadeBars({ name, steps, testId }: { name: string; steps: Array<Count>; testId: string }) {
+export function CascadeBars({
+  name,
+  steps,
+  testId,
+  shareOf,
+}: {
+  name: string;
+  steps: Array<Count>;
+  testId: string;
+  shareOf?: Record<string, string>;
+}) {
   const data = useStable(steps.map(({ label, value }) => ({ group: label, value })));
   const options = useStable({
     ...base(name, '16rem'),
@@ -104,7 +114,7 @@ export function CascadeBars({ name, steps, testId }: { name: string; steps: Arra
         <SimpleBarChart data={data} options={options} />
       </div>
       <ol className={styles.steps}>
-        {cascadeShares(steps).map((step) => (
+        {cascadeShares(steps, shareOf).map((step) => (
           <li key={step.label} className={styles.step} data-testid={testId}>
             <span>{step.label}</span>
             <span className={styles.count}>{step.value}</span>
