@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Button,
   InlineNotification,
@@ -23,16 +23,32 @@ import { useClinics } from '../programme-report/clinics.resource';
 import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
-import { useUrlFilters } from '../table-filters/url-filters';
+import { urlWithFilters, useUrlFilters } from '../table-filters/url-filters';
 import { CascadeBars, CountLink, CountsDonut, StackedBars } from './dashboard-charts.component';
-import { type Figure, figureKeys, measureLabel, useCountParams } from './dashboard-figure';
+import {
+  type Figure,
+  FigureLinks,
+  figureKeys,
+  measureLabel,
+  type Section as FigureSection,
+  sections,
+  useCountParams,
+} from './dashboard-figure';
 import { DashboardFigure } from './dashboard-figure.component';
 import { type Count, registrantCounts, share, waitlistCounts } from './dashboard-counts';
 import styles from './dashboard.scss';
 
 type Scope = Record<string, string>;
 
-function Bars({ counts, testId, onOpen }: { counts: Array<Count>; testId: string; onOpen?: (label: string) => void }) {
+function Bars({
+  counts,
+  testId,
+  figureOf,
+}: {
+  counts: Array<Count>;
+  testId: string;
+  figureOf?: (label: string) => Figure;
+}) {
   const { t } = useTranslation();
   if (!counts.length) {
     return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
@@ -47,7 +63,7 @@ function Bars({ counts, testId, onOpen }: { counts: Array<Count>; testId: string
             <span className={styles.fill} style={{ width: `${share(count.value, largest)}%` }} />
           </span>
           <span className={styles.count}>
-            <CountLink value={count.value} onOpen={onOpen && (() => onOpen(count.label))} />
+            <CountLink value={count.value} figure={figureOf?.(count.label)} />
           </span>
         </div>
       ))}
@@ -129,14 +145,14 @@ function FigureTile({
   note,
   isLoading,
   error,
-  onOpen,
+  figure,
 }: {
   label: string;
   value: number | null;
   note: string;
   isLoading: boolean;
   error?: Error;
-  onOpen?: () => void;
+  figure?: Figure;
 }) {
   const { t } = useTranslation();
   return (
@@ -148,7 +164,7 @@ function FigureTile({
         ) : (
           <>
             <span className={styles.tileValue}>
-              {error || value === null ? '–' : <CountLink value={value} onOpen={onOpen} />}
+              {error || value === null ? '–' : <CountLink value={value} figure={figure} />}
             </span>
             <span className={styles.tileNote}>
               {error ? t('couldNotLoad', 'could not load') : value === null ? t('notReported', 'not reported') : note}
@@ -190,17 +206,7 @@ const adherentSteps = ['Adherent (80%+)', 'Adherent'];
 const stepsCountedToday = ['Covered today', ...adherentSteps];
 const earliestAsOf = '1900-01-01';
 
-function Figures({
-  scope,
-  asOf,
-  onShowAll,
-  onOpen,
-}: {
-  scope: Scope;
-  asOf: string;
-  onShowAll: () => void;
-  onOpen: (figure: Figure) => void;
-}) {
+function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onShowAll: () => void }) {
   const { t } = useTranslation();
   const { careCascade, dashboard } = useConfig<Config>();
   const params = useMemo(() => ({ endDate: asOf, ...scope }), [asOf, scope]);
@@ -265,7 +271,9 @@ function Figures({
     ['Prescribed', 'Prescribed Prophylaxis'].includes(String(row.step)),
   );
   const stepOfLabel = (label: string) => cascade.find((step) => step.label === label)?.step;
-  const registrantsBy = (breakdown: string) => (label: string) => onOpen({ figure: 'registrants', breakdown, label });
+  const registrantsBy =
+    (breakdown: string) =>
+    (label: string): Figure => ({ figure: 'registrants', breakdown, label });
 
   return (
     <>
@@ -276,7 +284,7 @@ function Figures({
           note={t('everyStatus', 'every status')}
           isLoading={registrantsReport.isLoading}
           error={registrantsReport.error}
-          onOpen={() => onOpen({ figure: 'registrants', breakdown: 'registered' })}
+          figure={{ figure: 'registrants', breakdown: 'registered' }}
         />
         <FigureTile
           label={t('active', 'Active')}
@@ -284,7 +292,7 @@ function Figures({
           note={t('enrolledAndAlive', 'enrolled and alive')}
           isLoading={registrantsReport.isLoading}
           error={registrantsReport.error}
-          onOpen={() => onOpen({ figure: 'registrants', breakdown: 'active' })}
+          figure={{ figure: 'registrants', breakdown: 'active' }}
         />
         <FigureTile
           label={t('onSecondaryProphylaxis', 'On secondary prophylaxis')}
@@ -296,7 +304,7 @@ function Figures({
           }
           isLoading={cascadeReport.isLoading}
           error={cascadeReport.error}
-          onOpen={prescribedStep && (() => onOpen({ figure: 'cascade', step: String(prescribedStep.step) }))}
+          figure={prescribedStep && { figure: 'cascade', step: String(prescribedStep.step) }}
         />
         <FigureTile
           label={t('waitingForAProcedure', 'Waiting for a procedure')}
@@ -304,7 +312,7 @@ function Figures({
           note={t('openRecommendations', '{{count}} open recommendations', { count: waitlist.total })}
           isLoading={waitlistReport.isLoading}
           error={waitlistReport.error}
-          onOpen={() => onOpen({ figure: 'waitlist', breakdown: 'total' })}
+          figure={{ figure: 'waitlist', breakdown: 'total' }}
         />
       </div>
       <div className={styles.grid}>
@@ -322,7 +330,7 @@ function Figures({
             centre={t('registrants', 'registrants')}
             testId="dashboard-status"
             withShare
-            onOpen={registrantsBy('status')}
+            figureOf={registrantsBy('status')}
           />
         </Section>
         <Section
@@ -346,7 +354,7 @@ function Figures({
             steps={cascade}
             shareOf={adherentShare}
             testId="dashboard-cascade-step"
-            onOpen={(label) => onOpen({ figure: 'cascade', step: stepOfLabel(label) })}
+            figureOf={(label) => ({ figure: 'cascade', step: stepOfLabel(label) })}
           />
         </Section>
         <Section
@@ -360,15 +368,15 @@ function Figures({
           <div className={styles.columns}>
             <div>
               <h4 className={styles.subheading}>{t('sex', 'Sex')}</h4>
-              <Bars counts={registrants.sex} testId="dashboard-sex" onOpen={registrantsBy('sex')} />
+              <Bars counts={registrants.sex} testId="dashboard-sex" figureOf={registrantsBy('sex')} />
             </div>
             <div>
               <h4 className={styles.subheading}>{t('age', 'Age')}</h4>
-              <Bars counts={registrants.age} testId="dashboard-age" onOpen={registrantsBy('age')} />
+              <Bars counts={registrants.age} testId="dashboard-age" figureOf={registrantsBy('age')} />
             </div>
             <div>
               <h4 className={styles.subheading}>{t('diseaseCategory', 'Disease category')}</h4>
-              <Bars counts={registrants.category} testId="dashboard-category" onOpen={registrantsBy('disease')} />
+              <Bars counts={registrants.category} testId="dashboard-category" figureOf={registrantsBy('disease')} />
             </div>
           </div>
         </Section>
@@ -403,15 +411,14 @@ function Figures({
                         <TableCell key={waitlist.urgencies[index]}>
                           <CountLink
                             value={count}
-                            onOpen={
+                            figure={
                               count
-                                ? () =>
-                                    onOpen({
-                                      figure: 'waitlist',
-                                      breakdown: 'open',
-                                      procedure: row.procedure,
-                                      urgency: waitlist.urgencies[index],
-                                    })
+                                ? {
+                                    figure: 'waitlist',
+                                    breakdown: 'open',
+                                    procedure: row.procedure,
+                                    urgency: waitlist.urgencies[index],
+                                  }
                                 : undefined
                             }
                           />
@@ -442,7 +449,7 @@ function Figures({
                     <span className={styles.count}>
                       <CountLink
                         value={row.counts.reduce((sum, count) => sum + count, 0)}
-                        onOpen={() => onOpen({ figure: 'waitlist', breakdown: 'open', procedure: row.procedure })}
+                        figure={{ figure: 'waitlist', breakdown: 'open', procedure: row.procedure }}
                       />
                     </span>
                   </li>
@@ -451,18 +458,25 @@ function Figures({
             </>
           )}
           <p className={styles.performed} data-testid="dashboard-performed">
-            {t('performedInYear', 'Performed in the 12 months to the date shown:')}{' '}
-            {t('mitralBalloonValvuloplasty', 'mitral balloon valvuloplasty')}{' '}
-            <CountLink
-              value={waitlist.performed.bmv}
-              onOpen={() =>
-                onOpen({ figure: 'waitlist', breakdown: 'performed', procedure: 'Mitral balloon valvuloplasty' })
-              }
-            />
-            , {t('surgery', 'surgery')}{' '}
-            <CountLink
-              value={waitlist.performed.surgery}
-              onOpen={() => onOpen({ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' })}
+            <Trans
+              t={t}
+              i18nKey="performedInYear"
+              defaults="Performed in the 12 months to the date shown: mitral balloon valvuloplasty <bmv>{{bmv}}</bmv>, surgery <surgery>{{surgery}}</surgery>"
+              values={waitlist.performed}
+              components={{
+                bmv: (
+                  <CountLink
+                    value={waitlist.performed.bmv}
+                    figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Mitral balloon valvuloplasty' }}
+                  />
+                ),
+                surgery: (
+                  <CountLink
+                    value={waitlist.performed.surgery}
+                    figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' }}
+                  />
+                ),
+              }}
             />
           </p>
           <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
@@ -495,20 +509,29 @@ function Figures({
               <li key={measure.label} className={styles.legendRow} data-testid="dashboard-measure">
                 <span>{measure.label}</span>
                 <span className={styles.count}>
-                  <CountLink
-                    value={measure.done}
-                    onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, outcome: 'done' })}
-                  />
-                  {measure.notDone !== null && (
-                    <>
-                      {' '}
-                      {t('doneComma', 'done,')}{' '}
-                      <CountLink
-                        value={measure.notDone}
-                        onOpen={() => onOpen({ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' })}
-                      />{' '}
-                      {t('notDoneOf', 'not done, of {{total}}', { total: measure.done + measure.notDone })}
-                    </>
+                  {measure.notDone === null ? (
+                    <CountLink value={measure.done} figure={{ figure: 'optimisation', measure: measure.measure }} />
+                  ) : (
+                    <Trans
+                      t={t}
+                      i18nKey="doneNotDoneOf"
+                      defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
+                      values={{ done: measure.done, notDone: measure.notDone, total: measure.done + measure.notDone }}
+                      components={{
+                        done: (
+                          <CountLink
+                            value={measure.done}
+                            figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
+                          />
+                        ),
+                        notDone: (
+                          <CountLink
+                            value={measure.notDone}
+                            figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
+                          />
+                        ),
+                      }}
+                    />
                   )}
                 </span>
               </li>
@@ -567,6 +590,7 @@ function Figures({
 }
 
 const urlKeys = ['cardiacClinic', 'primaryCareClinic', 'asOf', ...figureKeys] as const;
+type UrlKey = (typeof urlKeys)[number];
 const noFigure = Object.fromEntries(figureKeys.map((key) => [key, ''])) as Record<(typeof figureKeys)[number], string>;
 
 export default function Dashboard() {
@@ -597,8 +621,19 @@ export default function Dashboard() {
       setUrl({ cardiacClinic: next.cardiacClinic ?? '', primaryCareClinic: next.primaryCareClinic ?? '' }),
     [setUrl],
   );
-  const figure = url.figure ? ({ ...url, figure: url.figure } as Figure) : null;
-  const openFigure = (next: Figure) => setUrl({ ...noFigure, ...next });
+  const figure = sections.includes(url.figure as FigureSection) ? ({ ...url, figure: url.figure } as Figure) : null;
+  const defaultedKeys = sessionScope.status === 'ready' ? (Object.keys(sessionScope.params) as Array<UrlKey>) : [];
+  const hrefOf = (change: Partial<Record<UrlKey, string>>) =>
+    urlWithFilters(urlKeys, { ...url, ...change }, defaultedKeys);
+  // Pushed, so the browser's Back undoes opening or leaving a figure; a removed chip only replaces.
+  const go = (change: Partial<Record<UrlKey, string>>) => {
+    window.history.pushState(window.history.state, '', hrefOf(change));
+    setUrl(change);
+  };
+  const figureLinks = {
+    href: (next: Figure) => hrefOf({ ...noFigure, ...next }),
+    open: (next: Figure) => go({ ...noFigure, ...next }),
+  };
   const clinicNames = useClinicNames(scope ?? {});
 
   return (
@@ -620,10 +655,10 @@ export default function Dashboard() {
             scope={scope}
             asOf={asOf}
             clinicNames={clinicNames}
-            onFigure={openFigure}
+            onFigure={(next) => setUrl({ ...noFigure, ...next })}
             onScope={setScope}
             onAsOf={setAsOf}
-            onBack={() => setUrl(noFigure)}
+            onBack={() => go(noFigure)}
           />
         ) : (
           <>
@@ -644,7 +679,9 @@ export default function Dashboard() {
                 }}
               />
             </div>
-            <Figures scope={scope} asOf={asOf} onShowAll={() => setScope({})} onOpen={openFigure} />
+            <FigureLinks.Provider value={figureLinks}>
+              <Figures scope={scope} asOf={asOf} onShowAll={() => setScope({})} />
+            </FigureLinks.Provider>
           </>
         )}
       </div>

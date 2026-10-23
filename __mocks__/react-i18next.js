@@ -39,7 +39,24 @@ useMock.i18n = {};
 
 module.exports = {
   // this mock makes sure any components using the translate HoC receive the t function as a prop
-  Trans: ({ children }) => renderNodes(children),
+  Trans: ({ children, t, i18nKey, defaults, values, components }) => {
+    if (!defaults) {
+      return renderNodes(children);
+    }
+    const text = (t || useMock.t)(i18nKey, defaults, values);
+    const parts = [];
+    const tag = /<(\w+)>(.*?)<\/\1>/g;
+    let last = 0;
+    let match;
+    while ((match = tag.exec(text))) {
+      parts.push(
+        text.slice(last, match.index),
+        React.cloneElement(components[match[1]], { key: match.index }, match[2]),
+      );
+      last = tag.lastIndex;
+    }
+    return React.createElement(React.Fragment, null, ...parts, text.slice(last));
+  },
   Translation: ({ children }) => children((k) => k, { i18n: {} }),
   useTranslation: () => useMock,
 

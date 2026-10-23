@@ -54,6 +54,7 @@ describe('Back to the ACT page a chart was opened from', () => {
     ['act-community-home', 'Back to Home'],
     ['act-due-for-prophylaxis', 'Back to Due for prophylaxis'],
     ['act-enter-prophylaxis', 'Back to Enter prophylaxis'],
+    ['act-dashboard', 'Back to the Dashboard'],
   ])("shows %s's way back in a chart opened from it", (screenName, label) => {
     trackActReturn();
     route(`${base}/home/${screenName}`, chart);

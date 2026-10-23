@@ -850,7 +850,63 @@ describe('Dashboard', () => {
           /^Opened from the Dashboard: Medical optimisation, Consultations in the last year, 2 consultations/,
         ),
       ).toBeInTheDocument();
-      expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual({ endDate: today, measure: 'consultations', outcome: 'done' });
+      expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual({ endDate: today, measure: 'consultations' });
+      expect(screen.queryByRole('button', { name: /^Medical optimisation: / })).not.toBeInTheDocument();
+    });
+
+    it('widens a performed figure to every procedure performed, not to the open waitlist', async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?figure=waitlist&breakdown=performed&procedure=Surgery',
+      );
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: /Performed in the 12 months: Surgery/ }));
+
+      await vi.waitFor(() => expect(paramsOf(WAITLIST_PATIENTS)).toEqual({ endDate: today, breakdown: 'performed' }));
+      expect(
+        screen.getByText(/^Opened from the Dashboard: Performed in the 12 months, 1 recommendation/),
+      ).toBeInTheDocument();
+    });
+
+    it('opens the Dashboard on a figure it does not know, as a stale link can carry', async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=nonsense');
+      renderPage();
+
+      expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
+      expect(screen.queryByText(/Opened from the Dashboard/)).not.toBeInTheDocument();
+    });
+
+    it("returns to the Dashboard on the browser's Back from a figure", async () => {
+      await signIn(undefined, figureRows);
+      renderPage();
+
+      await userEvent.click(within((await screen.findAllByTestId('dashboard-tile'))[0]).getByRole('link'));
+      expect(await screen.findByText(/^Opened from the Dashboard: Registered/)).toBeInTheDocument();
+
+      window.history.back();
+
+      expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
+      expect(screen.queryByText(/Opened from the Dashboard/)).not.toBeInTheDocument();
+    });
+
+    it("links each count to its figure's URL with the Dashboard's filters, and leaves a modified click to the browser", async () => {
+      await signIn(undefined, figureRows);
+      renderPage();
+      await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'lira');
+      await screen.findByText('Active registrants: 1');
+
+      const link = within(screen.getAllByTestId('dashboard-tile')[0]).getByRole('link');
+      expect(link).toHaveAttribute(
+        'href',
+        '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&figure=registrants&breakdown=registered',
+      );
+
+      fireEvent.click(link, { ctrlKey: true });
+      expect(screen.queryByText(/Opened from the Dashboard/)).not.toBeInTheDocument();
     });
 
     it('opens the recommendations of a waitlist procedure and the patients behind the waiting tile', async () => {

@@ -1,5 +1,6 @@
 import { actHomeDashboardMeta } from '../act-home/act-home.meta';
 import { communityHomeDashboardMeta } from '../community-home/community-home.meta';
+import { dashboardMeta } from '../dashboard/dashboard.meta';
 import { dueForProphylaxisDashboardMeta } from '../due-for-prophylaxis/due-for-prophylaxis.meta';
 import { patientsOnProphylaxisDashboardMeta } from '../enter-prophylaxis/patients-on-prophylaxis.meta';
 import { registryDashboardMeta } from '../registry/registry.meta';
@@ -19,6 +20,7 @@ export const actScreens = [
   communityHomeDashboardMeta.name,
   dueForProphylaxisDashboardMeta.name,
   patientsOnProphylaxisDashboardMeta.name,
+  dashboardMeta.name,
 ] as const;
 
 export type ActScreenName = (typeof actScreens)[number];

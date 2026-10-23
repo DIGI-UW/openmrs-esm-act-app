@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { createContext, useMemo } from 'react';
 import { type TFunction } from 'i18next';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 
-export type Section = 'registrants' | 'waitlist' | 'cascade' | 'optimisation';
+export const sections = ['registrants', 'waitlist', 'cascade', 'optimisation'] as const;
+
+export type Section = (typeof sections)[number];
 
 /**
  * The URL keys that name a figure: its section, then the patients report's own parameters. None may take a value equal
@@ -22,7 +24,7 @@ export const figureKeys = [
 
 export type Figure = { figure: Section } & Partial<Record<Exclude<(typeof figureKeys)[number], 'figure'>, string>>;
 
-/** A figure's parameters with the section's patients report, leaving out those not set. */
+/** The parameters a figure passes its section's patients report: every key but the section, the empty ones left out. */
 export const figureParams = ({ figure, ...rest }: Figure) =>
   Object.fromEntries(Object.entries(rest).filter(([, value]) => value)) as Record<string, string>;
 
@@ -34,14 +36,19 @@ export const patientsReport = (dashboard: Config['dashboard'], section: Section)
     optimisation: dashboard.optimisationPatientsReport,
   })[section];
 
-/** The figure a removed figure chip leaves: the section's whole population, as each patients report reads empty. */
+/** The figure a removed figure chip leaves: the section's whole population, or every procedure performed. */
 export const widened = (figure: Figure): Figure =>
   ({
     registrants: { figure: 'registrants', breakdown: 'registered' },
-    waitlist: { figure: 'waitlist', breakdown: 'open' },
+    waitlist: { figure: 'waitlist', breakdown: figure.breakdown === 'performed' ? 'performed' : 'open' },
     cascade: { figure: 'cascade' },
     optimisation: { figure: 'optimisation', measure: figure.measure },
   })[figure.figure] as Figure;
+
+/** A figure's URL, for a count's link, and how the Dashboard opens it in place. */
+export const FigureLinks = createContext<{ href: (figure: Figure) => string; open: (figure: Figure) => void } | null>(
+  null,
+);
 
 export const isWidened = (figure: Figure) =>
   JSON.stringify(figureParams(figure)) === JSON.stringify(figureParams(widened(figure)));

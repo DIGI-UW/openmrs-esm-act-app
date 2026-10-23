@@ -18,6 +18,7 @@ export default function BackToActLink() {
     'act-community-home': t('backToHome', 'Back to Home'),
     'act-due-for-prophylaxis': t('backToDueForProphylaxis', 'Back to Due for prophylaxis'),
     'act-enter-prophylaxis': t('backToEnterProphylaxis', 'Back to Enter prophylaxis'),
+    'act-dashboard': t('backToTheDashboard', 'Back to the Dashboard'),
   };
   if (!actReturn || !(actReturn.screen in labels)) {
     return null;
