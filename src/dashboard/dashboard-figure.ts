@@ -36,11 +36,20 @@ export const patientsReport = (dashboard: Config['dashboard'], section: Section)
     optimisation: dashboard.optimisationPatientsReport,
   })[section];
 
-/** The figure a removed figure chip leaves: the section's whole population, or every procedure performed. */
+/**
+ * The figure a removed figure chip leaves: every active registrant for a sex, age or disease figure, every registrant
+ * for the other registrant figures, the whole waitlist, every procedure performed, or the whole cascade.
+ */
 export const widened = (figure: Figure): Figure =>
   ({
-    registrants: { figure: 'registrants', breakdown: 'registered' },
-    waitlist: { figure: 'waitlist', breakdown: figure.breakdown === 'performed' ? 'performed' : 'open' },
+    registrants: {
+      figure: 'registrants',
+      breakdown: ['sex', 'age', 'disease'].includes(figure.breakdown) ? 'active' : 'registered',
+    },
+    waitlist: {
+      figure: 'waitlist',
+      breakdown: figure.breakdown === 'performed' || figure.breakdown === 'total' ? figure.breakdown : 'open',
+    },
     cascade: { figure: 'cascade' },
     optimisation: { figure: 'optimisation', measure: figure.measure },
   })[figure.figure] as Figure;
@@ -50,8 +59,12 @@ export const FigureLinks = createContext<{ href: (figure: Figure) => string; ope
   null,
 );
 
+/** The cascade report reads no step as Active, so the two are one figure. */
+const withStep = (figure: Figure): Figure =>
+  figure.figure === 'cascade' ? { ...figure, step: figure.step || 'Active' } : figure;
+
 export const isWidened = (figure: Figure) =>
-  JSON.stringify(figureParams(figure)) === JSON.stringify(figureParams(widened(figure)));
+  JSON.stringify(figureParams(withStep(figure))) === JSON.stringify(figureParams(withStep(widened(figure))));
 
 export function measureLabel(t: TFunction, measure: string) {
   const labels: Record<string, string> = {

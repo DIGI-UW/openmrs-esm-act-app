@@ -815,7 +815,7 @@ describe('Dashboard', () => {
       expect(screen.queryByText(/Opened from the Dashboard/)).not.toBeInTheDocument();
     });
 
-    it("widens the list as a chip is removed: the figure to the section's whole population, the clinic to every clinic", async () => {
+    it('widens the list as a chip is removed: an Active registrants figure to every active registrant, the clinic to every clinic', async () => {
       await signIn(undefined, figureRows);
       window.history.replaceState(
         null,
@@ -829,14 +829,13 @@ describe('Dashboard', () => {
         expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({
           endDate: today,
           cardiacClinic: 'lira',
-          breakdown: 'registered',
+          breakdown: 'active',
         }),
       );
+      expect(screen.getByText(/^Opened from the Dashboard: Active, 1 patient/)).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: /Cardiac clinic: Lira RRH/ }));
-      await vi.waitFor(() =>
-        expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'registered' }),
-      );
+      await vi.waitFor(() => expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'active' }));
     });
 
     it('offers no figure chip on a figure already widened at a clinic and a past date, and sends its report no asOf', async () => {
@@ -915,6 +914,70 @@ describe('Dashboard', () => {
       expect(
         screen.getByText(/^Opened from the Dashboard: Performed in the 12 months, 1 recommendation/),
       ).toBeInTheDocument();
+    });
+
+    it('widens a registrant status figure to every registrant', async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?figure=registrants&breakdown=status&label=Deceased',
+      );
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: /Registrant status: Deceased/ }));
+
+      await vi.waitFor(() =>
+        expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'registered' }),
+      );
+    });
+
+    it('offers no figure chip on the waiting for a procedure figure, which is already the whole waitlist', async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=waitlist&breakdown=total');
+      renderPage();
+
+      expect(
+        await screen.findByText(/^Opened from the Dashboard: Waiting for a procedure, 1 patient/),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Waiting for a procedure/ })).not.toBeInTheDocument();
+    });
+
+    it('offers no figure chip on the cascade Active step, which the report reads as no step', async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Active');
+      renderPage();
+
+      expect(await screen.findByText(/^Opened from the Dashboard: RHD care cascade, Active/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^RHD care cascade/ })).not.toBeInTheDocument();
+    });
+
+    it('widens a later cascade step to the Active step, and offers no figure chip there', async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Prescribed');
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: /^RHD care cascade: Prescribed/ }));
+
+      expect(await screen.findByText(/^Opened from the Dashboard: RHD care cascade, Active/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^RHD care cascade/ })).not.toBeInTheDocument();
+    });
+
+    it.each([
+      ['age', '0-4'],
+      ['disease', 'RHD'],
+    ])('widens an Active registrants %s figure to every active registrant', async (breakdown, label) => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(
+        null,
+        '',
+        `/openmrs/spa/home/act-dashboard?figure=registrants&breakdown=${breakdown}&label=${label}`,
+      );
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: new RegExp(`Active registrants: ${label}`) }));
+
+      await vi.waitFor(() => expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'active' }));
     });
 
     it('opens the Dashboard on a figure it does not know, as a stale link can carry', async () => {
