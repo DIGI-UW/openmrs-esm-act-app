@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
+import { columnHeaders } from '../column-headers.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
 import WaitingList from './waiting-list.component';
@@ -23,7 +24,7 @@ const rows = waitingListRows.map((row, i) => ({
 }));
 
 function shownIds() {
-  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+  const headers = columnHeaders();
   return screen
     .getAllByRole('row')
     .slice(1)

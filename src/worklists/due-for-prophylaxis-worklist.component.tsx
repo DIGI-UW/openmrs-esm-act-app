@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { dueReason, prescription } from '../due-for-prophylaxis/due-list';
+import { dueReason, prescription, statusLabel } from '../due-for-prophylaxis/due-list';
+import { parseReportDate } from '../reports/report-date';
 import { useDueList, useDueRows } from '../due-for-prophylaxis/due-for-prophylaxis.resource';
 import { RecordDoseAction, useRecordDose } from '../due-for-prophylaxis/record-dose.component';
-import { Worklist, type WorklistState, WorklistTable } from './worklist.component';
+import { Worklist, type WorklistState, WorklistTable, whyKey } from './worklist.component';
 
 function DuePatients({ title }: { title: string }) {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ function DuePatients({ title }: { title: string }) {
     row,
     prophylaxis: prescription(t, row),
     why: dueReason(t, row, recorded.has(String(row.patient_uuid))),
+    whyKey: whyKey(statusLabel(t, row, recorded.has(String(row.patient_uuid))), parseReportDate(row.next_due)),
   }));
   return (
     <WorklistTable

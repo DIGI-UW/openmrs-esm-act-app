@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -35,6 +35,7 @@ import { parseReportDate } from '../reports/report-date';
 import { useSessionClinicKind } from '../session-clinic';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
+import { type ColumnSort, type SortValue, sortHeaderProps, sortItems } from '../table-filters/column-sort';
 import { usePagedRows } from '../table-filters/paged-rows';
 import {
   filterColumns,
@@ -49,6 +50,16 @@ function screenDate(row: ReportRow) {
   const date = parseReportDate(row.screen_date);
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 }
+
+const reportText = (column: string) => (row: ReportRow) => String(row[column] ?? '') || null;
+
+// A column's sort value, the date of positive screen by its day.
+const sortValues: Record<string, (row: ReportRow) => SortValue> = {
+  patient: reportText('full_name'),
+  screened: (row) => String(row.screen_date ?? '').slice(0, 10) || null,
+  screeningSite: reportText('screening_site'),
+  status: reportText('follow_up_status'),
+};
 
 const statusTags = { 'Not contacted': 'warm-gray', 'Echo booked': 'blue', Urgent: 'red' } as const;
 
@@ -88,8 +99,13 @@ export function ScreenPositiveTable() {
   };
   const [filters, setFilters, filtersPending] = useScreenPositiveFilters();
   const clinicKind = useSessionClinicKind();
-  const shown = useMemo(() => filterScreenPositive(rows, filters), [rows, filters]);
-  const { results, paginationProps } = usePagedRows(shown, filters);
+  const [sort, setSort] = useState<ColumnSort | null>(null);
+  const shown = useMemo(
+    () => sortItems(filterScreenPositive(rows, filters), sort, (row, key) => sortValues[key](row)),
+    [rows, filters, sort],
+  );
+  const pageKey = useMemo(() => ({ filters, sort }), [filters, sort]);
+  const { results, paginationProps } = usePagedRows(shown, pageKey);
   const filterSelect = (key: keyof ScreenPositiveFilters, label: string) => (
     <FilterSelect
       id={`screen-positive-${key}`}
@@ -105,8 +121,9 @@ export function ScreenPositiveTable() {
     'Echo booked': t('echoBooked', 'Echo booked'),
     Urgent: t('urgent', 'Urgent'),
   };
-  const columns: Array<{ header: string; render: (row: ReportRow) => React.ReactNode }> = [
+  const columns: Array<{ key: string; header: string; render: (row: ReportRow) => React.ReactNode }> = [
     {
+      key: 'patient',
       header: t('patient', 'Patient'),
       render: (row) => (
         <>
@@ -117,9 +134,10 @@ export function ScreenPositiveTable() {
         </>
       ),
     },
-    { header: t('screened', 'Screened'), render: screenDate },
-    { header: t('screeningSite', 'Screening site'), render: text('screening_site') },
+    { key: 'screened', header: t('screened', 'Screened'), render: screenDate },
+    { key: 'screeningSite', header: t('screeningSite', 'Screening site'), render: text('screening_site') },
     {
+      key: 'status',
       header: t('status', 'Status'),
       render: (row) => {
         const status = String(row.follow_up_status ?? '');
@@ -182,7 +200,9 @@ export function ScreenPositiveTable() {
             <TableHead>
               <TableRow>
                 {columns.map((column) => (
-                  <TableHeader key={column.header}>{column.header}</TableHeader>
+                  <TableHeader key={column.key} {...sortHeaderProps(sort, column.key, setSort)}>
+                    {column.header}
+                  </TableHeader>
                 ))}
                 <TableHeader aria-label={t('actions', 'Actions')} />
               </TableRow>
@@ -222,7 +242,10 @@ export default function ScreenPositive() {
       <ActPageHeader title={t('diagnosisToConfirm', 'Diagnosis to confirm')} illustration={<CardiologyPictogram />} />
       <div className={styles.screenPositive}>
         <p className={styles.description}>
-          {t('diagnosisToConfirmDescription', 'Screen-positive patients whose diagnosis has no details yet. Enter diagnosis takes a patient off this list.')}
+          {t(
+            'diagnosisToConfirmDescription',
+            'Screen-positive patients whose diagnosis has no details yet. Enter diagnosis takes a patient off this list.',
+          )}
         </p>
         <ScreenPositiveTable />
       </div>

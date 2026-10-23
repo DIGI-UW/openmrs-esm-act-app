@@ -12,6 +12,11 @@ export interface ProphylaxisSummary {
   nextDue: string | null;
   status: ProphylaxisStatus;
   onTime: { given: number; total: number; months: number } | null;
+  /**
+   * ACT Core's adherence as a fraction (AR-102): for an injection regimen the days covered by the prescribed treatment
+   * over the days prescribed, in the last 12 months; for an oral one the latest estimate. Absent from an older ACT Core.
+   */
+  adherence?: number | null;
   /** Every BPG injection, newest first; onTime is null when no injection course was in force that day. */
   injections?: Array<{ date: string; onTime: boolean | null }>;
 }

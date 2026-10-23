@@ -108,6 +108,27 @@ describe('ProphylaxisCard', () => {
     expect(field('on-time')).toHaveTextContent('3 of 4');
   });
 
+  it("shows ACT Core's adherence as a percentage, with the on-time count beneath it", async () => {
+    respondWith({ ...winnie, adherence: 22 / 28 });
+
+    renderCard();
+
+    expect(await screen.findByText('Adherence (12 months)')).toBeInTheDocument();
+    expect(screen.queryByText('On-time (6 months)')).not.toBeInTheDocument();
+    expect(field('on-time')).toHaveTextContent(/^79%/);
+    expect(screen.getByTestId('prophylaxis-on-time-detail')).toHaveTextContent('3 of 4 on time, 6 months');
+  });
+
+  it('shows the adherence alone when no injection fell in the on-time window', async () => {
+    respondWith({ ...winnie, adherence: 1, onTime: null });
+
+    renderCard();
+
+    await screen.findByText('Adherence (12 months)');
+    expect(field('on-time')).toHaveTextContent(/^100%$/);
+    expect(screen.queryByTestId('prophylaxis-on-time-detail')).not.toBeInTheDocument();
+  });
+
   it.each(['ok', 'dueSoon', 'dueToday'])('does not mark a next due that is %s', async (status) => {
     respondWith({ ...winnie, status, nextDue: '2026-10-20' });
 
@@ -304,15 +325,18 @@ describe('ProphylaxisCard', () => {
     expect(screen.getByRole('button', { name: new RegExp(`^${action}`) })).toBeInTheDocument();
   });
 
-  it.each(['BPG', 'Oral'])('offers a clinician both forms for a %s prescription, to change the regimen', async (type) => {
-    await signInWith(['Add Encounters', 'Task: act.enterClinicalForms']);
-    respondWith({ ...winnie, type });
+  it.each(['BPG', 'Oral'])(
+    'offers a clinician both forms for a %s prescription, to change the regimen',
+    async (type) => {
+      await signInWith(['Add Encounters', 'Task: act.enterClinicalForms']);
+      respondWith({ ...winnie, type });
 
-    renderCard();
+      renderCard();
 
-    expect(await screen.findByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
-  });
+      expect(await screen.findByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
+    },
+  );
 
   it('says Needs prescription instead of offering a form to a patient with no prescription in force', async () => {
     respondWith({ ...winnie, type: null, regimen: null, intervalDays: null, status: 'none' });
