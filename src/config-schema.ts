@@ -286,7 +286,7 @@ export const configSchema = {
       _type: Type.String,
       _default: '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52',
       _description:
-        "The RHD Dashboard Waitlist report, by uuid or name: the open recommendations by procedure and urgency, the patients waiting and the procedures performed (its breakdown, procedure, urgency, patients and recommendations columns), for the Dashboard's waitlist.",
+        "The RHD Dashboard Waitlist report, by uuid or name: the open recommendations by procedure and urgency, the patients waiting and the balloon valvuloplasties and surgeries performed (its breakdown, procedure, urgency, patients and recommendations columns), for the Dashboard's waitlist.",
     },
     medicalOptimisationReport: {
       _type: Type.String,

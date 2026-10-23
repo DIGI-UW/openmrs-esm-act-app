@@ -62,7 +62,7 @@ describe('dashboard counts', () => {
         patients: 3,
         recommendations: 4,
       },
-      { breakdown: 'performed', procedure: 'Other procedure', urgency: null, patients: 1, recommendations: 1 },
+      { breakdown: 'performed', procedure: 'Surgery', urgency: null, patients: 1, recommendations: 1 },
     ]);
 
     expect(counts.urgencies).toEqual(['1: emergent', '2: urgent', '10: later']);
@@ -72,7 +72,7 @@ describe('dashboard counts', () => {
     ]);
     expect(counts.total).toBe(4);
     expect(counts.patients).toBe(2);
-    expect(counts.performed).toEqual({ bmv: 4, other: 1 });
+    expect(counts.performed).toEqual({ bmv: 4, surgery: 1 });
   });
 
   it('gives each step its share of the step before, or of the step named for it', () => {

@@ -365,7 +365,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             'waitlistDescription',
             "Open recommendations in each active patient's latest consultation, by urgency",
           )}
-          state={stateOf(waitlistReport, !waitlist.total && !waitlist.performed.bmv && !waitlist.performed.other)}
+          state={stateOf(waitlistReport, !waitlist.total && !waitlist.performed.bmv && !waitlist.performed.surgery)}
           {...section}
         >
           {waitlistAsTable ? (
@@ -417,7 +417,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           <p className={styles.performed} data-testid="dashboard-performed">
             {t(
               'performedInYear',
-              'Performed in the 12 months to the date shown: mitral balloon valvuloplasty {{bmv}}, other procedures {{other}}',
+              'Performed in the 12 months to the date shown: mitral balloon valvuloplasty {{bmv}}, surgery {{surgery}}',
               waitlist.performed,
             )}
           </p>

@@ -458,7 +458,7 @@
   "patientsOnProphylaxis": "Patients on prophylaxis",
   "patientsOpened": "Patients opened",
   "patientsOpenedLower": "patients opened",
-  "performedInYear": "Performed in the 12 months to the date shown: mitral balloon valvuloplasty {{bmv}}, other procedures {{other}}",
+  "performedInYear": "Performed in the 12 months to the date shown: mitral balloon valvuloplasty {{bmv}}, surgery {{surgery}}",
   "period": "Period",
   "periodLength": "Period length",
   "phone": "Phone",

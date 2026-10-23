@@ -59,7 +59,7 @@ export function waitlistCounts(rows: Array<ReportRow>) {
     rows: cells,
     total: Number(total?.recommendations ?? 0),
     patients: Number(total?.patients ?? 0),
-    performed: { bmv: performed('Mitral balloon valvuloplasty'), other: performed('Other procedure') },
+    performed: { bmv: performed('Mitral balloon valvuloplasty'), surgery: performed('Surgery') },
   };
 }
 

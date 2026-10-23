@@ -45,7 +45,7 @@ const recommendations = (procedure: string, urgency: string, patients: number, c
   recommendations: count,
 });
 
-const performed = (bmv: number, other: number) => [
+const performed = (bmv: number, surgery: number) => [
   {
     breakdown: 'performed',
     procedure: 'Mitral balloon valvuloplasty',
@@ -53,7 +53,7 @@ const performed = (bmv: number, other: number) => [
     patients: bmv,
     recommendations: bmv,
   },
-  { breakdown: 'performed', procedure: 'Other procedure', urgency: null, patients: other, recommendations: other },
+  { breakdown: 'performed', procedure: 'Surgery', urgency: null, patients: surgery, recommendations: surgery },
 ];
 
 /** The registrants and waitlist reports' rows for every clinic, for Lira, and for a clinic with no patients. */
@@ -665,12 +665,12 @@ describe('Dashboard', () => {
     expect(vi.mocked(useReportDataset).mock.calls.map(([report]) => report)).not.toContain(WAITLIST);
   });
 
-  it('prints the procedures performed in the year to the date, balloon valvuloplasties apart', async () => {
+  it('prints the balloon valvuloplasties and surgeries performed in the year to the date', async () => {
     await signIn();
     renderPage();
 
     expect(await screen.findByTestId('dashboard-performed')).toHaveTextContent(
-      'Performed in the 12 months to the date shown: mitral balloon valvuloplasty 2, other procedures 1',
+      'Performed in the 12 months to the date shown: mitral balloon valvuloplasty 2, surgery 1',
     );
   });
 
@@ -735,7 +735,7 @@ describe('Dashboard', () => {
           patients: 1,
           recommendations: 1,
         },
-        { breakdown: 'performed', procedure: 'Other procedure', urgency: null, patients: 0, recommendations: 0 },
+        { breakdown: 'performed', procedure: 'Surgery', urgency: null, patients: 0, recommendations: 0 },
       ],
     });
     renderPage();
