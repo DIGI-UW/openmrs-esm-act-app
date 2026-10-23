@@ -621,7 +621,9 @@ export default function Dashboard() {
       setUrl({ cardiacClinic: next.cardiacClinic ?? '', primaryCareClinic: next.primaryCareClinic ?? '' }),
     [setUrl],
   );
-  const figure = sections.includes(url.figure as FigureSection) ? ({ ...url, figure: url.figure } as Figure) : null;
+  const figure = sections.includes(url.figure as FigureSection)
+    ? (Object.fromEntries(figureKeys.map((key) => [key, url[key]])) as Figure)
+    : null;
   const defaultedKeys = sessionScope.status === 'ready' ? (Object.keys(sessionScope.params) as Array<UrlKey>) : [];
   const hrefOf = (change: Partial<Record<UrlKey, string>>) =>
     urlWithFilters(urlKeys, { ...url, ...change }, defaultedKeys);

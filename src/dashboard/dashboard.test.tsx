@@ -6,6 +6,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
 import { openmrsFetch, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -836,6 +837,51 @@ describe('Dashboard', () => {
       await vi.waitFor(() =>
         expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'registered' }),
       );
+    });
+
+    it('offers no figure chip on a figure already widened at a clinic and a past date, and sends its report no asOf', async () => {
+      await signIn(undefined, figureRows);
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&asOf=2026-01-15&figure=registrants&breakdown=registered',
+      );
+      renderPage();
+
+      expect(await screen.findByRole('button', { name: /Cardiac clinic: Lira RRH/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Registered/ })).not.toBeInTheDocument();
+      expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({
+        endDate: '2026-01-15',
+        cardiacClinic: 'lira',
+        breakdown: 'registered',
+      });
+    });
+
+    it('hands the banner and the date chip their values unescaped, as a procedure or a date carries a slash', async () => {
+      const t = vi.spyOn(useTranslation(), 't');
+      await signIn(undefined, figureRows);
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?asOf=2026-01-15&figure=waitlist&breakdown=open&procedure=Mitral%20valve%20repair%2Freplacement',
+      );
+      renderPage();
+
+      await screen.findByText(/^Opened from the Dashboard: /);
+      expect(t).toHaveBeenCalledWith(
+        'openedFromTheDashboard',
+        expect.any(String),
+        expect.objectContaining({
+          figure: 'Procedural waitlist, Mitral valve repair/replacement',
+          interpolation: { escapeValue: false },
+        }),
+      );
+      expect(t).toHaveBeenCalledWith(
+        'asOfDate',
+        expect.any(String),
+        expect.objectContaining({ date: '15/01/2026', interpolation: { escapeValue: false } }),
+      );
+      t.mockRestore();
     });
 
     it('lists consultations, not patients, behind the consultations figure, and says so', async () => {

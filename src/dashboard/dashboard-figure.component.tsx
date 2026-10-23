@@ -112,6 +112,7 @@ export function DashboardFigure({
           {t('openedFromTheDashboard', 'Opened from the Dashboard: {{figure}}, {{amount}}.', {
             figure: [names.section, names.label].filter(Boolean).join(', '),
             amount: units[unit],
+            interpolation: { escapeValue: false },
           })}
         </p>
         <Button kind="ghost" size="sm" renderIcon={ArrowLeft} onClick={onBack}>
@@ -136,8 +137,13 @@ export function DashboardFigure({
             },
           )}
         {asOf !== today &&
-          chip('asOf', t('asOfDate', 'As of {{date}}', { date: dayjs(asOf).format('DD/MM/YYYY') }), () =>
-            onAsOf(today),
+          chip(
+            'asOf',
+            t('asOfDate', 'As of {{date}}', {
+              date: dayjs(asOf).format('DD/MM/YYYY'),
+              interpolation: { escapeValue: false },
+            }),
+            () => onAsOf(today),
           )}
       </div>
       {report.error ? (
