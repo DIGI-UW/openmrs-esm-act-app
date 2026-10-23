@@ -448,6 +448,12 @@ describe('Confirmatory echo worklist', () => {
     expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'orange');
   });
 
+  it('says on its tile what the list holds', () => {
+    render(<ConfirmatoryEchoWorklist {...tile} />);
+
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('Screened positive, no diagnosis details yet');
+  });
+
   it('chooses its list on the Worklists page for every user, rather than leaving it', async () => {
     await signInWith([worklistsPrivilege, 'App: act.screenPositive']);
     render(<ConfirmatoryEchoWorklist view="choice" onSelect={vi.fn()} />);

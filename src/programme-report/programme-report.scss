@@ -55,6 +55,11 @@
   @include type.type-style('heading-05');
 }
 
+.description {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+}
+
 .tileNote {
   @include type.type-style('helper-text-01');
   color: $text-02;

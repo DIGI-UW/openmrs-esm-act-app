@@ -38,6 +38,7 @@ export default function ConfirmatoryEchoWorklist(state: WorklistState) {
       title={title}
       tone="orange"
       count={isLoading ? undefined : rows.length}
+      description={t('diagnosisToConfirmTileDescription', 'Screened positive, no diagnosis details yet')}
       error={error}
       list={
         hasPage ? (

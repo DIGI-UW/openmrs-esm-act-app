@@ -51,6 +51,7 @@ export function Worklist({
   title,
   tone,
   count,
+  description,
   error,
   list,
 }: {
@@ -58,6 +59,8 @@ export function Worklist({
   title: string;
   tone: WorklistTone;
   count?: number;
+  /** One line on the tile saying what the list holds. */
+  description?: string;
   error?: Error;
   list: React.ReactNode;
 }) {
@@ -82,6 +85,7 @@ export function Worklist({
         <span className={styles.count}>{count}</span>
       )}
       <span className={styles.name}>{title}</span>
+      {description && <span className={styles.description}>{description}</span>}
     </div>
   );
   if (state.view === 'choice') {
