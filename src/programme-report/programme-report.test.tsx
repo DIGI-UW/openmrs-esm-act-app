@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig, useSWRConfig } from 'swr';
-import { DashboardExtension, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { DashboardExtension, getDefaultsFromConfigSchema, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Reports from './reports.component';
@@ -72,15 +73,24 @@ async function atLocation(tags: Array<string> | null, privileges = ['App: act.re
     })) as never);
 }
 
+const cascadeRows = [
+  { step: 'Active', patients: 18 },
+  { step: 'Prescribed', patients: 15 },
+  { step: 'Initiated', patients: 11 },
+  { step: 'Covered today', patients: 9 },
+  { step: 'Adherent (80%+)', patients: 4 },
+];
+
 function dataset(value: Partial<ReturnType<typeof useReportDataset>> = {}) {
-  vi.mocked(useReportDataset).mockReturnValue({
+  const { careCascade, programmeReport } = getDefaultsFromConfigSchema(configSchema) as Config;
+  vi.mocked(useReportDataset).mockImplementation((report) => ({
     columns: [],
-    rows,
+    rows: report === careCascade.report ? cascadeRows : report === programmeReport.report ? rows : [],
     isLoading: false,
     error: undefined,
     mutate: vi.fn(),
     ...value,
-  });
+  }));
 }
 
 function renderPage(Page: React.ComponentType = Reports) {
@@ -91,7 +101,10 @@ function renderPage(Page: React.ComponentType = Reports) {
   );
 }
 
-const lastParams = () => vi.mocked(useReportDataset).mock.calls.at(-1)[1];
+const reportCalls = (report: string) => vi.mocked(useReportDataset).mock.calls.filter(([uuid]) => uuid === report);
+const programmeUuid = () => (getDefaultsFromConfigSchema(configSchema) as Config).programmeReport.report;
+const cascadeUuid = () => (getDefaultsFromConfigSchema(configSchema) as Config).careCascade.report;
+const lastParams = () => reportCalls(programmeUuid()).at(-1)[1];
 const tile = (label: string) => screen.getAllByTestId('report-tile').find((t) => t.textContent.startsWith(label));
 
 describe('Reports', () => {
@@ -119,6 +132,47 @@ describe('Reports', () => {
     renderPage();
 
     await waitFor(() => expect(tile('BPG on-time rate')).toHaveTextContent('BPG on-time rate–'));
+  });
+
+  it("draws the care cascade as ACT home does, today's steps at the clinic the report is for", async () => {
+    await atLocation(['RHD Community']);
+
+    renderPage();
+
+    const steps = await screen.findAllByTestId('cascade-step');
+    expect(steps.map((step) => step.textContent)).toEqual([
+      'Active18',
+      'Prescribed15',
+      'Initiated11',
+      'Covered today9',
+      'Adherent (80%+)4',
+    ]);
+    expect(screen.getByRole('heading', { name: 'Care cascade' })).toBeInTheDocument();
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      primaryCareClinic: 'session-location',
+    });
+  });
+
+  it('counts the cascade at the clinic the page is for, and does not link to itself', async () => {
+    await atLocation(['RHD Tertiary']);
+
+    renderPage();
+    await screen.findAllByTestId('cascade-step');
+
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      cardiacClinic: 'session-location',
+    });
+    expect(screen.queryByRole('link', { name: /Report/ })).not.toBeInTheDocument();
+  });
+
+  it('draws the care cascade on Facility reports too', async () => {
+    await atLocation(['RHD Community'], ['App: act.reports']);
+
+    renderPage(FacilityReports);
+
+    expect(await screen.findAllByTestId('cascade-step')).toHaveLength(5);
   });
 
   it('lists each facility with its active patients, adherence and data tag', async () => {
@@ -152,9 +206,7 @@ describe('Reports', () => {
 
     renderPage();
 
-    await waitFor(() =>
-      expect(vi.mocked(useReportDataset).mock.calls.at(-1)[0]).toBe('c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31'),
-    );
+    await waitFor(() => expect(reportCalls(programmeUuid()).length).toBeGreaterThan(0));
     expect(lastParams()).toEqual({ startDate: expect.any(String), endDate: expect.any(String), ...scope });
   });
 

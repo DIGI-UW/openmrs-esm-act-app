@@ -19,6 +19,7 @@ import {
 } from '@carbon/react';
 import { FacilityPictogram, isDesktop, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
+import { CareCascadeCard } from '../act-home/care-cascade.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
@@ -238,6 +239,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
             ))}
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
+          <CareCascadeCard scope={scope ?? null} />
         </>
       )}
     </>
