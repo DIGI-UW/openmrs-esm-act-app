@@ -100,7 +100,7 @@ export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; i
       <p className={styles.description}>
         {t(
           'byFacilityDescription',
-          'Each primary care clinic: active patients, mean adherence and data status (Complete, Review or Duplicates).',
+          "Each patient's primary care clinic: active patients, mean adherence and data status (Duplicates: shared name and birth date, Review: open data-quality flag).",
         )}
       </p>
       {isLoading ? (
@@ -181,7 +181,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
       label: t('prophylaxisDueThisWeek', 'Prophylaxis due this week'),
       value: sum(rows, 'due_this_week'),
       tone: styles.blue,
-      note: t('nextDoseDueInSevenDays', 'Next dose due in the next 7 days'),
+      note: t('nextDoseDueInSevenDays', 'Next dose due within 7 days'),
     },
     { label: t('overdue', 'Overdue'), value: sum(rows, 'overdue'), tone: styles.red },
     {

@@ -107,7 +107,7 @@ describe('Reports', () => {
 
     await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
     expect(tile('Prophylaxis due this week')).toHaveTextContent('4');
-    expect(tile('Prophylaxis due this week')).toHaveTextContent('Next dose due in the next 7 days');
+    expect(tile('Prophylaxis due this week')).toHaveTextContent('Next dose due within 7 days');
     expect(tile('Overdue')).toHaveTextContent('6');
     // 9 of 12 timed injections on time.
     expect(tile('BPG on-time rate')).toHaveTextContent(`75%${dayjs().format('MMM YYYY')}`);
@@ -128,7 +128,7 @@ describe('Reports', () => {
     renderPage();
 
     expect(
-      await screen.findByText(/Each primary care clinic: active patients, mean adherence and data status/),
+      await screen.findByText(/Each patient's primary care clinic: active patients, mean adherence and data status/),
     ).toBeInTheDocument();
   });
 
