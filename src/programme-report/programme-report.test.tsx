@@ -181,20 +181,30 @@ describe('Reports', () => {
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 
-  it("holds the care cascade to a limited administrator's clinics when the page is at every clinic", async () => {
+  it('draws no care cascade for a limited administrator when the page is at every clinic', async () => {
     await atLocation(['Visit Location']);
     limitTo({ status: 'ready', uuids: ['gulu', 'acimi'], names: ['Gulu RRH', 'Acimi HCIII'] });
 
     renderPage();
 
-    await screen.findAllByTestId('cascade-step');
-    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
-      endDate: dayjs().format('YYYY-MM-DD'),
-      clinics: 'gulu,acimi',
-    });
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 
-  it('sends no clinics to the care cascade for a user who is not limited', async () => {
+  it('draws no care cascade for a limited administrator whose account holds no clinic', async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'ready', uuids: [], names: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('sends the care cascade only the date for a user who is not limited', async () => {
     await atLocation(['Visit Location']);
 
     renderPage();
@@ -203,7 +213,7 @@ describe('Reports', () => {
     expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({ endDate: dayjs().format('YYYY-MM-DD') });
   });
 
-  it('keeps the clinic the care cascade is for, for a limited administrator', async () => {
+  it('draws the care cascade at the clinic a limited administrator is at, with no clinics sent', async () => {
     await atLocation(['RHD Community']);
     limitTo({ status: 'ready', uuids: ['session-location'], names: ['Gulu RRH'] });
 
@@ -216,26 +226,15 @@ describe('Reports', () => {
     });
   });
 
-  it('counts the care cascade for no clinic when a limited administrator has none', async () => {
-    await atLocation(['Visit Location']);
-    limitTo({ status: 'ready', uuids: [], names: [] });
-
-    renderPage();
-
-    await screen.findAllByTestId('cascade-step');
-    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
-      endDate: dayjs().format('YYYY-MM-DD'),
-      clinics: 'none',
-    });
-  });
-
-  it('waits for the limit before evaluating the care cascade', async () => {
-    await atLocation(['Visit Location']);
+  it('draws no care cascade while the limit is pending', async () => {
+    await atLocation(['RHD Community']);
     limitTo({ status: 'pending' });
 
     renderPage();
 
-    expect(await screen.findByTestId('cascade-loading')).toBeInTheDocument();
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 

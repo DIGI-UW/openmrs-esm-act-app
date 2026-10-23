@@ -148,9 +148,6 @@ export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; i
   );
 }
 
-/** A value no location uuid takes, for the cascade of a limited administrator whose account holds no clinic. */
-const NO_CLINIC = 'none';
-
 function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   const { t } = useTranslation();
   const { programmeReport } = useConfig<Config>();
@@ -173,14 +170,12 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   );
   const { rows, isLoading, error } = useReportDataset(scope ? programmeReport.report : null, params);
   const limit = useClinicLimit();
-  // The cascade rows name no clinic, so a limited administrator's clinics go to the report.
-  const cascadeScope = useMemo(() => {
-    if (!scope || limit.status === 'pending') {
-      return null;
-    }
-    const atOneClinic = scope.cardiacClinic || scope.primaryCareClinic;
-    return limit.status === 'none' || atOneClinic ? scope : { ...scope, clinics: limit.uuids.join(',') || NO_CLINIC };
-  }, [scope, limit]);
+  // The cascade report cannot be held to clinics, so a limited administrator sees it only at a clinic of their own.
+  const showCascade =
+    clinicFilters &&
+    !!scope &&
+    limit.status !== 'pending' &&
+    (limit.status === 'none' || !!scope.cardiacClinic || !!scope.primaryCareClinic);
 
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
@@ -252,7 +247,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
             ))}
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
-          {clinicFilters && <CareCascadeCard scope={cascadeScope} />}
+          {showCascade && <CareCascadeCard scope={scope} />}
         </>
       )}
     </>
