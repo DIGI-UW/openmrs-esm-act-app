@@ -111,6 +111,8 @@ describe('configSchema', () => {
       dashboard: {
         registrantsReport: '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71',
         waitlistReport: '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52',
+        showScreening: true,
+        screeningReport: '0f4b7c2d-6a1e-5d93-8b47-2c9e1f5a3d68',
         registrantPatientsReport: 'e8296d2d-def8-5f8e-ba2d-78c59859b9e3',
         waitlistPatientsReport: 'bc987343-8b70-5f95-84a8-d017cffa14da',
         cascadePatientsReport: '7c62fcfd-03b2-5d84-9cea-92a43b70ae76',

@@ -242,8 +242,8 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const optimisationReport = whileLimitRead(
     useReportDataset(counted ? dashboard.medicalOptimisationReport : null, countParams),
   );
-  const screeningReport = useReportDataset(dashboard.screeningCascadeReport, params);
-  const diagnosesReport = useReportDataset(dashboard.screeningDiagnosesReport, params);
+  const screeningReport = useReportDataset(dashboard.showScreening ? dashboard.screeningCascadeReport : null, params);
+  const diagnosesReport = useReportDataset(dashboard.showScreening ? dashboard.screeningDiagnosesReport : null, params);
 
   const measures = optimisationReport.rows.map((row: ReportRow) => {
     const done = Number(row.done ?? 0);
@@ -538,54 +538,171 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             ))}
           </ul>
         </Section>
-        <Section
-          title={t('screeningCascade', 'Screening cascade')}
-          description={t(
-            'screeningCascadeDescription',
-            'Registrants found by screening, and what their confirmatory echo showed',
-          )}
-          state={{
-            isLoading: screeningReport.isLoading || diagnosesReport.isLoading,
-            error: screeningReport.error ?? diagnosesReport.error,
-            retry: () => {
-              if (screeningReport.error) {
-                void screeningReport.mutate();
-              }
-              if (diagnosesReport.error) {
-                void diagnosesReport.mutate();
-              }
-            },
-            isEmpty: allZero(screening) && allZero(diagnoses),
-          }}
-          wide
-          {...section}
-        >
-          <div className={styles.columns}>
-            <div>
-              <h4 className={styles.subheading}>{t('cascade', 'Cascade')}</h4>
-              <CascadeBars
-                name={t('screeningCascade', 'Screening cascade')}
-                steps={screening}
-                testId="dashboard-screening-step"
-              />
+        {dashboard.showScreening && (
+          <Section
+            title={t('screeningCascade', 'Screening cascade')}
+            description={t(
+              'screeningCascadeDescription',
+              'Registrants found by screening, and what their confirmatory echo showed',
+            )}
+            state={{
+              isLoading: screeningReport.isLoading || diagnosesReport.isLoading,
+              error: screeningReport.error ?? diagnosesReport.error,
+              retry: () => {
+                if (screeningReport.error) {
+                  void screeningReport.mutate();
+                }
+                if (diagnosesReport.error) {
+                  void diagnosesReport.mutate();
+                }
+              },
+              isEmpty: allZero(screening) && allZero(diagnoses),
+            }}
+            wide
+            {...section}
+          >
+            <div className={styles.columns}>
+              <div>
+                <h4 className={styles.subheading}>{t('cascade', 'Cascade')}</h4>
+                <CascadeBars
+                  name={t('screeningCascade', 'Screening cascade')}
+                  steps={screening}
+                  testId="dashboard-screening-step"
+                />
+              </div>
+              <div>
+                <h4 className={styles.subheading}>{t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}</h4>
+                <CountsDonut
+                  name={t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
+                  counts={diagnoses}
+                  centre={t('diagnosed', 'diagnosed')}
+                  testId="dashboard-screening-category"
+                />
+              </div>
+              <div>
+                <h4 className={styles.subheading}>{t('screenDetectedRhd', 'RHD details of the screen-detected')}</h4>
+                <Bars counts={rhdDetails} testId="dashboard-screening-details" />
+              </div>
             </div>
-            <div>
-              <h4 className={styles.subheading}>{t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}</h4>
-              <CountsDonut
-                name={t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
-                counts={diagnoses}
-                centre={t('diagnosed', 'diagnosed')}
-                testId="dashboard-screening-category"
-              />
-            </div>
-            <div>
-              <h4 className={styles.subheading}>{t('screenDetectedRhd', 'RHD details of the screen-detected')}</h4>
-              <Bars counts={rhdDetails} testId="dashboard-screening-details" />
-            </div>
-          </div>
-        </Section>
+          </Section>
+        )}
+        {dashboard.showScreening && <ScreeningFromRegistrations scope={scope} asOf={asOf} {...section} />}
       </div>
     </>
+  );
+}
+
+const screenOrder = ['Yes', 'No', 'Not recorded'];
+const registrationAgeOrder = ['Children 0-9', 'Adolescents 10-19', 'Adults 20+', 'Age unknown'];
+const detectionOrder = ['School', 'Community', 'Health facility', 'Other', 'Not recorded'];
+
+/** The rows of a breakdown in the order given, leaving out the labels the report does not return. */
+const inOrder = (rows: Array<ReportRow>, breakdown: string, order: Array<string>): Array<Count> =>
+  order.flatMap((label) =>
+    rows
+      .filter((row) => row.breakdown === breakdown && row.label === label)
+      .map((row) => ({ label, value: Number(row.patients ?? 0) })),
+  );
+
+/** The screening figures the registry can give until screening counts are decided (#184), for a registration period. */
+function ScreeningFromRegistrations({
+  scope,
+  asOf,
+  clinic,
+  onShowAll,
+}: {
+  scope: Scope;
+  asOf: string;
+  clinic: string | null;
+  onShowAll: () => void;
+}) {
+  const { t } = useTranslation();
+  const { dashboard } = useConfig<Config>();
+  const [chosen, setChosen] = useState<{ start?: string; end?: string }>({});
+  const end = chosen.end ?? asOf;
+  const start = chosen.start ?? dayjs(end).subtract(364, 'day').format('YYYY-MM-DD');
+  const params = useMemo(() => ({ startDate: start, endDate: end, ...scope }), [start, end, scope]);
+  const { counted, countParams, pending } = useCountParams(params);
+  const report = useReportDataset(counted ? dashboard.screeningReport : null, countParams);
+  const { rows } = report;
+  const registered = Number(rows.find((row) => row.breakdown === 'total')?.patients ?? 0);
+  const female = Number(rows.find((row) => row.breakdown === 'female')?.patients ?? 0);
+  const pickDate = (key: 'start' | 'end') => (date: Date) => {
+    const day = date && dayjs(date).format('YYYY-MM-DD');
+    if (day && day >= earliestAsOf) {
+      setChosen((current) => ({ ...current, [key]: day }));
+    }
+  };
+
+  return (
+    <Section
+      title={t('screeningFromRegistrations', 'Screening, from registrations')}
+      description={t(
+        'screeningFromRegistrationsDescription',
+        'Patients registered in the period: what the registry can say about screening until screening counts are decided',
+      )}
+      state={{ ...stateOf(report, !registered), isLoading: report.isLoading || pending }}
+      clinic={clinic}
+      onShowAll={onShowAll}
+      wide
+    >
+      <InlineNotification
+        kind="info"
+        lowContrast
+        hideCloseButton
+        title={t(
+          'registrationsNotScreening',
+          'Counts registered patients, not people screened: a screen-negative child is never registered.',
+        )}
+      />
+      <div className={styles.filters}>
+        <OpenmrsDatePicker
+          id="dashboard-registered-from"
+          labelText={t('registeredFrom', 'Registered from')}
+          value={dayjs(start).toDate()}
+          minDate={dayjs(earliestAsOf).toDate()}
+          maxDate={dayjs(end).toDate()}
+          onChange={pickDate('start')}
+        />
+        <OpenmrsDatePicker
+          id="dashboard-registered-to"
+          labelText={t('registeredTo', 'Registered to')}
+          value={dayjs(end).toDate()}
+          minDate={dayjs(start).toDate()}
+          maxDate={new Date()}
+          onChange={pickDate('end')}
+        />
+      </div>
+      <div className={styles.columns}>
+        <div className={styles.registrationTiles}>
+          <Tile className={styles.tile} data-testid="dashboard-registration-tile">
+            <span className={styles.tileLabel}>{t('registered', 'Registered')}</span>
+            <span className={styles.tileValue}>{registered}</span>
+          </Tile>
+          <Tile className={styles.tile} data-testid="dashboard-registration-tile">
+            <span className={styles.tileLabel}>{t('female', 'Female')}</span>
+            <span className={styles.tileValue}>{share(female, registered)}%</span>
+          </Tile>
+          <div>
+            <h4 className={styles.subheading}>{t('screenPlus', 'Screen +')}</h4>
+            <Bars counts={inOrder(rows, 'screen', screenOrder)} testId="dashboard-screen-positive" />
+          </div>
+        </div>
+        <div>
+          <h4 className={styles.subheading}>{t('ageAtRegistration', 'Age at registration')}</h4>
+          <Bars counts={inOrder(rows, 'age', registrationAgeOrder)} testId="dashboard-registration-age" />
+        </div>
+        <div>
+          <h4 className={styles.subheading}>{t('caseDetectedBy', 'Case detected by')}</h4>
+          <CountsDonut
+            name={t('caseDetectedBy', 'Case detected by')}
+            counts={inOrder(rows, 'detected', detectionOrder)}
+            centre={t('registered', 'Registered').toLowerCase()}
+            testId="dashboard-detected"
+          />
+        </div>
+      </div>
+    </Section>
   );
 }
 

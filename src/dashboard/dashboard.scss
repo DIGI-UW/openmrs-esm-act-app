@@ -122,6 +122,11 @@
   gap: layout.$spacing-07;
 }
 
+.registrationTiles {
+  display: grid;
+  gap: layout.$spacing-05;
+}
+
 .subheading {
   @include type.type-style('heading-compact-01');
   margin-bottom: layout.$spacing-04;

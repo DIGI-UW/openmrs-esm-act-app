@@ -5,9 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
-import { openmrsFetch, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
+import { type Config, configSchema } from '../config-schema';
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
@@ -28,6 +29,22 @@ const DASHBOARD_WAITLIST = '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52';
 const REGISTRANT_PATIENTS = 'e8296d2d-def8-5f8e-ba2d-78c59859b9e3';
 const WAITLIST_PATIENTS = 'bc987343-8b70-5f95-84a8-d017cffa14da';
 const OPTIMISATION_PATIENTS = '45c646b2-f223-585e-963a-3c74fe883ae4';
+const SCREENING_REGISTRATIONS = '0f4b7c2d-6a1e-5d93-8b47-2c9e1f5a3d68';
+
+const screeningRows = [
+  { breakdown: 'total', label: 'Registered', patients: 5 },
+  { breakdown: 'female', label: 'Female', patients: 3 },
+  { breakdown: 'screen', label: 'Yes', patients: 2 },
+  { breakdown: 'screen', label: 'No', patients: 2 },
+  { breakdown: 'screen', label: 'Not recorded', patients: 1 },
+  { breakdown: 'age', label: 'Adults 20+', patients: 1 },
+  { breakdown: 'age', label: 'Children 0-9', patients: 1 },
+  { breakdown: 'age', label: 'Adolescents 10-19', patients: 3 },
+  { breakdown: 'detected', label: 'School', patients: 2 },
+  { breakdown: 'detected', label: 'Community', patients: 1 },
+  { breakdown: 'detected', label: 'Other', patients: 1 },
+  { breakdown: 'detected', label: 'Not recorded', patients: 1 },
+];
 
 const patientRow = (name: string, value: string, date: string | null = null) => ({
   patient_uuid: `uuid-${name}`,
@@ -111,6 +128,7 @@ const dashboardRows = (clinic?: string): Record<string, Array<Record<string, unk
             { breakdown: 'total', procedure: 'All', urgency: null, patients: 2, recommendations: 3 },
             ...performed(2, 1),
           ],
+          [SCREENING_REGISTRATIONS]: screeningRows,
         };
 
 /** The count reports' rows as the server returns them: every step or measure, whatever its count. */
@@ -166,8 +184,9 @@ async function signIn(
   overrides: Record<string, Array<Record<string, unknown>>> = {},
   sessionLocation = { uuid: 'hq', display: 'Head office', tags: [] as Array<{ display: string }> },
   limitedTo?: string,
+  config: Parameters<typeof signInWith>[1] = {},
 ) {
-  await signInWith(limitedTo === undefined ? ['App: act.dashboard'] : ['App: act.dashboard', 'Edit Users']);
+  await signInWith(limitedTo === undefined ? ['App: act.dashboard'] : ['App: act.dashboard', 'Edit Users'], config);
   const session = vi.mocked(useSession)();
   vi.mocked(useSession).mockReturnValue({
     ...session,
@@ -503,7 +522,7 @@ describe('Dashboard', () => {
 
     await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'mbarara');
 
-    expect(await screen.findAllByText('Nobody at Mbarara RRH to count')).toHaveLength(6);
+    expect(await screen.findAllByText('Nobody at Mbarara RRH to count')).toHaveLength(7);
     expect(screen.queryByTestId('dashboard-cascade-step')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dashboard-measure')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dashboard-screening-step')).not.toBeInTheDocument();
@@ -627,9 +646,9 @@ describe('Dashboard', () => {
     await signIn(undefined, {}, { uuid: 'arua', display: 'Arua RRH', tags: [{ display: 'RHD Tertiary' }] });
     renderPage();
 
-    expect(await screen.findAllByText('Nobody at Arua RRH to count')).toHaveLength(6);
+    expect(await screen.findAllByText('Nobody at Arua RRH to count')).toHaveLength(7);
     expect(screen.queryByText(/arua to count/)).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(6);
+    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(7);
   });
 
   it('reads the prophylaxis tile from the step the older cascade report names Prescribed Prophylaxis', async () => {
@@ -1093,6 +1112,71 @@ describe('Dashboard', () => {
           }),
         ),
       );
+    });
+  });
+
+  describe('screening from registrations', () => {
+    const yearBack = dayjs().subtract(364, 'day').format('YYYY-MM-DD');
+
+    it('counts the patients registered in the 365 days to the date, and says it counts registrations, not screening', async () => {
+      await signIn();
+      renderPage();
+
+      expect(await screen.findByText('Screening, from registrations')).toBeInTheDocument();
+      expect(paramsOf(SCREENING_REGISTRATIONS)).toEqual({ startDate: yearBack, endDate: today });
+      expect(
+        screen.getByText(
+          /Counts registered patients, not people screened: a screen-negative child is never registered/,
+        ),
+      ).toBeInTheDocument();
+      expect(texts('dashboard-registration-tile')).toEqual(['Registered5', 'Female60%']);
+      expect(texts('dashboard-screen-positive')).toEqual(['Yes2', 'No2', 'Not recorded1']);
+      expect(texts('dashboard-registration-age')).toEqual(['Children 0-91', 'Adolescents 10-193', 'Adults 20+1']);
+      expect(texts('dashboard-detected')).toEqual(['School2', 'Community1', 'Other1', 'Not recorded1']);
+    });
+
+    it('evaluates the period chosen and the clinics chosen', async () => {
+      await signIn();
+      renderPage();
+      await screen.findByText('Screening, from registrations');
+
+      fireEvent.change(screen.getByLabelText('Registered from'), { target: { value: '2026-01-01' } });
+      fireEvent.change(screen.getByLabelText('Registered to'), { target: { value: '2026-06-30' } });
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+
+      await vi.waitFor(() =>
+        expect(paramsOf(SCREENING_REGISTRATIONS)).toEqual({
+          startDate: '2026-01-01',
+          endDate: '2026-06-30',
+          cardiacClinic: 'lira',
+        }),
+      );
+    });
+
+    it('holds a clinic-limited administrator to their clinics', async () => {
+      await signIn(undefined, {}, undefined, 'gulu,lira');
+      renderPage();
+
+      await vi.waitFor(() =>
+        expect(paramsOf(SCREENING_REGISTRATIONS)).toEqual({
+          startDate: yearBack,
+          endDate: today,
+          clinics: 'gulu,lira',
+        }),
+      );
+    });
+
+    it('hides both screening sections at a site without a screening programme', async () => {
+      await signIn(undefined, {}, undefined, undefined, {
+        dashboard: { ...getDefaultsFromConfigSchema<Config>(configSchema).dashboard, showScreening: false },
+      });
+      renderPage();
+
+      await screen.findAllByTestId('dashboard-tile');
+      expect(screen.queryByText('Screening cascade')).not.toBeInTheDocument();
+      expect(screen.queryByText('Screening, from registrations')).not.toBeInTheDocument();
+      const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
+      [SCREENING, DIAGNOSES, SCREENING_REGISTRATIONS].forEach((report) => expect(evaluated).not.toContain(report));
     });
   });
 });
