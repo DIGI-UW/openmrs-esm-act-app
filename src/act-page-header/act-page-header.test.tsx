@@ -17,7 +17,6 @@ const screens = [
   {
     name: 'ACT home',
     Screen: ActHomeDashboard,
-    pictogram: 'HomePictogram',
     noAccess: 'You do not have access to ACT home.',
   },
   {
@@ -46,6 +45,8 @@ const screens = [
   },
 ];
 
+const pictogramScreens = screens.filter(({ pictogram }) => pictogram);
+
 describe('ACT page header', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -65,7 +66,7 @@ describe('ACT page header', () => {
     vi.useRealTimers();
   });
 
-  it.each(screens)(
+  it.each(pictogramScreens)(
     'starts $name with the framework page header, its title and pictogram',
     async ({ Screen, name, pictogram }) => {
       await signInWith([

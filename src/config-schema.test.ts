@@ -13,7 +13,12 @@ describe('configSchema', () => {
         namePrefix: 'RHD ',
         names: [],
         riskFlags: ['RHD prophylaxis overdue', 'RHD oral prophylaxis overdue', 'RHD lost to follow-up'],
-        earlyWarningFlags: ['RHD cardiology follow-up due', 'RHD INR review due', 'RHD no data for 5 months'],
+        earlyWarningFlags: [
+          'RHD cardiology follow-up due',
+          'RHD INR review due',
+          'RHD no data for 5 months',
+          'RHD referred to a clinician',
+        ],
         flagForms: [
           {
             flag: 'b1f7a2c0-0005-4a00-9000-000000000005',
@@ -206,6 +211,7 @@ describe('configSchema', () => {
         oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
       },
       actIdentifierType: '240f85fa-46e1-540e-9234-2796c623f7ea',
+      patientInformationForm: 'a6646c51-130d-3b59-a442-959bea93487d',
       singleRecordForms: ['a6646c51-130d-3b59-a442-959bea93487d', '7807da80-ee71-3900-bbce-a026e4a8d54d'],
       visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
       sessionTimeout: { idleMinutes: 30, warningMinutes: 3, keepAliveMinutes: 10 },

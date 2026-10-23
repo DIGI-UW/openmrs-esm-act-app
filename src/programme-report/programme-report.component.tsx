@@ -19,7 +19,9 @@ import {
 } from '@carbon/react';
 import { FacilityPictogram, isDesktop, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
+import { CareCascadeCard } from '../act-home/care-cascade.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
+import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -86,7 +88,7 @@ export function ClinicFilters({
   );
 }
 
-/** The programme report's By facility table, shared so Reports and Studies show the same figures under each header. */
+/** The programme report's By facility table, shared so Reports and Facility reports show the same figures under each header. */
 export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; isLoading: boolean }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
@@ -97,6 +99,12 @@ export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; i
   };
   return (
     <ActHomeCard title={t('byFacility', 'By facility')}>
+      <p className={styles.description}>
+        {t(
+          'byFacilityDescription',
+          "Each patient's primary care clinic: active patients, mean adherence and data status (Duplicates: shared name and birth date, Review: open data-quality flag).",
+        )}
+      </p>
       {isLoading ? (
         <DataTableSkeleton
           role="progressbar"
@@ -167,11 +175,24 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
     [period, scope],
   );
   const { rows, isLoading, error } = useReportDataset(scope ? programmeReport.report : null, params);
+  const limit = useClinicLimit();
+  const scopeClinics = [scope?.cardiacClinic, scope?.primaryCareClinic].filter(Boolean);
+  // The cascade report cannot be held to clinics, so a limited user sees it only at their own.
+  const showCascade =
+    clinicFilters &&
+    !!scope &&
+    limit.status !== 'pending' &&
+    (limit.status === 'none' || (!!scopeClinics.length && scopeClinics.every((uuid) => limit.uuids.includes(uuid))));
 
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
     { label: t('activePatients', 'Active patients'), value: sum(rows, 'active_patients') },
-    { label: t('dueThisWeek', 'Due this week'), value: sum(rows, 'due_this_week'), tone: styles.blue },
+    {
+      label: t('prophylaxisDueThisWeek', 'Prophylaxis due this week'),
+      value: sum(rows, 'due_this_week'),
+      tone: styles.blue,
+      note: t('nextDoseDueInSevenDays', 'Next dose due within 7 days'),
+    },
     { label: t('overdue', 'Overdue'), value: sum(rows, 'overdue'), tone: styles.red },
     {
       label: t('bpgOnTimeRate', 'BPG on-time rate'),
@@ -238,6 +259,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
             ))}
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
+          {showCascade && <CareCascadeCard scope={scope} />}
         </>
       )}
     </>

@@ -11,16 +11,26 @@ import { ActHomeCard } from './act-home-card.component';
 import { cascadeSteps } from './care-cascade-steps';
 import styles from './care-cascade.scss';
 
-function Cascade() {
+/**
+ * The care cascade as of today at one clinic scope, the report's clinic parameters; `null` while the scope is not
+ * known, when nothing is evaluated. ACT home and Reports draw it alike, so they count alike.
+ */
+export function CareCascadeCard({
+  scope,
+  scopeError,
+  clinicName,
+  link,
+}: {
+  scope: Record<string, string> | null;
+  scopeError?: boolean;
+  clinicName?: string;
+  link?: { label: string; to: string };
+}) {
   const { t } = useTranslation();
   const { careCascade } = useConfig<Config>();
   // Send a plain date: the server runs on UTC, so a local-midnight timestamp east of UTC lands on yesterday.
   const today = useMemo(() => dayjs().startOf('day'), []);
-  // The session's clinic, as Reports counts it; while its kind is unknown or cannot be read, nothing is evaluated.
-  const scope = useProgrammeScope(false);
-  const clinic = useSessionClinicScope();
-  const clinicName = clinic.status === 'ready' ? clinic.clinic?.name : null;
-  const { cardiacClinic, primaryCareClinic } = scope.status === 'ready' ? scope.params : {};
+  const { cardiacClinic, primaryCareClinic } = scope ?? {};
   const params = useMemo(
     () => ({
       endDate: today.format('YYYY-MM-DD'),
@@ -29,11 +39,10 @@ function Cascade() {
     }),
     [today, cardiacClinic, primaryCareClinic],
   );
-  const report = useReportDataset(scope.status === 'ready' ? careCascade.report : null, params);
+  const report = useReportDataset(scope ? careCascade.report : null, params);
   const { rows } = report;
-  const error =
-    report.error ?? (scope.status === 'error' ? new Error('The session location could not be read') : undefined);
-  const isLoading = report.isLoading || scope.status === 'pending';
+  const error = report.error ?? (scopeError ? new Error('The session location could not be read') : undefined);
+  const isLoading = report.isLoading || (!scope && !scopeError);
   const steps = cascadeSteps(rows, careCascade.steps).map(({ step, label, value }) => ({
     step,
     label,
@@ -42,10 +51,7 @@ function Cascade() {
   const largest = Math.max(0, ...steps.map((row) => row.patients));
 
   return (
-    <ActHomeCard
-      title={t('careCascade', 'Care cascade')}
-      link={{ label: t('report', 'Report'), to: careCascade.reportUrl }}
-    >
+    <ActHomeCard title={t('careCascade', 'Care cascade')} link={link}>
       {clinicName && (
         <p className={styles.caption}>
           {t('patientsEnrolledAt', 'Patients enrolled at {{clinic}}', { clinic: clinicName })}
@@ -89,6 +95,22 @@ function Cascade() {
         <p className={styles.empty}>{t('noCareCascadeData', 'No care cascade data')}</p>
       )}
     </ActHomeCard>
+  );
+}
+
+function Cascade() {
+  const { t } = useTranslation();
+  const { careCascade } = useConfig<Config>();
+  // The session's clinic, as Reports counts it.
+  const scope = useProgrammeScope(false);
+  const clinic = useSessionClinicScope();
+  return (
+    <CareCascadeCard
+      scope={scope.status === 'ready' ? scope.params : null}
+      scopeError={scope.status === 'error'}
+      clinicName={clinic.status === 'ready' ? clinic.clinic?.name : undefined}
+      link={{ label: t('report', 'Report'), to: careCascade.reportUrl }}
+    />
   );
 }
 

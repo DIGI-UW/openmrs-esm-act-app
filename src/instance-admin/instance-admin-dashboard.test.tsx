@@ -67,6 +67,24 @@ describe('InstanceAdminDashboard', () => {
     expect(within(header).getByText('28-Sept-2026')).toBeInTheDocument();
   });
 
+  it('shows the ACT logo and the signed-in role in its header', () => {
+    vi.mocked(useSession).mockReturnValue({
+      ...vi.mocked(useSession)(),
+      user: {
+        uuid: 'admin',
+        privileges: [],
+        roles: [{ uuid: 'r', display: 'Organizational: ACT Instance Administrator' }],
+      },
+    } as never);
+    mockUseAssignedExtensions.mockReturnValue([]);
+
+    render(<InstanceAdminDashboard />);
+
+    const header = within(screen.getByTestId('act-page-header'));
+    expect(header.getByRole('img', { name: 'ACT logo' })).toBeInTheDocument();
+    expect(header.getByText('Role: Instance Administrator')).toBeInTheDocument();
+  });
+
   it('says so while no widget is assigned to Home', () => {
     mockUseAssignedExtensions.mockReturnValue([]);
 

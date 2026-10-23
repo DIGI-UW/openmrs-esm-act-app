@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
+import { columnHeaders } from '../column-headers.test-helper';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { screenPositiveRows } from './screen-positive.fixture';
@@ -61,12 +62,30 @@ describe('Diagnosis to confirm', () => {
 
     render(<ScreenPositive />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-    expect(headers).toEqual(['Patient', 'Screened', 'Screening site', 'Status', '']);
+    expect(columnHeaders()).toEqual(['Patient', 'Screened', 'Screening site', 'Status', '']);
     const cells = within(screen.getByRole('row', { name: /Patient 2\b/ }))
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
     expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Echo booked', 'Enter diagnosis']);
+  });
+
+  it('sorts by any column, the date of positive screen by its day, then returns to the report order', async () => {
+    dataset({
+      rows: [
+        { ...screenPositiveRows[0], screen_date: '2026-09-17' },
+        { ...screenPositiveRows[1], screen_date: '2026-10-02' },
+        { ...screenPositiveRows[2], screen_date: '2026-01-05' },
+      ],
+    });
+    render(<ScreenPositive />);
+    const sortBy = (header: string) => userEvent.click(screen.getByRole('button', { name: new RegExp(`^${header}`) }));
+
+    await sortBy('Screened');
+    expect(shownNames().filter((name) => name.startsWith('Patient'))).toEqual(['Patient 3', 'Patient 1', 'Patient 2']);
+    await sortBy('Screened');
+    expect(shownNames().filter((name) => name.startsWith('Patient'))).toEqual(['Patient 2', 'Patient 1', 'Patient 3']);
+    await sortBy('Screened');
+    expect(shownNames().filter((name) => name.startsWith('Patient'))).toEqual(['Patient 1', 'Patient 2', 'Patient 3']);
   });
 
   it("opens on the patients of the session's primary care clinic", async () => {

@@ -48,7 +48,12 @@ export const configSchema = {
     earlyWarningFlags: {
       _type: Type.Array,
       _elements: { _type: Type.String },
-      _default: ['RHD cardiology follow-up due', 'RHD INR review due', 'RHD no data for 5 months'],
+      _default: [
+        'RHD cardiology follow-up due',
+        'RHD INR review due',
+        'RHD no data for 5 months',
+        'RHD referred to a clinician',
+      ],
       _description:
         "The flags, by name, that warn of care coming due rather than of missing data: blue in the registry, as the chart draws the distro's RHD Early Warning priority. A flag listed here and in riskFlags counts as a risk.",
     },
@@ -566,6 +571,12 @@ export const configSchema = {
     _default: '240f85fa-46e1-540e-9234-2796c623f7ea',
     _description: "The identifier type ACT's patient search shows as the patient's ACT ID.",
   },
+  patientInformationForm: {
+    _type: Type.UUID,
+    _default: 'a6646c51-130d-3b59-a442-959bea93487d',
+    _description:
+      "The RHD Patient Information form, which the Consultation visits card's Update diagnosis opens: the patient's latest for editing when it is in singleRecordForms, as by default.",
+  },
   singleRecordForms: {
     _type: Type.Array,
     _elements: { _type: Type.UUID },
@@ -757,6 +768,7 @@ export interface Config {
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
+  patientInformationForm: string;
   singleRecordForms: Array<string>;
   visitType: string;
   sessionTimeout: { idleMinutes: number; warningMinutes: number; keepAliveMinutes: number };

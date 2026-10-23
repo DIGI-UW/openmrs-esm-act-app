@@ -199,10 +199,18 @@
       "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
     {
+      "name": "act-worklist-referred-to-clinician",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 8,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
       "name": "act-worklist-waiting-list",
       "slot": "act-worklists-slot",
       "component": "waitingListWorklist",
-      "order": 8,
+      "order": 9,
       "privileges": "App: act.waitingList",
       "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
     },
