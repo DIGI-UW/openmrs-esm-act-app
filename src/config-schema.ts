@@ -238,7 +238,7 @@ export const configSchema = {
       _type: Type.String,
       _default: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
       _description:
-        'The care cascade report, by uuid or name. The ACT home widget draws its rows, one per step, from their step and patients columns.',
+        'The care cascade report, by uuid or name. The ACT home widget and the Dashboard draw its rows, one per step, from their step and patients columns.',
     },
     reportUrl: link("Where the care cascade widget's link to the full report leads.", '${openmrsSpaBase}/reports'),
     steps: {
@@ -246,7 +246,7 @@ export const configSchema = {
       _elements: {
         _type: Type.Object,
         step: { _type: Type.String, _description: "The report row's step value." },
-        label: { _type: Type.String, _description: 'What the widget calls it.' },
+        label: { _type: Type.String, _description: 'What the ACT home widget and the Dashboard call it.' },
       },
       _default: [
         { step: 'Active', label: 'Active' },
@@ -259,7 +259,7 @@ export const configSchema = {
         { step: 'Adherent', label: 'Adherent (80%+)' },
       ],
       _description:
-        "The report's steps the widget draws, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
+        "The report's steps the ACT home widget and the Dashboard draw, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
     },
   },
   registry: {
