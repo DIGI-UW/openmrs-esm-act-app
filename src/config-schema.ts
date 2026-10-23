@@ -276,6 +276,18 @@ export const configSchema = {
     },
   },
   dashboard: {
+    registrantsReport: {
+      _type: Type.String,
+      _default: '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71',
+      _description:
+        "The RHD Dashboard Registrants report, by uuid or name: counts by status, and of the active registrants by sex, age band and disease (its breakdown, label and patients columns), for the Dashboard's registrant figures.",
+    },
+    waitlistReport: {
+      _type: Type.String,
+      _default: '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52',
+      _description:
+        "The RHD Dashboard Waitlist report, by uuid or name: the open recommendations by procedure and urgency, the patients waiting and the procedures performed (its breakdown, procedure, urgency, patients and recommendations columns), for the Dashboard's waitlist.",
+    },
     medicalOptimisationReport: {
       _type: Type.String,
       _default: '733a512c-3243-4e91-a44a-06a8e5384606',
@@ -703,7 +715,13 @@ export interface Config {
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
-  dashboard: { medicalOptimisationReport: string; screeningCascadeReport: string; screeningDiagnosesReport: string };
+  dashboard: {
+    registrantsReport: string;
+    waitlistReport: string;
+    medicalOptimisationReport: string;
+    screeningCascadeReport: string;
+    screeningDiagnosesReport: string;
+  };
   consultations: {
     encounterType: string;
     form: string;

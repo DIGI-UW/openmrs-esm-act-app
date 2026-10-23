@@ -21,6 +21,8 @@ vi.mock('@carbon/charts-react', async () => ({
 }));
 
 const REGISTRY = 'f1a2b3c4-d5e6-7890-abcd-ef1234567890';
+const REGISTRANTS = '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71';
+const DASHBOARD_WAITLIST = '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52';
 const CARE_CASCADE = '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68';
 const WAITLIST = '5b0f1c2e-9d3a-4c1b-8f6e-2a7d9e4b3c10';
 const OPTIMISATION = '733a512c-3243-4e91-a44a-06a8e5384606';
@@ -29,28 +31,70 @@ const DIAGNOSES = '6ddf6b36-2789-4733-8433-a877d54795cf';
 
 const today = dayjs().format('YYYY-MM-DD');
 
-const registrant = (overrides: Record<string, unknown>) => ({
-  enrollment_status: 'Active',
-  deceased: 0,
-  sex: 'F',
-  age_years: 14,
-  diagnosis_category: 'Rheumatic Heart Disease/Rheumatic Fever',
-  diagnosis_details: 'RHD B',
-  cardiac_clinic: 'Gulu RRH',
-  primary_care_clinic: 'Acimi HCIII',
-  ...overrides,
-});
-
-const recommendation = (patient: string, procedure: string, urgency: string, cardiac = 'Gulu RRH') => ({
-  patient_uuid: patient,
-  procedure_name: procedure,
-  urgency,
-  cardiac_clinic: cardiac,
-  primary_care_clinic: 'Acimi HCIII',
-});
-
 const EMERGENT = '1: emergent (24 hours)';
 const URGENT = '2: urgent (60 days/2 months)';
+
+const counted = (breakdown: string, counts: Record<string, number>) =>
+  Object.entries(counts).map(([label, patients]) => ({ breakdown, label, patients }));
+
+const recommendations = (procedure: string, urgency: string, patients: number, count = patients) => ({
+  breakdown: 'open',
+  procedure,
+  urgency,
+  patients,
+  recommendations: count,
+});
+
+const performed = (bmv: number, other: number) => [
+  {
+    breakdown: 'performed',
+    procedure: 'Mitral balloon valvuloplasty',
+    urgency: null,
+    patients: bmv,
+    recommendations: bmv,
+  },
+  { breakdown: 'performed', procedure: 'Other procedure', urgency: null, patients: other, recommendations: other },
+];
+
+/** The registrants and waitlist reports' rows for every clinic, for Lira, and for a clinic with no patients. */
+const dashboardRows = (clinic?: string): Record<string, Array<Record<string, unknown>>> =>
+  clinic === 'lira'
+    ? {
+        [REGISTRANTS]: [
+          ...counted('status', { Active: 1 }),
+          ...counted('sex', { Female: 1 }),
+          ...counted('age', { '10-19': 1 }),
+          ...counted('disease', { 'RHD B': 1 }),
+        ],
+        [DASHBOARD_WAITLIST]: [
+          recommendations('Mitral valve repair/replacement', EMERGENT, 1),
+          { breakdown: 'total', procedure: 'All', urgency: null, patients: 1, recommendations: 1 },
+          ...performed(0, 0),
+        ],
+      }
+    : ['mbarara', 'arua'].includes(clinic)
+      ? {
+          [REGISTRANTS]: [],
+          [DASHBOARD_WAITLIST]: [
+            { breakdown: 'total', procedure: 'All', urgency: null, patients: 0, recommendations: 0 },
+            ...performed(0, 0),
+          ],
+        }
+      : {
+          [REGISTRANTS]: [
+            ...counted('status', { Active: 3, 'Voluntary inactivity': 1 }),
+            ...counted('sex', { Female: 2, Male: 1 }),
+            ...counted('age', { '20-39': 1, '10-19': 2 }),
+            ...counted('disease', { 'RHD B': 2, 'RHD A': 1 }),
+          ],
+          [DASHBOARD_WAITLIST]: [
+            recommendations('Balloon valvuloplasty', EMERGENT, 1),
+            recommendations('Mitral valve repair/replacement', EMERGENT, 1),
+            recommendations('Mitral valve repair/replacement', URGENT, 1),
+            { breakdown: 'total', procedure: 'All', urgency: null, patients: 2, recommendations: 3 },
+            ...performed(2, 1),
+          ],
+        };
 
 /** The count reports' rows as the server returns them: every step or measure, whatever its count. */
 const countRows = (zero: boolean): Record<string, Array<Record<string, unknown>>> => {
@@ -61,7 +105,7 @@ const countRows = (zero: boolean): Record<string, Array<Record<string, unknown>>
       { step: 'Prescribed', patients: n(3) },
       { step: 'Oral', patients: n(1) },
       { step: 'BPG', patients: n(2) },
-      { step: 'Initiated', patients: n(2) },
+      { step: 'Initiated', patients: n(3) },
       { step: 'Covered today', patients: n(2) },
       { step: 'Adherent (80%+)', patients: n(1) },
     ],
@@ -94,20 +138,6 @@ const countRows = (zero: boolean): Record<string, Array<Record<string, unknown>>
   };
 };
 
-const listRows: Record<string, Array<Record<string, unknown>>> = {
-  [REGISTRY]: [
-    registrant({}),
-    registrant({ sex: 'M', age_years: 30, diagnosis_details: 'RHD A' }),
-    registrant({ cardiac_clinic: 'Lira RRH', primary_care_clinic: 'Akunalaber HCIII' }),
-    registrant({ enrollment_status: 'Completed', current_state: 'Inactive - Death' }),
-  ],
-  [WAITLIST]: [
-    recommendation('p1', 'Mitral valve repair/replacement', URGENT),
-    recommendation('p1', 'Balloon valvuloplasty', EMERGENT),
-    recommendation('p2', 'Mitral valve repair/replacement', EMERGENT, 'Lira RRH'),
-  ],
-};
-
 const mutates: Record<string, ReturnType<typeof vi.fn>> = {};
 
 /**
@@ -118,11 +148,15 @@ async function signIn(
   failing?: string,
   overrides: Record<string, Array<Record<string, unknown>>> = {},
   sessionLocation = { uuid: 'hq', display: 'Head office', tags: [] as Array<{ display: string }> },
+  limitedTo?: string,
 ) {
-  await signInWith(['App: act.dashboard']);
+  await signInWith(limitedTo === undefined ? ['App: act.dashboard'] : ['App: act.dashboard', 'Edit Users']);
   const session = vi.mocked(useSession)();
   vi.mocked(useSession).mockReturnValue({
     ...session,
+    ...(limitedTo !== undefined && {
+      user: { ...session.user, userProperties: { 'actcore.clinics': limitedTo } },
+    }),
     sessionLocation: { uuid: sessionLocation.uuid, display: sessionLocation.display },
   } as never);
   vi.mocked(openmrsFetch).mockImplementation(((url: string) =>
@@ -138,17 +172,19 @@ async function signIn(
           }
         : url.includes('/location?tag=')
           ? { results: [], totalCount: 0 }
-          : { tags: sessionLocation.tags },
+          : url.includes('?v=custom:(display)')
+            ? { display: url.includes('/gulu') ? 'Gulu RRH' : 'Lira RRH' }
+            : { tags: sessionLocation.tags },
     })) as never);
   vi.mocked(useReportDataset).mockImplementation((report, params) => {
-    const counts = countRows(['mbarara', 'arua'].includes(params?.cardiacClinic));
+    const counts = {
+      ...countRows(['mbarara', 'arua'].includes(params?.cardiacClinic)),
+      ...dashboardRows(params?.cardiacClinic),
+    };
     mutates[String(report)] ??= vi.fn();
     return {
       columns: [],
-      rows:
-        report === failing
-          ? []
-          : (overrides[String(report)] ?? listRows[String(report)] ?? counts[String(report)] ?? []),
+      rows: report === failing ? [] : (overrides[String(report)] ?? counts[String(report)] ?? []),
       isLoading: false,
       error: report === failing ? new Error('The server did not answer') : undefined,
       mutate: mutates[String(report)] as never,
@@ -196,8 +232,8 @@ describe('Dashboard', () => {
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
     expect(texts('dashboard-tile')).toEqual([
-      'Registered4every status, today',
-      'Active3enrolled and alive, today',
+      'Registered4every status',
+      'Active3enrolled and alive',
       'On secondary prophylaxis375% of active RHD',
       'Waiting for a procedure23 open recommendations',
     ]);
@@ -208,11 +244,11 @@ describe('Dashboard', () => {
 
     renderPage();
 
-    expect(await screen.findByText('All 4 registrants, by where their registration stands today')).toBeInTheDocument();
-    expect(texts('dashboard-status')).toEqual(['Active375%', 'Inactive - Death125%']);
+    expect(await screen.findByText('All 4 registrants, by where their registration stands')).toBeInTheDocument();
+    expect(texts('dashboard-status')).toEqual(['Active375%', 'Voluntary inactivity125%']);
     expect(chartData(DonutChart, 'Registrant status')).toEqual([
       { group: 'Active', value: 3 },
-      { group: 'Inactive - Death', value: 1 },
+      { group: 'Voluntary inactivity', value: 1 },
     ]);
   });
 
@@ -236,14 +272,14 @@ describe('Dashboard', () => {
     expect(texts('dashboard-cascade-step')).toEqual([
       'Active4',
       'Prescribed375%',
-      'Initiated267%',
-      'Covered today2100%',
-      'Adherent (80%+)150%',
+      'Initiated3100%',
+      'Covered today267%',
+      'Adherent (80%+)133%',
     ]);
     expect(chartData(SimpleBarChart, 'RHD care cascade')).toEqual([
       { group: 'Active', value: 4 },
       { group: 'Prescribed', value: 3 },
-      { group: 'Initiated', value: 2 },
+      { group: 'Initiated', value: 3 },
       { group: 'Covered today', value: 2 },
       { group: 'Adherent (80%+)', value: 1 },
     ]);
@@ -338,7 +374,7 @@ describe('Dashboard', () => {
     ]);
   });
 
-  it('evaluates the dated reports as of the date chosen, while the registry reads today', async () => {
+  it('evaluates the dated reports as of the date chosen', async () => {
     await signIn();
     renderPage();
 
@@ -348,7 +384,6 @@ describe('Dashboard', () => {
     expect(paramsOf(OPTIMISATION)).toEqual({ endDate: '2026-01-15' });
     expect(paramsOf(SCREENING)).toEqual({ endDate: '2026-01-15' });
     expect(paramsOf(DIAGNOSES)).toEqual({ endDate: '2026-01-15' });
-    expect(paramsOf(REGISTRY)).toEqual({ startDate: '1900-01-01', endDate: today });
   });
 
   it('leaves out the cascade steps ACT Core counts only today when the date chosen is past, and says why', async () => {
@@ -359,11 +394,11 @@ describe('Dashboard', () => {
 
     fireEvent.change(screen.getByLabelText('Figures as of'), { target: { value: '2026-01-15' } });
 
-    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Prescribed375%', 'Initiated267%']);
+    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Prescribed375%', 'Initiated3100%']);
     expect(chartData(SimpleBarChart, 'RHD care cascade')).toEqual([
       { group: 'Active', value: 4 },
       { group: 'Prescribed', value: 3 },
-      { group: 'Initiated', value: 2 },
+      { group: 'Initiated', value: 3 },
     ]);
     expect(screen.getByText(/ACT Core keeps them only for today/)).toBeInTheDocument();
   });
@@ -438,7 +473,7 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('Active registrants: 1')).toBeInTheDocument();
     expect(screen.getByText(/^Procedural waitlist: 1 patient/)).toBeInTheDocument();
-    [CARE_CASCADE, OPTIMISATION, SCREENING, DIAGNOSES].forEach((report) =>
+    [CARE_CASCADE, OPTIMISATION, SCREENING, DIAGNOSES, REGISTRANTS, DASHBOARD_WAITLIST].forEach((report) =>
       expect(paramsOf(report)).toEqual({ endDate: today, cardiacClinic: 'lira' }),
     );
   });
@@ -467,18 +502,18 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('Medical optimisation could not load')).toBeInTheDocument();
     expect(screen.getAllByText(/ could not load$/)).toHaveLength(1);
-    expect(texts('dashboard-status')).toEqual(['Active375%', 'Inactive - Death125%']);
+    expect(texts('dashboard-status')).toEqual(['Active375%', 'Voluntary inactivity125%']);
     expect(texts('dashboard-cascade-step')).toHaveLength(5);
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(mutates[OPTIMISATION]).toHaveBeenCalledTimes(1);
     expect(mutates[CARE_CASCADE]).not.toHaveBeenCalled();
-    expect(mutates[REGISTRY]).not.toHaveBeenCalled();
+    expect(mutates[REGISTRANTS]).not.toHaveBeenCalled();
   });
 
   it('shows no figure on a tile, and names the section rather than its count, when the registry fails', async () => {
-    await signIn(REGISTRY);
+    await signIn(REGISTRANTS);
     renderPage();
 
     expect(await screen.findByText('Active registrants could not load')).toBeInTheDocument();
@@ -488,7 +523,7 @@ describe('Dashboard', () => {
   });
 
   it('names the waitlist rather than its count when the waiting list fails', async () => {
-    await signIn(WAITLIST);
+    await signIn(DASHBOARD_WAITLIST);
     renderPage();
 
     expect(await screen.findByText('Procedural waitlist could not load')).toBeInTheDocument();
@@ -533,7 +568,10 @@ describe('Dashboard', () => {
 
   it('colours each urgency by its number, whichever urgencies the clinic has', async () => {
     await signIn(undefined, {
-      [WAITLIST]: [recommendation('p1', 'Balloon valvuloplasty', URGENT)],
+      [DASHBOARD_WAITLIST]: [
+        recommendations('Balloon valvuloplasty', URGENT, 1),
+        { breakdown: 'total', procedure: 'All', urgency: null, patients: 1, recommendations: 1 },
+      ],
     });
     renderPage();
 
@@ -598,9 +636,10 @@ describe('Dashboard', () => {
 
   it('colours an urgency with no number apart from the numbered ones', async () => {
     await signIn(undefined, {
-      [WAITLIST]: [
-        recommendation('p1', 'Balloon valvuloplasty', URGENT),
-        recommendation('p2', 'Balloon valvuloplasty', null),
+      [DASHBOARD_WAITLIST]: [
+        recommendations('Balloon valvuloplasty', URGENT, 1),
+        recommendations('Balloon valvuloplasty', 'Not given', 1),
+        { breakdown: 'total', procedure: 'All', urgency: null, patients: 2, recommendations: 2 },
       ],
     });
     renderPage();
@@ -612,5 +651,109 @@ describe('Dashboard', () => {
       .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
       .at(-1);
     expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#ff832b', 'Not given': '#8d8d8d' });
+  });
+
+  it('reads the registrants and the waitlist from their count reports, as of the date, never every registry row', async () => {
+    await signIn();
+    renderPage();
+
+    fireEvent.change(await screen.findByLabelText('Figures as of'), { target: { value: '2026-01-15' } });
+
+    expect(paramsOf(REGISTRANTS)).toEqual({ endDate: '2026-01-15' });
+    expect(paramsOf(DASHBOARD_WAITLIST)).toEqual({ endDate: '2026-01-15' });
+    expect(vi.mocked(useReportDataset).mock.calls.map(([report]) => report)).not.toContain(REGISTRY);
+    expect(vi.mocked(useReportDataset).mock.calls.map(([report]) => report)).not.toContain(WAITLIST);
+  });
+
+  it('prints the procedures performed in the year to the date, balloon valvuloplasties apart', async () => {
+    await signIn();
+    renderPage();
+
+    expect(await screen.findByTestId('dashboard-performed')).toHaveTextContent(
+      'Performed in the 12 months to the date shown: mitral balloon valvuloplasty 2, other procedures 1',
+    );
+  });
+
+  it('holds a clinic-limited administrator at All to the clinics on their account', async () => {
+    await signIn(undefined, {}, undefined, 'gulu,lira');
+    renderPage();
+
+    await screen.findAllByTestId('dashboard-tile');
+    await vi.waitFor(() => expect(paramsOf(REGISTRANTS)).toEqual({ endDate: today, clinics: 'gulu,lira' }));
+    expect(paramsOf(DASHBOARD_WAITLIST)).toEqual({ endDate: today, clinics: 'gulu,lira' });
+  });
+
+  it('counts nobody for a clinic-limited administrator with no clinic on their account', async () => {
+    await signIn(undefined, {}, undefined, '');
+    renderPage();
+
+    expect(await screen.findAllByText('No patients to count')).not.toHaveLength(0);
+    const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
+    expect(evaluated).not.toContain(REGISTRANTS);
+    expect(evaluated).not.toContain(DASHBOARD_WAITLIST);
+    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['Registered0every status', 'Active0enrolled and alive']);
+  });
+
+  it("evaluates no registrant or waitlist count while a clinic-limited administrator's clinics are read", async () => {
+    await signIn(undefined, {}, undefined, 'gulu');
+    const answer = vi.mocked(openmrsFetch).getMockImplementation();
+    vi.mocked(openmrsFetch).mockImplementation(((url: string, ...rest: Array<unknown>) =>
+      url.includes('?v=custom:(display)') ? new Promise(() => {}) : answer(url, ...rest)) as never);
+    renderPage();
+
+    await screen.findAllByTestId('dashboard-tile');
+    const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
+    expect(evaluated).not.toContain(REGISTRANTS);
+    expect(evaluated).not.toContain(DASHBOARD_WAITLIST);
+    expect(texts('dashboard-tile')[0]).toBe('Registered');
+  });
+
+  it('holds a clinic-limited administrator to their clinics at a clinic chosen, too, such as one they are signed in at', async () => {
+    await signIn(
+      undefined,
+      {},
+      { uuid: 'arua', display: 'Arua RRH', tags: [{ display: 'RHD Tertiary' }] },
+      'gulu,lira',
+    );
+    renderPage();
+
+    await screen.findAllByTestId('dashboard-tile');
+    await vi.waitFor(() =>
+      expect(paramsOf(REGISTRANTS)).toEqual({ endDate: today, cardiacClinic: 'arua', clinics: 'gulu,lira' }),
+    );
+    expect(paramsOf(DASHBOARD_WAITLIST)).toEqual({ endDate: today, cardiacClinic: 'arua', clinics: 'gulu,lira' });
+  });
+
+  it('prints the procedures performed even when nobody is waiting', async () => {
+    await signIn(undefined, {
+      [DASHBOARD_WAITLIST]: [
+        { breakdown: 'total', procedure: 'All', urgency: null, patients: 0, recommendations: 0 },
+        {
+          breakdown: 'performed',
+          procedure: 'Mitral balloon valvuloplasty',
+          urgency: null,
+          patients: 1,
+          recommendations: 1,
+        },
+        { breakdown: 'performed', procedure: 'Other procedure', urgency: null, patients: 0, recommendations: 0 },
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findByTestId('dashboard-performed')).toHaveTextContent('mitral balloon valvuloplasty 1');
+  });
+
+  it("shows Adherent as a share of Initiated BPG under the older cascade report's step names", async () => {
+    await signIn(undefined, {
+      [CARE_CASCADE]: [
+        { step: 'Active', patients: 4 },
+        { step: 'Initiated BPG', patients: 4 },
+        { step: 'Adherent', patients: 1 },
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findAllByTestId('dashboard-cascade-step')).toHaveLength(3);
+    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Initiated4100%', 'Adherent (80%+)125%']);
   });
 });

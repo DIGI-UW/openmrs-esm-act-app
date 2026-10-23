@@ -19,13 +19,13 @@ import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
+import { useClinicLimit } from '../clinic-limit';
 import { useClinics } from '../programme-report/clinics.resource';
 import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
-import { useRegistryReport } from '../registry/registry.resource';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
 import { CascadeBars, CountsDonut, StackedBars } from './dashboard-charts.component';
-import { type Count, ofClinics, registrantCounts, share, waitlistCounts } from './dashboard-counts';
+import { type Count, registrantCounts, share, waitlistCounts } from './dashboard-counts';
 import styles from './dashboard.scss';
 
 type Scope = Record<string, string>;
@@ -177,23 +177,32 @@ const stateOf = (report: { isLoading: boolean; error?: Error; mutate: () => unkn
 
 const allZero = (counts: Array<Count>) => counts.every((count) => !count.value);
 
+const adherentSteps = ['Adherent (80%+)', 'Adherent'];
 // The care cascade counts these from ACT Core's adherence as of its last run, whatever the end date.
-const stepsCountedToday = ['Covered today', 'Adherent (80%+)', 'Adherent'];
+const stepsCountedToday = ['Covered today', ...adherentSteps];
 const earliestAsOf = '1900-01-01';
 
 function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onShowAll: () => void }) {
   const { t } = useTranslation();
-  const { careCascade, dashboard, waitingList } = useConfig<Config>();
+  const { careCascade, dashboard } = useConfig<Config>();
   const params = useMemo(() => ({ endDate: asOf, ...scope }), [asOf, scope]);
   const clinics = useClinicNames(scope);
   const clinic = [clinics.cardiac, clinics.primaryCare].filter(Boolean).join(', ') || null;
 
-  // Read today: the registry report gives status, death and age as of now, whatever its end date.
-  const registry = useRegistryReport();
-  const registrants = useMemo(() => {
-    const rows = ofClinics(registry.rows, clinics);
-    return { registered: rows.length, ...registrantCounts(rows) };
-  }, [registry.rows, clinics]);
+  // A limited site administrator counts only its own clinics, and nobody while they load or with none.
+  const limit = useClinicLimit();
+  const limitedTo = limit.status === 'ready' ? limit.uuids : null;
+  const counted = limit.status === 'none' || Boolean(limitedTo?.length);
+  const countParams = useMemo(
+    () => (limitedTo?.length ? { ...params, clinics: limitedTo.join(',') } : params),
+    [params, limitedTo],
+  );
+  const whileLimitRead = (report: ReturnType<typeof useReportDataset>) => ({
+    ...report,
+    isLoading: report.isLoading || limit.status === 'pending',
+  });
+  const registrantsReport = whileLimitRead(useReportDataset(counted ? dashboard.registrantsReport : null, countParams));
+  const registrants = useMemo(() => registrantCounts(registrantsReport.rows), [registrantsReport.rows]);
 
   const cascadeReport = useReportDataset(careCascade.report, params);
   const isPast = asOf < dayjs().format('YYYY-MM-DD');
@@ -202,12 +211,14 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
     const dated = isPast ? steps.filter(({ step }) => !stepsCountedToday.includes(step)) : steps;
     return { cascade: dated, leftOutToday: dated.length < steps.length };
   }, [cascadeReport.rows, careCascade.steps, isPast]);
+  // Adherent is a share of Initiated BPG, as the design corrects ACT 2.0, rather than of Covered today.
+  const labelOf = (...steps: Array<string>) => cascade.find(({ step }) => steps.includes(step))?.label;
+  const adherent = labelOf(...adherentSteps);
+  const initiated = labelOf('Initiated', 'Initiated BPG');
+  const adherentShare = adherent && initiated ? { [adherent]: initiated } : undefined;
 
-  const waitlistReport = useReportDataset(waitingList.report);
-  const waitlist = useMemo(() => {
-    const rows = ofClinics(waitlistReport.rows, clinics);
-    return { ...waitlistCounts(rows), patients: new Set(rows.map((row) => String(row.patient_uuid))).size };
-  }, [waitlistReport.rows, clinics]);
+  const waitlistReport = whileLimitRead(useReportDataset(counted ? dashboard.waitlistReport : null, countParams));
+  const waitlist = useMemo(() => waitlistCounts(waitlistReport.rows), [waitlistReport.rows]);
   const phone = useLayoutType() === 'phone';
   const [waitlistAsTable, setWaitlistAsTable] = useState(phone);
 
@@ -252,16 +263,16 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         <FigureTile
           label={t('registered', 'Registered')}
           value={registrants.registered}
-          note={t('everyStatusToday', 'every status, today')}
-          isLoading={registry.isLoading}
-          error={registry.error}
+          note={t('everyStatus', 'every status')}
+          isLoading={registrantsReport.isLoading}
+          error={registrantsReport.error}
         />
         <FigureTile
           label={t('active', 'Active')}
           value={registrants.active}
-          note={t('enrolledAndAliveToday', 'enrolled and alive, today')}
-          isLoading={registry.isLoading}
-          error={registry.error}
+          note={t('enrolledAndAlive', 'enrolled and alive')}
+          isLoading={registrantsReport.isLoading}
+          error={registrantsReport.error}
         />
         <FigureTile
           label={t('onSecondaryProphylaxis', 'On secondary prophylaxis')}
@@ -285,14 +296,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       <div className={styles.grid}>
         <Section
           title={t('registrantStatus', 'Registrant status')}
-          description={t(
-            'registrantsByStatusToday',
-            'All {{count}} registrants, by where their registration stands today',
-            {
-              count: registrants.registered,
-            },
-          )}
-          state={stateOf(registry, !registrants.registered)}
+          description={t('registrantsByStatus', 'All {{count}} registrants, by where their registration stands', {
+            count: registrants.registered,
+          })}
+          state={stateOf(registrantsReport, !registrants.registered)}
           {...section}
         >
           <CountsDonut
@@ -311,18 +318,26 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   'careCascadePastDescription',
                   'Active RHD patients; each step is a share of the one before. Coverage and adherence are left out, as ACT Core keeps them only for today.',
                 )
-              : t('careCascadeDescription', 'Active RHD patients; each step is a share of the one before')
+              : t(
+                  'careCascadeDescription',
+                  'Active RHD patients; each step is a share of the one before, Adherent of Initiated',
+                )
           }
           state={stateOf(cascadeReport, allZero(cascade))}
           {...section}
         >
-          <CascadeBars name={t('rhdCareCascade', 'RHD care cascade')} steps={cascade} testId="dashboard-cascade-step" />
+          <CascadeBars
+            name={t('rhdCareCascade', 'RHD care cascade')}
+            steps={cascade}
+            shareOf={adherentShare}
+            testId="dashboard-cascade-step"
+          />
         </Section>
         <Section
           title={t('activeRegistrantsCount', 'Active registrants: {{count}}', { count: registrants.active })}
           name={t('activeRegistrants', 'Active registrants')}
-          description={t('activeRegistrantsDescription', 'Sex, age and disease of the patients active today')}
-          state={stateOf(registry, !registrants.active)}
+          description={t('activeRegistrantsDescription', 'Sex, age and disease of the active patients')}
+          state={stateOf(registrantsReport, !registrants.active)}
           wide
           {...section}
         >
@@ -348,9 +363,9 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           name={t('proceduralWaitlist', 'Procedural waitlist')}
           description={t(
             'waitlistDescription',
-            "Open recommendations in each active patient's latest consultation, by urgency, today",
+            "Open recommendations in each active patient's latest consultation, by urgency",
           )}
-          state={stateOf(waitlistReport, !waitlist.total)}
+          state={stateOf(waitlistReport, !waitlist.total && !waitlist.performed.bmv && !waitlist.performed.other)}
           {...section}
         >
           {waitlistAsTable ? (
@@ -399,6 +414,13 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               </ul>
             </>
           )}
+          <p className={styles.performed} data-testid="dashboard-performed">
+            {t(
+              'performedInYear',
+              'Performed in the 12 months to the date shown: mitral balloon valvuloplasty {{bmv}}, other procedures {{other}}',
+              waitlist.performed,
+            )}
+          </p>
           <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
             {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
           </Button>

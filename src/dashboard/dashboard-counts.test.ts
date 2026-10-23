@@ -1,121 +1,88 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ageBand,
-  diseaseCategory,
-  ofClinics,
-  registrantCounts,
-  registrantStatus,
-  waitlistCounts,
-} from './dashboard-counts';
-
-const RHD = 'Rheumatic Heart Disease/Rheumatic Fever';
-const patient = (overrides: Record<string, unknown>) => ({
-  enrollment_status: 'Active',
-  deceased: 0,
-  current_state: null,
-  sex: 'F',
-  age_years: 12,
-  diagnosis_category: RHD,
-  diagnosis_details: 'RHD B',
-  cardiac_clinic: 'Gulu RRH',
-  primary_care_clinic: 'Acimi HCIII',
-  ...overrides,
-});
+import { cascadeShares, registrantCounts, waitlistCounts } from './dashboard-counts';
 
 describe('dashboard counts', () => {
-  it("names each registrant's status as ACT 2.0's status pie did", () => {
-    expect(registrantStatus(patient({}))).toBe('Active');
-    expect(registrantStatus(patient({ enrollment_status: 'Completed', current_state: 'Inactive - Death' }))).toBe(
-      'Inactive - Death',
-    );
-    expect(registrantStatus(patient({ deceased: 1 }))).toBe('Died');
-    expect(registrantStatus(patient({ enrollment_status: 'Completed' }))).toBe('None');
-  });
-
-  it('bands ages as ACT 2.0 did: 0-9, 10-19, 20-39 and 40+', () => {
-    expect([0, 9, 10, 19, 20, 39, 40, 71, null].map(ageBand)).toEqual([
-      '0-9',
-      '0-9',
-      '10-19',
-      '10-19',
-      '20-39',
-      '20-39',
-      '40+',
-      '40+',
-      'Unknown',
-    ]);
-  });
-
-  it('breaks Rheumatic Heart Disease into its details, and counts no category as None', () => {
-    expect(diseaseCategory(patient({}))).toBe('RHD B');
-    expect(diseaseCategory(patient({ diagnosis_details: null }))).toBe(RHD);
-    expect(diseaseCategory(patient({ diagnosis_category: 'Congenital Heart Disease', diagnosis_details: 'x' }))).toBe(
-      'Congenital Heart Disease',
-    );
-    expect(diseaseCategory(patient({ diagnosis_category: null }))).toBe('None');
-  });
-
-  it('counts status over every registrant, and sex, age and category over the active ones', () => {
+  it('reads status, and the active registrants by sex, age band in order and disease, from the registrants report', () => {
     const counts = registrantCounts([
-      patient({}),
-      patient({ sex: 'M', age_years: 45, diagnosis_details: 'RHD A' }),
-      patient({ age_years: 25 }),
-      patient({ enrollment_status: 'Completed', current_state: 'Inactive - Lost to follow-up', sex: 'M' }),
-      patient({ deceased: 1, age_years: 5 }),
+      { breakdown: 'status', label: 'Active', patients: 3 },
+      { breakdown: 'status', label: 'Lost to follow-up', patients: 2 },
+      { breakdown: 'sex', label: 'Male', patients: 1 },
+      { breakdown: 'sex', label: 'Female', patients: 2 },
+      { breakdown: 'age', label: 'Age unknown', patients: 1 },
+      { breakdown: 'age', label: '20-39', patients: 1 },
+      { breakdown: 'age', label: '0-9', patients: 1 },
+      { breakdown: 'disease', label: 'RHD, details not recorded', patients: 1 },
+      { breakdown: 'disease', label: 'RHD A', patients: 2 },
     ]);
 
+    expect(counts.registered).toBe(5);
     expect(counts.active).toBe(3);
     expect(counts.status).toEqual([
       { label: 'Active', value: 3 },
-      { label: 'Died', value: 1 },
-      { label: 'Inactive - Lost to follow-up', value: 1 },
+      { label: 'Lost to follow-up', value: 2 },
     ]);
-    expect(counts.sex).toEqual([
-      { label: 'Female', value: 2 },
-      { label: 'Male', value: 1 },
-    ]);
-    expect(counts.age).toEqual([
-      { label: '10-19', value: 1 },
-      { label: '20-39', value: 1 },
-      { label: '40+', value: 1 },
-    ]);
-    expect(counts.category).toEqual([
-      { label: 'RHD B', value: 2 },
-      { label: 'RHD A', value: 1 },
-    ]);
+    expect(counts.sex.map(({ label }) => label)).toEqual(['Female', 'Male']);
+    expect(counts.age.map(({ label }) => label)).toEqual(['0-9', '20-39', 'Age unknown']);
+    expect(counts.category.map(({ label }) => label)).toEqual(['RHD A', 'RHD, details not recorded']);
   });
 
-  it('keeps the rows of the clinics chosen, by name, either left at All matching every row', () => {
-    const rows = [
-      patient({}),
-      patient({ cardiac_clinic: 'Lira RRH' }),
-      patient({ primary_care_clinic: 'Akuna HCIII' }),
-    ];
-    expect(ofClinics(rows, {})).toHaveLength(3);
-    expect(ofClinics(rows, { cardiac: 'Gulu RRH' })).toHaveLength(2);
-    expect(ofClinics(rows, { cardiac: 'Gulu RRH', primaryCare: 'Acimi HCIII' })).toHaveLength(1);
+  it('counts nobody active when the report has no Active row', () => {
+    expect(registrantCounts([]).active).toBe(0);
+    expect(registrantCounts([]).registered).toBe(0);
   });
 
-  it('counts the open recommendations by procedure and by urgency, urgencies in their numbered order', () => {
+  it('reads the open recommendations by procedure and urgency, the patients waiting and the procedures performed', () => {
     const counts = waitlistCounts([
-      { procedure_name: 'Mitral valve repair/replacement', urgency: '2: urgent (60 days/2 months)' },
-      { procedure_name: 'Mitral valve repair/replacement', urgency: '1: emergent (24 hours)' },
-      { procedure_name: 'Mitral valve repair/replacement', urgency: '2: urgent (60 days/2 months)' },
-      { procedure_name: 'Aortic valve repair/replacement', urgency: '3: elective (180 days/6 months)' },
-      { procedure_name: null, urgency: null },
+      {
+        breakdown: 'open',
+        procedure: 'Mitral valve repair/replacement',
+        urgency: '2: urgent',
+        patients: 1,
+        recommendations: 1,
+      },
+      {
+        breakdown: 'open',
+        procedure: 'Mitral valve repair/replacement',
+        urgency: '10: later',
+        patients: 1,
+        recommendations: 2,
+      },
+      {
+        breakdown: 'open',
+        procedure: 'Aortic valve repair/replacement',
+        urgency: '1: emergent',
+        patients: 1,
+        recommendations: 1,
+      },
+      { breakdown: 'total', procedure: 'All', urgency: null, patients: 2, recommendations: 4 },
+      {
+        breakdown: 'performed',
+        procedure: 'Mitral balloon valvuloplasty',
+        urgency: null,
+        patients: 3,
+        recommendations: 4,
+      },
+      { breakdown: 'performed', procedure: 'Other procedure', urgency: null, patients: 1, recommendations: 1 },
     ]);
 
-    expect(counts.total).toBe(5);
-    expect(counts.urgencies).toEqual([
-      '1: emergent (24 hours)',
-      '2: urgent (60 days/2 months)',
-      '3: elective (180 days/6 months)',
-      'Not given',
-    ]);
+    expect(counts.urgencies).toEqual(['1: emergent', '2: urgent', '10: later']);
     expect(counts.rows).toEqual([
-      { procedure: 'Aortic valve repair/replacement', counts: [0, 0, 1, 0] },
-      { procedure: 'Mitral valve repair/replacement', counts: [1, 2, 0, 0] },
-      { procedure: 'Not given', counts: [0, 0, 0, 1] },
+      { procedure: 'Aortic valve repair/replacement', counts: [1, 0, 0] },
+      { procedure: 'Mitral valve repair/replacement', counts: [0, 1, 2] },
     ]);
+    expect(counts.total).toBe(4);
+    expect(counts.patients).toBe(2);
+    expect(counts.performed).toEqual({ bmv: 4, other: 1 });
+  });
+
+  it('gives each step its share of the step before, or of the step named for it', () => {
+    const steps = [
+      { label: 'Initiated', value: 10 },
+      { label: 'Covered today', value: 5 },
+      { label: 'Adherent', value: 4 },
+    ];
+
+    expect(cascadeShares(steps).map(({ share }) => share)).toEqual([null, 50, 80]);
+    expect(cascadeShares(steps, { Adherent: 'Initiated' }).map(({ share }) => share)).toEqual([null, 50, 40]);
   });
 });
