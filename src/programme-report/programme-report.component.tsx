@@ -86,7 +86,7 @@ export function ClinicFilters({
   );
 }
 
-/** The programme report's By facility table, shared so Reports and Studies show the same figures under each header. */
+/** The programme report's By facility table, shared so Reports and Facility reports show the same figures under each header. */
 export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; isLoading: boolean }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
@@ -97,6 +97,12 @@ export function ByFacilityTable({ rows, isLoading }: { rows: Array<ReportRow>; i
   };
   return (
     <ActHomeCard title={t('byFacility', 'By facility')}>
+      <p className={styles.description}>
+        {t(
+          'byFacilityDescription',
+          'Each primary care clinic: active patients, mean adherence and data status (Complete, Review or Duplicates).',
+        )}
+      </p>
       {isLoading ? (
         <DataTableSkeleton
           role="progressbar"
@@ -171,7 +177,12 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
     { label: t('activePatients', 'Active patients'), value: sum(rows, 'active_patients') },
-    { label: t('dueThisWeek', 'Due this week'), value: sum(rows, 'due_this_week'), tone: styles.blue },
+    {
+      label: t('prophylaxisDueThisWeek', 'Prophylaxis due this week'),
+      value: sum(rows, 'due_this_week'),
+      tone: styles.blue,
+      note: t('nextDoseDueInSevenDays', 'Next dose due in the next 7 days'),
+    },
     { label: t('overdue', 'Overdue'), value: sum(rows, 'overdue'), tone: styles.red },
     {
       label: t('bpgOnTimeRate', 'BPG on-time rate'),

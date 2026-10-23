@@ -70,6 +70,11 @@
   @include type.type-style('body-compact-01');
 }
 
+.description {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+}
+
 .patients {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
