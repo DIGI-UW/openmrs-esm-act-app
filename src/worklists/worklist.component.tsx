@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTableSkeleton,
   InlineNotification,
   Pagination,
+  Search,
   SkeletonText,
   Table,
   TableBody,
@@ -19,7 +20,8 @@ import { diagnosis } from '../reports/diagnosis';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { useRegistryReport } from '../registry/registry.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
-import { TableEmptyState } from '../table-filters/empty-state.component';
+import { type ColumnSort, type SortValue, sortHeaderProps, sortItems } from '../table-filters/column-sort';
+import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import styles from './worklist.scss';
 
@@ -104,29 +106,36 @@ export function Worklist({
 export interface WorklistEntry {
   row: ReportRow;
   why: string;
+  /** What `why` sorts by, from `whyKey`; else `why` itself. */
+  whyKey?: string;
   /** Their prophylaxis as the list words it, else as the registry does. */
   prophylaxis?: string;
 }
 
+/** A why's sort key: its label, then its date by year, month and day. */
+export const whyKey = (label: string, date?: Date | null) =>
+  `${label}\n${date ? [date.getFullYear(), date.getMonth() + 1, date.getDate()].map((n) => String(n).padStart(4, '0')).join('-') : ''}`;
+
+const text = (row: ReportRow, column: string) => String(row[column] ?? '');
+
 /**
  * A worklist's patients, with Download CSV: who they are, their diagnosis and prophylaxis from the registry where they
- * are on it, and why they are on this list, then the list's action for them, else Open chart.
+ * are on it, and why they are on this list, then the list's action for them, else Open chart. Any column sorts them.
  */
-export function WorklistTable({
-  title,
-  csvName,
-  entries,
-  isLoading,
-  error,
-  action,
-}: {
+export function WorklistTable(props: WorklistTableProps) {
+  return <WorklistRows key={props.csvName} {...props} />;
+}
+
+interface WorklistTableProps {
   title: string;
   csvName: string;
   entries: Array<WorklistEntry>;
   isLoading?: boolean;
   error?: Error;
   action?: (entry: WorklistEntry) => React.ReactNode;
-}) {
+}
+
+function WorklistRows({ title, csvName, entries, isLoading, error, action }: WorklistTableProps) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const registry = useRegistryReport();
@@ -134,29 +143,58 @@ export function WorklistTable({
     () => new Map(registry.rows.map((row) => [String(row.patient_uuid), row])),
     [registry.rows],
   );
-  const patient = (entry: WorklistEntry) => byPatient.get(String(entry.row.patient_uuid)) ?? entry.row;
-  const text = (row: ReportRow, column: string) => String(row[column] ?? '');
-  const columns: Array<{ key: string; header: string; text: (entry: WorklistEntry) => string }> = [
-    { key: 'patient', header: t('patient', 'Patient'), text: (entry) => text(patient(entry), 'full_name') },
-    { key: 'actId', header: t('actId', 'ACT ID'), text: (entry) => text(patient(entry), 'rhd_id') },
-    {
-      key: 'ageSex',
-      header: t('ageSex', 'Age, sex'),
-      text: (entry) => `${text(patient(entry), 'age_years')} ${text(patient(entry), 'sex')}`.trim(),
-    },
-    { key: 'diagnosis', header: t('diagnosis', 'Diagnosis'), text: (entry) => diagnosis(patient(entry)) },
-    {
-      key: 'prophylaxis',
-      header: t('prophylaxis', 'Prophylaxis'),
-      text: (entry) => entry.prophylaxis ?? text(patient(entry), 'prophylaxis_regimen'),
-    },
-    { key: 'why', header: t('whyOnThisList', 'Why on this list'), text: (entry) => entry.why },
-  ];
+  const patient = useCallback(
+    (entry: WorklistEntry) => byPatient.get(String(entry.row.patient_uuid)) ?? entry.row,
+    [byPatient],
+  );
+  const columns: Array<{
+    key: string;
+    header: string;
+    text: (entry: WorklistEntry) => string;
+    sort?: (entry: WorklistEntry) => SortValue;
+  }> = useMemo(
+    () => [
+      { key: 'patient', header: t('patient', 'Patient'), text: (entry) => text(patient(entry), 'full_name') },
+      { key: 'actId', header: t('actId', 'ACT ID'), text: (entry) => text(patient(entry), 'rhd_id') },
+      {
+        key: 'ageSex',
+        header: t('ageSex', 'Age, sex'),
+        text: (entry) => `${text(patient(entry), 'age_years')} ${text(patient(entry), 'sex')}`.trim(),
+        sort: (entry) => (text(patient(entry), 'age_years') ? Number(patient(entry).age_years) : null),
+      },
+      { key: 'diagnosis', header: t('diagnosis', 'Diagnosis'), text: (entry) => diagnosis(patient(entry)) },
+      {
+        key: 'prophylaxis',
+        header: t('prophylaxis', 'Prophylaxis'),
+        text: (entry) => entry.prophylaxis ?? text(patient(entry), 'prophylaxis_regimen'),
+      },
+      {
+        key: 'why',
+        header: t('whyOnThisList', 'Why on this list'),
+        text: (entry) => entry.why,
+        sort: (entry) => entry.whyKey ?? entry.why,
+      },
+    ],
+    [t, patient],
+  );
   // The ACT ID shows under the patient's name, and is a column of its own in the CSV.
   const shownColumns = columns.filter((column) => column.key !== 'actId');
-  // Each worklist has its own table, so its page resets only when another list is shown, not when its rows reload.
-  const listKey = useMemo(() => ({ csvName }), [csvName]);
-  const { results, paginationProps } = usePagedRows(entries, listKey);
+  const [sort, setSort] = useState<ColumnSort | null>(null);
+  const [query, setQuery] = useState('');
+  const shown = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const matching = needle
+      ? entries.filter((entry) => columns.some((column) => column.text(entry).toLowerCase().includes(needle)))
+      : entries;
+    const column = (key: string) => columns.find((candidate) => candidate.key === key);
+    return sortItems(matching, sort, (entry, key) => {
+      const { sort: sortValue, text: shownText } = column(key);
+      return sortValue ? sortValue(entry) : shownText(entry) || null;
+    });
+  }, [entries, columns, query, sort]);
+  // The page resets when another list, order or search is shown, not when the rows reload.
+  const pageKey = useMemo(() => ({ csvName, sort, query }), [csvName, sort, query]);
+  const { results, paginationProps } = usePagedRows(shown, pageKey);
 
   const body = () => {
     if (error || registry.error) {
@@ -186,50 +224,64 @@ export function WorklistTable({
     }
     return (
       <>
-        <div className={styles.tableContainer}>
-          <Table size={desktop ? 'sm' : 'lg'}>
-            <TableHead>
-              <TableRow>
-                {shownColumns.map((column) => (
-                  <TableHeader key={column.key}>{column.header}</TableHeader>
-                ))}
-                <TableHeader aria-label={t('actions', 'Actions')} />
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {results.map((entry, index) => (
-                <TableRow key={`${entry.row.patient_uuid}-${index}`}>
+        <Search
+          size="md"
+          className={styles.search}
+          labelText={t('searchThisList', 'Search this list')}
+          placeholder={t('searchThisList', 'Search this list')}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        {shown.length ? (
+          <div className={styles.tableContainer}>
+            <Table size={desktop ? 'sm' : 'lg'}>
+              <TableHead>
+                <TableRow>
                   {shownColumns.map((column) => (
-                    <TableCell key={column.key}>
-                      {column.key === 'patient' ? (
-                        <>
-                          <span className={styles.patientName}>{column.text(entry)}</span>
-                          <span className={styles.actId}>{text(patient(entry), 'rhd_id')}</span>
-                        </>
+                    <TableHeader key={column.key} {...sortHeaderProps(sort, column.key, setSort)}>
+                      {column.header}
+                    </TableHeader>
+                  ))}
+                  <TableHeader aria-label={t('actions', 'Actions')} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {results.map((entry, index) => (
+                  <TableRow key={`${entry.row.patient_uuid}-${index}`}>
+                    {shownColumns.map((column) => (
+                      <TableCell key={column.key}>
+                        {column.key === 'patient' ? (
+                          <>
+                            <span className={styles.patientName}>{column.text(entry)}</span>
+                            <span className={styles.actId}>{text(patient(entry), 'rhd_id')}</span>
+                          </>
+                        ) : (
+                          column.text(entry)
+                        )}
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      {action ? (
+                        action(entry)
                       ) : (
-                        column.text(entry)
+                        <Button
+                          kind="tertiary"
+                          size="sm"
+                          onClick={() => navigate({ to: patientChartUrl(entry.row.patient_uuid) })}
+                        >
+                          {t('openChart', 'Open chart')}
+                        </Button>
                       )}
                     </TableCell>
-                  ))}
-                  <TableCell>
-                    {action ? (
-                      action(entry)
-                    ) : (
-                      <Button
-                        kind="tertiary"
-                        size="sm"
-                        onClick={() => navigate({ to: patientChartUrl(entry.row.patient_uuid) })}
-                      >
-                        {t('openChart', 'Open chart')}
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        {entries.length > paginationProps.pageSizes[0] && <Pagination {...paginationProps} />}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <FilterEmptyState message={t('noWorklistMatches', 'No patients to display')} />
+        )}
+        {shown.length > paginationProps.pageSizes[0] && <Pagination {...paginationProps} />}
       </>
     );
   };
@@ -242,9 +294,10 @@ export function WorklistTable({
           name={csvName}
           list={`worklist:${title}`}
           identifiers
+          filters={query.trim() ? { search: query.trim() } : {}}
           headers={columns.map((column) => column.header)}
-          rows={() => entries.map((entry) => columns.map((column) => column.text(entry)))}
-          disabled={!entries.length}
+          rows={() => shown.map((entry) => columns.map((column) => column.text(entry)))}
+          disabled={!shown.length}
           size="md"
         />
       }

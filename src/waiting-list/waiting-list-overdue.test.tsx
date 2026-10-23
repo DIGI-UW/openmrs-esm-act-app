@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { columnHeaders } from '../column-headers.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
@@ -29,7 +30,7 @@ function row(id: string, concept: string, days: number) {
 }
 
 function shown() {
-  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+  const headers = columnHeaders();
   return screen
     .getAllByRole('row')
     .slice(1)
@@ -122,7 +123,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
 
     render(<WaitingList />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     const urgencies = screen
       .getAllByRole('row')
       .slice(1)
@@ -217,7 +218,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
 
     render(<WaitingList />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     const marked = within(screen.getAllByRole('row')[1])
       .getAllByRole('cell')
       .map((cell, i) => [headers[i], cell.getAttribute('data-days-pending')])

@@ -7,7 +7,7 @@ import { bothClinics, useSessionClinicReport } from '../registry/registry.resour
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { ScreenPositiveTable } from '../screen-positive/screen-positive.component';
-import { Worklist, type WorklistState, WorklistSection, WorklistTable } from './worklist.component';
+import { Worklist, type WorklistState, WorklistSection, WorklistTable, whyKey } from './worklist.component';
 
 /**
  * The patients who screened positive and whose diagnosis has no details yet. A user who has Diagnosis to confirm
@@ -29,6 +29,7 @@ export default function ConfirmatoryEchoWorklist(state: WorklistState) {
             date: formatDate(screened, { time: false, noToday: true }),
           })
         : t('screenedPositive', 'Screened positive'),
+      whyKey: whyKey(t('screenedPositive', 'Screened positive'), screened),
     };
   });
   return (
