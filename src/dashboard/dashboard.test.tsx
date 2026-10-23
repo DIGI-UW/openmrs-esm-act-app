@@ -386,6 +386,23 @@ describe('Dashboard', () => {
     });
   });
 
+  it('lets the chart cut procedure and measure names short on a phone, so the bars keep the card width', async () => {
+    await signIn();
+    vi.mocked(useLayoutType).mockReturnValue('phone');
+    renderPage();
+    await screen.findAllByTestId('dashboard-waitlist-row');
+    fireEvent.click(screen.getByRole('button', { name: 'Show as a chart' }));
+
+    expect(chartOptions(StackedBarChart, 'Procedural waitlist').axes.bottom).toEqual({
+      mapsTo: 'key',
+      scaleType: 'labels',
+    });
+    expect(chartOptions(StackedBarChart, 'Medical optimisation').axes.left).toEqual({
+      mapsTo: 'key',
+      scaleType: 'labels',
+    });
+  });
+
   it('leaves out the Adherent step of the older cascade report, too, when the date chosen is past', async () => {
     await signIn(undefined, {
       [CARE_CASCADE]: [

@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLayoutType } from '@openmrs/esm-framework';
 import { DonutChart, ScaleTypes, SimpleBarChart, StackedBarChart, TruncationTypes } from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
 import { type Count, cascadeShares, share } from './dashboard-counts';
@@ -130,7 +131,9 @@ export function StackedBars({
   colours: 'urgency' | 'doneNotDone';
   height: string;
 }) {
-  const keys = { mapsTo: 'key', scaleType: ScaleTypes.LABELS, truncation: whole };
+  // On a phone a name written out in full leaves the bars no room, and the list under the chart names each in full.
+  const phone = useLayoutType() === 'phone';
+  const keys = { mapsTo: 'key', scaleType: ScaleTypes.LABELS, ...(!phone && { truncation: whole }) };
   const values = { mapsTo: 'value', stacked: true };
   const numbered = (group: string) => urgencyColours[parseInt(group, 10) - 1];
   const scale =
