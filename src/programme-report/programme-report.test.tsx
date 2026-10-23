@@ -4,14 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig, useSWRConfig } from 'swr';
-import { DashboardExtension, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { DashboardExtension, getDefaultsFromConfigSchema, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { type ClinicLimit, useClinicLimit } from '../clinic-limit';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Reports from './reports.component';
 import FacilityReports from './facility-reports.component';
 import FacilityReportsDashboardLink from './facility-reports-dashboard-link.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+vi.mock('../clinic-limit', () => ({ useClinicLimit: vi.fn() }));
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   DashboardExtension: vi.fn(() => null),
@@ -72,15 +75,24 @@ async function atLocation(tags: Array<string> | null, privileges = ['App: act.re
     })) as never);
 }
 
+const cascadeRows = [
+  { step: 'Active', patients: 18 },
+  { step: 'Prescribed', patients: 15 },
+  { step: 'Initiated', patients: 11 },
+  { step: 'Covered today', patients: 9 },
+  { step: 'Adherent (80%+)', patients: 4 },
+];
+
 function dataset(value: Partial<ReturnType<typeof useReportDataset>> = {}) {
-  vi.mocked(useReportDataset).mockReturnValue({
+  const { careCascade, programmeReport } = getDefaultsFromConfigSchema(configSchema) as Config;
+  vi.mocked(useReportDataset).mockImplementation((report) => ({
     columns: [],
-    rows,
+    rows: report === careCascade.report ? cascadeRows : report === programmeReport.report ? rows : [],
     isLoading: false,
     error: undefined,
     mutate: vi.fn(),
     ...value,
-  });
+  }));
 }
 
 function renderPage(Page: React.ComponentType = Reports) {
@@ -91,13 +103,18 @@ function renderPage(Page: React.ComponentType = Reports) {
   );
 }
 
-const lastParams = () => vi.mocked(useReportDataset).mock.calls.at(-1)[1];
+const limitTo = (limit: ClinicLimit) => vi.mocked(useClinicLimit).mockReturnValue(limit);
+const reportCalls = (report: string) => vi.mocked(useReportDataset).mock.calls.filter(([uuid]) => uuid === report);
+const programmeUuid = () => (getDefaultsFromConfigSchema(configSchema) as Config).programmeReport.report;
+const cascadeUuid = () => (getDefaultsFromConfigSchema(configSchema) as Config).careCascade.report;
+const lastParams = () => reportCalls(programmeUuid()).at(-1)[1];
 const tile = (label: string) => screen.getAllByTestId('report-tile').find((t) => t.textContent.startsWith(label));
 
 describe('Reports', () => {
   beforeEach(() => {
     vi.mocked(useReportDataset).mockReset();
     dataset();
+    limitTo({ status: 'none' });
   });
 
   it("totals the facilities' rows in the tiles, the on-time rate over the period's timed injections", async () => {
@@ -120,6 +137,158 @@ describe('Reports', () => {
     renderPage();
 
     await waitFor(() => expect(tile('BPG on-time rate')).toHaveTextContent('BPG on-time rate–'));
+  });
+
+  it("draws the care cascade as ACT home does, today's steps at the clinic the report is for", async () => {
+    await atLocation(['RHD Community']);
+
+    renderPage();
+
+    const steps = await screen.findAllByTestId('cascade-step');
+    expect(steps.map((step) => step.textContent)).toEqual([
+      'Active18',
+      'Prescribed15',
+      'Initiated11',
+      'Covered today9',
+      'Adherent (80%+)4',
+    ]);
+    expect(screen.getByRole('heading', { name: 'Care cascade' })).toBeInTheDocument();
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      primaryCareClinic: 'session-location',
+    });
+  });
+
+  it('counts the cascade at the clinic the page is for, and does not link to itself', async () => {
+    await atLocation(['RHD Tertiary']);
+
+    renderPage();
+    await screen.findAllByTestId('cascade-step');
+
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      cardiacClinic: 'session-location',
+    });
+    expect(screen.queryByRole('link', { name: /Report/ })).not.toBeInTheDocument();
+  });
+
+  it('leaves the care cascade off Facility reports', async () => {
+    await atLocation(['RHD Community'], ['App: act.reports']);
+
+    renderPage(FacilityReports);
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('draws no care cascade for a limited administrator when the page is at every clinic', async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'ready', uuids: ['gulu', 'acimi'], names: ['Gulu RRH', 'Acimi HCIII'] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('draws no care cascade for a limited administrator whose account holds no clinic', async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'ready', uuids: [], names: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('sends the care cascade only the date for a user who is not limited', async () => {
+    await atLocation(['Visit Location']);
+
+    renderPage();
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({ endDate: dayjs().format('YYYY-MM-DD') });
+  });
+
+  it('draws the care cascade at the clinic a limited administrator is at, with no clinics sent', async () => {
+    await atLocation(['RHD Community']);
+    limitTo({ status: 'ready', uuids: ['session-location'], names: ['Gulu RRH'] });
+
+    renderPage();
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      primaryCareClinic: 'session-location',
+    });
+  });
+
+  it('draws no care cascade for a limited administrator at a clinic that is not one of theirs', async () => {
+    await atLocation(['RHD Community']);
+    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('draws no care cascade for a limited administrator with no clinic, at a clinic', async () => {
+    await atLocation(['RHD Community']);
+    limitTo({ status: 'ready', uuids: [], names: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it("draws no care cascade while a clinic that is not a limited administrator's stays in the scope", async () => {
+    await atLocation(['RHD Tertiary']);
+    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
+
+    renderPage();
+
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Primary care clinic' }), 'acimi');
+
+    await waitFor(() => expect(lastParams()).toHaveProperty('primaryCareClinic', 'acimi'));
+    expect(lastParams()).toHaveProperty('cardiacClinic', 'session-location');
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('draws the care cascade once a limited administrator holds only their own clinics in the scope', async () => {
+    await atLocation(['RHD Tertiary']);
+    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
+
+    renderPage();
+
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Cardiac clinic' }), '');
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Primary care clinic' }), 'acimi');
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      primaryCareClinic: 'acimi',
+    });
+  });
+
+  it('draws no care cascade while the limit is pending', async () => {
+    await atLocation(['RHD Community']);
+    limitTo({ status: 'pending' });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 
   it('says what a facility row is: a primary care clinic, with its patients, adherence and data status', async () => {
@@ -163,9 +332,7 @@ describe('Reports', () => {
 
     renderPage();
 
-    await waitFor(() =>
-      expect(vi.mocked(useReportDataset).mock.calls.at(-1)[0]).toBe('c4a9e2d1-7b3f-4e58-9a16-2f0d8b5c7e31'),
-    );
+    await waitFor(() => expect(reportCalls(programmeUuid()).length).toBeGreaterThan(0));
     expect(lastParams()).toEqual({ startDate: expect.any(String), endDate: expect.any(String), ...scope });
   });
 
