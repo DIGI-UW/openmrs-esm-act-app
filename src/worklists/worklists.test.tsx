@@ -306,6 +306,16 @@ describe('A worklist table', () => {
     expect(patients()).toEqual(expected);
   });
 
+  it('sorts Age, sex by the age, a patient without one last', async () => {
+    reports({ registry: [onList(1, { age_years: '' }), onList(2, { age_years: 9 }), onList(3, { age_years: 50 })] });
+    render(<FlagWorklist {...list} />);
+
+    await sortBy('Age, sex');
+    expect(patients()).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
+    await sortBy('Age, sex');
+    expect(patients()).toEqual(['Patient 3', 'Patient 2', 'Patient 1']);
+  });
+
   it('sorts all its patients, not only the page shown, and returns to the first page', async () => {
     reports({ registry: Array.from({ length: 12 }, (_, i) => onList(i + 1)) });
     render(<FlagWorklist {...list} />);
@@ -459,6 +469,21 @@ describe('Confirmatory echo worklist', () => {
 
     expect(tableRows()[0][0]).toBe('Patient 4rhd00004');
     expect(tableRows()[0][4]).toMatch(/^Screened positive · \S/);
+  });
+
+  it('sorts Why on this list by the date, its year and month before its day', async () => {
+    reports({
+      screenPositive: [
+        { ...registryRow(1), diagnosis_details: '', screen_date: '2026-11-02' },
+        { ...registryRow(2), diagnosis_details: '', screen_date: '2025-10-05' },
+        { ...registryRow(3), diagnosis_details: '', screen_date: '2026-10-05' },
+      ],
+    });
+    render(<ConfirmatoryEchoWorklist {...list} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /^Why on this list/ }));
+
+    expect(tableRows().map((row) => row[0].replace(/rhd\d+$/, ''))).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
   });
 });
 

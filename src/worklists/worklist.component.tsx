@@ -20,7 +20,7 @@ import { diagnosis } from '../reports/diagnosis';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { useRegistryReport } from '../registry/registry.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
-import { type ColumnSort, sortHeaderProps, sortItems } from '../table-filters/column-sort';
+import { type ColumnSort, type SortValue, sortHeaderProps, sortItems } from '../table-filters/column-sort';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import styles from './worklist.scss';
@@ -102,9 +102,15 @@ export function Worklist({
 export interface WorklistEntry {
   row: ReportRow;
   why: string;
+  /** What `why` sorts by, from `whyKey`; else `why` itself. */
+  whyKey?: string;
   /** Their prophylaxis as the list words it, else as the registry does. */
   prophylaxis?: string;
 }
+
+/** A why's sort key: its label, then its date by year, month and day. */
+export const whyKey = (label: string, date?: Date | null) =>
+  `${label}\n${date ? [date.getFullYear(), date.getMonth() + 1, date.getDate()].map((n) => String(n).padStart(4, '0')).join('-') : ''}`;
 
 const text = (row: ReportRow, column: string) => String(row[column] ?? '');
 
@@ -112,21 +118,20 @@ const text = (row: ReportRow, column: string) => String(row[column] ?? '');
  * A worklist's patients, with Download CSV: who they are, their diagnosis and prophylaxis from the registry where they
  * are on it, and why they are on this list, then the list's action for them, else Open chart. Any column sorts them.
  */
-export function WorklistTable({
-  title,
-  csvName,
-  entries,
-  isLoading,
-  error,
-  action,
-}: {
+export function WorklistTable(props: WorklistTableProps) {
+  return <WorklistRows key={props.csvName} {...props} />;
+}
+
+interface WorklistTableProps {
   title: string;
   csvName: string;
   entries: Array<WorklistEntry>;
   isLoading?: boolean;
   error?: Error;
   action?: (entry: WorklistEntry) => React.ReactNode;
-}) {
+}
+
+function WorklistRows({ title, csvName, entries, isLoading, error, action }: WorklistTableProps) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const registry = useRegistryReport();
@@ -138,7 +143,12 @@ export function WorklistTable({
     (entry: WorklistEntry) => byPatient.get(String(entry.row.patient_uuid)) ?? entry.row,
     [byPatient],
   );
-  const columns: Array<{ key: string; header: string; text: (entry: WorklistEntry) => string }> = useMemo(
+  const columns: Array<{
+    key: string;
+    header: string;
+    text: (entry: WorklistEntry) => string;
+    sort?: (entry: WorklistEntry) => SortValue;
+  }> = useMemo(
     () => [
       { key: 'patient', header: t('patient', 'Patient'), text: (entry) => text(patient(entry), 'full_name') },
       { key: 'actId', header: t('actId', 'ACT ID'), text: (entry) => text(patient(entry), 'rhd_id') },
@@ -146,6 +156,7 @@ export function WorklistTable({
         key: 'ageSex',
         header: t('ageSex', 'Age, sex'),
         text: (entry) => `${text(patient(entry), 'age_years')} ${text(patient(entry), 'sex')}`.trim(),
+        sort: (entry) => (text(patient(entry), 'age_years') ? Number(patient(entry).age_years) : null),
       },
       { key: 'diagnosis', header: t('diagnosis', 'Diagnosis'), text: (entry) => diagnosis(patient(entry)) },
       {
@@ -153,7 +164,12 @@ export function WorklistTable({
         header: t('prophylaxis', 'Prophylaxis'),
         text: (entry) => entry.prophylaxis ?? text(patient(entry), 'prophylaxis_regimen'),
       },
-      { key: 'why', header: t('whyOnThisList', 'Why on this list'), text: (entry) => entry.why },
+      {
+        key: 'why',
+        header: t('whyOnThisList', 'Why on this list'),
+        text: (entry) => entry.why,
+        sort: (entry) => entry.whyKey ?? entry.why,
+      },
     ],
     [t, patient],
   );
@@ -167,7 +183,10 @@ export function WorklistTable({
       ? entries.filter((entry) => columns.some((column) => column.text(entry).toLowerCase().includes(needle)))
       : entries;
     const column = (key: string) => columns.find((candidate) => candidate.key === key);
-    return sortItems(matching, sort, (entry, key) => column(key).text(entry) || null);
+    return sortItems(matching, sort, (entry, key) => {
+      const { sort: sortValue, text: shownText } = column(key);
+      return sortValue ? sortValue(entry) : shownText(entry) || null;
+    });
   }, [entries, columns, query, sort]);
   // The page resets when another list, order or search is shown, not when the rows reload.
   const pageKey = useMemo(() => ({ csvName, sort, query }), [csvName, sort, query]);
