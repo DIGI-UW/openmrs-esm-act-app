@@ -49,6 +49,10 @@ describe('ActHomeDashboard', () => {
 
     expect(header().getByRole('img', { name: 'ACT logo' })).toBeInTheDocument();
     expect(header().queryByText('HomePictogram')).not.toBeInTheDocument();
+    // The header is the only h1; the screen does not render its own heading beside it.
+    const headings = screen.getAllByRole('heading', { level: 1 });
+    expect(headings).toHaveLength(1);
+    expect(screen.getByTestId('act-page-header')).toContainElement(headings[0]);
   });
 
   it.each([
