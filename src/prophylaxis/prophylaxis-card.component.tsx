@@ -47,6 +47,9 @@ function useProphylaxisPagePath() {
 
 const date = (value: string | null) => (value ? formatDate(parseDate(value), { time: false }) : '--');
 
+/** A fraction as a whole percentage, as ACT 2.0 showed adherence. */
+const percent = (fraction: number) => `${Math.round(fraction * 100)}%`;
+
 /** The patient summary's prophylaxis: regimen, last and next dose, on-time count, and the forms to record a dose. */
 export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const { t } = useTranslation();
@@ -85,13 +88,26 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
           label: t('adherenceLastReport', 'Adherence (last report)'),
           value: latestAdherence == null ? '--' : `${latestAdherence}%`,
         }
-      : {
-          id: 'on-time',
-          label: t('onTimeSixMonths', 'On-time (6 months)'),
-          value: summary.onTime
-            ? t('onTimeCount', '{{given}} of {{total}}', { given: summary.onTime.given, total: summary.onTime.total })
-            : '--',
-        },
+      : summary.adherence != null
+        ? {
+            id: 'on-time',
+            label: t('adherenceTwelveMonths', 'Adherence (12 months)'),
+            value: percent(summary.adherence),
+            detail: summary.onTime
+              ? t('onTimeCountMonths', '{{given}} of {{total}} on time, {{months}} months', {
+                  given: summary.onTime.given,
+                  total: summary.onTime.total,
+                  months: summary.onTime.months,
+                })
+              : null,
+          }
+        : {
+            id: 'on-time',
+            label: t('onTimeSixMonths', 'On-time (6 months)'),
+            value: summary.onTime
+              ? t('onTimeCount', '{{given}} of {{total}}', { given: summary.onTime.given, total: summary.onTime.total })
+              : '--',
+          },
   ];
 
   return (
@@ -121,6 +137,11 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
                 data-overdue={String(Boolean(field.overdue))}
               >
                 {field.value}
+                {'detail' in field && field.detail && (
+                  <span className={styles.detail} data-testid={`prophylaxis-${field.id}-detail`}>
+                    {field.detail}
+                  </span>
+                )}
               </dd>
             </div>
           ))}
