@@ -141,6 +141,7 @@ describe('routes.json privileges', () => {
         'act-worklist-post-procedural-follow-up',
         'act-worklist-pregnancy-outcome',
         'act-worklist-inr-review',
+        'act-worklist-referred-to-clinician',
         'act-worklist-waiting-list',
       ],
     ],
@@ -178,6 +179,7 @@ describe('routes.json privileges', () => {
     ['act-worklist-post-procedural-follow-up', false],
     ['act-worklist-pregnancy-outcome', false],
     ['act-worklist-inr-review', false],
+    ['act-worklist-referred-to-clinician', false],
     ['act-worklist-waiting-list', false],
   ])('shows %s to a community clinician only (true), to everyone else (false), or by privilege alone', (name, cc) => {
     const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
