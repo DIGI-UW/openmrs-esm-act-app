@@ -566,6 +566,12 @@ export const configSchema = {
     _default: '240f85fa-46e1-540e-9234-2796c623f7ea',
     _description: "The identifier type ACT's patient search shows as the patient's ACT ID.",
   },
+  patientInformationForm: {
+    _type: Type.UUID,
+    _default: 'a6646c51-130d-3b59-a442-959bea93487d',
+    _description:
+      "The RHD Patient Information form, which the Consultation visits card's Update diagnosis opens: the patient's latest for editing when it is in singleRecordForms, as by default.",
+  },
   singleRecordForms: {
     _type: Type.Array,
     _elements: { _type: Type.UUID },
@@ -757,6 +763,7 @@ export interface Config {
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
   actIdentifierType: string;
+  patientInformationForm: string;
   singleRecordForms: Array<string>;
   visitType: string;
   sessionTimeout: { idleMinutes: number; warningMinutes: number; keepAliveMinutes: number };

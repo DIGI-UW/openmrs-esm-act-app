@@ -56,3 +56,10 @@
     color: $danger;
   }
 }
+
+// A ghost button under a field's value, flush with the value's text.
+.fieldAction {
+  display: flex;
+  margin-top: layout.$spacing-02;
+  margin-left: -(layout.$spacing-05);
+}
