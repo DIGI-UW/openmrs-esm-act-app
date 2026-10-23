@@ -131,7 +131,7 @@ export function StackedBars({
   colours: 'urgency' | 'doneNotDone';
   height: string;
 }) {
-  // On a phone a name written out in full leaves the bars no room, and the list under the chart names each in full.
+  // Full names on a phone leave the bars no room; the list under the chart names each in full.
   const phone = useLayoutType() === 'phone';
   const keys = { mapsTo: 'key', scaleType: ScaleTypes.LABELS, ...(!phone && { truncation: whole }) };
   const values = { mapsTo: 'value', stacked: true };
