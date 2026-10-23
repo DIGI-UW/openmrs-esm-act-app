@@ -238,7 +238,7 @@ export const configSchema = {
       _type: Type.String,
       _default: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
       _description:
-        'The care cascade report, by uuid or name. The ACT home widget draws its rows, one per step, from their step and patients columns.',
+        'The care cascade report, by uuid or name. The ACT home widget and the Dashboard draw its rows, one per step, from their step and patients columns.',
     },
     reportUrl: link("Where the care cascade widget's link to the full report leads.", '${openmrsSpaBase}/reports'),
     steps: {
@@ -246,7 +246,7 @@ export const configSchema = {
       _elements: {
         _type: Type.Object,
         step: { _type: Type.String, _description: "The report row's step value." },
-        label: { _type: Type.String, _description: 'What the widget calls it.' },
+        label: { _type: Type.String, _description: 'What the ACT home widget and the Dashboard call it.' },
       },
       _default: [
         { step: 'Active', label: 'Active' },
@@ -259,7 +259,7 @@ export const configSchema = {
         { step: 'Adherent', label: 'Adherent (80%+)' },
       ],
       _description:
-        "The report's steps the widget draws, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
+        "The report's steps the ACT home widget and the Dashboard draw, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
     },
   },
   registry: {
@@ -276,6 +276,18 @@ export const configSchema = {
     },
   },
   dashboard: {
+    registrantsReport: {
+      _type: Type.String,
+      _default: '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71',
+      _description:
+        "The RHD Dashboard Registrants report, by uuid or name: counts by status, and of the active registrants by sex, age band and disease (its breakdown, label and patients columns), for the Dashboard's registrant figures.",
+    },
+    waitlistReport: {
+      _type: Type.String,
+      _default: '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52',
+      _description:
+        "The RHD Dashboard Waitlist report, by uuid or name: the open recommendations by procedure and urgency, the patients waiting and the balloon valvuloplasties and surgeries performed (its breakdown, procedure, urgency, patients and recommendations columns), for the Dashboard's waitlist.",
+    },
     medicalOptimisationReport: {
       _type: Type.String,
       _default: '733a512c-3243-4e91-a44a-06a8e5384606',
@@ -703,7 +715,13 @@ export interface Config {
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
   registry: { report: string; showBpgColumns: boolean };
-  dashboard: { medicalOptimisationReport: string; screeningCascadeReport: string; screeningDiagnosesReport: string };
+  dashboard: {
+    registrantsReport: string;
+    waitlistReport: string;
+    medicalOptimisationReport: string;
+    screeningCascadeReport: string;
+    screeningDiagnosesReport: string;
+  };
   consultations: {
     encounterType: string;
     form: string;

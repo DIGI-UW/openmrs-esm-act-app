@@ -8,6 +8,7 @@ import { useProgrammeScope } from '../programme-report/programme-scope';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { useSessionClinicScope } from '../session-clinic';
 import { ActHomeCard } from './act-home-card.component';
+import { cascadeSteps } from './care-cascade-steps';
 import styles from './care-cascade.scss';
 
 /**
@@ -42,11 +43,11 @@ export function CareCascadeCard({
   const { rows } = report;
   const error = report.error ?? (scopeError ? new Error('The session location could not be read') : undefined);
   const isLoading = report.isLoading || (!scope && !scopeError);
-  // The cascade descriptor names its columns step and patients, one row per step.
-  const byStep = new Map(rows.map((row) => [String(row.step), Number(row.patients)]));
-  const steps = careCascade.steps
-    .filter(({ step }) => byStep.has(step))
-    .map(({ step, label }) => ({ step, label, patients: byStep.get(step) }));
+  const steps = cascadeSteps(rows, careCascade.steps).map(({ step, label, value }) => ({
+    step,
+    label,
+    patients: value,
+  }));
   const largest = Math.max(0, ...steps.map((row) => row.patients));
 
   return (
