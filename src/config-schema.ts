@@ -288,6 +288,18 @@ export const configSchema = {
       _description:
         "The RHD Dashboard Waitlist report, by uuid or name: the open recommendations by procedure and urgency, the patients waiting and the balloon valvuloplasties and surgeries performed (its breakdown, procedure, urgency, patients and recommendations columns), for the Dashboard's waitlist.",
     },
+    showScreening: {
+      _type: Type.Boolean,
+      _default: true,
+      _description:
+        "Show the Dashboard's screening sections, the screening cascade and the screening from registrations. Turn it off at a site without a screening programme.",
+    },
+    screeningReport: {
+      _type: Type.String,
+      _default: '0f4b7c2d-6a1e-5d93-8b47-2c9e1f5a3d68',
+      _description:
+        "The RHD Dashboard Screening report, by uuid or name: the patients registered in a period by sex, Screen +, age at registration and how the case was detected, for the Dashboard's screening from registrations.",
+    },
     registrantPatientsReport: {
       _type: Type.String,
       _default: 'e8296d2d-def8-5f8e-ba2d-78c59859b9e3',
@@ -760,6 +772,8 @@ export interface Config {
   dashboard: {
     registrantsReport: string;
     waitlistReport: string;
+    showScreening: boolean;
+    screeningReport: string;
     registrantPatientsReport: string;
     waitlistPatientsReport: string;
     cascadePatientsReport: string;
