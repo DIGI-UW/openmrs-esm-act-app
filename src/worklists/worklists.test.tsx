@@ -262,6 +262,88 @@ describe('Flag worklist', () => {
   });
 });
 
+describe('A worklist table', () => {
+  const flag = 'RHD lost to follow-up';
+  const since = (days: number) => `${flag}=${dayjs().subtract(days, 'day').format('YYYY-MM-DD')}`;
+  const onList = (i: number, overrides: Record<string, unknown> = {}, days = 5) => ({
+    ...registryRow(i, flag, since(days)),
+    ...overrides,
+  });
+  const patients = () => tableRows().map((row) => row[0].replace(/rhd\d+$/, ''));
+  const sortBy = (header: string) => userEvent.click(screen.getByRole('button', { name: new RegExp(`^${header}`) }));
+
+  beforeEach(async () => {
+    await signInWith(
+      [worklistsPrivilege, 'Task: act.lists.export'],
+      flagWorklists['act-worklist-lost-to-follow-up'] as unknown as Partial<Config>,
+    );
+    vi.mocked(useRhdFlagList).mockReturnValue({ list: { cohortUuid: 'cohort' }, isLoading: false, error: undefined });
+  });
+
+  it('sorts by a column, then reverses, then returns to the list order', async () => {
+    reports({ registry: [onList(2), onList(3), onList(1)] });
+    render(<FlagWorklist {...list} />);
+
+    await sortBy('Patient');
+    expect(patients()).toEqual(['Patient 1', 'Patient 2', 'Patient 3']);
+    await sortBy('Patient');
+    expect(patients()).toEqual(['Patient 3', 'Patient 2', 'Patient 1']);
+    await sortBy('Patient');
+    expect(patients()).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
+  });
+
+  it.each([
+    ['Age, sex', ['Patient 2', 'Patient 3', 'Patient 1']],
+    ['Why on this list', ['Patient 3', 'Patient 1', 'Patient 2']],
+  ])('sorts by %s, a number in the text by its value', async (header, expected) => {
+    reports({
+      registry: [onList(1, { age_years: 100 }, 12), onList(2, { age_years: 9 }, 100), onList(3, { age_years: 50 }, 9)],
+    });
+    render(<FlagWorklist {...list} />);
+
+    await sortBy(header);
+
+    expect(patients()).toEqual(expected);
+  });
+
+  it('sorts all its patients, not only the page shown, and returns to the first page', async () => {
+    reports({ registry: Array.from({ length: 12 }, (_, i) => onList(i + 1)) });
+    render(<FlagWorklist {...list} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(patients()).toEqual(['Patient 11', 'Patient 12']);
+
+    await sortBy('Patient');
+    await sortBy('Patient');
+
+    expect(patients()[0]).toBe('Patient 12');
+  });
+
+  it('shows the patients matching what is typed above it, and downloads those in the order shown', async () => {
+    reports({ registry: [onList(1), onList(2), onList(21), onList(3)] });
+    render(<FlagWorklist {...list} />);
+    await sortBy('Patient');
+    await sortBy('Patient');
+
+    await userEvent.type(screen.getByRole('searchbox'), 'patient 2');
+
+    expect(patients()).toEqual(['Patient 21', 'Patient 2']);
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
+    expect(vi.mocked(downloadCsv).mock.lastCall[2].map((row) => row[0])).toEqual(['Patient 21', 'Patient 2']);
+  });
+
+  it('says so when nothing matches what is typed, rather than saying the list is empty', async () => {
+    reports({ registry: [onList(1)] });
+    render(<FlagWorklist {...list} />);
+
+    await userEvent.type(screen.getByRole('searchbox'), 'nobody');
+
+    expect(screen.getByTestId('filter-empty-state')).toBeInTheDocument();
+    expect(screen.queryByText('There are no patients on this list to display')).not.toBeInTheDocument();
+  });
+});
+
 describe('Cardiology follow-up worklist', () => {
   it('says each patient is overdue since, or due by, their next review date, a patient due today not yet overdue', async () => {
     await signInWith(

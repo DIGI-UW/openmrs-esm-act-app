@@ -142,6 +142,15 @@ describe('Registry details, markers, sorting and search', () => {
     expect(shownNames()).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
   });
 
+  it('sorts by prophylaxis, with a patient who has none last', async () => {
+    reports([registryRows[2], { ...registryRows[0], prophylaxis_regimen: '' }, registryRows[1]]);
+    render(<Registry />);
+
+    await sortBy('Prophylaxis');
+
+    expect(shownNames()).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
+  });
+
   it('finds a patient by their alternate ID', async () => {
     reports([{ ...registryRows[0], external_id: 'ALT-77' }, registryRows[1]]);
     render(<Registry />);

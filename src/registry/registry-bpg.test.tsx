@@ -168,6 +168,55 @@ describe('Registry BPG status and adherence', () => {
     expect(within(bpgCell('Patient 3')).getByTestId('bpg-status')).toHaveTextContent(new RegExp(`^${text}$`));
   });
 
+  it('sorts by BPG status, the least covered first, and by days within a status', async () => {
+    await signInWith(['App: act.registry'], bpgOn);
+    // An oral patient can carry days until a dose too, which must not mix them in among the BPG patients.
+    const rows = [
+      { ...withBpg[0], bpg_status: 'Covered', days_until_due: 19 },
+      { ...withBpg[1], bpg_status: 'Oral', days_until_due: -30 },
+      { ...withBpg[2], bpg_status: 'Not covered', days_until_due: -18 },
+      { ...withBpg[3], bpg_status: 'Deadline approaching', days_until_due: 5 },
+      { ...withBpg[4], bpg_status: 'No prescription', days_until_due: null },
+      { ...withBpg[5], bpg_status: 'Not covered', days_until_due: -40 },
+      { ...withBpg[6], bpg_status: null, days_until_due: 61 },
+    ];
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    render(<Registry />);
+    const names = () =>
+      screen
+        .getAllByRole('link')
+        .map((link) => link.textContent)
+        .filter((name) => name.startsWith('Patient'));
+
+    await userEvent.click(screen.getByRole('button', { name: /BPG status/ }));
+    expect(names()).toEqual([
+      'Patient 6',
+      'Patient 3',
+      'Patient 4',
+      'Patient 1',
+      'Patient 2',
+      'Patient 5',
+      'Patient 7',
+    ]);
+
+    await userEvent.click(screen.getByRole('button', { name: /BPG status/ }));
+    expect(names()).toEqual([
+      'Patient 5',
+      'Patient 2',
+      'Patient 1',
+      'Patient 4',
+      'Patient 3',
+      'Patient 6',
+      'Patient 7',
+    ]);
+  });
+
   it('offers the five statuses as the tags word them, whichever the rows have', async () => {
     await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
