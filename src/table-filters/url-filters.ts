@@ -13,6 +13,25 @@ const urlHasNone = (keys: ReadonlyArray<string>) => {
   return keys.every((key) => !params.has(key));
 };
 
+/** The page's URL with these filters, a defaulted one set to All written empty so a reload keeps All. */
+export function urlWithFilters<K extends string>(
+  keys: ReadonlyArray<K>,
+  filters: Record<K, string>,
+  defaultedKeys: ReadonlyArray<K>,
+) {
+  const params = new URLSearchParams(window.location.search);
+  keys.forEach((key) => {
+    if (filters[key]) {
+      params.set(key, filters[key]);
+    } else if (defaultedKeys.includes(key)) {
+      params.set(key, '');
+    } else {
+      params.delete(key);
+    }
+  });
+  return `${window.location.pathname}${params.size ? `?${params}` : ''}`;
+}
+
 /**
  * A screen's filters, one per key, kept in the page's URL so a view can be bookmarked. A URL with none of the
  * keys opens on the defaults; a defaulted filter set to All is written empty, so a reload keeps All.
@@ -41,17 +60,7 @@ export function useUrlFilters<K extends string>(keys: ReadonlyArray<K>, defaults
       return;
     }
     const timer = setTimeout(() => {
-      const params = new URLSearchParams(window.location.search);
-      keys.forEach((key) => {
-        if (filters[key]) {
-          params.set(key, filters[key]);
-        } else if (defaultedKeys.includes(key)) {
-          params.set(key, '');
-        } else {
-          params.delete(key);
-        }
-      });
-      const url = `${window.location.pathname}${params.size ? `?${params}` : ''}`;
+      const url = urlWithFilters(keys, filters, defaultedKeys);
       if (url !== `${window.location.pathname}${window.location.search}`) {
         window.history.replaceState(window.history.state, '', url);
       }

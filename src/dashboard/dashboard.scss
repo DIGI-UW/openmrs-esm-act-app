@@ -171,3 +171,27 @@
   color: $text-02;
   margin-block: layout.$spacing-03;
 }
+
+.figure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+}
+
+.figureBanner {
+  @include type.type-style('body-compact-01');
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: $ui-01;
+  border-left: layout.$spacing-02 solid $interactive-01;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
