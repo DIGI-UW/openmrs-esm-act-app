@@ -14,6 +14,8 @@ export interface NextStep {
   done: boolean;
   /** A BPG step held back after an anaphylaxis no consultation has reviewed yet; its reason says so. */
   onHold?: boolean;
+  /** For a referral, the encounter type that records it; null when ACT Core has none mapped, so it cannot be sent. */
+  referralType?: string | null;
 }
 
 /** The held BPG step among the patient's next steps, if ACT Core holds one. */

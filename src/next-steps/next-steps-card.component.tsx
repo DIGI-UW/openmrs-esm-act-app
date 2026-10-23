@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText, Tag } from '@carbon/react';
 import {
@@ -11,11 +11,22 @@ import {
   Stethoscope,
   UserFollow,
 } from '@carbon/react/icons';
-import { CardHeader, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
+import { useSWRConfig } from 'swr';
+import {
+  CardHeader,
+  restBaseUrl,
+  showSnackbar,
+  useConfig,
+  usePatient,
+  useSession,
+  userHasAccess,
+} from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_SEND_REFERRAL } from '../constants';
 import { mayEnter } from '../access/may-enter-form';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { launchInClinicalFormsWindow } from '../visits/launch-in-clinical-forms-window';
+import { sendReferral } from './send-referral';
 import { type NextStep, useNextSteps, usePublishedForms } from './next-steps.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './next-steps-card.scss';
@@ -64,6 +75,10 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
   const { patient } = usePatient(patientUuid);
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
   const actionLabel = useActionLabel();
+  const { user, sessionLocation } = useSession();
+  const { mutate } = useSWRConfig();
+  const [sending, setSending] = useState(false);
+  const maySendReferral = Boolean(user) && userHasAccess([PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_SEND_REFERRAL], user);
   const formCount = useFormCount(patientUuid, nextSteps.enabled);
   const previous = useRef<Array<NextStep>>(null);
 
@@ -87,6 +102,27 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
     return null;
   }
   const firstName = patient?.name?.[0]?.given?.[0] ?? '';
+
+  const send = async (referralType: string) => {
+    setSending(true);
+    try {
+      await sendReferral(patientUuid, referralType, sessionLocation?.uuid);
+      await mutate(`${restBaseUrl}/encounter?patient=${patientUuid}&for=actcore-nextsteps`);
+      showSnackbar({
+        kind: 'success',
+        title: t('referralSent', 'Referral sent'),
+        subtitle: t('referralSentSubtitle', 'The cardiac clinic will see it on their worklist'),
+      });
+    } catch (e) {
+      showSnackbar({
+        kind: 'error',
+        title: t('referralNotSent', 'The referral could not be sent'),
+        subtitle: e?.message,
+      });
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className={cardStyles.card}>
@@ -137,6 +173,13 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
                     <CheckmarkFilled size={16} aria-hidden />
                     {t('completed', 'Completed')}
                   </span>
+                ) : step.key === 'refer' ? (
+                  step.referralType &&
+                  maySendReferral && (
+                    <Button kind="ghost" size="sm" disabled={sending} onClick={() => send(step.referralType)}>
+                      {t('sendReferral', 'Send referral')}
+                    </Button>
+                  )
                 ) : (
                   step.form && (
                     <Button kind="ghost" size="sm" disabled={isOpening} onClick={() => open(step.form)}>

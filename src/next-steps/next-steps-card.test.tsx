@@ -12,7 +12,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
-import { signInWith } from '../access/sign-in.test-helper';
+import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type NextStep } from './next-steps.resource';
@@ -201,6 +201,90 @@ describe('NextStepsCard', () => {
 
     await screen.findByText('Refer to clinician');
     expect(within(rows()[0]).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  describe('Send referral', () => {
+    const referralType = 'referral-type';
+    const refer = (done = false): NextStep => ({
+      key: 'refer',
+      form: null,
+      title: 'Refer to clinician',
+      reason: 'Anaphylaxis reported: a clinician must review before the next dose',
+      isNew: !done,
+      done,
+      referralType,
+    });
+
+    beforeEach(async () => {
+      await signInWith(['Add Encounters', 'Task: act.sendReferral']);
+      atSessionLocation('Akunalaber HCIII', [], 'akunalaber');
+      steps = [refer()];
+      respond();
+    });
+
+    it('records a referral at the session location and shows the step Completed after asking again', async () => {
+      renderCard();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+      steps = [refer(true)];
+      mockOpenmrsFetch.mockClear();
+      respond();
+      await invalidatePatientEncounters();
+
+      expect(await screen.findByText('Completed')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
+    });
+
+    it('posts the encounter with no date, so the server stamps it', async () => {
+      renderCard();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+
+      const post = mockOpenmrsFetch.mock.calls.find(
+        ([, options]) => (options as { method?: string })?.method === 'POST',
+      );
+      expect(post?.[0]).toBe(`${restBaseUrl}/encounter`);
+      expect((post?.[1] as { body: unknown }).body).toEqual({
+        patient: 'grace',
+        encounterType: referralType,
+        location: 'akunalaber',
+      });
+      expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'success', title: 'Referral sent' }),
+      );
+    });
+
+    it('says so, and keeps the button, when the referral cannot be saved', async () => {
+      mockOpenmrsFetch.mockImplementation(((url: string, options?: { method?: string }) =>
+        options?.method === 'POST'
+          ? Promise.reject(new Error('refused'))
+          : Promise.resolve({ data: url.includes('/actcore/nextsteps') ? { steps } : { results: forms } })) as never);
+      renderCard();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+
+      await waitFor(() =>
+        expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })),
+      );
+      expect(screen.getByRole('button', { name: 'Send referral' })).toBeEnabled();
+    });
+
+    it('offers no button to a user without the privilege to send a referral', async () => {
+      await signInWith(['Add Encounters']);
+      renderCard();
+
+      await screen.findByText('Refer to clinician');
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
+    });
+
+    it('offers no button when no encounter type is mapped to the referral', async () => {
+      steps = [{ ...refer(), referralType: null }];
+      respond();
+      renderCard();
+
+      await screen.findByText('Refer to clinician');
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
+    });
   });
 
   it('marks a BPG step ACT Core holds back as On hold, with no action, beside the referral it waits for', async () => {

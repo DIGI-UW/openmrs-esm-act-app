@@ -23,6 +23,7 @@ export const PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS = 'View Security Audit Logs';
 export const PRIVILEGE_DOWNLOAD_DATA = 'Task: act.downloadData';
 export const PRIVILEGE_DOWNLOAD_IDENTIFIERS = 'Task: act.downloadIdentifiers';
 export const PRIVILEGE_DOWNLOAD_RESEARCH_DATA = 'Task: act.downloadResearchData';
+export const PRIVILEGE_SEND_REFERRAL = 'Task: act.sendReferral';
 
 // OpenMRS core privileges for the actions ACT offers, as the services that carry them out require.
 export const PRIVILEGE_ADD_PATIENTS = 'Add Patients';
