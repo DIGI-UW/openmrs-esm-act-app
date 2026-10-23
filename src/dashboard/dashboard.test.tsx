@@ -512,7 +512,7 @@ describe('Dashboard', () => {
     expect(mutates[REGISTRANTS]).not.toHaveBeenCalled();
   });
 
-  it('shows no figure on a tile, and names the section rather than its count, when the registry fails', async () => {
+  it('shows no figure on a tile, and names the section rather than its count, when the registrant counts fail', async () => {
     await signIn(REGISTRANTS);
     renderPage();
 
@@ -522,7 +522,7 @@ describe('Dashboard', () => {
     expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis375% of active RHD');
   });
 
-  it('names the waitlist rather than its count when the waiting list fails', async () => {
+  it('names the waitlist rather than its count when the waitlist counts fail', async () => {
     await signIn(DASHBOARD_WAITLIST);
     renderPage();
 
