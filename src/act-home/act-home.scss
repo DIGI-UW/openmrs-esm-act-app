@@ -30,3 +30,15 @@
   @include type.type-style('body-01');
   padding: layout.$spacing-05;
 }
+
+.logo {
+  display: block;
+  height: layout.$spacing-09;
+  width: auto;
+}
+
+.role {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin-right: layout.$spacing-05;
+}
