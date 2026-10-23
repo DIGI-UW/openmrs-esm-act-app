@@ -90,6 +90,10 @@
   @include type.type-style('heading-compact-02');
 }
 
+.search {
+  margin-bottom: layout.$spacing-05;
+}
+
 .tableContainer {
   overflow-x: auto;
 }
