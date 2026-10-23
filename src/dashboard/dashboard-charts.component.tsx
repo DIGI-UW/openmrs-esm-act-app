@@ -1,9 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useContext, useRef } from 'react';
+import { Link } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { useLayoutType } from '@openmrs/esm-framework';
 import { DonutChart, ScaleTypes, SimpleBarChart, StackedBarChart, TruncationTypes } from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
 import { type Count, cascadeShares, share } from './dashboard-counts';
+import { type Figure, FigureLinks } from './dashboard-figure';
 import styles from './dashboard.scss';
 
 // Each chart is given its colours as a scale, so a printed legend's swatch can show the same colour.
@@ -29,6 +31,28 @@ function useStable<T>(value: T): T {
 // Carbon cuts a long label short by default, and names sharing a prefix then read the same.
 const whole = { type: TruncationTypes.NONE };
 
+/** A count that opens the patients behind it, when it names them; a modified click is left to the browser. */
+export function CountLink({ value, figure }: { value: number | string; figure?: Figure }) {
+  const links = useContext(FigureLinks);
+  if (!figure || !links) {
+    return <>{value}</>;
+  }
+  return (
+    <Link
+      href={links.href(figure)}
+      onClick={(event) => {
+        if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+          return;
+        }
+        event.preventDefault();
+        links.open(figure);
+      }}
+    >
+      {value}
+    </Link>
+  );
+}
+
 const base = (name: string, height: string) => ({
   accessibility: { svgAriaLabel: name },
   height,
@@ -42,12 +66,14 @@ export function CountsDonut({
   centre,
   testId,
   withShare,
+  figureOf,
 }: {
   name: string;
   counts: Array<Count>;
   centre: string;
   testId: string;
   withShare?: boolean;
+  figureOf?: (label: string) => Figure;
 }) {
   const { t } = useTranslation();
   const scale = scaleOf(counts.map(({ label }) => label));
@@ -73,7 +99,9 @@ export function CountsDonut({
           <li key={label} className={styles.legendRow} data-testid={testId}>
             <span className={styles.swatch} style={{ backgroundColor: scale[label] }} aria-hidden="true" />
             <span>{label}</span>
-            <span className={styles.count}>{value}</span>
+            <span className={styles.count}>
+              <CountLink value={value} figure={figureOf?.(label)} />
+            </span>
             {withShare && <span className={styles.share}>{share(value, total)}%</span>}
           </li>
         ))}
@@ -87,11 +115,13 @@ export function CascadeBars({
   steps,
   testId,
   shareOf,
+  figureOf,
 }: {
   name: string;
   steps: Array<Count>;
   testId: string;
   shareOf?: Record<string, string>;
+  figureOf?: (label: string) => Figure;
 }) {
   const data = useStable(steps.map(({ label, value }) => ({ group: label, value })));
   const options = useStable({
@@ -117,7 +147,9 @@ export function CascadeBars({
         {cascadeShares(steps, shareOf).map((step) => (
           <li key={step.label} className={styles.step} data-testid={testId}>
             <span>{step.label}</span>
-            <span className={styles.count}>{step.value}</span>
+            <span className={styles.count}>
+              <CountLink value={step.value} figure={figureOf?.(step.label)} />
+            </span>
             {step.share !== null && <span className={styles.share}>{step.share}%</span>}
           </li>
         ))}
