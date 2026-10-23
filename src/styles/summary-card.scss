@@ -57,6 +57,13 @@
   }
 }
 
+// A ghost button under a field's value, flush with the value's text.
+.fieldAction {
+  display: flex;
+  margin-top: layout.$spacing-02;
+  margin-left: -(layout.$spacing-05);
+}
+
 // A second line under a field's value, such as the on-time count under adherence.
 .detail {
   @include type.type-style('label-01');
