@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { openmrsFetch, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
@@ -269,6 +269,24 @@ describe('Dashboard', () => {
       ['Balloon valvuloplasty', '1', '0'],
       ['Mitral valve repair/replacement', '1', '1'],
     ]);
+  });
+
+  it('opens the waitlist as a table on a phone, and as a chart on a tablet', async () => {
+    await signIn();
+    vi.mocked(useLayoutType).mockReturnValue('phone');
+
+    const { unmount } = renderPage();
+
+    expect(await screen.findAllByTestId('dashboard-waitlist-row')).toHaveLength(2);
+    expect(screen.queryByTestId('dashboard-waitlist-total')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show as a chart' })).toBeInTheDocument();
+
+    unmount();
+    vi.mocked(useLayoutType).mockReturnValue('tablet');
+    renderPage();
+
+    expect(await screen.findAllByTestId('dashboard-waitlist-total')).toHaveLength(2);
+    expect(screen.queryByTestId('dashboard-waitlist-row')).not.toBeInTheDocument();
   });
 
   it('stacks medical optimisation done against not done, printing both counts and the denominator', async () => {

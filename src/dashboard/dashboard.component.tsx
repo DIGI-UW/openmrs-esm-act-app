@@ -14,7 +14,7 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { OpenmrsDatePicker, ReportsPictogram, useConfig, useSession } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, ReportsPictogram, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
@@ -202,7 +202,8 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
     const rows = ofClinics(waitlistReport.rows, clinics);
     return { ...waitlistCounts(rows), patients: new Set(rows.map((row) => String(row.patient_uuid))).size };
   }, [waitlistReport.rows, clinics]);
-  const [waitlistAsTable, setWaitlistAsTable] = useState(false);
+  const phone = useLayoutType() === 'phone';
+  const [waitlistAsTable, setWaitlistAsTable] = useState(phone);
 
   const optimisationReport = useReportDataset(dashboard.medicalOptimisationReport, params);
   const screeningReport = useReportDataset(dashboard.screeningCascadeReport, params);
