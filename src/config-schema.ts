@@ -48,7 +48,12 @@ export const configSchema = {
     earlyWarningFlags: {
       _type: Type.Array,
       _elements: { _type: Type.String },
-      _default: ['RHD cardiology follow-up due', 'RHD INR review due', 'RHD no data for 5 months'],
+      _default: [
+        'RHD cardiology follow-up due',
+        'RHD INR review due',
+        'RHD no data for 5 months',
+        'RHD referred to a clinician',
+      ],
       _description:
         "The flags, by name, that warn of care coming due rather than of missing data: blue in the registry, as the chart draws the distro's RHD Early Warning priority. A flag listed here and in riskFlags counts as a risk.",
     },

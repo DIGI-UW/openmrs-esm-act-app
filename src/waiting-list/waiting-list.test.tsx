@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { signInWith } from '../access/sign-in.test-helper';
+import { columnHeaders } from '../column-headers.test-helper';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
@@ -34,7 +35,7 @@ describe('Procedural waiting list', () => {
 
     render(<WaitingList />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     expect(headers.slice(0, 7)).toEqual(['ACT ID', 'Sex', 'Age', 'Date of birth', 'Type', 'Procedure', 'Urgency']);
     expect(headers).toEqual(expect.arrayContaining(['District', 'Contraindications', 'Suitable for repair']));
     const cells = (id: string) =>
@@ -54,6 +55,44 @@ describe('Procedural waiting list', () => {
       District: 'KITGUM',
       Contraindications: 'Yes',
       'Suitable for repair': 'No',
+    });
+  });
+
+  describe('sorting', () => {
+    const shownIds = () =>
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => within(row).getAllByRole('cell')[0].textContent);
+    const sortBy = (header: string) => userEvent.click(screen.getByRole('button', { name: new RegExp(`^${header}`) }));
+    const rows = [
+      { ...waitingListRows[0], rhd_id: 'a', age_years: 100, date_of_birth: '2000-02-01', date_added: '2026-09-01' },
+      { ...waitingListRows[1], rhd_id: 'b', age_years: 9, date_of_birth: '2001-03-01', date_added: '2026-06-01' },
+      { ...waitingListRows[2], rhd_id: 'c', age_years: 50, date_of_birth: '2000-01-01', date_added: '2026-09-01' },
+    ];
+
+    it('sorts by any column, a number by its value and a date by its day, then returns to the ranking', async () => {
+      dataset({ rows });
+      render(<WaitingList />);
+      const ranked = shownIds();
+
+      await sortBy('Age');
+      expect(shownIds()).toEqual(['b', 'c', 'a']);
+      await sortBy('Age');
+      expect(shownIds()).toEqual(['a', 'c', 'b']);
+      await sortBy('Age');
+      expect(shownIds()).toEqual(ranked);
+      await sortBy('Date of birth');
+      expect(shownIds()).toEqual(['c', 'a', 'b']);
+    });
+
+    it('sorts by days pending, the most pending last when ascending', async () => {
+      dataset({ rows });
+      render(<WaitingList />);
+
+      await sortBy('Days pending');
+
+      expect(shownIds()[2]).toBe('b');
     });
   });
 
