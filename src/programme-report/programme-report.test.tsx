@@ -226,6 +226,58 @@ describe('Reports', () => {
     });
   });
 
+  it('draws no care cascade for a limited administrator at a clinic that is not one of theirs', async () => {
+    await atLocation(['RHD Community']);
+    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('draws no care cascade for a limited administrator with no clinic, at a clinic', async () => {
+    await atLocation(['RHD Community']);
+    limitTo({ status: 'ready', uuids: [], names: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it("draws no care cascade while a clinic that is not a limited administrator's stays in the scope", async () => {
+    await atLocation(['RHD Tertiary']);
+    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
+
+    renderPage();
+
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Primary care clinic' }), 'acimi');
+
+    await waitFor(() => expect(lastParams()).toHaveProperty('primaryCareClinic', 'acimi'));
+    expect(lastParams()).toHaveProperty('cardiacClinic', 'session-location');
+    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(reportCalls(cascadeUuid())).toHaveLength(0);
+  });
+
+  it('draws the care cascade once a limited administrator holds only their own clinics in the scope', async () => {
+    await atLocation(['RHD Tertiary']);
+    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
+
+    renderPage();
+
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Cardiac clinic' }), '');
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Primary care clinic' }), 'acimi');
+
+    await screen.findAllByTestId('cascade-step');
+    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+      endDate: dayjs().format('YYYY-MM-DD'),
+      primaryCareClinic: 'acimi',
+    });
+  });
+
   it('draws no care cascade while the limit is pending', async () => {
     await atLocation(['RHD Community']);
     limitTo({ status: 'pending' });

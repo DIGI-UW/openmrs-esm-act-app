@@ -170,12 +170,13 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   );
   const { rows, isLoading, error } = useReportDataset(scope ? programmeReport.report : null, params);
   const limit = useClinicLimit();
-  // The cascade report cannot be held to clinics, so a limited administrator sees it only at a clinic of their own.
+  const scopeClinics = [scope?.cardiacClinic, scope?.primaryCareClinic].filter(Boolean);
+  // The cascade report cannot be held to clinics, so a limited user sees it only at their own.
   const showCascade =
     clinicFilters &&
     !!scope &&
     limit.status !== 'pending' &&
-    (limit.status === 'none' || !!scope.cardiacClinic || !!scope.primaryCareClinic);
+    (limit.status === 'none' || (!!scopeClinics.length && scopeClinics.every((uuid) => limit.uuids.includes(uuid))));
 
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
