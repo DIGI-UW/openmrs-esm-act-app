@@ -27,6 +27,11 @@ export const flagWorklists: Record<string, FlagWorklistConfig> = {
     title: 'RHD pregnancy outcome due',
     tone: 'orange',
   },
+  'act-worklist-referred-to-clinician': {
+    flag: 'RHD referred to a clinician',
+    title: 'Referred to a clinician',
+    tone: 'orange',
+  },
   'act-worklist-inr-review': {
     flag: 'RHD INR review due',
     title: 'INR review due',
