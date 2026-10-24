@@ -1,7 +1,6 @@
 /**
- * The Clinics page is routed by its extension's `meta.name` and `meta.slot`, so an entry in the homepage dashboard
- * slot carries the routing. Its link is the Admin section's Clinics (see admin-nav), so nothing is rendered in the
- * main dashboard list.
+ * Routes the Clinics page by its `meta.name` and `meta.slot`, and renders nothing: its link is the Admin section's
+ * Clinics, in admin-nav.
  */
 export default function ClinicsDashboardLink() {
   return null;

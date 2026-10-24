@@ -29,7 +29,7 @@ export interface ClinicForm {
 
 type Levels = Config['clinics']['levels'];
 
-// A tag search leaves out retired locations even with includeAll, so every location is read and the clinics kept.
+// A tag search drops retired locations even with includeAll, so every location is read.
 const locationsUrl = `${restBaseUrl}/location?includeAll=true&v=custom:(uuid,name,description,retired,tags:(uuid,display),parentLocation:(uuid,display))`;
 
 /** The clinics, enabled and disabled, by name; a clinic's type is the first part of its description, as seeded. */

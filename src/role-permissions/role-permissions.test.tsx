@@ -80,7 +80,7 @@ function renderPage() {
 const box = (roleName: string, capabilityName: string) =>
   screen.getByRole('checkbox', { name: `${roleName}: ${capabilityName}` });
 
-// The Instance Administrator holds the registry's and exports' privileges, not research's, and not Delete Patients.
+// Holds Registry's and Exports' privileges, not Study Management's nor Delete Patients.
 const instanceAdmin = ['Manage Roles', 'App: act.registry', 'Task: act.lists.export'];
 
 describe('Role permissions', () => {

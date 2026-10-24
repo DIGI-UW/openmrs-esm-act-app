@@ -21,7 +21,7 @@ const tagUuids: Record<string, string> = {
 const tags = (...names: Array<string>) => names.map((display) => ({ uuid: tagUuids[display], display }));
 const working = ['Visit Location', 'Queue Location', 'Login Location'];
 
-// As the distro seeds them: the type and level in the description, a level tag beside the working tags.
+// As the distro seeds them: type and level in the description, a level tag beside the working tags.
 const locations = [
   {
     uuid: 'uhi',

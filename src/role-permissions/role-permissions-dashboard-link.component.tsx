@@ -1,7 +1,6 @@
 /**
- * The Role permissions page is routed by its extension's `meta.name` and `meta.slot`, so an entry in the homepage
- * dashboard slot carries the routing. Its link is the Instance admin's Role permissions (see instance-admin-nav), so
- * nothing is rendered in the main dashboard list.
+ * Routes the Role permissions page by its `meta.name` and `meta.slot`, and renders nothing: its link is the Instance
+ * admin's Role permissions, in instance-admin-nav.
  */
 export default function RolePermissionsDashboardLink() {
   return null;
