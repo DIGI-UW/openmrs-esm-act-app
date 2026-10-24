@@ -375,6 +375,40 @@
       "privileges": "Edit Users"
     },
     {
+      "name": "act-clinics-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "clinicsDashboardLink",
+      "meta": {
+        "name": "act-clinics",
+        "slot": "act-clinics-dashboard-slot",
+        "title": "clinics"
+      },
+      "privileges": "Manage Locations"
+    },
+    {
+      "name": "act-clinics-dashboard",
+      "slot": "act-clinics-dashboard-slot",
+      "component": "clinicsDashboard",
+      "privileges": "Manage Locations"
+    },
+    {
+      "name": "act-role-permissions-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "rolePermissionsDashboardLink",
+      "meta": {
+        "name": "act-role-permissions",
+        "slot": "act-role-permissions-dashboard-slot",
+        "title": "rolePermissions"
+      },
+      "privileges": "Manage Roles"
+    },
+    {
+      "name": "act-role-permissions-dashboard",
+      "slot": "act-role-permissions-dashboard-slot",
+      "component": "rolePermissionsDashboard",
+      "privileges": "Manage Roles"
+    },
+    {
       "name": "act-studies-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "studiesDashboardLink",

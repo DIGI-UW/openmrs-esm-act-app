@@ -20,10 +20,7 @@ describe('AdminNav', () => {
       'href',
       '/openmrs/spa/home/act-users',
     );
-    expect(screen.getByRole('link', { name: 'Clinics' })).toHaveAttribute(
-      'href',
-      '/openmrs/admin/locations/location.list',
-    );
+    expect(screen.getByRole('link', { name: 'Clinics' })).toHaveAttribute('href', '/openmrs/spa/home/act-clinics');
     expect(screen.getByRole('link', { name: 'Studies' })).toHaveAttribute('href', '/openmrs/spa/home/act-studies');
     expect(screen.getByRole('link', { name: 'Flags and adherence' })).toHaveAttribute(
       'href',

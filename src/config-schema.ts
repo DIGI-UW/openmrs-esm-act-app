@@ -24,6 +24,36 @@ export const configSchema = {
     cardiac: locationTags('cardiac clinics', ['RHD Tertiary', 'RHD District']),
     primaryCare: locationTags('primary care clinics', ['RHD Community']),
   },
+  clinics: {
+    levels: {
+      _type: Type.Array,
+      _elements: {
+        _type: Type.Object,
+        tag: { _type: Type.String, _description: 'The location tag that gives a clinic this level.' },
+        level: { _type: Type.String, _description: "The level as the clinic's description names it." },
+      },
+      _default: [
+        { tag: 'RHD Tertiary', level: 'Tertiary' },
+        { tag: 'RHD District', level: 'District' },
+        { tag: 'RHD Community', level: 'Community' },
+      ],
+      _description:
+        "The levels the Clinics page offers, as ACT 2.0's, each by its location tag. A clinic's description holds its type and level, as the distro seeds them: 'Public, District level'.",
+    },
+    types: {
+      _type: Type.Array,
+      _elements: { _type: Type.String },
+      _default: ['Public', 'Private Not-For-Profit', 'Private For-Profit'],
+      _description: "The types the Clinics page offers, as ACT 2.0's; a clinic keeps a type of its own when edited.",
+    },
+    newClinicTags: {
+      _type: Type.Array,
+      _elements: { _type: Type.String },
+      _default: ['Visit Location', 'Queue Location', 'Login Location'],
+      _description:
+        'Location tags a clinic added on the Clinics page gets beside its level, so users sign in and record visits there.',
+    },
+  },
   flagLists: {
     namePrefix: {
       _type: Type.String,
@@ -130,8 +160,8 @@ export const configSchema = {
       '${openmrsBase}/admin/forms/form.list',
     ),
     rolePermissionsUrl: link(
-      "Where the Role permissions quick action on the Instance dashboard leads: OpenMRS's user management, the same page the left nav's Users and roles opens.",
-      '${openmrsBase}/admin/users/users.list',
+      "Where the Role permissions quick action on the Instance dashboard leads: ACT's Role permissions page, which sets the capabilities each ACT role has.",
+      '${openmrsSpaBase}/home/act-role-permissions',
     ),
     researchParticipationUrl: link(
       "Where the Research participation quick action on the Instance dashboard leads: OpenMRS's module configuration, for a user holding App: act.instanceAdmin.",
@@ -201,8 +231,8 @@ export const configSchema = {
       '${openmrsSpaBase}/home/act-users',
     ),
     clinicsUrl: link(
-      "Where the left nav's Clinics leads: OpenMRS's locations, for a user holding Manage Locations.",
-      '${openmrsBase}/admin/locations/location.list',
+      "Where the left nav's Clinics leads: ACT's Clinics page, for a user holding Manage Locations.",
+      '${openmrsSpaBase}/home/act-clinics',
     ),
     studiesUrl: link(
       "Where the left nav's Studies leads: the Studies dashboard in this app, for a user holding App: act.studies.",
@@ -731,6 +761,7 @@ export type EchoField =
 
 export interface Config {
   clinicLocationTags: { cardiac: Array<string>; primaryCare: Array<string> };
+  clinics: { levels: Array<{ tag: string; level: string }>; types: Array<string>; newClinicTags: Array<string> };
   flagLists: {
     namePrefix: string;
     names: Array<string>;
