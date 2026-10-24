@@ -72,6 +72,22 @@ const locations = [
     parentLocation: { uuid: 'lira', display: 'Lira Regional Referral Hospital' },
   },
   {
+    uuid: 'old-district',
+    name: 'Old District Hospital',
+    description: 'Public, District level',
+    retired: true,
+    tags: tags('RHD District', ...working),
+    parentLocation: null,
+  },
+  {
+    uuid: 'mbale',
+    name: 'Mbale HCIV',
+    description: 'Public, Community level',
+    retired: false,
+    tags: tags('RHD Community', ...working),
+    parentLocation: { uuid: 'old-district', display: 'Old District Hospital' },
+  },
+  {
     uuid: 'pharmacy',
     name: 'Main Pharmacy',
     description: null,
@@ -123,6 +139,12 @@ const rows = async () =>
       .map((cell) => cell.textContent),
   );
 
+// By the Name cell, as a clinic's name is also its children's Parent.
+const rowOf = async (name: string) =>
+  (await screen.findAllByTestId('act-clinic-row')).find(
+    (row) => within(row).getAllByRole('cell')[0].textContent === name,
+  );
+
 describe('Clinics', () => {
   it("lists the enabled clinics, every page of them, with each one's type, level, parent and status", async () => {
     backend();
@@ -135,6 +157,7 @@ describe('Clinics', () => {
       ['Amach HCIV', 'Public', 'Community', 'Lira Regional Referral Hospital', 'Enabled'],
       ['JCRC Lubowa', 'Private Not-For-Profit', 'District', 'Uganda Heart Institute Tertiary', 'Enabled'],
       ['Lira Regional Referral Hospital', 'Public', 'District', 'Uganda Heart Institute Tertiary', 'Enabled'],
+      ['Mbale HCIV', 'Public', 'Community', 'Old District Hospital', 'Enabled'],
       ['No Clinic', 'No Designation', 'District', '--', 'Enabled'],
       ['Uganda Heart Institute Tertiary', 'Public', 'Tertiary', '--', 'Enabled'],
     ]);
@@ -196,12 +219,31 @@ describe('Clinics', () => {
     renderPage();
     await rows();
 
-    await userEvent.click(within(screen.getAllByTestId('act-clinic-row')[2]).getByRole('button', { name: 'Edit' }));
+    await userEvent.click(within(await rowOf('Lira Regional Referral Hospital')).getByRole('button', { name: 'Edit' }));
     const parents = within(within(await screen.findByRole('dialog')).getByLabelText('Parent clinic'))
       .getAllByRole('option')
       .map((option) => option.textContent);
 
     expect(parents).toEqual(['None', 'JCRC Lubowa', 'No Clinic', 'Uganda Heart Institute Tertiary']);
+  });
+
+  it("still offers a clinic's disabled parent, and no other disabled clinic", async () => {
+    backend();
+    await signInWith(['Manage Locations']);
+    renderPage();
+    const mbale = await rowOf('Mbale HCIV');
+
+    await userEvent.click(within(mbale).getByRole('button', { name: 'Edit' }));
+    const parent = within(await screen.findByRole('dialog')).getByLabelText('Parent clinic');
+
+    expect(parent).toHaveValue('old-district');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    const lira = await rowOf('Lira Regional Referral Hospital');
+    await userEvent.click(within(lira).getByRole('button', { name: 'Edit' }));
+    const options = within(within(await screen.findByRole('dialog')).getByLabelText('Parent clinic'))
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(options).not.toContain('Old District Hospital');
   });
 
   it("edits a clinic's name, level and type, keeping its other tags, and disables it", async () => {
@@ -210,7 +252,7 @@ describe('Clinics', () => {
     renderPage();
     await rows();
 
-    await userEvent.click(within(screen.getAllByTestId('act-clinic-row')[2]).getByRole('button', { name: 'Edit' }));
+    await userEvent.click(within(await rowOf('Lira Regional Referral Hospital')).getByRole('button', { name: 'Edit' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByLabelText('Name')).toHaveValue('Lira Regional Referral Hospital');
     expect(within(dialog).getByLabelText('Type')).toHaveValue('Public');
@@ -249,7 +291,7 @@ describe('Clinics', () => {
     renderPage();
     await rows();
 
-    await userEvent.click(within(screen.getAllByTestId('act-clinic-row')[3]).getByRole('button', { name: 'Edit' }));
+    await userEvent.click(within(await rowOf('No Clinic')).getByRole('button', { name: 'Edit' }));
     let dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByLabelText('Type')).toHaveValue('No Designation');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));

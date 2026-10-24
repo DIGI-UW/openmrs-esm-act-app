@@ -33,7 +33,7 @@ export default function RolePermissions() {
   const [drafts, setDrafts] = useState<Record<string, Set<string>>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const holds = (role: Role) => role.privileges.filter(({ display }) => !userHasAccess(display, user));
+  const lacking = (role: Role) => role.privileges.filter(({ display }) => !userHasAccess(display, user));
   const chosenFor = (role: Role) => drafts[role.uuid] ?? capabilitiesOf(role, capabilities);
   const changed = (role: Role) => {
     const now = chosenFor(role);
@@ -98,7 +98,7 @@ export default function RolePermissions() {
           <TableBody>
             {roles.map((role) => {
               const name = role.display.slice(ROLE_PREFIX.length);
-              const missing = holds(role);
+              const missing = lacking(role);
               const chosen = chosenFor(role);
               return (
                 <TableRow key={role.uuid} data-testid="act-role-row">
@@ -110,7 +110,7 @@ export default function RolePermissions() {
                         labelText={`${name}: ${capability.display.slice(CAPABILITY_PREFIX.length)}`}
                         hideLabel
                         checked={chosen.has(capability.uuid)}
-                        disabled={missing.length > 0 || holds(capability).length > 0 || saving === role.uuid}
+                        disabled={missing.length > 0 || lacking(capability).length > 0 || saving === role.uuid}
                         onChange={(_, { checked }) => toggle(role, capability, checked)}
                       />
                     </TableCell>
