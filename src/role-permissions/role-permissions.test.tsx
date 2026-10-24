@@ -196,8 +196,8 @@ describe('Role permissions', () => {
     const viaClinician = screen.getByRole('checkbox', { name: 'Site Administrator: Exports, through Clinician' });
     expect(viaClinician).toBeChecked();
     expect(viaClinician).toBeDisabled();
-    expect(viaClinician.closest('td')).toHaveAttribute('title', 'Site Administrator: Exports, through Clinician');
-    expect(box('Clinician', 'Exports').closest('td')).not.toHaveAttribute('title');
+    expect(screen.getByTitle('Site Administrator: Exports, through Clinician')).toContainElement(viaClinician);
+    expect(screen.queryByTitle('Clinician: Exports')).not.toBeInTheDocument();
   });
 
   it('says a direct tie taken away leaves a capability the role has through another role, and can be put back', async () => {
@@ -210,7 +210,7 @@ describe('Role permissions', () => {
     const still = screen.getByRole('checkbox', { name: 'Site Administrator: Registry, still had through Clinician' });
     expect(still).not.toBeChecked();
     expect(still).toBeEnabled();
-    expect(still.closest('td')).toHaveAttribute('title', 'Site Administrator: Registry, still had through Clinician');
+    expect(screen.getByTitle('Site Administrator: Registry, still had through Clinician')).toContainElement(still);
 
     await userEvent.click(still);
     expect(box('Site Administrator', 'Registry')).toBeChecked();
