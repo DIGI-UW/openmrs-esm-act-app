@@ -331,6 +331,7 @@
   "late": "Late",
   "leftVentricularEjectionFraction": "Left ventricular ejection fraction",
   "level": "Level",
+  "levelTagsNotInClinicLocationTags": "These clinic level tags are not in clinicLocationTags, so the rest of ACT does not count their clinics: {{tags}}",
   "limitedToYourClinics": "The users of your clinics",
   "limitedToYourClinicsBody": "You can add and change the users of the clinics on your account, with the clinician roles. An instance administrator manages the others.",
   "listColumns_one": "{{list}}, {{count}} columns",

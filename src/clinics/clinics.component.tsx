@@ -126,7 +126,9 @@ function ClinicModal({
     <Modal
       open
       modalHeading={
-        clinic ? t('editClinicNamed', 'Edit {{name}}', { name: clinic.name }) : t('addClinic', 'Add clinic')
+        clinic
+          ? t('editClinicNamed', 'Edit {{name}}', { name: clinic.name, interpolation: { escapeValue: false } })
+          : t('addClinic', 'Add clinic')
       }
       primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
       secondaryButtonText={t('cancel', 'Cancel')}
@@ -218,8 +220,11 @@ function ClinicModal({
 export default function Clinics() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { clinics: config } = useConfig<Config>();
+  const { clinics: config, clinicLocationTags } = useConfig<Config>();
   const { clinics, error, isLoading, mutate } = useClinics(config.levels);
+  const unlistedTags = config.levels
+    .map(({ tag }) => tag)
+    .filter((tag) => ![...clinicLocationTags.cardiac, ...clinicLocationTags.primaryCare].includes(tag));
   const { levelText, typeText } = useClinicText();
   const [status, setStatus] = useState<'enabled' | 'all'>('enabled');
   const [query, setQuery] = useState('');
@@ -326,6 +331,18 @@ export default function Clinics() {
             "Clinics that come from the distribution's locations file return to what that file says when it is updated; clinics added here keep their changes.",
           )}
         </p>
+        {unlistedTags.length > 0 && (
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            hideCloseButton
+            title={t(
+              'levelTagsNotInClinicLocationTags',
+              'These clinic level tags are not in clinicLocationTags, so the rest of ACT does not count their clinics: {{tags}}',
+              { tags: unlistedTags.join(', '), interpolation: { escapeValue: false } },
+            )}
+          />
+        )}
         <div className={styles.toolbar}>
           <Search
             size="lg"

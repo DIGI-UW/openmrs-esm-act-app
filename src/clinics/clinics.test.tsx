@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
 import Clinics from './clinics.component';
 
@@ -161,6 +162,29 @@ describe('Clinics', () => {
       ['No Clinic', 'No Designation', 'District', '--', 'Enabled'],
       ['Uganda Heart Institute Tertiary', 'Public', 'Tertiary', '--', 'Enabled'],
     ]);
+    expect(screen.queryByText(/clinicLocationTags/)).not.toBeInTheDocument();
+  });
+
+  it('warns when a level tag is in neither clinicLocationTags list, as those clinics would be no clinic elsewhere', async () => {
+    const t = vi.spyOn(useTranslation(), 't');
+    backend();
+    await signInWith(['Manage Locations'], {
+      clinicLocationTags: { cardiac: ['Cardiac Tertiary', 'RHD District'], primaryCare: ['RHD Community'] },
+    });
+    renderPage();
+    await rows();
+
+    expect(
+      screen.getByText(
+        'These clinic level tags are not in clinicLocationTags, so the rest of ACT does not count their clinics: RHD Tertiary',
+      ),
+    ).toBeInTheDocument();
+    expect(t).toHaveBeenCalledWith(
+      'levelTagsNotInClinicLocationTags',
+      expect.any(String),
+      expect.objectContaining({ interpolation: { escapeValue: false } }),
+    );
+    t.mockRestore();
   });
 
   it('shows the disabled clinics too under All, and finds a clinic by its name, type, level or parent', async () => {
@@ -302,6 +326,23 @@ describe('Clinics', () => {
       method: 'DELETE',
       body: undefined,
     });
+  });
+
+  it("hands the edit heading the clinic's name unescaped, as a name such as St. Joseph's carries an apostrophe", async () => {
+    const t = vi.spyOn(useTranslation(), 't');
+    backend();
+    await signInWith(['Manage Locations']);
+    renderPage();
+    await rows();
+
+    await userEvent.click(within(await rowOf('Amach HCIV')).getByRole('button', { name: 'Edit clinic' }));
+    await screen.findByRole('dialog');
+    expect(t).toHaveBeenCalledWith(
+      'editClinicNamed',
+      expect.any(String),
+      expect.objectContaining({ name: 'Amach HCIV', interpolation: { escapeValue: false } }),
+    );
+    t.mockRestore();
   });
 
   it("keeps a clinic's type that is none of the three, and enables a disabled clinic", async () => {
