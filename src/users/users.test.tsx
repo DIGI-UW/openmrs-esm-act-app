@@ -135,6 +135,8 @@ describe('Users', () => {
     await userEvent.click(screen.getByRole('button', { name: '«Add user»' }));
     let dialog = await screen.findByRole('dialog');
     expect(within(dialog).getAllByRole('button', { name: '«Show password»' })).toHaveLength(2);
+    await userEvent.click(within(dialog).getAllByRole('button', { name: '«Show password»' })[0]);
+    expect(within(dialog).getByRole('button', { name: '«Hide password»' })).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: '«Close»' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
