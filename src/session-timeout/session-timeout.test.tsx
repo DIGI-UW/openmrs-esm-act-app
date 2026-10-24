@@ -64,7 +64,7 @@ describe('SessionTimeout', () => {
     expect(screen.getByText(/signed out in 2:00/)).toBeInTheDocument();
   });
 
-  it("offers the warning's close button name to translation", async () => {
+  it("offers the name of its warning's close button to translation", async () => {
     markTranslations();
     render(<SessionTimeout />);
 

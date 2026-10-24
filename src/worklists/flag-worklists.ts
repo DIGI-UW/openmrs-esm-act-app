@@ -55,7 +55,11 @@ export function flagWorklistConfigSchema(defaults: FlagWorklistConfig) {
       _default: defaults.flag,
       _description: 'The flag, by name, whose list this is. A flag that has no list in ACT Core hides the worklist.',
     },
-    title: { _type: Type.String, _default: defaults.title, _description: "The worklist's name on its tile." },
+    title: {
+      _type: Type.String,
+      _default: defaults.title,
+      _description: "The worklist's name on its tile, translated with this text as its key.",
+    },
     tone: {
       _type: Type.String,
       _default: defaults.tone,

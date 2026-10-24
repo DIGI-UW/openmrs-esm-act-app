@@ -1000,6 +1000,15 @@ describe('Dashboard', () => {
       expect(screen.queryByRole('button', { name: /^RHD care cascade/ })).not.toBeInTheDocument();
     });
 
+    it("offers a cascade step's name on its chip to translation, as on its bar", async () => {
+      markTranslations();
+      await signIn(undefined, figureRows);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Prescribed');
+      renderPage();
+
+      expect(await screen.findByRole('button', { name: /^«RHD care cascade»: «Prescribed»/ })).toBeInTheDocument();
+    });
+
     it('widens a later cascade step to the Active step, and offers no figure chip there', async () => {
       await signIn(undefined, figureRows);
       window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Prescribed');

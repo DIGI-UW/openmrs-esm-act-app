@@ -84,7 +84,7 @@ describe('ScanPatientCard', () => {
     expect(openFormInChart).not.toHaveBeenCalled();
   });
 
-  it('offers the name of the button that closes what it says to translation', async () => {
+  it("offers the name of its error's close button to translation", async () => {
     markTranslations();
     vi.mocked(readBarcodeOnCanvas).mockReturnValue('NAT-12345');
     patientsWithIdentifier({ uuid: 'other', identifier: 'NAT-12345', type: 'national-id' });

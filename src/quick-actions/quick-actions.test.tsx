@@ -143,7 +143,7 @@ describe('ACT home quick actions', () => {
     ]);
   });
 
-  it('offers the names of the prophylaxis forms it offers to translation', async () => {
+  it('offers the names of its prophylaxis forms to translation', async () => {
     markTranslations();
     await signInWithFastDataEntry();
     render(<EnterProphylaxisAction />);

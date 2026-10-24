@@ -97,7 +97,10 @@ export const configSchema = {
     prophylaxisForms: {
       _type: Type.Array,
       _elements: {
-        label: { _type: Type.String, _description: 'The choice as ACT home shows it.' },
+        label: {
+          _type: Type.String,
+          _description: 'The choice as ACT home shows it, translated with this text as its key.',
+        },
         url: { _type: Type.String, _description: 'Where the choice leads.' },
       },
       // The labels are translated as shown, each by its text; the defaults are keys in en.json.
@@ -249,7 +252,10 @@ export const configSchema = {
       _elements: {
         _type: Type.Object,
         step: { _type: Type.String, _description: "The report row's step value." },
-        label: { _type: Type.String, _description: 'What the ACT home widget and the Dashboard call it.' },
+        label: {
+          _type: Type.String,
+          _description: 'What the ACT home widget and the Dashboard call it, translated with this text as its key.',
+        },
       },
       // The labels are translated as shown, each by its text; the defaults are keys in en.json.
       // t('Active', 'Active')
@@ -686,7 +692,11 @@ export const configSchema = {
   urgencyBands: {
     _type: Type.Array,
     _elements: {
-      label: { _type: Type.String, _description: 'What the waiting list and its Urgency filter call the band.' },
+      label: {
+        _type: Type.String,
+        _description:
+          'What the waiting list and its Urgency filter call the band, translated with this text as its key.',
+      },
       shortLabel: {
         _type: Type.String,
         _description: "What ACT home's waiting list widget calls the band; without one, it uses label.",
@@ -694,7 +704,7 @@ export const configSchema = {
       concept: { _type: Type.ConceptUuid, _description: 'The answer that records this band.' },
       deadlineDays: { _type: Type.Number, _description: 'Days allowed before a patient in this band is overdue.' },
     },
-    // The labels are translated as shown, each by its text; the defaults are keys in en.json.
+    // Each band's label is translated as shown, by its text; the default labels are keys in en.json.
     // t('1: Emergent (24 hours)', '1: Emergent (24 hours)')
     // t('1 - within 1 week', '1 - within 1 week')
     // t('2 - within 1 month', '2 - within 1 month')

@@ -23,7 +23,7 @@ function daysSince(value: unknown, today: Date) {
   return Math.round((start.getTime() - added.getTime()) / DAY_MS);
 }
 
-/** The rows with each urgency named by its band's `name`, else its `label`, translated, else the report's name. */
+/** The rows with each urgency named by its band's `name`, else its `label`, translated; else the report's name. */
 export function labelUrgencies(
   rows: Array<ReportRow>,
   bands: Config['urgencyBands'],

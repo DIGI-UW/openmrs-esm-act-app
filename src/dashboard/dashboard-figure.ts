@@ -111,7 +111,10 @@ export function figureNames(t: TFunction, figure: Figure) {
               label: [figure.procedure, figure.urgency].filter(Boolean).join(', ') || undefined,
             };
     case 'cascade':
-      return { section: t('rhdCareCascade', 'RHD care cascade'), label: figure.step || t('active', 'Active') };
+      return {
+        section: t('rhdCareCascade', 'RHD care cascade'),
+        label: figure.step ? t(figure.step) : t('active', 'Active'),
+      };
     case 'optimisation':
       return {
         section: t('medicalOptimisation', 'Medical optimisation'),

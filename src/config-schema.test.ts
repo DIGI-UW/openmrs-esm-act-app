@@ -298,8 +298,10 @@ describe('urgencyBands', () => {
     expect(messages.some((message) => message.includes('urgencyBands[1].deadline'))).toBe(true);
     consoleError.mockRestore();
   });
+});
 
-  it('gives every label it shows by default a key in en.json, as the app translates each by its text', () => {
+describe('default labels', () => {
+  it('are each a key in en.json, as the app translates a label by its text', () => {
     const { careCascade, quickActions, urgencyBands } = getDefaultsFromConfigSchema(configSchema);
     const labels = [
       ...careCascade.steps.map((step) => step.label),
