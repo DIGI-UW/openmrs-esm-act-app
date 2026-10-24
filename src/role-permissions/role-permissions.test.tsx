@@ -85,6 +85,10 @@ const instanceAdmin = ['Manage Roles', 'App: act.registry', 'Task: act.lists.exp
 
 const siteAdministration = capability('cap-site', 'Site Administration', 'Manage users and roles', ['Get Roles']);
 const instance = role('role-instance', 'Instance Administrator', [siteAdministration], ['Manage Roles']);
+const authenticated = (privileges: Array<string> = []) => ({
+  ...role('role-authenticated', '', [], privileges),
+  display: 'Authenticated',
+});
 
 /** Signs in a user holding Manage Roles and Get Roles who has these roles. */
 async function signInHolding(held: Array<{ uuid: string; display: string }>) {
@@ -232,7 +236,7 @@ describe('Role permissions', () => {
 
   it('keeps on your own roles a capability that is your last way to Get Roles, as OpenMRS needs it to save any role', async () => {
     const site = role('role-site', 'Site Administrator', [siteAdministration]);
-    backend(undefined, [instance, site, siteAdministration]);
+    backend(undefined, [instance, site, siteAdministration, authenticated()]);
     await signInHolding([instance, site]);
     renderPage();
     await screen.findAllByTestId('act-role-row');
@@ -256,7 +260,7 @@ describe('Role permissions', () => {
 
   it('keeps that capability while the only other way to Get Roles is unsaved on another row, as each row saves alone', async () => {
     const plain = role('role-plain', 'Clinician', []);
-    const writes = backend(undefined, [instance, plain, siteAdministration]);
+    const writes = backend(undefined, [instance, plain, siteAdministration, authenticated()]);
     await signInHolding([instance, plain]);
     renderPage();
     await screen.findAllByTestId('act-role-row');
@@ -292,6 +296,15 @@ describe('Role permissions', () => {
     const sysAdmin = { ...role('role-sysadmin', 'Sysadmin', [full]), display: 'Organizational: System Administrator' };
     backend(undefined, [instance, sysAdmin, full, siteAdministration]);
     await signInHolding([instance, sysAdmin]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+  });
+
+  it('lets you take that capability from your own role when Authenticated gives you Get Roles', async () => {
+    backend(undefined, [instance, siteAdministration, authenticated(['Get Roles'])]);
+    await signInHolding([instance]);
     renderPage();
     await screen.findAllByTestId('act-role-row');
 

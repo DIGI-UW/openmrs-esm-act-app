@@ -100,7 +100,10 @@ export default function RolePermissions() {
         inherits.filter((other) => uuid !== changing || other !== dropping).some(reaches)
       );
     };
-    return user.roles.some((held) => reaches(held.uuid));
+    // OpenMRS gives every signed-in user Authenticated, though the session does not list it.
+    return [...user.roles, ...all.filter(({ display }) => display === 'Authenticated')].some((held) =>
+      reaches(held.uuid),
+    );
   };
   const save = async (role: Role) => {
     setSaving(role.uuid);
