@@ -132,6 +132,22 @@ others to the login page. The times are
 `sessionTimeout.idleMinutes` (30; 0 switches the warning off), `warningMinutes` (3) and `keepAliveMinutes` (10), and
 `idleMinutes` should match the server's session timeout.
 
+## Clinics and Role permissions
+
+Clinics (`/home/act-clinics`, the left nav's Admin > Clinics, for a user holding Manage Locations) is ACT 2.0's
+Clinic Management. It lists the locations that carry a clinic level tag (`clinics.levels`: RHD Tertiary, District
+and Community), with the type and level their description holds as the distro seeds it ("Public, District level"),
+the parent clinic and whether it is enabled; Enabled shows by default and All adds the disabled ones. A clinic is
+added and edited here: its level sets its level tag, its type and level are written back to its description, a new
+clinic also gets `clinics.newClinicTags` (Visit, Queue and Login Location) so users can sign in and record visits
+there, and disabling it retires the location.
+
+Role permissions (`/home/act-role-permissions`, the Instance admin's Role permissions, for a user holding Manage
+Roles) shows each ACT role (`Organizational: ACT …`) against the ACT capabilities it is built from
+(`Application: ACT …`) and saves the ones ticked. OpenMRS saves a role only for a user holding every privilege the
+role has directly, so such a role is read only here, and a capability is offered only to a user holding its
+privileges. The roles come from the distro's roles file, and an update to that file replaces changes made here.
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, ACT Core with the gap look-up, cohort 3.7.3 or later for the RHD flag
