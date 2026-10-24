@@ -160,6 +160,7 @@ export function ScreenPositiveTable() {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadScreenPositive', 'Could not load the screen positive list')}

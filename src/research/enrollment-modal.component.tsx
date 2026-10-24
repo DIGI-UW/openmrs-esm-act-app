@@ -110,6 +110,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
           {saveError && (
             <InlineNotification
               kind="error"
+              statusIconDescription={t('errorIcon', 'error icon')}
               lowContrast
               hideCloseButton
               title={t('couldNotSaveParticipation', 'Could not save the participation')}

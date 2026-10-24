@@ -125,6 +125,7 @@ export function PatientSearchPanel({ onClose, onSelect, label, children }: Patie
         {searching && search.error ? (
           <InlineNotification
             kind="error"
+            statusIconDescription={t('errorIcon', 'error icon')}
             lowContrast
             hideCloseButton
             title={t('couldNotSearch', 'Could not search for patients')}

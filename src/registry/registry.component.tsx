@@ -239,6 +239,7 @@ function RegistryTable() {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadRegistry', 'Could not load the registry')}

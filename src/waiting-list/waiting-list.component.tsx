@@ -69,7 +69,9 @@ export function WaitingListTable() {
   const desktop = isDesktop(useLayoutType());
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
-  const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label', t), [reportRows, urgencyBands, t]);
+  const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
+  // A band's name is translated where shown; the filter, kept in the URL, matches the configured name.
+  const urgencyText = (urgency: string) => (urgencyBands.some((band) => band.label === urgency) ? t(urgency) : urgency);
   const [filters, setFilters, filtersPending] = useWaitingListFilters();
   const clinicKind = useSessionClinicKind();
   const ranked = useMemo(
@@ -113,6 +115,7 @@ export function WaitingListTable() {
       value={filters[key]}
       options={distinctValues(rows, filterColumns[key])}
       onChange={(value) => setFilters({ [key]: value })}
+      optionLabel={key === 'urgency' ? urgencyText : undefined}
     />
   );
   const text = (column: string) => (waiting: WaitingRow) => String(waiting.row[column] ?? '');
@@ -131,7 +134,7 @@ export function WaitingListTable() {
       },
       { key: 'type', header: t('procedureType', 'Type'), text: text('procedure_type') },
       { key: 'procedure', header: t('procedure', 'Procedure'), text: text('procedure_name') },
-      { key: 'urgency', header: t('urgency', 'Urgency'), text: text('urgency') },
+      { key: 'urgency', header: t('urgency', 'Urgency'), text: (waiting) => urgencyText(text('urgency')(waiting)) },
       {
         key: 'daysPending',
         header: t('daysPending', 'Days pending'),
@@ -156,6 +159,7 @@ export function WaitingListTable() {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadWaitingList', 'Could not load the procedural waiting list')}

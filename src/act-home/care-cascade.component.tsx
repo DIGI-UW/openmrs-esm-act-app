@@ -60,6 +60,7 @@ export function CareCascadeCard({
       {error ? (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadCareCascade', 'Could not load the care cascade')}

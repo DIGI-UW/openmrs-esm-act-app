@@ -201,6 +201,7 @@ function WorklistRows({ title, csvName, entries, isLoading, error, action }: Wor
       return (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadWorklistPatients', 'Could not load the worklist patients')}

@@ -1,4 +1,3 @@
-import { type TFunction } from 'i18next';
 import { type Config } from '../config-schema';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
@@ -23,20 +22,12 @@ function daysSince(value: unknown, today: Date) {
   return Math.round((start.getTime() - added.getTime()) / DAY_MS);
 }
 
-/**
- * Names each row's urgency by its band's `name` field, else its `label`, translated; a row no band covers keeps
- * the report's name, untranslated.
- */
-export function labelUrgencies(
-  rows: Array<ReportRow>,
-  bands: Config['urgencyBands'],
-  name: 'label' | 'shortLabel',
-  t: TFunction,
-) {
+/** The rows with each urgency named by its band's `name`, else its `label`, else the report's name. */
+export function labelUrgencies(rows: Array<ReportRow>, bands: Config['urgencyBands'], name: 'label' | 'shortLabel') {
   return rows.map((row) => {
     const band = bands.find((b) => b.concept === row.urgency_concept);
     const urgency = band?.[name] ?? band?.label;
-    return urgency ? { ...row, urgency: t(urgency) } : row;
+    return urgency ? { ...row, urgency } : row;
   });
 }
 

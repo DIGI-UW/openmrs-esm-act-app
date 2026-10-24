@@ -1,3 +1,4 @@
+import { type TFunction } from 'i18next';
 import { type ReportRow } from '../reports/report-dataset.resource';
 
 export interface Count {
@@ -30,8 +31,14 @@ export function registrantCounts(rows: Array<ReportRow>) {
   };
 }
 
+/** What the waitlist calls a procedure or urgency the report leaves out; a figure opens by it, untranslated. */
+const notGiven = 'Not given';
+
+/** A waitlist procedure or urgency as shown: the one the report leaves out translated, the report's own as it is. */
+export const waitlistName = (t: TFunction, name: string) => (name === notGiven ? t('notGiven', 'Not given') : name);
+
 export function waitlistCounts(rows: Array<ReportRow>) {
-  const named = (value: unknown) => String(value ?? '').trim() || 'Not given';
+  const named = (value: unknown) => String(value ?? '').trim() || notGiven;
   const open = rows
     .filter((row) => row.breakdown === 'open')
     .map((row) => ({

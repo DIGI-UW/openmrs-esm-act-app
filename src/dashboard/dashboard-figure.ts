@@ -2,6 +2,7 @@ import { createContext, useMemo } from 'react';
 import { type TFunction } from 'i18next';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
+import { waitlistName } from './dashboard-counts';
 
 export const sections = ['registrants', 'waitlist', 'cascade', 'optimisation'] as const;
 
@@ -111,7 +112,11 @@ export function figureNames(t: TFunction, figure: Figure, cascadeSteps: Config['
           ? { section: t('waitingForAProcedure', 'Waiting for a procedure'), label: undefined }
           : {
               section: t('proceduralWaitlist', 'Procedural waitlist'),
-              label: [figure.procedure, figure.urgency].filter(Boolean).join(', ') || undefined,
+              label:
+                [figure.procedure, figure.urgency]
+                  .filter(Boolean)
+                  .map((name) => waitlistName(t, name))
+                  .join(', ') || undefined,
             };
     case 'cascade': {
       const shown = withStep(figure).step;

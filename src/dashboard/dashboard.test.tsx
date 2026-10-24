@@ -834,6 +834,38 @@ describe('Dashboard', () => {
       );
     });
 
+    it('offers its own name for a waitlist procedure or urgency left out to translation, and still opens it by that name', async () => {
+      markTranslations();
+      await signIn(undefined, {
+        ...figureRows,
+        [DASHBOARD_WAITLIST]: [
+          { breakdown: 'open', procedure: null, urgency: null, patients: 1, recommendations: 1 },
+          recommendations('Surgery', URGENT, 1),
+          { breakdown: 'total', procedure: 'All', urgency: null, patients: 2, recommendations: 2 },
+        ],
+      });
+      renderPage();
+
+      expect(await screen.findAllByTestId('dashboard-waitlist-total')).toHaveLength(2);
+      expect(texts('dashboard-waitlist-total')).toEqual(['«Not given»1', 'Surgery1']);
+      expect(chartData(StackedBarChart, '«Procedural waitlist»')).toEqual([
+        { group: URGENT, key: 'Surgery', value: 1 },
+        { group: '«Not given»', key: '«Not given»', value: 1 },
+      ]);
+      await userEvent.click(screen.getAllByRole('button', { name: '«Show as a table»' })[0]);
+      expect(screen.getByRole('columnheader', { name: '«Not given»' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: '«Not given»' })).toBeInTheDocument();
+
+      await userEvent.click(within(screen.getAllByTestId('dashboard-waitlist-row')[0]).getByRole('link'));
+      expect(await screen.findByText(/«Procedural waitlist», «Not given», «Not given»/)).toBeInTheDocument();
+      expect(paramsOf(WAITLIST_PATIENTS)).toEqual({
+        endDate: today,
+        breakdown: 'open',
+        procedure: 'Not given',
+        urgency: 'Not given',
+      });
+    });
+
     it('opens from a count with a banner, chips and the rows, and Back returns to the Dashboard as it was', async () => {
       await signIn(undefined, figureRows);
       renderPage();

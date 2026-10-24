@@ -104,6 +104,7 @@ export default function DownloadData() {
       return (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadFields', "Could not load the form's fields")}
@@ -163,6 +164,7 @@ export default function DownloadData() {
           {formsError ? (
             <InlineNotification
               kind="error"
+              statusIconDescription={t('errorIcon', 'error icon')}
               lowContrast
               hideCloseButton
               title={t('couldNotLoadForms', 'Could not load the forms')}

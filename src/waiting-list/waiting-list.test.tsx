@@ -97,7 +97,7 @@ describe('Procedural waiting list', () => {
     });
   });
 
-  it("offers each urgency band's name to translation, in its column and its filter alike", () => {
+  it("offers each urgency band's name to translation, in its column and its filter alike, filtering by the configured name", async () => {
     markTranslations();
     dataset({ rows: waitingListRows });
 
@@ -105,7 +105,21 @@ describe('Procedural waiting list', () => {
 
     const row = screen.getByRole('row', { name: /rhd00001\b/ });
     expect(within(row).getByRole('cell', { name: '«3: Elective (180 days)»' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: '«3: Elective (180 days)»' })).toBeInTheDocument();
+    const urgency = screen.getByRole('combobox', { name: '«Urgency»' });
+    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: '«3: Elective (180 days)»' }));
+    expect(urgency).toHaveValue('3: Elective (180 days)');
+  });
+
+  it("shows the report's own urgency name, which no band covers, as it is", async () => {
+    markTranslations();
+    dataset({ rows: [{ ...waitingListRows[0], urgency: 'Urgent', urgency_concept: 'no-such-band' }] });
+
+    render(<WaitingList />);
+
+    expect(screen.getByRole('cell', { name: 'Urgent' })).toBeInTheDocument();
+    const urgency = screen.getByRole('combobox', { name: '«Urgency»' });
+    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: 'Urgent' }));
+    expect(urgency).toHaveValue('Urgent');
   });
 
   it('evaluates the configured report', () => {

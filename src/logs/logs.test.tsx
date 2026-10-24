@@ -236,6 +236,18 @@ describe('Logs', () => {
       expect(screen.getByRole('button', { name: '«Next page»' })).toBeInTheDocument();
     });
 
+    it("offers the words it writes around a row's time to translation, on every tab that shows one", async () => {
+      markTranslations();
+      backend();
+      await signInWith(BOTH);
+      renderPage();
+
+      expect(await screen.findByText('«Today, 10:52»')).toBeInTheDocument();
+      expect(screen.getByText('«Yesterday, 17:05»')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('tab', { name: /Patients opened/ }));
+      expect(await screen.findByText('««Today, 07:41» to 07:48»')).toBeInTheDocument();
+    });
+
     it('expands a flag dismissal, which ACT Core records outside the audit log, without asking for a revision', async () => {
       const calls = backend();
       await signInWith(BOTH);

@@ -149,6 +149,7 @@ export function DashboardFigure({
       {report.error ? (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadFigure', 'Could not load the patients behind this figure')}

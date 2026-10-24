@@ -140,6 +140,7 @@ function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => 
         {saveError && (
           <InlineNotification
             kind="error"
+            statusIconDescription={t('errorIcon', 'error icon')}
             lowContrast
             hideCloseButton
             title={t('couldNotSaveUser', 'Could not save the user')}
@@ -215,6 +216,7 @@ function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => 
           {roleChoices.error && (
             <InlineNotification
               kind="error"
+              statusIconDescription={t('errorIcon', 'error icon')}
               lowContrast
               hideCloseButton
               title={t('couldNotLoadRoles', 'Could not load the roles')}
@@ -309,6 +311,7 @@ function PasswordModal({ user, onClose }: { user: ActUser; onClose: () => void }
         {saveError && (
           <InlineNotification
             kind="error"
+            statusIconDescription={t('errorIcon', 'error icon')}
             lowContrast
             hideCloseButton
             title={t('couldNotResetPassword', 'Could not reset the password')}
@@ -375,6 +378,7 @@ function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () =
       {saveError && (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotDisableUser', 'Could not disable the user')}
@@ -446,6 +450,7 @@ export default function Users() {
     body = (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadUsers', 'Could not load the users')}
@@ -545,6 +550,7 @@ export default function Users() {
         {limit.status === 'ready' && (
           <InlineNotification
             kind="info"
+            statusIconDescription={t('infoIcon', 'info icon')}
             lowContrast
             hideCloseButton
             title={t('limitedToYourClinics', 'The users of your clinics')}

@@ -144,6 +144,7 @@ export function LogTable({
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadLog', 'Could not load the log')}

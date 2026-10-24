@@ -84,6 +84,7 @@ export default function ScanPatientCard() {
           {reading && cameraError && (
             <InlineNotification
               kind="warning"
+              statusIconDescription={t('warningIcon', 'warning icon')}
               lowContrast
               hideCloseButton
               title={t('cameraUnavailable', 'The camera is not available')}
@@ -108,6 +109,7 @@ export default function ScanPatientCard() {
           {notFound && (
             <InlineNotification
               kind="error"
+              statusIconDescription={t('errorIcon', 'error icon')}
               lowContrast
               title={t('couldNotOpenForm', 'Could not open the form')}
               subtitle={notFound}

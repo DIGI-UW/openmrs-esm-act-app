@@ -93,7 +93,7 @@ export function DownloadsTab({
 
   const rows = all.slice(paging.startIndex, paging.startIndex + paging.limit).map((entry, index) => ({
     key: `${entry.date}-${paging.startIndex + index}`,
-    time: <span title={fullTime(entry.date)}>{logTime(entry.date)}</span>,
+    time: <span title={fullTime(entry.date)}>{logTime(t, entry.date)}</span>,
     user: <LogUserCell user={entry.user} />,
     action: <LogActionCell text={t('downloaded', 'Downloaded')} summary={summary(entry)} />,
     target: targetName(entry),

@@ -84,7 +84,7 @@ describe('ScanPatientCard', () => {
     expect(openFormInChart).not.toHaveBeenCalled();
   });
 
-  it("offers the name of its error's close button to translation", async () => {
+  it("offers the names of its error's icon and close button to translation", async () => {
     markTranslations();
     vi.mocked(readBarcodeOnCanvas).mockReturnValue('NAT-12345');
     patientsWithIdentifier({ uuid: 'other', identifier: 'NAT-12345', type: 'national-id' });
@@ -93,6 +93,7 @@ describe('ScanPatientCard', () => {
     await userEvent.click(screen.getByRole('button', { name: '«Start scanning»' }));
 
     expect(await screen.findByRole('button', { name: '«Close notification»' })).toBeInTheDocument();
+    expect(screen.getByTitle('«error icon»')).toBeInTheDocument();
   });
 
   it('says the camera is not available and keeps the typed ACT ID when it is refused', async () => {

@@ -38,6 +38,7 @@ function PatientsOnProphylaxis() {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadPatientsOnProphylaxis', 'Could not load the patients on prophylaxis')}
