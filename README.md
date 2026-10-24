@@ -132,6 +132,14 @@ others to the login page. The times are
 `sessionTimeout.idleMinutes` (30; 0 switches the warning off), `warningMinutes` (3) and `keepAliveMinutes` (10), and
 `idleMinutes` should match the server's session timeout.
 
+## Translations
+
+The app's own text is in `translations/en.json`; another language is a file beside it, or the distro's
+`"Translation overrides"` for `@act-registry/esm-act-app`, keyed by language. A configured label (a care cascade
+step, a flag worklist title, an urgency band, a prophylaxis form choice) is translated with its own text as the key,
+so a distro that changes one translates it by adding that text under its language. After changing a string, run
+`yarn extract-translations` and commit `translations/en.json` with the change.
+
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, ACT Core with the gap look-up, cohort 3.7.3 or later for the RHD flag

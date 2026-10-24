@@ -5,8 +5,8 @@ import * as reactI18next from 'react-i18next';
 const plain = reactI18next.useTranslation().t;
 
 /**
- * Wraps every string t returns in «», for this test only, so the test can tell text the app passes to t, which
- * a locale can translate, from text it shows as given.
+ * Wraps what t returns in «» until this test ends, so a test can tell text offered to translation from text
+ * shown as given.
  */
 export function markTranslations() {
   const t = vi

@@ -114,8 +114,7 @@ export function figureNames(t: TFunction, figure: Figure, cascadeSteps: Config['
               label: [figure.procedure, figure.urgency].filter(Boolean).join(', ') || undefined,
             };
     case 'cascade': {
-      // A figure with no step is the Active step's.
-      const shown = figure.step || 'Active';
+      const shown = withStep(figure).step;
       return {
         section: t('rhdCareCascade', 'RHD care cascade'),
         label: t(cascadeSteps.find(({ step }) => step === shown)?.label ?? shown),

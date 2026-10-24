@@ -103,7 +103,7 @@ export const configSchema = {
         },
         url: { _type: Type.String, _description: 'Where the choice leads.' },
       },
-      // The labels are translated as shown, each by its text; the defaults are keys in en.json.
+      // Keep these markers: extraction reads them to give en.json the default labels as keys.
       // t('Enter BPG', 'Enter BPG')
       // t('Enter oral prophylaxis', 'Enter oral prophylaxis')
       _default: [
@@ -257,7 +257,7 @@ export const configSchema = {
           _description: 'What the ACT home widget and the Dashboard call it, translated with this text as its key.',
         },
       },
-      // The labels are translated as shown, each by its text; the defaults are keys in en.json.
+      // Keep these markers: extraction reads them to give en.json the default labels as keys.
       // t('Active', 'Active')
       // t('Prescribed', 'Prescribed')
       // t('Initiated', 'Initiated')
@@ -704,7 +704,7 @@ export const configSchema = {
       concept: { _type: Type.ConceptUuid, _description: 'The answer that records this band.' },
       deadlineDays: { _type: Type.Number, _description: 'Days allowed before a patient in this band is overdue.' },
     },
-    // Each band's label is translated as shown, by its text; the default labels are keys in en.json.
+    // Keep these markers: extraction reads them to give en.json the default labels as keys.
     // t('1: Emergent (24 hours)', '1: Emergent (24 hours)')
     // t('1 - within 1 week', '1 - within 1 week')
     // t('2 - within 1 month', '2 - within 1 month')

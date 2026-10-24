@@ -124,7 +124,7 @@ export function CascadeBars({
   figureOf?: (label: string) => Figure;
 }) {
   const { t } = useTranslation();
-  // The bars and steps show each label translated; figureOf and shareOf are given it untranslated.
+  // Translate only what is shown: figureOf and shareOf match the label as configured or reported.
   const data = useStable(steps.map(({ label, value }) => ({ group: t(label), value })));
   const options = useStable({
     ...base(name, '16rem'),

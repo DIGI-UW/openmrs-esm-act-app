@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 
-/** Translated text props for a Carbon Pagination. */
 export function usePaginationText() {
   const { t } = useTranslation();
   return {

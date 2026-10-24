@@ -8,7 +8,7 @@ export interface FlagWorklistConfig {
   dueDateColumn?: string;
 }
 
-// A title is translated as shown, by its text; the default titles are keys in en.json.
+// Keep these markers: extraction reads them to give en.json the default titles as keys.
 // t('Cardiology follow-up due', 'Cardiology follow-up due')
 // t('Lost to follow-up', 'Lost to follow-up')
 // t('RHD 30-day post-procedural follow-up due', 'RHD 30-day post-procedural follow-up due')
