@@ -111,6 +111,8 @@ describe('configSchema', () => {
       dashboard: {
         registrantsReport: '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71',
         waitlistReport: '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52',
+        showScreening: true,
+        screeningReport: '0f4b7c2d-6a1e-5d93-8b47-2c9e1f5a3d68',
         registrantPatientsReport: 'e8296d2d-def8-5f8e-ba2d-78c59859b9e3',
         waitlistPatientsReport: 'bc987343-8b70-5f95-84a8-d017cffa14da',
         cascadePatientsReport: '7c62fcfd-03b2-5d84-9cea-92a43b70ae76',
@@ -217,6 +219,14 @@ describe('configSchema', () => {
         oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
       },
       actIdentifierType: '240f85fa-46e1-540e-9234-2796c623f7ea',
+      procedures: {
+        encounterType: 'c9b87090-8768-50be-987e-8ca0a8983429',
+        concepts: {
+          date: '6cbb5176-144a-576b-9b3d-c9e9d6bc5f5a',
+          surgeryType: '46f4af80-b783-59f4-beb1-81144ccf3084',
+          catheterizationType: 'bb4a77ee-836a-57e7-a262-632fa22288d2',
+        },
+      },
       patientInformationForm: 'a6646c51-130d-3b59-a442-959bea93487d',
       singleRecordForms: ['a6646c51-130d-3b59-a442-959bea93487d', '7807da80-ee71-3900-bbce-a026e4a8d54d'],
       visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',

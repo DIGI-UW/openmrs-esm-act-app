@@ -122,6 +122,17 @@
   gap: layout.$spacing-07;
 }
 
+.registrationControls {
+  display: grid;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+}
+
+.registrationTiles {
+  display: grid;
+  gap: layout.$spacing-05;
+}
+
 .subheading {
   @include type.type-style('heading-compact-01');
   margin-bottom: layout.$spacing-04;
@@ -155,6 +166,12 @@
 .count {
   @include type.type-style('heading-compact-01');
   text-align: right;
+}
+
+// Carbon draws a link inline-flex, which breaks a sentence at each figure it holds.
+.count :global(.cds--link),
+.performed :global(.cds--link) {
+  display: inline;
 }
 
 .tableContainer {
