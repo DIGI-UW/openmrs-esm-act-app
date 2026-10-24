@@ -551,6 +551,14 @@ describe('Dashboard', () => {
     expect(mutates[REGISTRANTS]).not.toHaveBeenCalled();
   });
 
+  it("offers the name of a failed section's error icon to translation", async () => {
+    markTranslations();
+    await signIn(OPTIMISATION);
+    renderPage();
+
+    expect(await screen.findByTitle('«error icon»')).toBeInTheDocument();
+  });
+
   it('shows no figure on a tile, and names the section rather than its count, when the registrant counts fail', async () => {
     await signIn(REGISTRANTS);
     renderPage();

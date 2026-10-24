@@ -123,13 +123,14 @@ describe('Users', () => {
     expect(screen.getAllByTestId('act-user-row')).toHaveLength(2);
   });
 
-  it('offers the words its switch, search box, password fields and dialogs would show in English to translation', async () => {
+  it('offers the words its switch, notice icon, search box, password fields and dialogs would show in English to translation', async () => {
     markTranslations();
     backend();
     await signInAs(SA);
     renderPage();
 
     expect(await screen.findByText('«Off»')).toBeInTheDocument();
+    expect(screen.getByTitle('«info icon»')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('switch', { name: '«Show disabled users»' }));
     expect(screen.getByText('«On»')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
