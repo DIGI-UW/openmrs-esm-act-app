@@ -47,7 +47,7 @@ export default function RolePermissions() {
       roles.map((role) => [role.uuid, new Set(role.inheritedRoles.map(({ uuid }) => uuid).filter(isCapability))]),
     );
     // A capability a role gets through another ACT role it inherits, by the name of that role.
-    const viaOthers = (role: Role, seen = new Set<string>()): Map<string, string> => {
+    const viaOthers = (role: Role, seen: Set<string>): Map<string, string> => {
       const found = new Map<string, string>();
       role.inheritedRoles
         .map(({ uuid }) => roles.find((other) => other.uuid === uuid))
@@ -144,6 +144,8 @@ export default function RolePermissions() {
                     // Judged by what is saved, so a change made here can be undone before saving.
                     const before = saved.get(role.uuid).has(capability.uuid);
                     const via = !before && inherited.get(capability.uuid);
+                    // A direct tie taken away leaves a capability the role also has through another role.
+                    const stillVia = before && !chosen.has(capability.uuid) && inherited.get(capability.uuid);
                     const label = via
                       ? t('capabilityThrough', '{{role}}: {{capability}}, through {{through}}', {
                           role: name,
@@ -151,9 +153,16 @@ export default function RolePermissions() {
                           through: via,
                           interpolation: { escapeValue: false },
                         })
-                      : `${name}: ${capabilityName(capability)}`;
+                      : stillVia
+                        ? t('capabilityStillThrough', '{{role}}: {{capability}}, still had through {{through}}', {
+                            role: name,
+                            capability: capabilityName(capability),
+                            through: stillVia,
+                            interpolation: { escapeValue: false },
+                          })
+                        : `${name}: ${capabilityName(capability)}`;
                     return (
-                      <TableCell key={capability.uuid} title={via ? label : undefined}>
+                      <TableCell key={capability.uuid} title={via || stillVia ? label : undefined}>
                         <Checkbox
                           id={`${role.uuid}-${capability.uuid}`}
                           labelText={label}
@@ -212,7 +221,7 @@ export default function RolePermissions() {
         <p className={styles.note}>
           {t(
             'rolePermissionsNote',
-            "Each ACT role is built from these capabilities. You can give a role a capability whose privileges you hold, and take away any it has directly. A capability a role has through another role shows ticked and is changed on that role. Before giving a role more, check that the administrators who assign it hold those privileges too: OpenMRS lets them save a user only then. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
+            "Each ACT role is built from these capabilities. You can give a role a capability whose privileges you hold, and take away any it has directly. A capability a role has through another role shows ticked and is changed on that role. Before giving a role more, check that the administrators who assign it hold those privileges too, or OpenMRS will not let them save anyone who has that role. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
           )}
         </p>
         {saveError && (

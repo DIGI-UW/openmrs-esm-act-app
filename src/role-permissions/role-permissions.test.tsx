@@ -196,6 +196,25 @@ describe('Role permissions', () => {
     const viaClinician = screen.getByRole('checkbox', { name: 'Site Administrator: Exports, through Clinician' });
     expect(viaClinician).toBeChecked();
     expect(viaClinician).toBeDisabled();
+    expect(viaClinician.closest('td')).toHaveAttribute('title', 'Site Administrator: Exports, through Clinician');
+    expect(box('Clinician', 'Exports').closest('td')).not.toHaveAttribute('title');
+  });
+
+  it('says a direct tie taken away leaves a capability the role has through another role, and can be put back', async () => {
+    backend();
+    await signInWith([...instanceAdmin, 'Delete Patients']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Site Administrator', 'Registry'));
+    const still = screen.getByRole('checkbox', { name: 'Site Administrator: Registry, still had through Clinician' });
+    expect(still).not.toBeChecked();
+    expect(still).toBeEnabled();
+    expect(still.closest('td')).toHaveAttribute('title', 'Site Administrator: Registry, still had through Clinician');
+
+    await userEvent.click(still);
+    expect(box('Site Administrator', 'Registry')).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Save Site Administrator' })).toBeDisabled();
   });
 
   it('says so when there are no ACT roles', async () => {
