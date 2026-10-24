@@ -57,6 +57,13 @@ export function useLocationTags() {
   return { tagUuids: data, error };
 }
 
+/** Configured location tags the server does not have; OpenMRS answers a save naming one with a server error. */
+export class MissingLocationTags extends Error {
+  constructor(readonly tags: Array<string>) {
+    super(`No location tag named ${tags.join(', ')}`);
+  }
+}
+
 /**
  * Creates a clinic, or saves the one given: its level tag replaces the old one and its other tags are kept, a new
  * clinic getting the working tags; then enables or disables it if that changed.
@@ -67,11 +74,13 @@ export async function saveClinic(
   tagUuids: Record<string, string>,
   existing?: Clinic,
 ) {
-  const levelTag = levels.find(({ level }) => level === form.level).tag;
   const levelTags = levels.map(({ tag }) => tag);
-  const otherTags = existing
-    ? existing.tags.map(({ display }) => display).filter((tag) => !levelTags.includes(tag))
-    : newClinicTags;
+  const named = [levels.find(({ level }) => level === form.level).tag, ...(existing ? [] : newClinicTags)];
+  const missing = named.filter((tag) => !tagUuids[tag]);
+  if (missing.length) {
+    throw new MissingLocationTags(missing);
+  }
+  const kept = (existing?.tags ?? []).filter(({ display }) => !levelTags.includes(display)).map(({ uuid }) => uuid);
   const url = `${restBaseUrl}/location${existing ? `/${existing.uuid}` : ''}`;
   const { data } = await openmrsFetch<{ uuid: string }>(url, {
     method: 'POST',
@@ -79,7 +88,7 @@ export async function saveClinic(
     body: {
       name: form.name.trim(),
       description: `${form.type}, ${form.level} level`,
-      tags: [levelTag, ...otherTags].map((tag) => tagUuids[tag]),
+      tags: [...named.map((tag) => tagUuids[tag]), ...kept],
       parentLocation: form.parent || null,
     },
   });

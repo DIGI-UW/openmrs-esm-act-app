@@ -338,6 +338,7 @@
   "medicalOptimisation": "Medical optimisation",
   "missing": "Missing",
   "missingData": "Missing data",
+  "missingLocationTags": "The server has no location tag named {{tags}}; ask an administrator to add it",
   "mitralRegurgitation": "Mitral regurgitation",
   "mitralStenosis": "Mitral stenosis",
   "month": "Month",

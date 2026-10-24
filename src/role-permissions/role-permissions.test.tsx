@@ -116,6 +116,7 @@ describe('Role permissions', () => {
     renderPage();
     await screen.findAllByTestId('act-role-row');
 
+    expect(within(screen.getAllByTestId('act-role-row')[2]).getByRole('button', { name: 'Save' })).toBeDisabled();
     await userEvent.click(box('Site Administrator', 'Exports'));
     const row = screen.getAllByTestId('act-role-row')[2];
     await userEvent.click(within(row).getByRole('button', { name: 'Save' }));

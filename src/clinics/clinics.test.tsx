@@ -167,6 +167,8 @@ describe('Clinics', () => {
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     expect(within(dialog).getByText('Enter the clinic name')).toBeInTheDocument();
+    expect(within(dialog).getByText('Choose the clinic level')).toBeInTheDocument();
+    expect(within(dialog).getByText('Choose the clinic type')).toBeInTheDocument();
     expect(writes).toHaveLength(0);
 
     await userEvent.type(within(dialog).getByLabelText('Name'), '  Ober HCIV ');
@@ -270,6 +272,33 @@ describe('Clinics', () => {
       method: 'POST',
       body: { retired: false },
     });
+  });
+
+  it('names a configured tag the server lacks, rather than sending a clinic OpenMRS cannot save', async () => {
+    const writes = backend();
+    await signInWith(['Manage Locations'], {
+      clinics: {
+        levels: [{ tag: 'RHD District', level: 'District' }],
+        types: ['Public'],
+        newClinicTags: ['Visit Location', 'Triage Location'],
+      },
+    });
+    renderPage();
+    await rows();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add clinic' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Ober HCIV');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Level'), 'District');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Type'), 'Public');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    expect(
+      await within(dialog).findByText(
+        'The server has no location tag named Triage Location; ask an administrator to add it',
+      ),
+    ).toBeInTheDocument();
+    expect(writes).toHaveLength(0);
   });
 
   it("shows the server's reason when it refuses a clinic, and keeps the dialog open", async () => {

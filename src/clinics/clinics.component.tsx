@@ -25,7 +25,14 @@ import { type Config } from '../config-schema';
 import { restErrorMessage } from '../rest-error-message';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { type Clinic, type ClinicForm, saveClinic, useClinics, useLocationTags } from './clinics.resource';
+import {
+  type Clinic,
+  type ClinicForm,
+  MissingLocationTags,
+  saveClinic,
+  useClinics,
+  useLocationTags,
+} from './clinics.resource';
 import styles from './clinics.scss';
 
 /** The levels and types ACT names, translated; a clinic's own value shows as written. */
@@ -100,7 +107,14 @@ function ClinicModal({
       onSaved();
       onClose();
     } catch (e) {
-      setSaveError(restErrorMessage(e));
+      setSaveError(
+        e instanceof MissingLocationTags
+          ? t('missingLocationTags', 'The server has no location tag named {{tags}}; ask an administrator to add it', {
+              tags: e.tags.join(', '),
+              interpolation: { escapeValue: false },
+            })
+          : restErrorMessage(e),
+      );
     } finally {
       setSaving(false);
     }
