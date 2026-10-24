@@ -16,6 +16,11 @@
   align-items: end;
 }
 
+.note {
+  color: $text-02;
+  max-width: 48rem;
+}
+
 .tableContainer {
   overflow-x: auto;
 }

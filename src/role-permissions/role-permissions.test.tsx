@@ -84,7 +84,7 @@ const box = (roleName: string, capabilityName: string) =>
 const instanceAdmin = ['Manage Roles', 'App: act.registry', 'Task: act.lists.export'];
 
 describe('Role permissions', () => {
-  it('lists the ACT roles against the ACT capabilities, each capability with what it gives, ticked where a role has it', async () => {
+  it('lists the ACT roles against the ACT capabilities, each capability with what it gives, ticked where a role inherits it', async () => {
     backend();
     await signInWith(instanceAdmin);
 
@@ -116,16 +116,15 @@ describe('Role permissions', () => {
     renderPage();
     await screen.findAllByTestId('act-role-row');
 
-    expect(within(screen.getAllByTestId('act-role-row')[2]).getByRole('button', { name: 'Save' })).toBeDisabled();
-    await userEvent.click(box('Site Administrator', 'Exports'));
-    const row = screen.getAllByTestId('act-role-row')[2];
-    await userEvent.click(within(row).getByRole('button', { name: 'Save' }));
+    expect(screen.getByRole('button', { name: 'Save Site Administrator' })).toBeDisabled();
+    await userEvent.click(box('Site Administrator', 'Registry'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Site Administrator' }));
 
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]).toEqual({
       url: expect.stringMatching(/\/role\/role-site$/),
       method: 'POST',
-      body: { inheritedRoles: ['role-clinician', 'cap-registry', 'cap-exports'] },
+      body: { inheritedRoles: ['role-clinician'] },
     });
   });
 
@@ -136,20 +135,42 @@ describe('Role permissions', () => {
     await screen.findAllByTestId('act-role-row');
 
     const row = screen.getAllByTestId('act-role-row')[2];
-    expect(box('Site Administrator', 'Exports')).toBeDisabled();
-    expect(within(row).queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
-    expect(within(row).getByText('Needs Delete Patients to change')).toBeInTheDocument();
+    expect(box('Site Administrator', 'Registry')).toBeDisabled();
+    expect(within(row).queryByRole('button', { name: /Save/ })).not.toBeInTheDocument();
+    expect(within(row).getByText('Read only: you need Delete Patients')).toBeInTheDocument();
     expect(box('Clinician', 'Exports')).toBeEnabled();
   });
 
-  it('gives no role a capability the user does not hold', async () => {
+  it('gives no role a capability the user does not hold, and removes any, as OpenMRS checks only what a role holds itself', async () => {
     backend();
-    await signInWith(instanceAdmin);
+    await signInWith(['Manage Roles', 'App: act.registry']);
     renderPage();
     await screen.findAllByTestId('act-role-row');
 
     expect(box('Clinician', 'Study Management')).toBeDisabled();
+    expect(box('Data Clerk', 'Exports')).toBeDisabled();
+    expect(box('Clinician', 'Exports')).toBeChecked();
+    expect(box('Clinician', 'Exports')).toBeEnabled();
     expect(box('Clinician', 'Registry')).toBeEnabled();
+  });
+
+  it('shows a capability a role has through another role as ticked, to change on that role', async () => {
+    backend();
+    await signInWith([...instanceAdmin, 'Delete Patients']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    const viaClinician = screen.getByRole('checkbox', { name: 'Site Administrator: Exports, through Clinician' });
+    expect(viaClinician).toBeChecked();
+    expect(viaClinician).toBeDisabled();
+  });
+
+  it('says so when there are no ACT roles', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [], totalCount: 0 } } as never);
+    await signInWith(instanceAdmin);
+    renderPage();
+
+    expect(await screen.findByText('There are no ACT roles to display')).toBeInTheDocument();
   });
 
   it("shows the server's reason when it refuses a role, and keeps the change to try again", async () => {
@@ -159,8 +180,7 @@ describe('Role permissions', () => {
     await screen.findAllByTestId('act-role-row');
 
     await userEvent.click(box('Clinician', 'Exports'));
-    const row = screen.getAllByTestId('act-role-row')[0];
-    await userEvent.click(within(row).getByRole('button', { name: 'Save' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Clinician' }));
 
     expect(await screen.findByText('You must have the privileges of the role')).toBeInTheDocument();
     expect(box('Clinician', 'Exports')).not.toBeChecked();

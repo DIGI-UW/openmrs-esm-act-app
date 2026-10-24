@@ -140,13 +140,17 @@ and Community), with the type and level their description holds as the distro se
 the parent clinic and whether it is enabled; Enabled shows by default and All adds the disabled ones. A clinic is
 added and edited here: its level sets its level tag, its type and level are written back to its description, a new
 clinic also gets `clinics.newClinicTags` (Visit, Queue and Login Location) so users can sign in and record visits
-there, and disabling it retires the location.
+there, and disabling it retires the location. Clinics from the distro's locations file return to what that file says
+when it is updated (Initializer reapplies it), so lasting changes to them belong in the distro; clinics added here keep
+theirs. Keep the tags in `clinics.levels` the same as `clinicLocationTags`, which the rest of ACT reads.
 
 Role permissions (`/home/act-role-permissions`, the Instance admin's Role permissions, for a user holding Manage
 Roles) shows each ACT role (`Organizational: ACT …`) against the ACT capabilities it is built from
-(`Application: ACT …`) and saves the ones ticked. OpenMRS saves a role only for a user holding every privilege the
-role has directly, so such a role is read only here, and a capability is offered only to a user holding its
-privileges. The roles come from the distro's roles file, and an update to that file replaces changes made here.
+(`Application: ACT …`), with the ones it inherits directly ticked, and saves them. A capability a role has through
+another ACT role shows ticked and is changed on that role. OpenMRS saves a role only for a user holding every
+privilege the role has directly, so such a role is read only here. A user gives only a capability whose privileges
+they hold, and may remove any. The roles come from the distro's roles file, and an update to that file replaces
+changes made here.
 
 ## Requirements
 

@@ -38,7 +38,7 @@ export const configSchema = {
         { tag: 'RHD Community', level: 'Community' },
       ],
       _description:
-        "The levels the Clinics page offers, as ACT 2.0's, each by its location tag. A clinic's description holds its type and level, as the distro seeds them: 'Public, District level'.",
+        "The levels the Clinics page offers, as ACT 2.0's, each by its location tag. A clinic's description holds its type and level, as the distro seeds them: 'Public, District level'. Keep the tags the same as clinicLocationTags, which the rest of ACT reads; a clinic's parent is one of the levels whose tag is in clinicLocationTags.cardiac.",
     },
     types: {
       _type: Type.Array,

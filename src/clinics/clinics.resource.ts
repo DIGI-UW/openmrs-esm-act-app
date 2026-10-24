@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
@@ -34,24 +35,26 @@ const locationsUrl = `${restBaseUrl}/location?includeAll=true&v=custom:(uuid,nam
 /** The clinics, enabled and disabled, by name; a clinic's type is the first part of its description, as seeded. */
 export function useClinics(levels: Levels) {
   const { data, error, isLoading, mutate } = useSWR<Array<Location>, Error>(locationsUrl, fetchAll);
-  const clinics = (data ?? [])
-    .map((location): Clinic | null => {
-      const level = levels.find(({ tag }) => location.tags.some(({ display }) => display === tag))?.level;
-      return level ? { ...location, level, type: location.description?.split(', ')[0] ?? '' } : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const clinics = useMemo(
+    () =>
+      (data ?? [])
+        .map((location): Clinic | null => {
+          const level = levels.find(({ tag }) => location.tags.some(({ display }) => display === tag))?.level;
+          return level ? { ...location, level, type: location.description?.split(', ')[0] ?? '' } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [data, levels],
+  );
   return { clinics, error, isLoading, mutate };
 }
 
 /** Every location tag's uuid by its name, as a location is saved with its tags' uuids. */
 export function useLocationTags() {
-  const url = `${restBaseUrl}/locationtag?v=custom:(uuid,display)&limit=100`;
+  const url = `${restBaseUrl}/locationtag?v=custom:(uuid,display)`;
   const { data, error } = useSWR<Record<string, string>, Error>(url, async () =>
     Object.fromEntries(
-      (await openmrsFetch<{ results: Array<{ uuid: string; display: string }> }>(url)).data.results.map(
-        ({ uuid, display }) => [display, uuid],
-      ),
+      (await fetchAll<{ uuid: string; display: string }>(url)).map(({ uuid, display }) => [display, uuid]),
     ),
   );
   return { tagUuids: data, error };

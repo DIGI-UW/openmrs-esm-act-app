@@ -38,17 +38,19 @@ import styles from './clinics.scss';
 /** The levels and types ACT names, translated; a clinic's own value shows as written. */
 function useClinicText() {
   const { t } = useTranslation();
-  const levels: Record<string, string> = {
-    Tertiary: t('tertiary', 'Tertiary'),
-    District: t('district', 'District'),
-    Community: t('community', 'Community'),
-  };
-  const types: Record<string, string> = {
-    Public: t('public', 'Public'),
-    'Private Not-For-Profit': t('privateNotForProfit', 'Private Not-For-Profit'),
-    'Private For-Profit': t('privateForProfit', 'Private For-Profit'),
-  };
-  return { levelText: (level: string) => levels[level] ?? level, typeText: (type: string) => types[type] ?? type };
+  return useMemo(() => {
+    const levels: Record<string, string> = {
+      Tertiary: t('tertiary', 'Tertiary'),
+      District: t('district', 'District'),
+      Community: t('community', 'Community'),
+    };
+    const types: Record<string, string> = {
+      Public: t('public', 'Public'),
+      'Private Not-For-Profit': t('privateNotForProfit', 'Private Not-For-Profit'),
+      'Private For-Profit': t('privateForProfit', 'Private For-Profit'),
+    };
+    return { levelText: (level: string) => levels[level] ?? level, typeText: (type: string) => types[type] ?? type };
+  }, [t]);
 }
 
 function ClinicModal({
@@ -128,18 +130,27 @@ function ClinicModal({
       }
       primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
       secondaryButtonText={t('cancel', 'Cancel')}
-      primaryButtonDisabled={saving}
+      primaryButtonDisabled={saving || !tagUuids}
       onRequestSubmit={submit}
       onRequestClose={onClose}
       size="sm"
     >
-      {(saveError || tagsError) && (
+      {tagsError && (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          hideCloseButton
+          title={t('couldNotLoadLocationTags', 'Could not load the location tags, so the clinic cannot be saved')}
+          subtitle={restErrorMessage(tagsError)}
+        />
+      )}
+      {saveError && (
         <InlineNotification
           kind="error"
           lowContrast
           hideCloseButton
           title={t('couldNotSaveClinic', 'Could not save the clinic')}
-          subtitle={saveError ?? restErrorMessage(tagsError)}
+          subtitle={saveError}
         />
       )}
       <div className={styles.form}>
@@ -293,7 +304,7 @@ export default function Clinics() {
                     size="sm"
                     hasIconOnly
                     renderIcon={Edit}
-                    iconDescription={t('edit', 'Edit')}
+                    iconDescription={t('editClinic', 'Edit clinic')}
                     onClick={() => setEditing(clinic)}
                   />
                 </TableCell>
@@ -310,6 +321,12 @@ export default function Clinics() {
     <>
       <ActPageHeader title={t('clinics', 'Clinics')} illustration={<FacilityPictogram />} />
       <div className={styles.clinics}>
+        <p className={styles.note}>
+          {t(
+            'clinicsNote',
+            "Clinics that come from the distribution's locations file return to what that file says when it is updated; clinics added here keep their changes.",
+          )}
+        </p>
         <div className={styles.toolbar}>
           <Search
             size="lg"
