@@ -130,6 +130,8 @@ describe('Users', () => {
     renderPage();
 
     expect(await screen.findByText('«Off»')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('switch', { name: '«Show disabled users»' }));
+    expect(screen.getByText('«On»')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: '«Add user»' }));
