@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { getCoreTranslation } from '@openmrs/esm-framework';
 
 export function usePaginationText() {
   const { t } = useTranslation();
@@ -8,6 +9,7 @@ export function usePaginationText() {
     itemsPerPageText: t('itemsPerPage', 'Items per page:'),
     itemRangeText: (min: number, max: number, total: number) =>
       t('itemRange', '{{min}}–{{max}} of {{count}} items', { min, max, count: total }),
-    pageRangeText: (_current: number, total: number) => t('pageRange', 'of {{count}} pages', { count: total }),
+    pageRangeText: (_current: number, total: number) =>
+      getCoreTranslation('paginationOfPages', undefined, { count: total }),
   };
 }

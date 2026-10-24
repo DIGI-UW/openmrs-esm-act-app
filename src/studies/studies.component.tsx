@@ -19,6 +19,7 @@ import { Add, Edit } from '@carbon/react/icons';
 import {
   ConfigurableLink,
   formatDate,
+  getCoreTranslation,
   isDesktop,
   CohortsPictogram,
   showSnackbar,
@@ -87,7 +88,7 @@ function StudyNameModal({
 
   return (
     <Modal
-      closeButtonLabel={t('close', 'Close')}
+      closeButtonLabel={getCoreTranslation('close')}
       open
       modalHeading={study ? t('renameStudy', 'Rename study') : t('createStudy', 'Create study')}
       primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}

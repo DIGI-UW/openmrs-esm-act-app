@@ -89,8 +89,8 @@ Days pending counts from the report's `date_added`. A row turns red once its day
 urgency band, set in `urgencyBands` by the Urgency answer's concept. The defaults are ACT 2.0's three urgencies,
 Emergent, Urgent and Elective, due in 1, 60 and 180 days, and the four answers they replaced, due in 7, 30, 90 and
 180 days, for recommendations saved before, all in deadline order. Overdue rows come first, then the bands in the
-order they are listed. The list and its Urgency filter name each band by its `label`, such as "1: Emergent (24
-hours)", and ACT home's widget by its `shortLabel`, such as "1: Emergent", or its `label` without one; an answer no
+order they are listed. The list and its Urgency filter name each band by its `label`, such as `urgencyEmergent`,
+shown as "1: Emergent (24 hours)", and ACT home's widget by its `shortLabel`, such as "1: Emergent", or its `label` without one; an answer no
 band names shows the report's name for it.
 
 Its filters are kept in the URL, and Download CSV saves the filtered rows. Open form opens that consultation for
@@ -134,10 +134,11 @@ others to the login page. The times are
 
 ## Translations
 
-The app's own text is in `translations/en.json`; another language is a file beside it, or the distro's
-`"Translation overrides"` for `@act-registry/esm-act-app`, keyed by language. A configured label (a care cascade
-step, a flag worklist title, an urgency band, a prophylaxis form choice) is translated with its own text as the key,
-so a distro that changes one translates it by adding that text under its language. After changing a string, run
+The app's own text is in `translations/en.json`; another language is a file beside it. A configured label (a care
+cascade step, a flag worklist title, an urgency band, a prophylaxis form choice) is a translation key, as in other O3
+apps: the defaults are keys in `en.json`, such as `coveredToday`, and a distro may set its own key and give its text
+per language under `"Translation overrides"` for `@act-registry/esm-act-app`. A label that is no key shows as
+written. Common words such as Close come from O3's core translations. After changing a string, run
 `yarn extract-translations` and commit `translations/en.json` with the change.
 
 ## Requirements

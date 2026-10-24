@@ -7,6 +7,7 @@ import {
   type AssignedExtension,
   Extension,
   ExtensionSlot,
+  getCoreTranslation,
   getDefaultsFromConfigSchema,
   navigate,
   openmrsFetch,
@@ -351,7 +352,8 @@ describe('A worklist table', () => {
     expect(screen.getByRole('button', { name: '«Previous page»' })).toBeInTheDocument();
     expect(screen.getByText('«Items per page:»')).toBeInTheDocument();
     expect(screen.getByText('«1–10 of 12 items»')).toBeInTheDocument();
-    expect(screen.getByText('«of 2 pages»')).toBeInTheDocument();
+    expect(screen.getByText('of 2 pages')).toBeInTheDocument();
+    expect(getCoreTranslation).toHaveBeenCalledWith('paginationOfPages', undefined, { count: 2 });
     expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
   });
 

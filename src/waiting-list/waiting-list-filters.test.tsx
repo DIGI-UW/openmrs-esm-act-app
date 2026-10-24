@@ -172,14 +172,14 @@ describe('Procedural waiting list filters and CSV', () => {
     const { unmount } = render(<WaitingList />);
     await choose('Procedure type', 'Surgery');
     await choose('Urgency', '2: Urgent (60 days)');
-    await waitFor(() => expect(new URLSearchParams(window.location.search).get('urgency')).toBe('2: Urgent (60 days)'));
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get('urgency')).toBe('urgencyUrgent'));
     expect(new URLSearchParams(window.location.search).get('type')).toBe('Surgery');
     unmount();
 
     render(<WaitingList />);
 
     expect(screen.getByLabelText('Procedure type')).toHaveValue('Surgery');
-    expect(screen.getByLabelText('Urgency')).toHaveValue('2: Urgent (60 days)');
+    expect(screen.getByLabelText('Urgency')).toHaveValue('urgencyUrgent');
     const expected = rows.filter((_, i) => i % 3 === 1).map((row) => row.rhd_id);
     expect(expected.length).toBeGreaterThan(0);
     expect([...shownIds()].sort()).toEqual([...expected].sort());

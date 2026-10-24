@@ -9,39 +9,39 @@ export interface FlagWorklistConfig {
 }
 
 // Keep these markers: extraction reads them to give en.json the default titles as keys.
-// t('Cardiology follow-up due', 'Cardiology follow-up due')
-// t('Lost to follow-up', 'Lost to follow-up')
-// t('RHD 30-day post-procedural follow-up due', 'RHD 30-day post-procedural follow-up due')
-// t('RHD pregnancy outcome due', 'RHD pregnancy outcome due')
-// t('Referred to a clinician', 'Referred to a clinician')
-// t('INR review due', 'INR review due')
+// t('cardiologyFollowUpDue', 'Cardiology follow-up due')
+// t('lostToFollowUp', 'Lost to follow-up')
+// t('postProceduralFollowUpDue', 'RHD 30-day post-procedural follow-up due')
+// t('pregnancyOutcomeDue', 'RHD pregnancy outcome due')
+// t('referredToAClinician', 'Referred to a clinician')
+// t('inrReviewDue', 'INR review due')
 /** The worklists that list a flag's patients, by their extension's name in routes.json, with what each shows by default. */
 export const flagWorklists: Record<string, FlagWorklistConfig> = {
   'act-worklist-cardiology-follow-up': {
     flag: 'RHD cardiology follow-up due',
-    title: 'Cardiology follow-up due',
+    title: 'cardiologyFollowUpDue',
     tone: 'orange',
     dueDateColumn: 'next_consultation_date',
   },
-  'act-worklist-lost-to-follow-up': { flag: 'RHD lost to follow-up', title: 'Lost to follow-up', tone: 'red' },
+  'act-worklist-lost-to-follow-up': { flag: 'RHD lost to follow-up', title: 'lostToFollowUp', tone: 'red' },
   'act-worklist-post-procedural-follow-up': {
     flag: 'RHD 30-day follow-up due',
-    title: 'RHD 30-day post-procedural follow-up due',
+    title: 'postProceduralFollowUpDue',
     tone: 'orange',
   },
   'act-worklist-pregnancy-outcome': {
     flag: 'RHD delivery outcome overdue',
-    title: 'RHD pregnancy outcome due',
+    title: 'pregnancyOutcomeDue',
     tone: 'orange',
   },
   'act-worklist-referred-to-clinician': {
     flag: 'RHD referred to a clinician',
-    title: 'Referred to a clinician',
+    title: 'referredToAClinician',
     tone: 'orange',
   },
   'act-worklist-inr-review': {
     flag: 'RHD INR review due',
-    title: 'INR review due',
+    title: 'inrReviewDue',
     tone: 'orange',
     dueDateColumn: 'next_inr_date',
   },
@@ -58,7 +58,7 @@ export function flagWorklistConfigSchema(defaults: FlagWorklistConfig) {
     title: {
       _type: Type.String,
       _default: defaults.title,
-      _description: "The worklist's name on its tile, translated with this text as its key.",
+      _description: "The worklist's name on its tile: a translation key, or text shown as written.",
     },
     tone: {
       _type: Type.String,

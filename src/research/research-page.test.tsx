@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ErrorState, openmrsFetch } from '@openmrs/esm-framework';
+import { ErrorState, getCoreTranslation, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { markTranslations } from '../i18n.test-helper';
 import ResearchPage from './research-page.component';
@@ -233,7 +233,8 @@ describe('Research participation', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Add participation/ }));
 
-    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '«Close»' })).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(getCoreTranslation).toHaveBeenCalledWith('close');
   });
 
   it('enrols in a study the patient is not active in, with its Study ID and first status', async () => {

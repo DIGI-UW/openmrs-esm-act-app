@@ -23,6 +23,7 @@ import {
 } from '@carbon/react';
 import { Add, Catalog, Edit, Locked, Password } from '@carbon/react/icons';
 import {
+  getCoreTranslation,
   isDesktop,
   RegistrationPictogram,
   showSnackbar,
@@ -126,7 +127,7 @@ function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => 
 
   return (
     <Modal
-      closeButtonLabel={t('close', 'Close')}
+      closeButtonLabel={getCoreTranslation('close')}
       open
       modalHeading={user ? t('editUser', 'Edit user') : t('addUser', 'Add user')}
       primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
@@ -297,7 +298,7 @@ function PasswordModal({ user, onClose }: { user: ActUser; onClose: () => void }
 
   return (
     <Modal
-      closeButtonLabel={t('close', 'Close')}
+      closeButtonLabel={getCoreTranslation('close')}
       open
       modalHeading={t('resetPasswordFor', 'Reset the password of {{name}}', { name: fullName(user) || user.username })}
       primaryButtonText={saving ? t('saving', 'Saving...') : t('resetPassword', 'Reset password')}
@@ -364,7 +365,7 @@ function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () =
   };
   return (
     <Modal
-      closeButtonLabel={t('close', 'Close')}
+      closeButtonLabel={getCoreTranslation('close')}
       open
       danger
       modalHeading={t('disableUserNamed', 'Disable {{name}}?', { name: fullName(user) || user.username })}

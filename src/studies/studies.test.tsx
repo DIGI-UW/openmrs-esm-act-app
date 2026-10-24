@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { getCoreTranslation, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -153,7 +153,8 @@ describe('Studies', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
 
-    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '«Close»' })).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(getCoreTranslation).toHaveBeenCalledWith('close');
   });
 
   it('creates a study by name', async () => {

@@ -107,7 +107,7 @@ describe('Procedural waiting list', () => {
     expect(within(row).getByRole('cell', { name: '«3: Elective (180 days)»' })).toBeInTheDocument();
     const urgency = screen.getByRole('combobox', { name: '«Urgency»' });
     await userEvent.selectOptions(urgency, screen.getByRole('option', { name: '«3: Elective (180 days)»' }));
-    expect(urgency).toHaveValue('3: Elective (180 days)');
+    expect(urgency).toHaveValue('urgencyElective');
   });
 
   it("shows the report's own urgency name, which no band covers, as it is", async () => {

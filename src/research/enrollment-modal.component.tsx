@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Form, InlineNotification, Modal, Select, SelectItem, Stack, TextInput } from '@carbon/react';
-import { OpenmrsDatePicker, parseDate, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getCoreTranslation, OpenmrsDatePicker, parseDate, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { restErrorMessage } from '../rest-error-message';
 import { type Study } from '../studies/studies.resource';
@@ -93,7 +93,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
 
   return (
     <Modal
-      closeButtonLabel={t('close', 'Close')}
+      closeButtonLabel={getCoreTranslation('close')}
       open
       modalHeading={
         enrollment ? t('editParticipation', 'Edit participation') : t('addParticipation', 'Add participation')

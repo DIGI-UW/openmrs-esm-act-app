@@ -72,6 +72,8 @@ export function WaitingListTable() {
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
   // A band's name is translated where shown; the filter, kept in the URL, matches the configured name.
   const urgencyText = (urgency: string) => (urgencyBands.some((band) => band.label === urgency) ? t(urgency) : urgency);
+  // Options follow the bands, most urgent first, as the rows do; a band's name may be a key that sorts otherwise.
+  const bandOf = (urgency: string) => urgencyBands.findIndex((band) => band.label === urgency) + 1 || 99;
   const [filters, setFilters, filtersPending] = useWaitingListFilters();
   const clinicKind = useSessionClinicKind();
   const ranked = useMemo(
@@ -113,7 +115,11 @@ export function WaitingListTable() {
       id={`waiting-list-${key}`}
       label={label}
       value={filters[key]}
-      options={distinctValues(rows, filterColumns[key])}
+      options={
+        key === 'urgency'
+          ? distinctValues(rows, filterColumns[key]).sort((a, b) => bandOf(a) - bandOf(b))
+          : distinctValues(rows, filterColumns[key])
+      }
       onChange={(value) => setFilters({ [key]: value })}
       optionLabel={key === 'urgency' ? urgencyText : undefined}
     />

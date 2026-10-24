@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ComposedModal, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { navigate, openmrsFetch, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
+import { getCoreTranslation, navigate, openmrsFetch, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 
 /** What counts as the user being at the keyboard. */
@@ -162,7 +162,7 @@ export default function SessionTimeout() {
   const remaining = countdown(warning.since + warningMs - warning.now);
   return (
     <ComposedModal open size="sm" preventCloseOnClickOutside onClose={() => false} data-testid="session-timeout">
-      <ModalHeader iconDescription={t('close', 'Close')} title={t('sessionTimeoutTitle', 'Still there?')} />
+      <ModalHeader iconDescription={getCoreTranslation('close')} title={t('sessionTimeoutTitle', 'Still there?')} />
       <ModalBody>
         <p>
           {t(

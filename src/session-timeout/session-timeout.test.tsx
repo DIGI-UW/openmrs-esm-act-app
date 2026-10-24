@@ -1,7 +1,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { navigate, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { getCoreTranslation, navigate, openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { markTranslations } from '../i18n.test-helper';
 import SessionTimeout, { countdown } from './session-timeout.component';
@@ -70,7 +70,8 @@ describe('SessionTimeout', () => {
 
     await passMinutes(27);
 
-    expect(screen.getByRole('button', { name: '«Close»' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(getCoreTranslation).toHaveBeenCalledWith('close');
   });
 
   it('signs the user out when the countdown ends', async () => {
