@@ -21,7 +21,7 @@ const tagUuids: Record<string, string> = {
 const tags = (...names: Array<string>) => names.map((display) => ({ uuid: tagUuids[display], display }));
 const working = ['Visit Location', 'Queue Location', 'Login Location'];
 
-// As the distro seeds them: type and level in the description, a level tag beside the working tags.
+// As the distro seeds a clinic: type and level in its description, a level tag and the working tags.
 const locations = [
   {
     uuid: 'uhi',
@@ -99,7 +99,7 @@ const locations = [
 
 type Call = { url: string; method: string; body: unknown };
 
-/** The server: every location, paged, and the location tags; every write recorded, answered with `fails` if given. */
+/** Pages locations by four, so a test proves every page is read. */
 function backend(fails?: string) {
   const writes: Array<Call> = [];
   mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
@@ -184,7 +184,7 @@ describe('Clinics', () => {
     expect((await rows()).map((cells) => cells[0])).toEqual(['JCRC Lubowa']);
 
     await userEvent.clear(screen.getByRole('searchbox'));
-    // JCRC Lubowa names no district but its level.
+    // JCRC Lubowa matches on its level alone.
     await userEvent.type(screen.getByRole('searchbox'), 'district');
     expect((await rows()).map((cells) => cells[0])).toEqual([
       'JCRC Lubowa',

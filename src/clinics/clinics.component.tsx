@@ -80,7 +80,7 @@ function ClinicModal({
   const [saveError, setSaveError] = useState<string | null>(null);
   const change = (field: Partial<ClinicForm>) => setForm((current) => ({ ...current, ...field }));
   const types = [...config.types, ...(clinic?.type && !config.types.includes(clinic.type) ? [clinic.type] : [])];
-  // As in ACT 2.0, a clinic's parent is a cardiac clinic, one of the higher levels.
+  // As in ACT 2.0, a parent is a cardiac clinic: a level whose tag is in clinicLocationTags.cardiac.
   const parentLevels = config.levels
     .filter(({ tag }) => clinicLocationTags.cardiac.includes(tag))
     .map(({ level }) => level);
@@ -215,7 +215,6 @@ function ClinicModal({
   );
 }
 
-/** ACT 2.0's Clinic Management: the clinics, their type, level and parent, added, edited and disabled here. */
 export default function Clinics() {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());

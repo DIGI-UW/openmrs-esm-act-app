@@ -12,15 +12,12 @@ export interface Role {
   inheritedRoles: Array<{ uuid: string; display: string }>;
 }
 
-/** The roles a user is given, as the distro names them. */
 export const ROLE_PREFIX = 'Organizational: ACT ';
-/** The capabilities ACT roles are built from, as the distro names them. */
 export const CAPABILITY_PREFIX = 'Application: ACT ';
 
 const rolesUrl = `${restBaseUrl}/role?v=custom:(uuid,display,description,privileges:(display),inheritedRoles:(uuid,display))`;
 const byName = (a: Role, b: Role) => a.display.localeCompare(b.display);
 
-/** The ACT roles and the ACT capabilities, each by name. */
 export function useActRoles() {
   const { data, error, isLoading, mutate } = useSWR<Array<Role>, Error>(rolesUrl, fetchAll);
   const roles = useMemo(

@@ -28,11 +28,9 @@ import styles from './role-permissions.scss';
 
 const capabilityName = (capability: Role) => capability.display.slice(CAPABILITY_PREFIX.length);
 
-/** The role's own privileges the user does not hold. */
 const lacking = (role: Role, user: LoggedInUser) =>
   role.privileges.filter(({ display }) => !userHasAccess(display, user));
 
-/** Which capabilities each ACT role has, for the Instance Administrator to change; ACT 2.0 had no such page. */
 export default function RolePermissions() {
   const { t } = useTranslation();
   const { user } = useSession();
@@ -46,7 +44,6 @@ export default function RolePermissions() {
     const own = new Map(
       roles.map((role) => [role.uuid, new Set(role.inheritedRoles.map(({ uuid }) => uuid).filter(isCapability))]),
     );
-    // A capability a role gets through another ACT role it inherits, by the name of that role.
     const viaOthers = (role: Role, seen: Set<string>): Map<string, string> => {
       const found = new Map<string, string>();
       role.inheritedRoles
@@ -144,7 +141,6 @@ export default function RolePermissions() {
                     // Judged by what is saved, so a change made here can be undone before saving.
                     const before = saved.get(role.uuid).has(capability.uuid);
                     const via = !before && inherited.get(capability.uuid);
-                    // A direct tie taken away leaves a capability the role also has through another role.
                     const stillVia = before && !chosen.has(capability.uuid) && inherited.get(capability.uuid);
                     const label = via
                       ? t('capabilityThrough', '{{role}}: {{capability}}, through {{through}}', {

@@ -13,7 +13,6 @@ interface Location {
   parentLocation: { uuid: string; display: string } | null;
 }
 
-/** A location carrying one of the clinic level tags, with its type and level as the Clinics page shows them. */
 export interface Clinic extends Location {
   type: string;
   level: string;
@@ -32,7 +31,7 @@ type Levels = Config['clinics']['levels'];
 // A tag search drops retired locations even with includeAll, so every location is read.
 const locationsUrl = `${restBaseUrl}/location?includeAll=true&v=custom:(uuid,name,description,retired,tags:(uuid,display),parentLocation:(uuid,display))`;
 
-/** The clinics, enabled and disabled, by name; a clinic's type is the first part of its description, as seeded. */
+/** A clinic's type is the first part of its description, as the distro seeds it and saveClinic writes it. */
 export function useClinics(levels: Levels) {
   const { data, error, isLoading, mutate } = useSWR<Array<Location>, Error>(locationsUrl, fetchAll);
   const clinics = useMemo(
