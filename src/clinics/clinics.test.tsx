@@ -311,6 +311,30 @@ describe('Clinics', () => {
     expect(writes[0].body).toMatchObject({ parentLocation: null });
   });
 
+  it("still offers a clinic's parent that is not a clinic, so it shows and can be cleared", async () => {
+    const writes = backend(
+      undefined,
+      locations.map((location) =>
+        location.uuid === 'mbale'
+          ? { ...location, parentLocation: { uuid: 'eastern', display: 'Eastern Region' } }
+          : location,
+      ),
+    );
+    await signInWith(['Manage Locations']);
+    renderPage();
+
+    await userEvent.click(within(await rowOf('Mbale HCIV')).getByRole('button', { name: 'Edit clinic' }));
+    const dialog = await screen.findByRole('dialog');
+    const parent = within(dialog).getByLabelText('Parent clinic') as HTMLSelectElement;
+
+    expect(parent).toHaveValue('eastern');
+    expect(parent.selectedOptions[0]).toHaveTextContent('Eastern Region');
+    await userEvent.selectOptions(parent, '');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].body).toMatchObject({ parentLocation: null });
+  });
+
   it("edits a clinic's name, level and type, keeping its other tags, and disables it", async () => {
     const writes = backend();
     await signInWith(['Manage Locations']);

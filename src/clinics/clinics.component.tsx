@@ -89,6 +89,7 @@ function ClinicModal({
       other.uuid !== clinic?.uuid &&
       ((parentLevels.includes(other.level) && !other.retired) || other.uuid === form.parent),
   );
+  const otherParent = parents.some(({ uuid }) => uuid === clinic?.parentLocation?.uuid) ? null : clinic?.parentLocation;
   const missing = {
     name: !form.name.trim(),
     level: !form.level,
@@ -199,6 +200,7 @@ function ClinicModal({
           {parents.map((parent) => (
             <SelectItem key={parent.uuid} value={parent.uuid} text={parent.name} />
           ))}
+          {otherParent && <SelectItem value={otherParent.uuid} text={otherParent.display} />}
         </Select>
         {clinic && (
           <Select

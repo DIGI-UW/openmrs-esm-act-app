@@ -254,6 +254,39 @@ describe('Role permissions', () => {
     expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
   });
 
+  it('keeps that capability while the only other way to Get Roles is unsaved on another row, as each row saves alone', async () => {
+    const plain = role('role-plain', 'Clinician', []);
+    const writes = backend(undefined, [instance, plain, siteAdministration]);
+    await signInHolding([instance, plain]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Clinician', 'Site Administration'));
+    const kept = screen.getByRole('checkbox', {
+      name: 'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+    });
+    expect(kept).toBeDisabled();
+    await userEvent.click(kept);
+
+    expect(screen.getByRole('button', { name: 'Save Instance Administrator' })).toBeDisabled();
+    expect(writes).toHaveLength(0);
+  });
+
+  it('lets you swap that capability for another giving Get Roles on the same row, as they save together', async () => {
+    const userManagement = capability('cap-users', 'User Management', 'Manage users', ['Get Roles']);
+    const writes = backend(undefined, [instance, siteAdministration, userManagement]);
+    await signInHolding([instance]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Instance Administrator', 'User Management'));
+    await userEvent.click(box('Instance Administrator', 'Site Administration'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Instance Administrator' }));
+
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].body).toEqual({ inheritedRoles: ['cap-users'] });
+  });
+
   it('lets you take that capability from your own role when another of your roles gives you Get Roles', async () => {
     const full = { ...role('role-full', 'Full', [], ['Get Roles']), display: 'Privilege Level: Full' };
     const sysAdmin = { ...role('role-sysadmin', 'Sysadmin', [full]), display: 'Organizational: System Administrator' };

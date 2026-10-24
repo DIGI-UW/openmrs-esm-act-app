@@ -81,7 +81,7 @@ export default function RolePermissions() {
     setDrafts((current) => ({ ...current, [role.uuid]: next }));
   };
   // OpenMRS loads a role to save it only for a user who holds Get Roles.
-  const holdsGetRoles = (dropping?: { role: string; capability: string }) => {
+  const holdsGetRoles = (changing: string, dropping?: string) => {
     const seen = new Set<string>();
     const reaches = (uuid: string): boolean => {
       const role = all.find((other) => other.uuid === uuid);
@@ -90,12 +90,14 @@ export default function RolePermissions() {
       }
       seen.add(uuid);
       const tied = role.inheritedRoles.map((other) => other.uuid);
-      const inherits = roles.includes(role)
-        ? [...tied.filter((other) => !saved.get(uuid).has(other)), ...chosenFor(role)]
-        : tied;
+      const own = saved.get(uuid);
+      // Saving one row leaves the others' unsaved ticks unsent.
+      const keeps =
+        uuid === changing ? [...chosenFor(role)] : [...(own ?? [])].filter((other) => chosenFor(role).has(other));
+      const inherits = own ? [...tied.filter((other) => !own.has(other)), ...keeps] : tied;
       return (
         role.privileges.some(({ display }) => display === 'Get Roles') ||
-        inherits.filter((other) => uuid !== dropping?.role || other !== dropping.capability).some(reaches)
+        inherits.filter((other) => uuid !== changing || other !== dropping).some(reaches)
       );
     };
     return user.roles.some((held) => reaches(held.uuid));
@@ -164,8 +166,8 @@ export default function RolePermissions() {
                     const stillVia = before && !chosen.has(capability.uuid) && inherited.get(capability.uuid);
                     const kept =
                       chosen.has(capability.uuid) &&
-                      holdsGetRoles() &&
-                      !holdsGetRoles({ role: role.uuid, capability: capability.uuid });
+                      holdsGetRoles(role.uuid) &&
+                      !holdsGetRoles(role.uuid, capability.uuid);
                     const label = via
                       ? t('capabilityThrough', '{{role}}: {{capability}}, through {{through}}', {
                           role: name,
