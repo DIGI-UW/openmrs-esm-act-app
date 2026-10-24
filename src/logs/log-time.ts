@@ -34,7 +34,11 @@ export function logTimeRange(t: TFunction, from: string, to: string, now = new D
   const start = logTime(t, from, now);
   return dayjs(to).diff(from, 'minute') < 1
     ? start
-    : t('logTimeRange', '{{start}} to {{end}}', { start, end: dayjs(to).format('HH:mm') });
+    : t('logTimeRange', '{{start}} to {{end}}', {
+        start,
+        end: dayjs(to).format('HH:mm'),
+        interpolation: { escapeValue: false },
+      });
 }
 
 /** The exact timestamp, to the second, for the expanded row. */

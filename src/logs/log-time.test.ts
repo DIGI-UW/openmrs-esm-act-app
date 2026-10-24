@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import i18next from 'i18next';
 import * as reactI18next from 'react-i18next';
 import { markTranslations } from '../i18n.test-helper';
 import {
@@ -40,6 +41,18 @@ describe('logTime', () => {
     expect(logTime(marked, '2026-10-20T17:05:00.000Z', now)).toBe('«Yesterday, 17:05»');
     expect(logTimeRange(marked, '2026-10-21T07:41:20.000Z', '2026-10-21T07:48:17.000Z', now)).toBe(
       '««Today, 07:41» to 07:48»',
+    );
+  });
+
+  it('keeps an apostrophe in a translated Today as it is when it heads a window', async () => {
+    const french = i18next.createInstance();
+    await french.init({
+      lng: 'fr',
+      resources: { fr: { translation: { logToday: "Aujourd'hui, {{time}}" } } },
+    });
+
+    expect(logTimeRange(french.t, '2026-10-21T07:41:20.000Z', '2026-10-21T07:48:17.000Z', now)).toBe(
+      "Aujourd'hui, 07:41 to 07:48",
     );
   });
 
