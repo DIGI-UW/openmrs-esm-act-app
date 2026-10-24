@@ -87,8 +87,7 @@ function ClinicModal({
   const parents = clinics.filter(
     (other) =>
       other.uuid !== clinic?.uuid &&
-      parentLevels.includes(other.level) &&
-      (!other.retired || other.uuid === form.parent),
+      ((parentLevels.includes(other.level) && !other.retired) || other.uuid === form.parent),
   );
   const missing = {
     name: !form.name.trim(),

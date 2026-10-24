@@ -149,7 +149,8 @@ Roles) shows each ACT role (`Organizational: ACT …`) against the ACT capabilit
 (`Application: ACT …`), with the ones it inherits directly ticked, and saves them. A capability a role has through
 another ACT role shows ticked and is changed on that role. OpenMRS saves a role only for a user holding every
 privilege the role has directly, so such a role is read only here. A user gives only a capability whose privileges
-they hold, and may take away any the role has directly. OpenMRS also lets an administrator save a user only when the
+they hold, and may take away one the role has directly, unless it is on one of their own roles and is how they hold
+Get Roles, which OpenMRS needs to save any role. OpenMRS also lets an administrator save a user only when the
 administrator holds every privilege of the user's roles, so a capability given to a clinician role must be held by the
 administrators who assign it, or they cannot save anyone who has that role. The roles come from the distro's roles
 file, and an update to that file replaces changes made here.

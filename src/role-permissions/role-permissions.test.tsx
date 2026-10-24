@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import RolePermissions from './role-permissions.component';
 
@@ -49,7 +49,7 @@ const roles = [
 
 type Call = { url: string; method: string; body: unknown };
 
-function backend(fails?: string) {
+function backend(fails?: string, all: Array<ReturnType<typeof role>> = roles) {
   const writes: Array<Call> = [];
   mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
     const method = init?.method ?? 'GET';
@@ -62,7 +62,7 @@ function backend(fails?: string) {
     }
     if (url.includes('/role?')) {
       const start = Number(new URLSearchParams(url.split('?')[1]).get('startIndex') ?? 0);
-      return { data: { results: roles.slice(start, start + 4), totalCount: roles.length } };
+      return { data: { results: all.slice(start, start + 4), totalCount: all.length } };
     }
     return { data: {} };
   }) as never);
@@ -82,6 +82,19 @@ const box = (roleName: string, capabilityName: string) =>
 
 // Holds Registry's and Exports' privileges, not Study Management's nor Delete Patients.
 const instanceAdmin = ['Manage Roles', 'App: act.registry', 'Task: act.lists.export'];
+
+const siteAdministration = capability('cap-site', 'Site Administration', 'Manage users and roles', ['Get Roles']);
+const instance = role('role-instance', 'Instance Administrator', [siteAdministration], ['Manage Roles']);
+
+/** Signs in a user holding Manage Roles and Get Roles who has these roles. */
+async function signInHolding(held: Array<{ uuid: string; display: string }>) {
+  await signInWith(['Manage Roles', 'Get Roles']);
+  const session = vi.mocked(useSession)();
+  vi.mocked(useSession).mockReturnValue({
+    ...session,
+    user: { ...session.user, roles: held.map(({ uuid, display }) => ({ uuid, display })) },
+  } as never);
+}
 
 describe('Role permissions', () => {
   it('lists the ACT roles against the ACT capabilities, each capability with what it gives, ticked where a role inherits it', async () => {
@@ -215,6 +228,41 @@ describe('Role permissions', () => {
     await userEvent.click(still);
     expect(box('Site Administrator', 'Registry')).toBeChecked();
     expect(screen.getByRole('button', { name: 'Save Site Administrator' })).toBeDisabled();
+  });
+
+  it('keeps on your own roles a capability that is your last way to Get Roles, as OpenMRS needs it to save any role', async () => {
+    const site = role('role-site', 'Site Administrator', [siteAdministration]);
+    backend(undefined, [instance, site, siteAdministration]);
+    await signInHolding([instance, site]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+    await userEvent.click(box('Site Administrator', 'Site Administration'));
+
+    const kept = screen.getByRole('checkbox', {
+      name: 'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+    });
+    expect(kept).toBeChecked();
+    expect(kept).toBeDisabled();
+    expect(
+      screen.getByTitle(
+        'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+      ),
+    ).toContainElement(kept);
+    await userEvent.click(box('Site Administrator', 'Site Administration'));
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+  });
+
+  it('lets you take that capability from your own role when another of your roles gives you Get Roles', async () => {
+    const full = { ...role('role-full', 'Full', [], ['Get Roles']), display: 'Privilege Level: Full' };
+    const sysAdmin = { ...role('role-sysadmin', 'Sysadmin', [full]), display: 'Organizational: System Administrator' };
+    backend(undefined, [instance, sysAdmin, full, siteAdministration]);
+    await signInHolding([instance, sysAdmin]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
   });
 
   it('says so when there are no ACT roles', async () => {

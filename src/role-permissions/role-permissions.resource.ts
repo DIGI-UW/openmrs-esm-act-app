@@ -28,7 +28,7 @@ export function useActRoles() {
     () => (data ?? []).filter(({ display }) => display.startsWith(CAPABILITY_PREFIX)).sort(byName),
     [data],
   );
-  return { roles, capabilities, error, isLoading, mutate };
+  return { all: data ?? [], roles, capabilities, error, isLoading, mutate };
 }
 
 /** Gives the role the capabilities chosen, keeping every role it inherits that is not an ACT capability. */

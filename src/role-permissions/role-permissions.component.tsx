@@ -34,7 +34,7 @@ const lacking = (role: Role, user: LoggedInUser) =>
 export default function RolePermissions() {
   const { t } = useTranslation();
   const { user } = useSession();
-  const { roles, capabilities, error, isLoading, mutate } = useActRoles();
+  const { all, roles, capabilities, error, isLoading, mutate } = useActRoles();
   const [drafts, setDrafts] = useState<Record<string, Set<string>>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -79,6 +79,26 @@ export default function RolePermissions() {
       next.delete(capability.uuid);
     }
     setDrafts((current) => ({ ...current, [role.uuid]: next }));
+  };
+  // OpenMRS loads a role to save it only for a user who holds Get Roles.
+  const holdsGetRoles = (dropping?: { role: string; capability: string }) => {
+    const seen = new Set<string>();
+    const reaches = (uuid: string): boolean => {
+      const role = all.find((other) => other.uuid === uuid);
+      if (!role || seen.has(uuid)) {
+        return false;
+      }
+      seen.add(uuid);
+      const tied = role.inheritedRoles.map((other) => other.uuid);
+      const inherits = roles.includes(role)
+        ? [...tied.filter((other) => !saved.get(uuid).has(other)), ...chosenFor(role)]
+        : tied;
+      return (
+        role.privileges.some(({ display }) => display === 'Get Roles') ||
+        inherits.filter((other) => uuid !== dropping?.role || other !== dropping.capability).some(reaches)
+      );
+    };
+    return user.roles.some((held) => reaches(held.uuid));
   };
   const save = async (role: Role) => {
     setSaving(role.uuid);
@@ -142,6 +162,10 @@ export default function RolePermissions() {
                     const before = saved.get(role.uuid).has(capability.uuid);
                     const via = !before && inherited.get(capability.uuid);
                     const stillVia = before && !chosen.has(capability.uuid) && inherited.get(capability.uuid);
+                    const kept =
+                      chosen.has(capability.uuid) &&
+                      holdsGetRoles() &&
+                      !holdsGetRoles({ role: role.uuid, capability: capability.uuid });
                     const label = via
                       ? t('capabilityThrough', '{{role}}: {{capability}}, through {{through}}', {
                           role: name,
@@ -156,9 +180,19 @@ export default function RolePermissions() {
                             through: stillVia,
                             interpolation: { escapeValue: false },
                           })
-                        : `${name}: ${capabilityName(capability)}`;
+                        : kept
+                          ? t(
+                              'capabilityKeptForGetRoles',
+                              '{{role}}: {{capability}}, kept: without it you would lose Get Roles, which saving a role needs',
+                              {
+                                role: name,
+                                capability: capabilityName(capability),
+                                interpolation: { escapeValue: false },
+                              },
+                            )
+                          : `${name}: ${capabilityName(capability)}`;
                     return (
-                      <TableCell key={capability.uuid} title={via || stillVia ? label : undefined}>
+                      <TableCell key={capability.uuid} title={via || stillVia || kept ? label : undefined}>
                         <Checkbox
                           id={`${role.uuid}-${capability.uuid}`}
                           labelText={label}
@@ -167,6 +201,7 @@ export default function RolePermissions() {
                           disabled={
                             missing.length > 0 ||
                             !!via ||
+                            kept ||
                             (!before && ungivable.has(capability.uuid)) ||
                             saving === role.uuid
                           }
@@ -217,7 +252,7 @@ export default function RolePermissions() {
         <p className={styles.note}>
           {t(
             'rolePermissionsNote',
-            "Each ACT role is built from these capabilities. You can give a role a capability whose privileges you hold, and take away any it has directly. A capability a role has through another role shows ticked and is changed on that role. Before giving a role more, check that the administrators who assign it hold those privileges too, or OpenMRS will not let them save anyone who has that role. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
+            "Each ACT role is built from these capabilities. You can give a role a capability whose privileges you hold, and take away one it has directly, unless it is how you hold Get Roles, which saving a role needs. A capability a role has through another role shows ticked and is changed on that role. Before giving a role more, check that the administrators who assign it hold those privileges too, or OpenMRS will not let them save anyone who has that role. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
           )}
         </p>
         {saveError && (

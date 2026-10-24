@@ -101,7 +101,7 @@ const locations = [
 type Call = { url: string; method: string; body: unknown };
 
 /** Pages locations by four, so a test proves every page is read. */
-function backend(fails?: string) {
+function backend(fails?: string, clinics = locations) {
   const writes: Array<Call> = [];
   mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
     const method = init?.method ?? 'GET';
@@ -118,7 +118,7 @@ function backend(fails?: string) {
     if (url.includes('/location?')) {
       expect(url).toContain('includeAll=true');
       const start = Number(new URLSearchParams(url.split('?')[1]).get('startIndex') ?? 0);
-      return { data: { results: locations.slice(start, start + 4), totalCount: locations.length } };
+      return { data: { results: clinics.slice(start, start + 4), totalCount: clinics.length } };
     }
     return { data: {} };
   }) as never);
@@ -285,6 +285,30 @@ describe('Clinics', () => {
       .getAllByRole('option')
       .map((option) => option.textContent);
     expect(options).not.toContain('Old District Hospital');
+  });
+
+  it("still offers a clinic's parent that is now at a level no parent is chosen from", async () => {
+    const writes = backend(
+      undefined,
+      locations.map((location) =>
+        location.uuid === 'mbale'
+          ? { ...location, parentLocation: { uuid: 'amach', display: 'Amach HCIV' } }
+          : location,
+      ),
+    );
+    await signInWith(['Manage Locations']);
+    renderPage();
+
+    await userEvent.click(within(await rowOf('Mbale HCIV')).getByRole('button', { name: 'Edit clinic' }));
+    const dialog = await screen.findByRole('dialog');
+    const parent = within(dialog).getByLabelText('Parent clinic') as HTMLSelectElement;
+
+    expect(parent).toHaveValue('amach');
+    expect(parent.selectedOptions[0]).toHaveTextContent('Amach HCIV');
+    await userEvent.selectOptions(parent, '');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].body).toMatchObject({ parentLocation: null });
   });
 
   it("edits a clinic's name, level and type, keeping its other tags, and disables it", async () => {
