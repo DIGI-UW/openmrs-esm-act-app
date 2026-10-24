@@ -1018,6 +1018,25 @@ describe('Dashboard', () => {
       ).toBeInTheDocument();
     });
 
+    it("names the cascade's Active step by its configured label once widened, as its bar does", async () => {
+      await signIn(undefined, figureRows, undefined, undefined, {
+        careCascade: {
+          report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
+          reportUrl: '${openmrsSpaBase}/reports',
+          steps: [
+            { step: 'Active', label: 'Active RHD' },
+            { step: 'Prescribed', label: 'Prescribed' },
+          ],
+        },
+      });
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Prescribed');
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: /^RHD care cascade: Prescribed/ }));
+
+      expect(await screen.findByText(/^Opened from the Dashboard: RHD care cascade, Active RHD/)).toBeInTheDocument();
+    });
+
     it('widens a later cascade step to the Active step, and offers no figure chip there', async () => {
       await signIn(undefined, figureRows);
       window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Prescribed');

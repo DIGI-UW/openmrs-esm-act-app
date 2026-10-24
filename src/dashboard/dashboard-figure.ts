@@ -113,13 +113,14 @@ export function figureNames(t: TFunction, figure: Figure, cascadeSteps: Config['
               section: t('proceduralWaitlist', 'Procedural waitlist'),
               label: [figure.procedure, figure.urgency].filter(Boolean).join(', ') || undefined,
             };
-    case 'cascade':
+    case 'cascade': {
+      // A figure with no step is the Active step's.
+      const shown = figure.step || 'Active';
       return {
         section: t('rhdCareCascade', 'RHD care cascade'),
-        label: figure.step
-          ? t(cascadeSteps.find(({ step }) => step === figure.step)?.label ?? figure.step)
-          : t('active', 'Active'),
+        label: t(cascadeSteps.find(({ step }) => step === shown)?.label ?? shown),
       };
+    }
     case 'optimisation':
       return {
         section: t('medicalOptimisation', 'Medical optimisation'),
