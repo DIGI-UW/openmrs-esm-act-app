@@ -62,8 +62,8 @@ export default function RolePermissions() {
     };
     return {
       saved: own,
-      through: new Map(roles.map((role) => [role.uuid, viaOthers(role)])),
-      // OpenMRS saves a role whatever it inherits; this page gives only what its user holds, and removes anything.
+      through: new Map(roles.map((role) => [role.uuid, viaOthers(role, new Set([role.uuid]))])),
+      // OpenMRS saves a role whatever it inherits; this page gives only what its user holds.
       ungivable: new Set(capabilities.filter((capability) => lacking(capability, user).length).map(({ uuid }) => uuid)),
     };
   }, [roles, capabilities, user]);
@@ -141,27 +141,28 @@ export default function RolePermissions() {
                 <TableRow key={role.uuid} data-testid="act-role-row">
                   <TableCell className={styles.role}>{name}</TableCell>
                   {capabilities.map((capability) => {
-                    const via = !chosen.has(capability.uuid) && inherited.get(capability.uuid);
+                    // Judged by what is saved, so a change made here can be undone before saving.
+                    const before = saved.get(role.uuid).has(capability.uuid);
+                    const via = !before && inherited.get(capability.uuid);
+                    const label = via
+                      ? t('capabilityThrough', '{{role}}: {{capability}}, through {{through}}', {
+                          role: name,
+                          capability: capabilityName(capability),
+                          through: via,
+                          interpolation: { escapeValue: false },
+                        })
+                      : `${name}: ${capabilityName(capability)}`;
                     return (
-                      <TableCell key={capability.uuid}>
+                      <TableCell key={capability.uuid} title={via ? label : undefined}>
                         <Checkbox
                           id={`${role.uuid}-${capability.uuid}`}
-                          labelText={
-                            via
-                              ? t('capabilityThrough', '{{role}}: {{capability}}, through {{through}}', {
-                                  role: name,
-                                  capability: capabilityName(capability),
-                                  through: via,
-                                  interpolation: { escapeValue: false },
-                                })
-                              : `${name}: ${capabilityName(capability)}`
-                          }
+                          labelText={label}
                           hideLabel
                           checked={chosen.has(capability.uuid) || !!via}
                           disabled={
                             missing.length > 0 ||
                             !!via ||
-                            (!chosen.has(capability.uuid) && ungivable.has(capability.uuid)) ||
+                            (!before && ungivable.has(capability.uuid)) ||
                             saving === role.uuid
                           }
                           onChange={(_, { checked }) => toggle(role, capability, checked)}
@@ -211,7 +212,7 @@ export default function RolePermissions() {
         <p className={styles.note}>
           {t(
             'rolePermissionsNote',
-            "Each ACT role is built from these capabilities. You can give a capability whose privileges you hold, and remove any. A capability a role has through another role shows ticked and is changed on that role. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
+            "Each ACT role is built from these capabilities. You can give a role a capability whose privileges you hold, and take away any it has directly. A capability a role has through another role shows ticked and is changed on that role. Before giving a role more, check that the administrators who assign it hold those privileges too: OpenMRS lets them save a user only then. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
           )}
         </p>
         {saveError && (

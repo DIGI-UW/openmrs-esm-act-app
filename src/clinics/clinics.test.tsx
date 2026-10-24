@@ -362,6 +362,26 @@ describe('Clinics', () => {
     expect(writes).toHaveLength(0);
   });
 
+  it('says the location tags could not load, and offers no Save, rather than saving a clinic without them', async () => {
+    backend();
+    const previous = mockOpenmrsFetch.getMockImplementation();
+    mockOpenmrsFetch.mockImplementation(((url: string, ...rest: Array<unknown>) =>
+      String(url).includes('/locationtag?')
+        ? Promise.reject(new Error('Network error'))
+        : (previous as (...args: Array<unknown>) => unknown)(url, ...rest)) as never);
+    await signInWith(['Manage Locations']);
+    renderPage();
+    await rows();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add clinic' }));
+    const dialog = await screen.findByRole('dialog');
+
+    expect(
+      await within(dialog).findByText('Could not load the location tags, so the clinic cannot be saved'),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
   it("shows the server's reason when it refuses a clinic, and keeps the dialog open", async () => {
     backend('A location with this name already exists');
     await signInWith(['Manage Locations']);

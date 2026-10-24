@@ -107,6 +107,7 @@ describe('Role permissions', () => {
     expect(box('Clinician', 'Study Management')).not.toBeChecked();
     expect(box('Data Clerk', 'Exports')).not.toBeChecked();
     expect(screen.queryByText('Provider')).not.toBeInTheDocument();
+    expect(screen.getByText(/through another role shows ticked/)).toBeInTheDocument();
     expect(screen.getByText(/replaces changes made here/)).toBeInTheDocument();
   });
 
@@ -152,6 +153,38 @@ describe('Role permissions', () => {
     expect(box('Clinician', 'Exports')).toBeChecked();
     expect(box('Clinician', 'Exports')).toBeEnabled();
     expect(box('Clinician', 'Registry')).toBeEnabled();
+  });
+
+  it('saves a capability given to a role beside the ones it keeps', async () => {
+    const writes = backend();
+    await signInWith(instanceAdmin);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Data Clerk', 'Exports'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Data Clerk' }));
+
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toEqual({
+      url: expect.stringMatching(/\/role\/role-clerk$/),
+      method: 'POST',
+      body: { inheritedRoles: ['cap-registry', 'cap-exports'] },
+    });
+  });
+
+  it('puts back a capability taken away by mistake, though the user could not give it', async () => {
+    backend();
+    await signInWith(['Manage Roles', 'App: act.registry']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Clinician', 'Exports'));
+    expect(box('Clinician', 'Exports')).not.toBeChecked();
+    expect(box('Clinician', 'Exports')).toBeEnabled();
+    await userEvent.click(box('Clinician', 'Exports'));
+
+    expect(box('Clinician', 'Exports')).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Save Clinician' })).toBeDisabled();
   });
 
   it('shows a capability a role has through another role as ticked, to change on that role', async () => {
