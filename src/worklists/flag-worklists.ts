@@ -8,6 +8,13 @@ export interface FlagWorklistConfig {
   dueDateColumn?: string;
 }
 
+// A title is translated as shown, by its text; the default titles are keys in en.json.
+// t('Cardiology follow-up due', 'Cardiology follow-up due')
+// t('Lost to follow-up', 'Lost to follow-up')
+// t('RHD 30-day post-procedural follow-up due', 'RHD 30-day post-procedural follow-up due')
+// t('RHD pregnancy outcome due', 'RHD pregnancy outcome due')
+// t('Referred to a clinician', 'Referred to a clinician')
+// t('INR review due', 'INR review due')
 /** The worklists that list a flag's patients, by their extension's name in routes.json, with what each shows by default. */
 export const flagWorklists: Record<string, FlagWorklistConfig> = {
   'act-worklist-cardiology-follow-up': {

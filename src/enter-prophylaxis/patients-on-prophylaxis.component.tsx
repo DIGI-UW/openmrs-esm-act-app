@@ -47,6 +47,7 @@ function PatientsOnProphylaxis() {
   return (
     <>
       <Search
+        closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
         labelText={t('searchByNameOrActId', 'Search by name or ACT ID')}
         placeholder={t('searchByNameOrActId', 'Search by name or ACT ID')}
         value={search}

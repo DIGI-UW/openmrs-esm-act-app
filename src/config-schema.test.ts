@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+import en from '../translations/en.json';
+import { flagWorklists } from './worklists/flag-worklists';
 
 describe('configSchema', () => {
   it("defaults to the clinic tags, RHD flags and the consultation form's urgency bands", () => {
@@ -295,5 +297,17 @@ describe('urgencyBands', () => {
     expect(messages.some((message) => message.includes('urgencyBands[0].deadlineDays'))).toBe(true);
     expect(messages.some((message) => message.includes('urgencyBands[1].deadline'))).toBe(true);
     consoleError.mockRestore();
+  });
+
+  it('gives every label it shows by default a key in en.json, as the app translates each by its text', () => {
+    const { careCascade, quickActions, urgencyBands } = getDefaultsFromConfigSchema(configSchema);
+    const labels = [
+      ...careCascade.steps.map((step) => step.label),
+      ...quickActions.prophylaxisForms.map((form) => form.label),
+      ...urgencyBands.map((band) => band.label),
+      ...Object.values(flagWorklists).map((worklist) => worklist.title),
+    ];
+
+    expect(labels.filter((label) => en[label] !== label)).toEqual([]);
   });
 });

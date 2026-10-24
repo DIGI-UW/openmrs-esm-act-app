@@ -87,6 +87,7 @@ function StudyNameModal({
 
   return (
     <Modal
+      closeButtonLabel={t('close', 'Close')}
       open
       modalHeading={study ? t('renameStudy', 'Rename study') : t('createStudy', 'Create study')}
       primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}

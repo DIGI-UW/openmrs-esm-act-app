@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { signInWith } from '../access/sign-in.test-helper';
 import { columnHeaders } from '../column-headers.test-helper';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
+import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
 import WaitingList from './waiting-list.component';
@@ -94,6 +95,17 @@ describe('Procedural waiting list', () => {
 
       expect(shownIds()[2]).toBe('b');
     });
+  });
+
+  it("offers each urgency band's name to translation, in its column and its filter alike", () => {
+    markTranslations();
+    dataset({ rows: waitingListRows });
+
+    render(<WaitingList />);
+
+    const row = screen.getByRole('row', { name: /rhd00001\b/ });
+    expect(within(row).getByRole('cell', { name: '«3: Elective (180 days)»' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '«3: Elective (180 days)»' })).toBeInTheDocument();
   });
 
   it('evaluates the configured report', () => {

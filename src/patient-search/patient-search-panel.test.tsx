@@ -14,6 +14,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
+import { markTranslations } from '../i18n.test-helper';
 import { PatientSearchPanel } from './patient-search-panel.component';
 
 const actIdType = '240f85fa-46e1-540e-9234-2796c623f7ea';
@@ -91,6 +92,13 @@ describe('PatientSearchPanel', () => {
     vi.mocked(useDebounce).mockImplementation((value) => value);
     vi.mocked(age).mockImplementation(() => '15 yrs');
     serve();
+  });
+
+  it("offers the name of its search box's clear button to translation", () => {
+    markTranslations();
+    renderPanel();
+
+    expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
   });
 
   it('lists the recently viewed patients before a search', async () => {

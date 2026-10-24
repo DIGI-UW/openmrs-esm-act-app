@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { navigate, openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { markTranslations } from '../i18n.test-helper';
 import SessionTimeout, { countdown } from './session-timeout.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -61,6 +62,15 @@ describe('SessionTimeout', () => {
     expect(screen.getByText(/signed out in 3:00/)).toBeInTheDocument();
     await passMinutes(1);
     expect(screen.getByText(/signed out in 2:00/)).toBeInTheDocument();
+  });
+
+  it("offers the warning's close button name to translation", async () => {
+    markTranslations();
+    render(<SessionTimeout />);
+
+    await passMinutes(27);
+
+    expect(screen.getByRole('button', { name: '«Close»' })).toBeInTheDocument();
   });
 
   it('signs the user out when the countdown ends', async () => {

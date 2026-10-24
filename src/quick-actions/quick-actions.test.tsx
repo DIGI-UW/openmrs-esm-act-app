@@ -13,6 +13,7 @@ import {
 } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { markTranslations } from '../i18n.test-helper';
 import { openFormInChart } from '../visits/open-form-in-chart';
 import { ActHomeQuickActions } from './quick-actions.component';
 import {
@@ -142,6 +143,17 @@ describe('ACT home quick actions', () => {
     ]);
   });
 
+  it('offers the names of the prophylaxis forms it offers to translation', async () => {
+    markTranslations();
+    await signInWithFastDataEntry();
+    render(<EnterProphylaxisAction />);
+
+    await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
+
+    expect(screen.getByRole('link', { name: '«Enter BPG»' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '«Enter oral prophylaxis»' })).toBeInTheDocument();
+  });
+
   it('hides the choices again when enter prophylaxis is clicked a second time', async () => {
     await signInWithFastDataEntry();
     render(<EnterProphylaxisAction />);
@@ -255,7 +267,10 @@ describe('Home quick action tiles', () => {
       'href',
       '/openmrs/spa/home/act-facility-reports',
     );
-    expect(screen.getByRole('link', { name: /Forms & sites/ })).toHaveAttribute('href', '/openmrs/admin/forms/form.list');
+    expect(screen.getByRole('link', { name: /Forms & sites/ })).toHaveAttribute(
+      'href',
+      '/openmrs/admin/forms/form.list',
+    );
     expect(screen.getByRole('link', { name: /Role permissions/ })).toHaveAttribute(
       'href',
       '/openmrs/admin/users/users.list',

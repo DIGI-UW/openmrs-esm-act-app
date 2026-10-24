@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
+import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
@@ -804,6 +805,34 @@ describe('Dashboard', () => {
         patientRow('Lakot Lamwaka', 'Done', '2026-07-01'),
       ],
     };
+
+    it("offers the cascade's step labels to translation, on its bars and steps, and still opens a step by its own name", async () => {
+      markTranslations();
+      await signIn(undefined, figureRows);
+      renderPage();
+
+      const steps = await screen.findAllByTestId('dashboard-cascade-step');
+      expect(steps.map((step) => step.firstChild.textContent)).toEqual([
+        '«Active»',
+        '«Prescribed»',
+        '«Initiated»',
+        '«Covered today»',
+        '«Adherent (80%+)»',
+      ]);
+      expect(chartData(SimpleBarChart, '«RHD care cascade»').map(({ group }) => group)).toEqual([
+        '«Active»',
+        '«Prescribed»',
+        '«Initiated»',
+        '«Covered today»',
+        '«Adherent (80%+)»',
+      ]);
+      const { color } = chartOptions(SimpleBarChart, '«RHD care cascade»') as unknown as { color: { scale: object } };
+      expect(color.scale).toHaveProperty('«Prescribed»');
+      expect(within(steps[1]).getByRole('link')).toHaveAttribute(
+        'href',
+        expect.stringContaining('figure=cascade&step=Prescribed'),
+      );
+    });
 
     it('opens from a count with a banner, chips and the rows, and Back returns to the Dashboard as it was', async () => {
       await signIn(undefined, figureRows);

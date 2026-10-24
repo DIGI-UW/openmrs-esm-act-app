@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import CareCascade from './care-cascade.component';
 
@@ -120,6 +121,21 @@ describe('CareCascade', () => {
       'Prescribed17',
       'Initiated11',
       'Adherent (80%+)0',
+    ]);
+  });
+
+  it('offers each step label to translation', () => {
+    markTranslations();
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(screen.getAllByTestId('cascade-step').map((step) => step.firstChild.textContent)).toEqual([
+      '«Active»',
+      '«Prescribed»',
+      '«Initiated»',
+      '«Covered today»',
+      '«Adherent (80%+)»',
     ]);
   });
 

@@ -93,6 +93,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
 
   return (
     <Modal
+      closeButtonLabel={t('close', 'Close')}
       open
       modalHeading={
         enrollment ? t('editParticipation', 'Edit participation') : t('addParticipation', 'Add participation')

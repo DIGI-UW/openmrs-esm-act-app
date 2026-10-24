@@ -100,6 +100,9 @@ export const configSchema = {
         label: { _type: Type.String, _description: 'The choice as ACT home shows it.' },
         url: { _type: Type.String, _description: 'Where the choice leads.' },
       },
+      // The labels are translated as shown, each by its text; the defaults are keys in en.json.
+      // t('Enter BPG', 'Enter BPG')
+      // t('Enter oral prophylaxis', 'Enter oral prophylaxis')
       _default: [
         { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
         { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
@@ -248,6 +251,12 @@ export const configSchema = {
         step: { _type: Type.String, _description: "The report row's step value." },
         label: { _type: Type.String, _description: 'What the ACT home widget and the Dashboard call it.' },
       },
+      // The labels are translated as shown, each by its text; the defaults are keys in en.json.
+      // t('Active', 'Active')
+      // t('Prescribed', 'Prescribed')
+      // t('Initiated', 'Initiated')
+      // t('Covered today', 'Covered today')
+      // t('Adherent (80%+)', 'Adherent (80%+)')
       _default: [
         { step: 'Active', label: 'Active' },
         { step: 'Prescribed', label: 'Prescribed' },
@@ -685,6 +694,14 @@ export const configSchema = {
       concept: { _type: Type.ConceptUuid, _description: 'The answer that records this band.' },
       deadlineDays: { _type: Type.Number, _description: 'Days allowed before a patient in this band is overdue.' },
     },
+    // The labels are translated as shown, each by its text; the defaults are keys in en.json.
+    // t('1: Emergent (24 hours)', '1: Emergent (24 hours)')
+    // t('1 - within 1 week', '1 - within 1 week')
+    // t('2 - within 1 month', '2 - within 1 month')
+    // t('2: Urgent (60 days)', '2: Urgent (60 days)')
+    // t('3 - within 3 months', '3 - within 3 months')
+    // t('3: Elective (180 days)', '3: Elective (180 days)')
+    // t('4 - within 6 months', '4 - within 6 months')
     _default: [
       {
         label: '1: Emergent (24 hours)',

@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { ErrorState, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { markTranslations } from '../i18n.test-helper';
 import ResearchPage from './research-page.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -223,6 +224,16 @@ describe('Research participation', () => {
         body: { person: { attributes: [{ attributeType: optInType, value: yes }] } },
       }),
     );
+  });
+
+  it("offers the name of the enrolment dialog's close button to translation", async () => {
+    backendAnswers();
+    markTranslations();
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add participation/ }));
+
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '«Close»' })).toBeInTheDocument();
   });
 
   it('enrols in a study the patient is not active in, with its Study ID and first status', async () => {

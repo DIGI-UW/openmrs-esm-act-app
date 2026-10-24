@@ -162,7 +162,7 @@ export default function SessionTimeout() {
   const remaining = countdown(warning.since + warningMs - warning.now);
   return (
     <ComposedModal open size="sm" preventCloseOnClickOutside onClose={() => false} data-testid="session-timeout">
-      <ModalHeader title={t('sessionTimeoutTitle', 'Still there?')} />
+      <ModalHeader iconDescription={t('close', 'Close')} title={t('sessionTimeoutTitle', 'Still there?')} />
       <ModalBody>
         <p>
           {t(

@@ -225,6 +225,7 @@ function WorklistRows({ title, csvName, entries, isLoading, error, action }: Wor
     return (
       <>
         <Search
+          closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
           size="md"
           className={styles.search}
           labelText={t('searchThisList', 'Search this list')}

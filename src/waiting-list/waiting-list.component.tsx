@@ -69,7 +69,7 @@ export function WaitingListTable() {
   const desktop = isDesktop(useLayoutType());
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
-  const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
+  const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label', t), [reportRows, urgencyBands, t]);
   const [filters, setFilters, filtersPending] = useWaitingListFilters();
   const clinicKind = useSessionClinicKind();
   const ranked = useMemo(

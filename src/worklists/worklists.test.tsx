@@ -17,6 +17,7 @@ import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import WorklistTiles from '../act-home/worklist-tiles.component';
 import { type Config, configSchema } from '../config-schema';
 import { useDueList } from '../due-for-prophylaxis/due-for-prophylaxis.resource';
+import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { useRhdFlagList } from '../rhd-flags/rhd-flag-lists.resource';
 import { downloadCsv } from '../table-filters/csv';
@@ -211,6 +212,18 @@ describe('Flag worklist', () => {
     expect(onSelect).toHaveBeenCalled();
   });
 
+  it('offers its title to translation, on its tile and above its list', () => {
+    markTranslations();
+    reports({ registry: [registryRow(1, 'RHD lost to follow-up')] });
+
+    const { unmount } = render(<FlagWorklist {...tile} />);
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1«Lost to follow-up»');
+    unmount();
+    render(<FlagWorklist {...list} />);
+
+    expect(screen.getByRole('heading', { name: '«Lost to follow-up»' })).toBeInTheDocument();
+  });
+
   it('shows nothing where ACT Core keeps no list for its flag', () => {
     vi.mocked(useRhdFlagList).mockReturnValue({ list: null, isLoading: false, error: undefined });
     reports({});
@@ -326,6 +339,20 @@ describe('A worklist table', () => {
     await sortBy('Patient');
 
     expect(patients()[0]).toBe('Patient 12');
+  });
+
+  it("offers its pager's and search box's own words to translation", () => {
+    markTranslations();
+    reports({ registry: Array.from({ length: 12 }, (_, i) => onList(i + 1)) });
+
+    render(<FlagWorklist {...list} />);
+
+    expect(screen.getByRole('button', { name: '«Next page»' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '«Previous page»' })).toBeInTheDocument();
+    expect(screen.getByText('«Items per page:»')).toBeInTheDocument();
+    expect(screen.getByText('«1–10 of 12 items»')).toBeInTheDocument();
+    expect(screen.getByText('«of 2 pages»')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
   });
 
   it('shows the patients matching what is typed above it, and downloads those in the order shown', async () => {

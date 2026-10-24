@@ -9,6 +9,7 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import { downloadCsv } from '../table-filters/csv';
 import EnterProphylaxis from './patients-on-prophylaxis.component';
 import { asProphylaxisRow } from './patients-on-prophylaxis';
+import { markTranslations } from '../i18n.test-helper';
 
 // Who may record a form is may-enter-form's own test; here every form may be recorded.
 vi.mock('../access/may-enter-form', () => ({
@@ -158,6 +159,13 @@ describe('Enter prophylaxis', () => {
       ['Patient 3', 'No prescription'],
       ['Patient 4', 'Due today'],
     ]);
+  });
+
+  it("offers the name of its search box's clear button to translation", () => {
+    markTranslations();
+    render(<EnterProphylaxis />);
+
+    expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
   });
 
   it('narrows the list by BPG or oral and by name or ACT ID, a patient without a prescription under All only', async () => {

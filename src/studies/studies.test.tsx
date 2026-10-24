@@ -5,6 +5,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Studies from './studies.component';
 
@@ -143,6 +144,16 @@ describe('Studies', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('[Could not save the program]')).toBeInTheDocument();
+  });
+
+  it("offers the name of its dialog's close button to translation", async () => {
+    backendAnswers();
+    markTranslations();
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
+
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '«Close»' })).toBeInTheDocument();
   });
 
   it('creates a study by name', async () => {

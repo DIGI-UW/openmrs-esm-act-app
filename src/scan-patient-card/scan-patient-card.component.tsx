@@ -111,6 +111,7 @@ export default function ScanPatientCard() {
               lowContrast
               title={t('couldNotOpenForm', 'Could not open the form')}
               subtitle={notFound}
+              aria-label={t('closeNotification', 'Close notification')}
               onClose={() => setNotFound(null)}
             />
           )}

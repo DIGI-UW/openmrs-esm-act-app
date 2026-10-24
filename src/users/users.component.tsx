@@ -126,6 +126,7 @@ function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => 
 
   return (
     <Modal
+      closeButtonLabel={t('close', 'Close')}
       open
       modalHeading={user ? t('editUser', 'Edit user') : t('addUser', 'Add user')}
       primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
@@ -186,6 +187,8 @@ function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => 
             />
             <div className={styles.pair}>
               <PasswordInput
+                showPasswordLabel={t('showPassword', 'Show password')}
+                hidePasswordLabel={t('hidePassword', 'Hide password')}
                 id="user-password"
                 labelText={t('password', 'Password')}
                 helperText={t('passwordRule', 'At least 8 characters, with an upper case letter and a number')}
@@ -195,6 +198,8 @@ function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => 
                 onChange={(event) => change({ password: event.target.value })}
               />
               <PasswordInput
+                showPasswordLabel={t('showPassword', 'Show password')}
+                hidePasswordLabel={t('hidePassword', 'Hide password')}
                 id="user-password-confirm"
                 labelText={t('confirmPassword', 'Confirm password')}
                 value={confirm}
@@ -248,7 +253,7 @@ function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => 
           ))}
           {otherClinics.length > 0 && (
             <p className={styles.helper}>
-              {t('otherClinicsKept', 'Also at {{count}} clinic not shown here, which is kept', {
+              {t('otherClinicsKept', 'Also at {{count}} clinics not shown here, which are kept', {
                 count: otherClinics.length,
               })}
             </p>
@@ -290,6 +295,7 @@ function PasswordModal({ user, onClose }: { user: ActUser; onClose: () => void }
 
   return (
     <Modal
+      closeButtonLabel={t('close', 'Close')}
       open
       modalHeading={t('resetPasswordFor', 'Reset the password of {{name}}', { name: fullName(user) || user.username })}
       primaryButtonText={saving ? t('saving', 'Saving...') : t('resetPassword', 'Reset password')}
@@ -310,6 +316,8 @@ function PasswordModal({ user, onClose }: { user: ActUser; onClose: () => void }
           />
         )}
         <PasswordInput
+          showPasswordLabel={t('showPassword', 'Show password')}
+          hidePasswordLabel={t('hidePassword', 'Hide password')}
           id="reset-password"
           labelText={t('newPassword', 'New password')}
           helperText={t('passwordRule', 'At least 8 characters, with an upper case letter and a number')}
@@ -319,6 +327,8 @@ function PasswordModal({ user, onClose }: { user: ActUser; onClose: () => void }
           onChange={(event) => setPassword(event.target.value)}
         />
         <PasswordInput
+          showPasswordLabel={t('showPassword', 'Show password')}
+          hidePasswordLabel={t('hidePassword', 'Hide password')}
           id="reset-password-confirm"
           labelText={t('confirmPassword', 'Confirm password')}
           value={confirm}
@@ -351,6 +361,7 @@ function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () =
   };
   return (
     <Modal
+      closeButtonLabel={t('close', 'Close')}
       open
       danger
       modalHeading={t('disableUserNamed', 'Disable {{name}}?', { name: fullName(user) || user.username })}
@@ -545,6 +556,7 @@ export default function Users() {
         )}
         <div className={styles.toolbar}>
           <Search
+            closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
             size="lg"
             labelText={t('searchUsers', 'Search users')}
             placeholder={t('searchUsersPlaceholder', 'Search by name, username or role')}
@@ -552,6 +564,8 @@ export default function Users() {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Toggle
+            labelA={t('off', 'Off')}
+            labelB={t('on', 'On')}
             id="users-show-disabled"
             size="sm"
             labelText={t('showDisabledUsers', 'Show disabled users')}

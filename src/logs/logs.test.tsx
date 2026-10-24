@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { markTranslations } from '../i18n.test-helper';
 import { downloadCsv } from '../table-filters/csv';
 import Logs from './logs.component';
 import { activityDetails, activityEntries, downloadEntries, readEntries, signInEntries } from './logs.fixture';
@@ -221,6 +222,18 @@ describe('Logs', () => {
         ],
       ]);
       expect(screen.getByText('Newest first')).toBeInTheDocument();
+    });
+
+    it("offers its pager's own words to translation", async () => {
+      markTranslations();
+      backend();
+      await signInWith(BOTH);
+
+      renderPage();
+
+      await screen.findByText('Grace Akello');
+      expect(screen.getByText('«Items per page:»')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '«Next page»' })).toBeInTheDocument();
     });
 
     it('expands a flag dismissal, which ACT Core records outside the audit log, without asking for a revision', async () => {
