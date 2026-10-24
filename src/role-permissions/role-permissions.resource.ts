@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { fetchAll } from '../fetch-all';
@@ -22,13 +23,15 @@ const byName = (a: Role, b: Role) => a.display.localeCompare(b.display);
 /** The ACT roles and the ACT capabilities, each by name. */
 export function useActRoles() {
   const { data, error, isLoading, mutate } = useSWR<Array<Role>, Error>(rolesUrl, fetchAll);
-  return {
-    roles: (data ?? []).filter(({ display }) => display.startsWith(ROLE_PREFIX)).sort(byName),
-    capabilities: (data ?? []).filter(({ display }) => display.startsWith(CAPABILITY_PREFIX)).sort(byName),
-    error,
-    isLoading,
-    mutate,
-  };
+  const roles = useMemo(
+    () => (data ?? []).filter(({ display }) => display.startsWith(ROLE_PREFIX)).sort(byName),
+    [data],
+  );
+  const capabilities = useMemo(
+    () => (data ?? []).filter(({ display }) => display.startsWith(CAPABILITY_PREFIX)).sort(byName),
+    [data],
+  );
+  return { roles, capabilities, error, isLoading, mutate };
 }
 
 /** Gives the role the capabilities chosen, keeping every role it inherits that is not an ACT capability. */
