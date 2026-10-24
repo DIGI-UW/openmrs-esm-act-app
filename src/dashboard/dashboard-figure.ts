@@ -90,8 +90,11 @@ export function rowUnit(figure: Figure): 'patient' | 'consultation' | 'recommend
   return figure.figure === 'waitlist' && figure.breakdown !== 'total' ? 'recommendation' : 'patient';
 }
 
-/** The section and the figure's own label, as the banner and the figure chip name them. */
-export function figureNames(t: TFunction, figure: Figure) {
+/**
+ * The section and the figure's own label, as the banner and the figure chip name them; a cascade step by its
+ * configured label, as its bar does.
+ */
+export function figureNames(t: TFunction, figure: Figure, cascadeSteps: Config['careCascade']['steps']) {
   switch (figure.figure) {
     case 'registrants':
       return figure.breakdown === 'status'
@@ -113,7 +116,9 @@ export function figureNames(t: TFunction, figure: Figure) {
     case 'cascade':
       return {
         section: t('rhdCareCascade', 'RHD care cascade'),
-        label: figure.step ? t(figure.step) : t('active', 'Active'),
+        label: figure.step
+          ? t(cascadeSteps.find(({ step }) => step === figure.step)?.label ?? figure.step)
+          : t('active', 'Active'),
       };
     case 'optimisation':
       return {

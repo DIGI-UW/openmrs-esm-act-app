@@ -56,13 +56,13 @@ export function DashboardFigure({
   onBack: () => void;
 }) {
   const { t } = useTranslation();
-  const { dashboard } = useConfig<Config>();
+  const { dashboard, careCascade } = useConfig<Config>();
   const today = dayjs().format('YYYY-MM-DD');
   const params = useMemo(() => ({ endDate: asOf, ...scope, ...figureParams(figure) }), [asOf, scope, figure]);
   const { counted, countParams, pending } = useCountParams(params);
   const report = useReportDataset(counted ? patientsReport(dashboard, figure.figure) : null, countParams);
   const { rows } = report;
-  const names = figureNames(t, figure);
+  const names = figureNames(t, figure, careCascade.steps);
   const unit = rowUnit(figure);
   const count = rows.length;
   const units = {

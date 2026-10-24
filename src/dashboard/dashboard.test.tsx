@@ -1000,13 +1000,22 @@ describe('Dashboard', () => {
       expect(screen.queryByRole('button', { name: /^RHD care cascade/ })).not.toBeInTheDocument();
     });
 
-    it("offers a cascade step's name on its chip to translation, as on its bar", async () => {
+    it.each([
+      ['Prescribed', 'Prescribed'],
+      ['Initiated BPG', 'Initiated'],
+    ])('names cascade step %s on its chip by the label its bar shows, offered to translation', async (step, label) => {
       markTranslations();
       await signIn(undefined, figureRows);
-      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Prescribed');
+      window.history.replaceState(
+        null,
+        '',
+        `/openmrs/spa/home/act-dashboard?${new URLSearchParams({ figure: 'cascade', step })}`,
+      );
       renderPage();
 
-      expect(await screen.findByRole('button', { name: /^«RHD care cascade»: «Prescribed»/ })).toBeInTheDocument();
+      expect(
+        await screen.findByRole('button', { name: new RegExp(`^«RHD care cascade»: «${label}»`) }),
+      ).toBeInTheDocument();
     });
 
     it('widens a later cascade step to the Active step, and offers no figure chip there', async () => {
