@@ -109,6 +109,8 @@ describe('UpdateProphylaxis', () => {
     });
     expect(memberValue(body.obs[0], concepts.prescription)).toBe(q21);
     expect(memberValue(body.obs[0], concepts.dateStarted)).toBe(today);
+    expect(memberValue(body.obs[1], concepts.prescription)).toBe(q28.uuid);
+    expect(memberValue(body.obs[1], concepts.dateStarted)).toBe('2026-06-10');
     expect(body.obs.find((one) => one.concept === concepts.duration)?.value).toBe('two');
     expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
   });
@@ -137,6 +139,22 @@ describe('UpdateProphylaxis', () => {
     expect(memberValue(body.obs[0], concepts.dateStarted)).toBe('2026-06-10');
     expect(memberValue(body.obs[0], concepts.dateStopped)).toBe(today);
     expect(memberValue(body.obs[0], concepts.reasonStopped)).toBe('eaf16fa9-03d7-5846-94c3-b02805889ed9');
+  });
+
+  it('stops the main prescription with its own regimen and start, whatever the form was changed to first', async () => {
+    serve([prescribed('earlier', '2026-06-10T09:00:00.000+0000')]);
+    await openUpdate();
+
+    await userEvent.selectOptions(screen.getByLabelText('Regimen'), q21);
+    await userEvent.click(screen.getByLabelText('Stop this prophylaxis'));
+    await userEvent.selectOptions(screen.getByLabelText('Reason stopped'), 'eaf16fa9-03d7-5846-94c3-b02805889ed9');
+    await userEvent.click(screen.getByRole('button', { name: 'Stop prophylaxis' }));
+
+    await waitFor(() => expect(posts()).toHaveLength(1));
+    const [[, body]] = posts();
+    expect(memberValue(body.obs[0], concepts.prescription)).toBe(q28.uuid);
+    expect(memberValue(body.obs[0], concepts.dateStarted)).toBe('2026-06-10');
+    expect(memberValue(body.obs[0], concepts.dateStopped)).toBe(today);
   });
 
   it("changes today's record in place, and says so, because ACT Core keeps the first record of a day", async () => {

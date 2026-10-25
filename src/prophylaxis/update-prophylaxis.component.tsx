@@ -52,8 +52,8 @@ function UpdateModal({
   const { sessionLocation } = useSession();
   const { mutate } = useSWRConfig();
   const today = dayjs().format('YYYY-MM-DD');
-  // The prescription in force that this edits; any others are carried as they are.
-  const main = prescription?.groups[0] ?? null;
+  // The last-started prescription in force, which this edits; any others are carried as they are.
+  const main = prescription?.main ?? null;
   const [regimen, setRegimen] = useState(main?.regimen.uuid ?? '');
   const [started, setStarted] = useState(main?.started ?? today);
   const [duration, setDuration] = useState(prescription?.duration?.uuid ?? '');
@@ -94,8 +94,8 @@ function UpdateModal({
         concepts: prophylaxisUpdate.concepts,
         current: prescription,
         edit: {
-          regimen: chosen,
-          started,
+          regimen: stopping && main ? main.regimen : chosen,
+          started: stopping && main ? main.started : started,
           duration: duration || undefined,
           stop: stopping ? { stopped, reason } : undefined,
         },

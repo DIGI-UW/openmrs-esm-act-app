@@ -32,8 +32,10 @@ export interface CurrentPrescription {
   encounter: PrescriptionEncounter;
   /** Its day, by its Consultation Date when it has one, else its encounter date. */
   day: string;
-  /** The prescriptions in force: not stopped, not None and with a Date Started. */
+  /** The prescriptions in force (not stopped, not None, with a Date Started), by start date and then obs order. */
   groups: Array<PrescriptionGroup>;
+  /** The last-started of `groups`, which ACT Core counts as the current regimen. */
+  main: PrescriptionGroup | null;
   duration: (Answer & { obsUuid: string }) | null;
 }
 
@@ -79,19 +81,22 @@ export function currentPrescriptionOf(
     return null;
   }
   const encounter = firstOfDay.get(day)!;
-  const groups = groupsOf(encounter).flatMap((group) => {
-    const regimen = answerOf(memberOf(group, concepts.prescription)!.value);
-    const started = memberOf(group, concepts.dateStarted)?.value;
-    const stopped = memberOf(group, concepts.dateStopped);
-    return started && !stopped && regimen.uuid !== concepts.none
-      ? [{ uuid: group.uuid, regimen, started: dayOf(started) }]
-      : [];
-  });
+  const groups = groupsOf(encounter)
+    .flatMap((group) => {
+      const regimen = answerOf(memberOf(group, concepts.prescription)!.value);
+      const started = memberOf(group, concepts.dateStarted)?.value;
+      const stopped = memberOf(group, concepts.dateStopped);
+      return started && !stopped && regimen.uuid !== concepts.none
+        ? [{ uuid: group.uuid, regimen, started: dayOf(started) }]
+        : [];
+    })
+    .sort((a, b) => a.started.localeCompare(b.started));
   const duration = encounter.obs.find((one) => one.concept.uuid === concepts.duration);
   return {
     encounter,
     day,
     groups,
+    main: groups[groups.length - 1] ?? null,
     duration: duration ? { ...answerOf(duration.value), obsUuid: duration.uuid } : null,
   };
 }
@@ -122,8 +127,8 @@ export interface PrescriptionEdit {
 }
 
 /**
- * The answers to save for an update: the edited prescription (stopped, when it is) and every other prescription in
- * force carried as it is, so that ACT Core, which counts only the latest day's, keeps them. `main` is the one edited.
+ * The answers to save for an update, which ACT Core reads whole from the latest day: a change of start date keeps `main`
+ * beside the new group so each start is scored, a correction replaces it, and a stop stops every prescription in force.
  */
 export function prescriptionPayload(
   patient: string,
@@ -142,16 +147,22 @@ export function prescriptionPayload(
       ...(stop ? [answer(concepts.dateStopped, stop.stopped), answer(concepts.reasonStopped, stop.reason)] : []),
     ],
   });
+  const edited = current.find((one) => one.uuid === main);
+  const others = current.filter((one) => one.uuid !== main);
+  const replaced = edited?.started === edit.started;
+  const carried = edit.stop ? [] : replaced ? others : edited ? [edited, ...others] : others;
   return [
     group(edit.regimen.uuid, edit.started, edit.stop),
-    ...current.filter((one) => one.uuid !== main).map((one) => group(one.regimen.uuid, one.started)),
+    ...(edit.stop ? others.map((one) => group(one.regimen.uuid, one.started, edit.stop)) : []),
+    ...carried.map((one) => group(one.regimen.uuid, one.started)),
     ...(edit.duration ? [answer(concepts.duration, edit.duration)] : []),
   ];
 }
 
 /**
  * Saves an update as a new encounter of the update type. ACT Core keeps only a day's first encounter, so one recorded
- * today is edited in place instead: its groups in force and duration voided and the new answers added in one request.
+ * today is edited in place instead: its groups in force and duration voided, and the new answers added with the carried
+ * groups in one request, so no earlier start is lost.
  */
 export async function savePrescription({
   patient,

@@ -60,7 +60,7 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const { summary, error } = useProphylaxisSummary(patientUuid);
   const { prophylaxisUpdate } = useConfig<Config>();
   const { prescription } = usePrescription(patientUuid, prophylaxisUpdate.concepts);
-  const prescribed = prescription?.groups[0];
+  const prescribed = prescription?.main;
   const regimenLabel = useRegimenLabel();
   const pagePath = useProphylaxisPagePath();
   // An oral regimen has no doses to count on time, so the card shows the latest reported adherence instead.

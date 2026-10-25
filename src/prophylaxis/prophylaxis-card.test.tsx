@@ -389,6 +389,29 @@ describe('ProphylaxisCard', () => {
       expect(field('duration')).toHaveTextContent('2 years and reassess');
     });
 
+    it('shows the start of the last-started of two prescriptions in force', async () => {
+      const group = (uuid: string, started: string) => ({
+        uuid,
+        concept: { uuid: concepts.prescription },
+        value: null,
+        groupMembers: [
+          {
+            uuid: `${uuid}-r`,
+            concept: { uuid: concepts.prescription },
+            value: { uuid: 'q28', display: 'Q28 day BPG' },
+          },
+          { uuid: `${uuid}-s`, concept: { uuid: concepts.dateStarted }, value: `${started}T00:00:00.000+0000` },
+        ],
+      });
+      respondWith(winnie, {
+        encounters: [{ ...prescribed, obs: [group('late', '2026-06-10'), group('early', '2025-01-01')] }],
+      });
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent(/10.*Jun.*2026/));
+    });
+
     it('says -- for a patient with no prescription on record', async () => {
       respondWith(winnie);
 
