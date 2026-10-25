@@ -283,6 +283,23 @@
       "privileges": "App: act.reports"
     },
     {
+      "name": "act-report-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "reportViewDashboardLink",
+      "meta": {
+        "name": "act-report",
+        "slot": "act-report-dashboard-slot",
+        "title": "reports"
+      },
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-report-dashboard",
+      "slot": "act-report-dashboard-slot",
+      "component": "reportViewDashboard",
+      "privileges": "App: act.reports"
+    },
+    {
       "name": "act-facility-reports-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "facilityReportsDashboardLink",

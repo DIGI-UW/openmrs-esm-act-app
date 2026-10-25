@@ -24,6 +24,7 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
+import { ReportCatalogueCard } from '../report-view/report-catalogue-card.component';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { periods, type PeriodKind } from './period';
 import { useProgrammeScope } from './programme-scope';
@@ -260,6 +261,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
           {showCascade && <CareCascadeCard scope={scope} />}
+          {clinicFilters && <ReportCatalogueCard />}
         </>
       )}
     </>

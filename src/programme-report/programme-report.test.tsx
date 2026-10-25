@@ -115,6 +115,7 @@ describe('Reports', () => {
     vi.mocked(useReportDataset).mockReset();
     dataset();
     limitTo({ status: 'none' });
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
   });
 
   it("totals the facilities' rows in the tiles, the on-time rate over the period's timed injections", async () => {
@@ -170,6 +171,26 @@ describe('Reports', () => {
       cardiacClinic: 'session-location',
     });
     expect(screen.queryByRole('link', { name: /Report/ })).not.toBeInTheDocument();
+  });
+
+  it('lists the reports that open as a table, linked by the id the report page reads, on Reports only', async () => {
+    await atLocation(['RHD Tertiary']);
+
+    renderPage();
+
+    const link = await screen.findByRole('link', { name: 'Visits' });
+    expect(link).toHaveAttribute('href', expect.stringContaining('/home/act-report?report=visits'));
+    expect(screen.getByRole('link', { name: 'Encounters' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'INR monitoring' })).toBeInTheDocument();
+  });
+
+  it('offers no report list on Facility reports', async () => {
+    await atLocation(['RHD Community'], ['App: act.reports']);
+
+    renderPage(FacilityReports);
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    expect(screen.queryByRole('heading', { name: 'All reports' })).not.toBeInTheDocument();
   });
 
   it('leaves the care cascade off Facility reports', async () => {
