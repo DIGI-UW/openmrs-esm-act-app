@@ -66,8 +66,12 @@ export default function UpdatePatientStatusModal({
         })
       : [];
   const chosen = options.find((one) => one.uuid === stateUuid);
-  const earliest = enrolmentActive ? enrolment!.dateEnrolled.slice(0, 10) : '';
-  const valid = Boolean(chosen && date && date <= today && date >= earliest) && !saving;
+  const dyingNow = Boolean(chosen?.death) && !personDead;
+  const earliest = [
+    enrolmentActive ? enrolment!.dateEnrolled.slice(0, 10) : '',
+    dyingNow ? (person?.birthdate?.slice(0, 10) ?? '') : '',
+  ].reduce((a, b) => (a > b ? a : b));
+  const valid = Boolean(chosen && date && date <= today && date >= earliest && (!dyingNow || cause.trim())) && !saving;
   const ended = enrolment ? statusOf(enrolment) : null;
   const current = personDead
     ? t('deceasedOn', 'Deceased{{on}}', { on: person?.deathDate ? ` ${day(person.deathDate)}` : '' })
@@ -183,10 +187,10 @@ export default function UpdatePatientStatusModal({
                 max={today}
                 onChange={(event) => setDate(event.target.value)}
               />
-              {chosen?.death && !personDead && (
+              {dyingNow && (
                 <TextInput
                   id="update-patient-status-cause"
-                  labelText={t('causeOfDeathOptional', 'Cause of death (optional)')}
+                  labelText={t('causeOfDeath', 'Cause of death')}
                   value={cause}
                   onChange={(event) => setCause(event.target.value)}
                 />

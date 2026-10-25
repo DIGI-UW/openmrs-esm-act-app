@@ -57,7 +57,11 @@ const completed = {
 
 function serve({
   enrolments = [active] as Array<object>,
-  person = { dead: false, deathDate: null } as { dead: boolean; deathDate: string | null },
+  person = { dead: false, deathDate: null, birthdate: '1990-05-01T00:00:00.000+0000' } as {
+    dead: boolean;
+    deathDate: string | null;
+    birthdate?: string;
+  },
   failEnrolment = false,
 } = {}) {
   vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: { method?: string }) => {
@@ -127,7 +131,7 @@ describe('UpdatePatientStatusModal', () => {
 
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     expect(screen.getByLabelText('Date of death')).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText('Cause of death (optional)'), 'Heart failure');
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalled());
@@ -143,6 +147,7 @@ describe('UpdatePatientStatusModal', () => {
     serve({ failEnrolment: true });
     await openModal();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -178,6 +183,34 @@ describe('UpdatePatientStatusModal', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
+  it('keeps Save disabled for Deceased until a cause is typed, as core refuses a death without one', async () => {
+    serve();
+    await openModal();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    const save = screen.getByRole('button', { name: 'Save' });
+
+    expect(save).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Cause of death'), '   ');
+    expect(save).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Malaria');
+    expect(save).toBeEnabled();
+  });
+
+  it('refuses a death date before the birthdate, also with no active enrolment', async () => {
+    serve({ enrolments: [] });
+    await openModal();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Malaria');
+    const date = screen.getByLabelText('Date of death');
+
+    await userEvent.clear(date);
+    await userEvent.type(date, '1990-04-30');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await userEvent.clear(date);
+    await userEvent.type(date, '1990-05-01');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
   it('offers a user who may only edit people Deceased alone', async () => {
     await signInWith(['Edit People']);
     serve();
@@ -199,6 +232,7 @@ describe('UpdatePatientStatusModal', () => {
     expect(screen.getByTestId('current-status')).toHaveTextContent('Lost to follow-up');
     expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalled());
@@ -220,7 +254,7 @@ describe('UpdatePatientStatusModal', () => {
     expect(screen.getByTestId('current-status')).toHaveTextContent(/Deceased/);
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     expect(screen.getByLabelText('Date of death')).toHaveValue('2026-07-04');
-    expect(screen.queryByLabelText('Cause of death (optional)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Cause of death')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalled());

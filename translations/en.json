@@ -80,7 +80,7 @@
   "cascadeReportDate": "Report date: {{date}}",
   "caseDetectedBy": "Case detected by",
   "categoryAtDiagnosis": "Category at diagnosis",
-  "causeOfDeathOptional": "Cause of death (optional)",
+  "causeOfDeath": "Cause of death",
   "checkAll": "Check all",
   "checkFilters": "Check the filters above",
   "chooseAClinic": "Choose at least one clinic",

@@ -28,6 +28,12 @@ interface Program {
   }>;
 }
 
+interface Person {
+  dead: boolean;
+  deathDate: string | null;
+  birthdate: string | null;
+}
+
 export interface StatusOption {
   uuid: string;
   name: string;
@@ -108,9 +114,9 @@ export function usePatientStatus(patientUuid: string | null, programUuid: string
     `${restBaseUrl}/program/${programUuid}?v=${programRepresentation}`,
     (url: string) => openmrsFetch<Program>(url).then((response) => response.data),
   );
-  const person = useSWR<{ dead: boolean; deathDate: string | null }, Error>(
-    patientUuid ? `${restBaseUrl}/person/${patientUuid}?v=custom:(dead,deathDate)` : null,
-    (url: string) => openmrsFetch<{ dead: boolean; deathDate: string | null }>(url).then((response) => response.data),
+  const person = useSWR<Person, Error>(
+    patientUuid ? `${restBaseUrl}/person/${patientUuid}?v=custom:(dead,deathDate,birthdate)` : null,
+    (url: string) => openmrsFetch<Person>(url).then((response) => response.data),
   );
   return {
     enrolment: enrolments.data ? registryEnrolmentOf(enrolments.data, programUuid) : null,
@@ -124,12 +130,12 @@ export function usePatientStatus(patientUuid: string | null, programUuid: string
 /** A date as the server takes it: today as the present moment, so that a clock ahead of the server's is not the future. */
 const serverDate = (date: string) => (dayjs(date).isSame(dayjs(), 'day') ? new Date().toISOString() : date);
 
-/** Marks the person dead on the date, with a cause in words when given. */
+/** Marks the person dead on the date with a cause in words, which core requires of a dead person. */
 export async function markDead(personUuid: string, deathDate: string, cause: string) {
   await openmrsFetch(`${restBaseUrl}/person/${personUuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: { dead: true, deathDate: serverDate(deathDate), ...(cause ? { causeOfDeathNonCoded: cause } : {}) },
+    body: { dead: true, deathDate: serverDate(deathDate), causeOfDeathNonCoded: cause },
   });
 }
 

@@ -157,13 +157,11 @@ describe('the requests', () => {
   const bodyOf = (call: number) => (vi.mocked(openmrsFetch).mock.calls[call][1] as { body: unknown }).body;
   const urlOf = (call: number) => vi.mocked(openmrsFetch).mock.calls[call][0];
 
-  it('marks a person dead with the date and, when given, a cause', async () => {
+  it('marks a person dead with the date and the cause', async () => {
     await markDead('person', '2020-10-24', 'Heart failure');
-    await markDead('person', '2020-10-24', '');
 
     expect(urlOf(0)).toBe(`${restBaseUrl}/person/person`);
     expect(bodyOf(0)).toEqual({ dead: true, deathDate: '2020-10-24', causeOfDeathNonCoded: 'Heart failure' });
-    expect(bodyOf(1)).toEqual({ dead: true, deathDate: '2020-10-24' });
   });
 
   it('ends an enrolment on the date in the terminal state', async () => {
@@ -184,7 +182,7 @@ describe('the requests', () => {
 
   it('sends today as the present moment, so a clock ahead of the server is not the future', async () => {
     const today = dayjs().format('YYYY-MM-DD');
-    await markDead('person', today, '');
+    await markDead('person', today, 'Heart failure');
     await endEnrolment('pe', 'ltfu', today, '2020-01-10T00:00:00.000+0000');
 
     const sent = [
