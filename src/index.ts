@@ -77,7 +77,7 @@ export const researchPageDashboard = getAsyncLifecycle(() => import('./research/
 export const consultationsDashboardLink = getSyncLifecycle(createDashboard(consultationsDashboardMeta), options);
 
 export const consultationsDashboard = getAsyncLifecycle(
-  () => import('./consultations/consultations.component'),
+  () => import('./consultations/repeated-lists.component'),
   options,
 );
 
