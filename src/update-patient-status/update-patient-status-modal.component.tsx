@@ -2,7 +2,17 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import dayjs from 'dayjs';
-import { InlineLoading, InlineNotification, Modal, Select, SelectItem, TextInput } from '@carbon/react';
+import {
+  Button,
+  InlineLoading,
+  InlineNotification,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  SelectItem,
+  TextInput,
+} from '@carbon/react';
 import {
   formatDate,
   parseDate,
@@ -132,75 +142,85 @@ export default function UpdatePatientStatusModal({
     closeModal();
   };
 
+  const passive = !isLoading && !error && options.length === 0;
+
   return (
-    <Modal
-      open
-      size="sm"
-      passiveModal={!isLoading && !error && options.length === 0}
-      modalHeading={t('updatePatientStatus', 'Update patient status')}
-      primaryButtonText={t('save', 'Save')}
-      secondaryButtonText={t('cancel', 'Cancel')}
-      primaryButtonDisabled={!valid}
-      onRequestSubmit={save}
-      onRequestClose={closeModal}
-      onSecondarySubmit={closeModal}
-    >
-      {error ? (
-        <InlineNotification
-          kind="error"
-          lowContrast
-          hideCloseButton
-          title={t('statusNotLoaded', 'The patient status could not be loaded')}
-          subtitle={restErrorMessage(error)}
-        />
-      ) : isLoading ? (
-        <InlineLoading description={t('loading', 'Loading')} />
-      ) : (
-        <>
-          <dl className={styles.current} data-testid="current-status">
-            <div>
-              <dt>{t('currentStatus', 'Current status')}</dt>
-              <dd>{current}</dd>
-            </div>
-          </dl>
-          {options.length === 0 ? (
-            <p>{t('nothingToUpdate', 'There is nothing to update for this patient.')}</p>
-          ) : (
-            <>
-              <Select
-                id="update-patient-status-state"
-                labelText={t('status', 'Status')}
-                value={stateUuid}
-                onChange={(event) => chooseState(event.target.value)}
-              >
-                <SelectItem value="" text={t('chooseStatus', 'Choose a status')} />
-                {options.map((one) => (
-                  <SelectItem key={one.uuid} value={one.uuid} text={one.name} />
-                ))}
-              </Select>
-              <TextInput
-                id="update-patient-status-date"
-                type="date"
-                labelText={
-                  chosen?.death ? t('dateOfDeath', 'Date of death') : t('dateOfStatusChange', 'Date of status change')
-                }
-                value={date}
-                min={earliest || undefined}
-                max={today}
-                onChange={(event) => setDate(event.target.value)}
-              />
-              {dyingNow && (
+    <>
+      <ModalHeader closeModal={closeModal} title={t('updatePatientStatus', 'Update patient status')} />
+      <ModalBody>
+        {error ? (
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            title={t('statusNotLoaded', 'The patient status could not be loaded')}
+            subtitle={restErrorMessage(error)}
+          />
+        ) : isLoading ? (
+          <InlineLoading description={t('loading', 'Loading')} />
+        ) : (
+          <>
+            <dl className={styles.current} data-testid="current-status">
+              <div>
+                <dt>{t('currentStatus', 'Current status')}</dt>
+                <dd>{current}</dd>
+              </div>
+            </dl>
+            {options.length === 0 ? (
+              <p>{t('nothingToUpdate', 'There is nothing to update for this patient.')}</p>
+            ) : (
+              <>
+                <Select
+                  id="update-patient-status-state"
+                  labelText={t('status', 'Status')}
+                  value={stateUuid}
+                  onChange={(event) => chooseState(event.target.value)}
+                >
+                  <SelectItem value="" text={t('chooseStatus', 'Choose a status')} />
+                  {options.map((one) => (
+                    <SelectItem key={one.uuid} value={one.uuid} text={one.name} />
+                  ))}
+                </Select>
                 <TextInput
-                  id="update-patient-status-cause"
-                  labelText={t('causeOfDeath', 'Cause of death')}
-                  value={cause}
-                  onChange={(event) => setCause(event.target.value)}
+                  id="update-patient-status-date"
+                  type="date"
+                  labelText={
+                    chosen?.death ? t('dateOfDeath', 'Date of death') : t('dateOfStatusChange', 'Date of status change')
+                  }
+                  value={date}
+                  min={earliest || undefined}
+                  max={today}
+                  onChange={(event) => setDate(event.target.value)}
                 />
-              )}
-            </>
-          )}
-        </>
-      )}
-    </Modal>
+                {dyingNow && (
+                  <TextInput
+                    id="update-patient-status-cause"
+                    labelText={t('causeOfDeath', 'Cause of death')}
+                    value={cause}
+                    onChange={(event) => setCause(event.target.value)}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+      </ModalBody>
+      <ModalFooter>
+        {passive ? (
+          <Button kind="secondary" onClick={closeModal}>
+            {t('close', 'Close')}
+          </Button>
+        ) : (
+          <>
+            <Button kind="secondary" disabled={saving} onClick={closeModal}>
+              {t('cancel', 'Cancel')}
+            </Button>
+            <Button kind="primary" disabled={!valid} onClick={save}>
+              {t('save', 'Save')}
+            </Button>
+          </>
+        )}
+      </ModalFooter>
+    </>
   );
 }

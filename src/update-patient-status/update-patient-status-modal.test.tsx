@@ -2,7 +2,7 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   getDefaultsFromConfigSchema,
@@ -293,6 +293,36 @@ describe('UpdatePatientStatusModal', () => {
 
     expect(screen.getByText('There is nothing to update for this patient.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: 'Close' }).at(-1)!);
+    expect(closeModal).toHaveBeenCalled();
+  });
+
+  it('keeps the fields, Save and Cancel together under the heading, and closes on Cancel', async () => {
+    serve();
+    render(
+      <div role="dialog">
+        <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+          <UpdatePatientStatusModal closeModal={closeModal} patientUuid="winnie" />
+        </SWRConfig>
+      </div>,
+    );
+    await screen.findByTestId('current-status');
+    const dialog = screen.getByRole('dialog');
+
+    expect(within(dialog).getByRole('heading', { name: 'Update patient status' })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Status')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(closeModal).toHaveBeenCalled();
+  });
+
+  it("does not render Carbon's Modal, whose fixed overlay O3's modal frame offsets out of the viewport", async () => {
+    serve();
+    await openModal();
+
+    // Carbon's Modal carries its own role=dialog, which O3's showModal frame already provides.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 
