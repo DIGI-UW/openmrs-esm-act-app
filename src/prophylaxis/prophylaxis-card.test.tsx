@@ -30,6 +30,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const config = getDefaultsFromConfigSchema(configSchema) as Config;
 const openForm = vi.fn();
 
 // Winnie Auma on the seeded distro, from actcore's prophylaxis endpoint.
@@ -43,9 +44,26 @@ const winnie = {
   onTime: { given: 3, total: 4, months: 6 },
 };
 
-function respondWith(summary: object | Error) {
-  mockOpenmrsFetch.mockImplementation((() =>
-    summary instanceof Error ? Promise.reject(summary) : Promise.resolve({ data: summary })) as never);
+/**
+ * The server: ACT Core's summary for every request but the patient's encounters, which hold `encounters`, and the
+ * update's encounter type, which its edit privilege guards.
+ */
+function respondWith(
+  summary: object | Error,
+  { encounters = [] as Array<object>, editPrivilege = 'Add Encounters' } = {},
+) {
+  mockOpenmrsFetch.mockImplementation(((url: string) => {
+    if (summary instanceof Error) {
+      return Promise.reject(summary);
+    }
+    if (String(url).includes('/encountertype/')) {
+      return Promise.resolve({ data: { editPrivilege: { display: editPrivilege } } });
+    }
+    if (String(url).includes('encounterType:(uuid),obs:(')) {
+      return Promise.resolve({ data: { results: encounters, totalCount: encounters.length } });
+    }
+    return Promise.resolve({ data: summary });
+  }) as never);
 }
 
 let mutateCache: ScopedMutator;
@@ -321,7 +339,7 @@ describe('ProphylaxisCard', () => {
 
     renderCard();
 
-    await waitFor(() => expect(screen.getAllByRole('button')).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^Record/ })).toHaveLength(1));
     expect(screen.getByRole('button', { name: new RegExp(`^${action}`) })).toBeInTheDocument();
   });
 
@@ -337,6 +355,66 @@ describe('ProphylaxisCard', () => {
       expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
     },
   );
+
+  describe('the current prescription and Update prophylaxis', () => {
+    const concepts = config.prophylaxisUpdate.concepts;
+    const prescribed = {
+      uuid: 'e1',
+      encounterDatetime: '2026-06-10T09:00:00.000+0000',
+      encounterType: { uuid: 'type' },
+      obs: [
+        {
+          uuid: 'g1',
+          concept: { uuid: concepts.prescription },
+          value: null,
+          groupMembers: [
+            { uuid: 'm1', concept: { uuid: concepts.prescription }, value: { uuid: 'q28', display: 'Q28 day BPG' } },
+            { uuid: 'm2', concept: { uuid: concepts.dateStarted }, value: '2026-06-10T00:00:00.000+0000' },
+          ],
+        },
+        {
+          uuid: 'd1',
+          concept: { uuid: concepts.duration },
+          value: { uuid: 'two', display: '2 years and reassess' },
+        },
+      ],
+    };
+
+    it('shows when the prescription in force started and how long it lasts', async () => {
+      respondWith(winnie, { encounters: [prescribed] });
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent(/10.*Jun.*2026/));
+      expect(field('duration')).toHaveTextContent('2 years and reassess');
+    });
+
+    it('says -- for a patient with no prescription on record', async () => {
+      respondWith(winnie);
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent('--'));
+      expect(field('duration')).toHaveTextContent('--');
+    });
+
+    it('offers Update prophylaxis to a user who may record the update encounter', async () => {
+      respondWith(winnie, { encounters: [prescribed] });
+
+      renderCard();
+
+      expect(await screen.findByRole('button', { name: /Update prophylaxis/ })).toBeInTheDocument();
+    });
+
+    it('offers it to nobody who lacks the encounter type edit privilege', async () => {
+      respondWith(winnie, { encounters: [prescribed], editPrivilege: 'Task: act.enterClinicalForms' });
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent(/Jun/));
+      expect(screen.queryByRole('button', { name: /Update prophylaxis/ })).not.toBeInTheDocument();
+    });
+  });
 
   it('says Needs prescription instead of offering a form to a patient with no prescription in force', async () => {
     respondWith({ ...winnie, type: null, regimen: null, intervalDays: null, status: 'none' });
