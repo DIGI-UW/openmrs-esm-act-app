@@ -18,17 +18,15 @@ export interface Medication {
   stopped: string | null;
 }
 
+type MedicationRow = Medication & { uuid: string; recorded: boolean };
+
 /**
- * The patient's cardiac medications across their consultations, one row per course of a medicine. Records are read
- * oldest to newest per medicine: a Date Stopped closes the medicine's open row; a record without one updates the open
- * row in place (dose, interval, a Date Started it fills), or opens a new row when there is none or its Date Started is
- * later than the open row's recorded start. A row's start is the Date Started it records or else the first
- * consultation that recorded it. Only a Date Stopped ends a medicine, so a medicine left out of a later consultation
- * stays active. Active rows come newest start first, past rows newest stop first.
+ * The patient's cardiac medications, one row per course of a medicine, read oldest consultation first.
+ * Only a Date Stopped ends a course; a later record of an open medicine updates its row instead of adding one.
  */
 export function toMedications(encounters: Array<ChartEncounter>, concepts: Concepts) {
-  const rows: Array<Medication & { recorded: boolean }> = [];
-  const open = new Map<string, Medication & { recorded: boolean }>();
+  const rows: Array<MedicationRow> = [];
+  const open = new Map<string, MedicationRow>();
   const oldestFirst = [...encounters].sort((a, b) => time(a.encounterDatetime) - time(b.encounterDatetime));
   for (const encounter of oldestFirst) {
     for (const group of answersIn(encounter.obs, concepts.medication)) {
@@ -44,10 +42,10 @@ export function toMedications(encounters: Array<ChartEncounter>, concepts: Conce
       const dateStarted = text(concepts.dateStarted);
       const stopped = text(concepts.dateStopped) || null;
       const current = open.get(uuid);
-      if (current && (stopped || !dateStarted || !current.recorded || time(dateStarted) <= time(current.started))) {
+      if (current) {
         current.dose = text(concepts.medicationDose) || current.dose;
         current.interval = text(concepts.medicationInterval) || current.interval;
-        if (dateStarted && !current.recorded) {
+        if (dateStarted && (!current.recorded || time(dateStarted) < time(current.started))) {
           current.started = dateStarted;
           current.recorded = true;
         }
@@ -57,8 +55,20 @@ export function toMedications(encounters: Array<ChartEncounter>, concepts: Conce
         }
         continue;
       }
+      const earlier = rows.filter((one) => one.uuid === uuid);
+      if (stopped) {
+        if (earlier.some((one) => time(one.stopped!) === time(stopped))) {
+          continue;
+        }
+      } else if (
+        earlier.length &&
+        !(dateStarted && time(dateStarted) > Math.max(...earlier.map((one) => time(one.stopped!))))
+      ) {
+        continue;
+      }
       const row = {
         key: `${uuid}|${rows.length}`,
+        uuid,
         name: answerText(medicine.value),
         dose: text(concepts.medicationDose),
         interval: text(concepts.medicationInterval),
@@ -67,9 +77,7 @@ export function toMedications(encounters: Array<ChartEncounter>, concepts: Conce
         recorded: Boolean(dateStarted),
       };
       rows.push(row);
-      if (stopped) {
-        open.delete(uuid);
-      } else {
+      if (!stopped) {
         open.set(uuid, row);
       }
     }
@@ -87,9 +95,8 @@ export interface ListedItem {
 }
 
 /**
- * One of the consultation's repeated lists (chronic conditions, allergies, RHD complications): each item once, however
- * many consultations record it, newest first. An item's date is the Date Added it records or else the first
- * consultation that recorded it.
+ * One of the consultation's repeated lists, each item once, newest first.
+ * An item's date is the Date Added it records or else the first consultation that recorded it.
  */
 export function toListedItems(encounters: Array<ChartEncounter>, concepts: Concepts, list: string): Array<ListedItem> {
   const byName = new Map<string, ListedItem>();

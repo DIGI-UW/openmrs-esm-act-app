@@ -109,16 +109,65 @@ describe('toMedications', () => {
     expect(active[0].started).toBe('2026-01-01');
   });
 
-  it('opens a new row when a later consultation restates a medicine with a later Date Started and no stop', () => {
+  it('updates the open row when a later consultation restates a medicine with a later Date Started and no stop', () => {
     const { active } = toMedications(
       [
-        consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStarted, '2026-03-15']])]),
-        consultation('old', '2025-10-01', [medication(warfarin, [[c.dateStarted, '2025-06-15']])]),
+        consultation('new', '2026-04-01', [
+          medication(warfarin, [
+            [c.dateStarted, '2026-03-15'],
+            [c.medicationDose, '5 mg'],
+          ]),
+        ]),
+        consultation('old', '2025-10-01', [
+          medication(warfarin, [
+            [c.dateStarted, '2025-06-15'],
+            [c.medicationDose, '3 mg'],
+          ]),
+        ]),
       ],
       c,
     );
 
-    expect(active.map((one) => one.started)).toEqual(['2026-03-15', '2025-06-15']);
+    expect(active).toHaveLength(1);
+    expect(active[0]).toMatchObject({ started: '2025-06-15', dose: '5 mg' });
+  });
+
+  it('shows a medicine once when a later consultation lists it again with the Date Stopped it already had', () => {
+    const stoppedWithStart = [
+      [c.dateStarted, '2025-06-15'],
+      [c.dateStopped, '2026-01-10'],
+    ] as Array<[string, unknown]>;
+    const withStart = toMedications(
+      [
+        consultation('new', '2026-04-01', [medication(warfarin, stoppedWithStart)]),
+        consultation('old', '2025-10-01', [medication(warfarin, stoppedWithStart)]),
+      ],
+      c,
+    );
+    const withoutStart = toMedications(
+      [
+        consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStopped, '2026-01-10']])]),
+        consultation('old', '2025-10-01', [medication(warfarin, [[c.dateStopped, '2026-01-10']])]),
+      ],
+      c,
+    );
+
+    expect(withStart.past).toHaveLength(1);
+    expect(withoutStart.past).toHaveLength(1);
+  });
+
+  it('ignores a later record of a stopped medicine that has no Date Started or one before the stop', () => {
+    const { active, past } = toMedications(
+      [
+        consultation('later', '2026-05-01', [medication(warfarin, [[c.dateStarted, '2025-08-01']])]),
+        consultation('new', '2026-04-01', [medication(warfarin)]),
+        consultation('old', '2025-10-01', [medication(warfarin, [[c.dateStopped, '2026-01-10']])]),
+      ],
+      c,
+    );
+
+    expect(active).toEqual([]);
+    expect(past).toHaveLength(1);
   });
 
   it('lists a medicine started again after it was stopped as a second row', () => {
