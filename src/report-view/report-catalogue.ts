@@ -34,14 +34,18 @@ export function columnHeader({ name, label }: ReportColumn) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-const isDate = (datatype: string) => datatype.includes('Date');
+const midnight = /^\d{4}-\d{2}-\d{2}T00:00:00(\.0+)?(Z|[+-]\d{2}:?\d{2})?$/;
+
+/** A date column: typed so, or, as the reports send every column typed Object, a value that is a day at midnight. */
+const isDate = (value: unknown, datatype: string) =>
+  datatype.includes('Date') || (typeof value === 'string' && midnight.test(value));
 
 /** A cell as the table shows it and the CSV holds it. */
 export function cellText(value: unknown, datatype: string): string {
   if (value == null) {
     return '';
   }
-  if (isDate(datatype)) {
+  if (isDate(value, datatype)) {
     const date = parseReportDate(value);
     if (date) {
       return formatDate(date, { time: false, noToday: true });
@@ -58,7 +62,7 @@ export function sortValue(value: unknown, datatype: string): string | number | n
   if (value == null) {
     return null;
   }
-  if (isDate(datatype)) {
+  if (isDate(value, datatype)) {
     return parseReportDate(value)?.getTime() ?? null;
   }
   return typeof value === 'number' ? value : cellText(value, datatype);

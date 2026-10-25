@@ -7,6 +7,7 @@ import {
   limitToClinics,
   matchesSearch,
   reportsFor,
+  sortValue,
   type CatalogueEntry,
 } from './report-catalogue';
 
@@ -66,6 +67,19 @@ describe('cellText', () => {
     expect(cellText('2026-10-01T00:00:00.000+0000', 'java.util.Date')).toBe(day);
     expect(cellText([2026, 10, 1], 'java.util.Date')).toBe(day);
     expect(cellText('2026-10-01', 'java.lang.String')).toBe('2026-10-01');
+  });
+
+  it('shows a day at midnight as a date although the report types every column Object, and leaves other text alone', () => {
+    const day = formatDate(new Date(2026, 9, 23), { time: false, noToday: true });
+    expect(cellText('2026-10-23T00:00:00.000+0000', 'java.lang.Object')).toBe(day);
+    expect(cellText('2026-10-23T09:30:00.000+0000', 'java.lang.Object')).toBe('2026-10-23T09:30:00.000+0000');
+    expect(cellText('2026-10-23', 'java.lang.Object')).toBe('2026-10-23');
+    expect(cellText('rhd00001', 'java.lang.Object')).toBe('rhd00001');
+  });
+
+  it('sorts such days by the day', () => {
+    expect(sortValue('2026-10-23T00:00:00.000+0000', 'java.lang.Object')).toBe(new Date(2026, 9, 23).getTime());
+    expect(sortValue('rhd00001', 'java.lang.Object')).toBe('rhd00001');
   });
 });
 
