@@ -25,7 +25,7 @@ import { type Config } from '../config-schema';
 import Consultations, { useStartConsultation } from './consultations.component';
 import { useConsultations } from './consultations.resource';
 import { useDiagnoses } from './patient-details.resource';
-import { toListedItems, toMedications } from './repeated-lists.resource';
+import { type Medication, toListedItems, toMedications } from './repeated-lists.resource';
 import styles from '../cardiac-tests/cardiac-tests.scss';
 
 const day = (date: string | null) => (date ? formatDate(parseDate(date), { time: false, noToday: true }) : '--');
@@ -94,12 +94,12 @@ export function CardiacMedications({ patientUuid }: { patientUuid: string }) {
   const start = useStartConsultation(patientUuid);
   const title = t('cardiacMedications', 'Cardiac medications');
   const { active, past } = toMedications(encounters, consultations.concepts);
-  const columns = [
-    { header: t('medicine', 'Medicine'), text: (one: (typeof active)[number]) => one.name },
-    { header: t('dose', 'Dose'), text: (one: (typeof active)[number]) => one.dose || '--' },
-    { header: t('interval', 'Interval'), text: (one: (typeof active)[number]) => one.interval || '--' },
-    { header: t('started', 'Started'), text: (one: (typeof active)[number]) => day(one.started) },
-    { header: t('stopped', 'Stopped'), text: (one: (typeof active)[number]) => day(one.stopped) },
+  const columns: Array<Column<Medication>> = [
+    { header: t('medicine', 'Medicine'), text: (one) => one.name },
+    { header: t('dose', 'Dose'), text: (one) => one.dose || '--' },
+    { header: t('interval', 'Interval'), text: (one) => one.interval || '--' },
+    { header: t('started', 'Started'), text: (one) => day(one.started) },
+    { header: t('stopped', 'Stopped'), text: (one) => day(one.stopped) },
   ];
 
   if (error) {

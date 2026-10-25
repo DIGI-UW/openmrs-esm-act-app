@@ -1,6 +1,12 @@
 import useSWR from 'swr';
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { answersIn, answerText, type GroupedObs, useChartEncounters } from './consultations.resource';
+import {
+  answersIn,
+  answerText,
+  type ChartEncounter,
+  type GroupedObs,
+  useChartEncounters,
+} from './consultations.resource';
 
 interface PersonDetails {
   attributes?: Array<{ attributeType: { uuid: string }; value: unknown }>;
@@ -85,13 +91,16 @@ export function toDiagnosisRow(group: GroupedObs, key: string): DiagnosisRow {
   };
 }
 
-/** Every Diagnosis of the patient's Patient Information records that has a Category, latest record first. */
+/** Every Diagnosis with a Category in the patient's latest Patient Information that has one; earlier records are superseded. */
 export function useDiagnoses(patientUuid: string | null) {
   const { encounters, error, isLoading } = useChartEncounters(patientUuid, diagnosisConcepts.encounterType);
-  const diagnoses = encounters.flatMap((encounter) =>
-    answersIn(encounter.obs, diagnosisConcepts.group)
-      .filter((group) => answersIn(group.groupMembers, diagnosisConcepts.category).length)
-      .map((group, index) => toDiagnosisRow(group, `${encounter.uuid}-${index}`)),
-  );
+  const withCategory = (encounter: ChartEncounter) =>
+    answersIn(encounter.obs, diagnosisConcepts.group).filter(
+      (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
+    );
+  const latest = encounters.find((encounter) => withCategory(encounter).length);
+  const diagnoses = latest
+    ? withCategory(latest).map((group, index) => toDiagnosisRow(group, `${latest.uuid}-${index}`))
+    : [];
   return { diagnoses, error, isLoading };
 }

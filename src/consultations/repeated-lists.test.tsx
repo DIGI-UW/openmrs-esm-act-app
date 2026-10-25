@@ -81,6 +81,46 @@ describe('toMedications', () => {
     expect(active.find((one) => one.name === 'Aspirin')?.interval).toBe('Once a day');
   });
 
+  it('closes the open record of a medicine when a later consultation stops it without a Date Started', () => {
+    const { active, past } = toMedications(
+      [
+        consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStopped, '2026-03-01']])]),
+        consultation('old', '2025-10-01', [medication(warfarin, [[c.dateStarted, '2025-06-15']])]),
+      ],
+      c,
+    );
+
+    expect(active).toEqual([]);
+    expect(past).toHaveLength(1);
+    expect(past[0]).toMatchObject({ started: '2025-06-15', stopped: '2026-03-01' });
+  });
+
+  it('fills the Date Started of the open record when a later consultation records it', () => {
+    const { active, past } = toMedications(
+      [
+        consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStarted, '2026-01-01']])]),
+        consultation('old', '2025-10-01', [medication(warfarin)]),
+      ],
+      c,
+    );
+
+    expect(past).toEqual([]);
+    expect(active).toHaveLength(1);
+    expect(active[0].started).toBe('2026-01-01');
+  });
+
+  it('opens a new row when a later consultation restates a medicine with a later Date Started and no stop', () => {
+    const { active } = toMedications(
+      [
+        consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStarted, '2026-03-15']])]),
+        consultation('old', '2025-10-01', [medication(warfarin, [[c.dateStarted, '2025-06-15']])]),
+      ],
+      c,
+    );
+
+    expect(active.map((one) => one.started)).toEqual(['2026-03-15', '2025-06-15']);
+  });
+
   it('lists a medicine started again after it was stopped as a second row', () => {
     const { active, past } = toMedications(
       [
@@ -214,6 +254,25 @@ describe('the Consultation visits page tables', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent(/Rheumatic Heart Disease.*Primary.*Yes.*Feb.*2025/);
     expect(rows[1]).toHaveTextContent(/Congenital.*Secondary.*No/);
+  });
+
+  it('shows only the diagnoses of the latest Patient Information', async () => {
+    const diagnosis = (name: string) =>
+      obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded(name, name))]);
+    const record = (uuid: string, date: string, name: string) =>
+      ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, obs: [diagnosis(name)] }) as ChartEncounter;
+    serve({
+      patientInformation: [
+        record('older', '2025-03-01', 'Congenital'),
+        record('latest', '2026-03-01', 'Rheumatic Heart Disease'),
+      ],
+    });
+
+    renderIn(<Diagnoses patientUuid="winnie" />);
+
+    const rows = await screen.findAllByTestId('repeated-row');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent('Rheumatic Heart Disease');
   });
 
   it('shows chronic conditions, allergies and RHD complications each once', async () => {
