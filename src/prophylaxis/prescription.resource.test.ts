@@ -128,12 +128,12 @@ describe('currentPrescriptionOf', () => {
 describe('prescriptionPayload', () => {
   const patient = 'patient';
   const regimen = (uuid: string) => ({ uuid, label: '' });
-  const memberOf = (member: { concept: string; value: unknown }[], concept: string) =>
+  const memberOf = (member: { concept: string; value?: unknown }[], concept: string) =>
     member.find((one) => one.concept === concept)?.value;
 
-  const startedOf = (one: { groupMembers?: Array<{ concept: string; value: unknown }> }) =>
+  const startedOf = (one: { groupMembers?: Array<{ concept: string; value?: unknown }> }) =>
     memberOf(one.groupMembers!, concepts.dateStarted);
-  const regimenOf = (one: { groupMembers?: Array<{ concept: string; value: unknown }> }) =>
+  const regimenOf = (one: { groupMembers?: Array<{ concept: string; value?: unknown }> }) =>
     memberOf(one.groupMembers!, concepts.prescription);
 
   it('on a switch saves the new group and carries the main one and every other unchanged, with the duration', () => {
