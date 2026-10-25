@@ -183,6 +183,31 @@ describe('UpdatePatientStatusModal', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
+  it("refuses a date before the Active state's start, which core refuses to end a state before", async () => {
+    const startsLater = {
+      ...active,
+      states: [
+        {
+          startDate: '2026-02-01T00:00:00.000+0000',
+          endDate: null,
+          voided: false,
+          state: { uuid: 'active', concept: { uuid: 'c-active', display: 'Active' } },
+        },
+      ],
+    };
+    serve({ enrolments: [startsLater] });
+    await openModal();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'ltfu');
+    const date = screen.getByLabelText('Date of status change');
+
+    await userEvent.clear(date);
+    await userEvent.type(date, '2026-01-20');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await userEvent.clear(date);
+    await userEvent.type(date, '2026-02-01');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
   it('keeps Save disabled for Deceased until a cause is typed, as core refuses a death without one', async () => {
     serve();
     await openModal();
@@ -252,6 +277,7 @@ describe('UpdatePatientStatusModal', () => {
     await openModal();
 
     expect(screen.getByTestId('current-status')).toHaveTextContent(/Deceased/);
+    expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     expect(screen.getByLabelText('Date of death')).toHaveValue('2026-07-04');
     expect(screen.queryByLabelText('Cause of death')).not.toBeInTheDocument();

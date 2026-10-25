@@ -54,16 +54,17 @@ export function registryEnrolmentOf(enrolments: Array<Enrolment>, programUuid: s
 }
 
 /**
- * The status a completed enrolment ended in: its latest state by start, since core ends a state when it completes
- * the enrolment. Null for an active enrolment; a null name when no state was recorded.
+ * The status a completed enrolment ended in: its latest state by start, the later in the array on a tie as core
+ * truncates starts to midnight. Null for an active enrolment; a null name when no state was recorded.
  */
 export function statusOf(enrolment: Enrolment) {
   if (!enrolment.dateCompleted) {
     return null;
   }
   const latest = enrolment.states
+    .map((one, index) => ({ ...one, index }))
     .filter((one) => !one.voided)
-    .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+    .sort((a, b) => b.startDate.localeCompare(a.startDate) || b.index - a.index)[0];
   return { name: latest?.state.concept.display ?? null, since: latest?.startDate ?? enrolment.dateCompleted };
 }
 
@@ -78,7 +79,8 @@ export function terminalStatesOf(program: Program, deathConcept: string): Array<
 
 /**
  * The statuses this user may record: ending an enrolment needs Edit Patient Programs, and marking the person dead
- * needs Edit People. A patient with no enrolment in force can only be marked dead.
+ * needs Edit People. A patient with no enrolment in force can only be marked dead, and a dead one can only end it
+ * as Deceased.
  */
 export function statusOptionsOf({
   states,
@@ -97,10 +99,10 @@ export function statusOptionsOf({
     if (!enrolmentActive) {
       return one.death && !personDead && mayEditPeople;
     }
-    if (!one.death) {
-      return mayEditPrograms;
+    if (personDead) {
+      return one.death && mayEditPrograms;
     }
-    return personDead ? mayEditPrograms : mayEditPeople;
+    return one.death ? mayEditPeople : mayEditPrograms;
   });
 }
 

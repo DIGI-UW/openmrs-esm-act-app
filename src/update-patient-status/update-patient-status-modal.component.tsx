@@ -69,6 +69,8 @@ export default function UpdatePatientStatusModal({
   const dyingNow = Boolean(chosen?.death) && !personDead;
   const earliest = [
     enrolmentActive ? enrolment!.dateEnrolled.slice(0, 10) : '',
+    // Core refuses to end a state before it started.
+    ...(enrolmentActive ? enrolment!.states.filter((one) => !one.voided).map((one) => one.startDate.slice(0, 10)) : []),
     dyingNow ? (person?.birthdate?.slice(0, 10) ?? '') : '',
   ].reduce((a, b) => (a > b ? a : b));
   const valid = Boolean(chosen && date && date <= today && date >= earliest && (!dyingNow || cause.trim())) && !saving;

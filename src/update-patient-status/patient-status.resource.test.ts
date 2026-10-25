@@ -94,6 +94,24 @@ describe('statusOf', () => {
     expect(status).toEqual({ name: 'Lost to follow-up', since: '2026-08-02T00:00:00.000+0000' });
   });
 
+  it('names the state recorded last when it starts the day the Active state did, as core truncates starts', () => {
+    const at = '2026-08-02T00:00:00.000+0000';
+    const entry = (uuid: string, concept: string, display: string) => ({
+      startDate: at,
+      endDate: null,
+      voided: false,
+      state: { uuid, concept: { uuid: concept, display } },
+    });
+    const status = statusOf(
+      enrolment({
+        dateCompleted: at,
+        states: [entry('active', 'c-active', 'Active'), entry('ltfu', 'c-ltfu', 'Lost to follow-up')],
+      }),
+    );
+
+    expect(status?.name).toBe('Lost to follow-up');
+  });
+
   it('has no name for a completed enrolment that records no state', () => {
     expect(statusOf(enrolment({ dateCompleted: '2026-08-02T00:00:00.000+0000' }))).toEqual({
       name: null,
@@ -130,11 +148,12 @@ describe('statusOptionsOf', () => {
   });
 
   it('offers a patient already marked dead, whose enrolment is still active, the Deceased state to end it', () => {
-    expect(names(statusOptionsOf({ ...base, personDead: true, mayEditPeople: false }))).toEqual([
-      'Lost to follow-up',
-      'Physical relocation',
-      'Deceased',
-    ]);
+    expect(names(statusOptionsOf({ ...base, personDead: true, mayEditPeople: false }))).toEqual(['Deceased']);
+  });
+
+  it('does not offer a dead patient the other states, which would contradict the death, nor Deceased without Edit Patient Programs', () => {
+    expect(names(statusOptionsOf({ ...base, personDead: true }))).toEqual(['Deceased']);
+    expect(names(statusOptionsOf({ ...base, personDead: true, mayEditPrograms: false }))).toEqual([]);
   });
 
   it('offers Deceased alone, as a person update, to a patient with no active enrolment who is alive', () => {
