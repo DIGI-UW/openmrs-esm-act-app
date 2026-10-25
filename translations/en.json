@@ -582,6 +582,8 @@
   "rhdFlag": "RHD flag",
   "rolePermissions": "Role permissions",
   "roles": "Roles",
+  "rowCountReport_one": "{{count}} row",
+  "rowCountReport_other": "{{count}} rows",
   "rowCount_one": "{{count}} rows",
   "rowCount_other": "{{count}} rows",
   "rows": "Rows",

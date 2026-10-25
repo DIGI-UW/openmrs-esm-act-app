@@ -1,6 +1,7 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
@@ -114,6 +115,39 @@ describe('ReportView', () => {
     dataset({ error: new Error('boom') });
     render(<ReportView />);
     expect(screen.getByText('Could not load the report')).toBeInTheDocument();
+  });
+
+  it('asks the dataset for plain YYYY-MM-DD dates, twelve months back to today by default', () => {
+    render(<ReportView />);
+
+    expect(vi.mocked(useReportDataset).mock.calls[0][1]).toEqual({
+      startDate: dayjs().subtract(12, 'month').format('YYYY-MM-DD'),
+      endDate: dayjs().format('YYYY-MM-DD'),
+    });
+  });
+
+  it('runs no report while the end is before the start, and says so', () => {
+    render(<ReportView />);
+    vi.mocked(useReportDataset).mockClear();
+
+    fireEvent.change(screen.getByLabelText('To'), {
+      target: { value: dayjs().subtract(2, 'year').format('YYYY-MM-DD') },
+    });
+
+    expect(screen.getByText('The end is before the start')).toBeInTheDocument();
+    expect(vi.mocked(useReportDataset).mock.calls.at(-1)?.[0]).toBeNull();
+  });
+
+  it('disables the CSV download when no rows are visible, and logs whether a search applied, not its words', async () => {
+    const user = userEvent.setup();
+    render(<ReportView />);
+    expect(csv.props).toMatchObject({ disabled: false, filters: { searched: 'no' } });
+
+    await user.type(screen.getByRole('searchbox'), 'Jane Doe');
+
+    expect(screen.getByText('No rows match the search')).toBeInTheDocument();
+    expect(csv.props).toMatchObject({ disabled: true, filters: { searched: 'yes' } });
+    expect(JSON.stringify(csv.props?.filters)).not.toContain('Jane');
   });
 
   it('says so for a report that is not in the catalogue', () => {

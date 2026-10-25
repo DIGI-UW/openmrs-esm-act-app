@@ -384,6 +384,16 @@ describe('Reports', () => {
     expect(await screen.findByText('Could not load the report')).toBeInTheDocument();
   });
 
+  it('still lists the reports that open as a table when the programme report cannot be loaded', async () => {
+    await atLocation(['RHD Tertiary']);
+    dataset({ rows: [], error: new Error('boom') });
+
+    renderPage();
+
+    expect(await screen.findByText('Could not load the report')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Visits' })).toBeInTheDocument();
+  });
+
   it("lets the clinic be changed, starting at the session location's, as ACT 2.0's dashboard did", async () => {
     await atLocation(['RHD Tertiary']);
     renderPage();

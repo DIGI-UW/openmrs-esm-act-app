@@ -109,7 +109,7 @@ export default function ReportView() {
     }
     return (
       <>
-        <p className={styles.count}>{t('rowCount', '{{count}} rows', { count: visible.length })}</p>
+        <p className={styles.count}>{t('rowCountReport', '{{count}} rows', { count: visible.length })}</p>
         {visible.length ? (
           <>
             <div className={styles.tableContainer}>
@@ -179,7 +179,7 @@ export default function ReportView() {
               name={entry.id}
               list={`report:${entry.label}`}
               identifiers
-              filters={{ startDate: params.startDate, endDate: params.endDate, search }}
+              filters={{ startDate: params.startDate, endDate: params.endDate, searched: search.trim() ? 'yes' : 'no' }}
               headers={columns.map(columnHeader)}
               rows={() => visible.map((row) => columns.map((column) => cellText(row[column.name], column.datatype)))}
               disabled={!visible.length}

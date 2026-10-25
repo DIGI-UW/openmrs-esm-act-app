@@ -261,9 +261,9 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
           {showCascade && <CareCascadeCard scope={scope} />}
-          {clinicFilters && <ReportCatalogueCard />}
         </>
       )}
+      {clinicFilters && <ReportCatalogueCard />}
     </>
   );
 }
