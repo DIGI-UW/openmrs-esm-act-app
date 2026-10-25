@@ -8,12 +8,16 @@ import {
   getAssignedExtensions,
   parseDate,
   useAssignedExtensions,
+  useConfig,
   useExtensionStore,
 } from '@openmrs/esm-framework';
+import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useOralEntries } from '../prophylaxis-page/prophylaxis-page.resource';
 import { RecordProphylaxisButtons } from './record-prophylaxis-buttons.component';
+import { usePrescription } from './prescription.resource';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
+import UpdateProphylaxis from './update-prophylaxis.component';
 import styles from '../styles/summary-card.scss';
 
 interface ProphylaxisCardProps {
@@ -50,10 +54,13 @@ const date = (value: string | null) => (value ? formatDate(parseDate(value), { t
 /** A fraction as a whole percentage, as ACT 2.0 showed adherence. */
 const percent = (fraction: number) => `${Math.round(fraction * 100)}%`;
 
-/** The patient summary's prophylaxis: regimen, last and next dose, on-time count, and the forms to record a dose. */
+/** The patient summary's prophylaxis: regimen, its start and duration, last and next dose, on-time count, and the forms to record a dose. */
 export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
   const { t } = useTranslation();
   const { summary, error } = useProphylaxisSummary(patientUuid);
+  const { prophylaxisUpdate } = useConfig<Config>();
+  const { prescription } = usePrescription(patientUuid, prophylaxisUpdate.concepts);
+  const prescribed = prescription?.main;
   const regimenLabel = useRegimenLabel();
   const pagePath = useProphylaxisPagePath();
   // An oral regimen has no doses to count on time, so the card shows the latest reported adherence instead.
@@ -70,6 +77,8 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
 
   const fields = summary && [
     { id: 'type', label: t('type', 'Type'), value: regimenLabel(summary) },
+    { id: 'started', label: t('started', 'Started'), value: date(prescribed?.started ?? null) },
+    { id: 'duration', label: t('duration', 'Duration'), value: prescription?.duration?.label || '--' },
     // ACT Core dates an oral regimen by its latest adherence report and when that report's supply runs out.
     {
       id: 'last-dose',
@@ -119,6 +128,7 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
               {t('history', 'History')}
             </ConfigurableLink>
           )}
+          <UpdateProphylaxis patientUuid={patientUuid} />
           <RecordProphylaxisButtons patientUuid={patientUuid} />
         </div>
       </CardHeader>

@@ -632,6 +632,80 @@ export const configSchema = {
         "The form Record oral opens, on the patient summary's Prophylaxis card and the chart's Prophylaxis page, to record oral prophylaxis.",
     },
   },
+  prophylaxisUpdate: {
+    encounterType: {
+      _type: Type.UUID,
+      _default: '8a51f352-5f1b-4836-a669-536e276a21db',
+      _description:
+        "The RHD Prophylaxis Update encounter type, which the Prophylaxis card's Update prophylaxis saves. Its edit privilege says who may.",
+    },
+    concepts: {
+      _type: Type.Object,
+      _default: {
+        prescription: '668e0221-8b41-5669-9ad8-78e193d42494',
+        dateStarted: '5bcc7d12-b279-5955-815c-090a1f392071',
+        dateStopped: 'd75edc42-3213-5a06-9228-4e5735b9594b',
+        reasonStopped: 'fa21e431-e64d-5493-b18c-9a1eaf7ee16a',
+        duration: '11117263-f71d-58e2-8363-d2e9b1dbddab',
+        consultationDate: 'c3edefd2-5777-5084-b01e-fd4ca0e40162',
+        none: '1107AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      _description:
+        "The questions of a prophylaxis prescription as the consultation form records them: Secondary Antibiotic Prophylaxis (the group and its regimen share the concept) with its Date Started, Date Stopped and Reason Stopped, the encounter's Secondary Antibiotic Prophylaxis Duration, the Date of Consultation Visit that ACT Core dates a prescription by when there is one, and the None answer that prescribes nothing.",
+    },
+    regimens: {
+      _type: Type.Array,
+      _elements: {
+        uuid: { _type: Type.UUID, _description: 'The regimen answer.' },
+        label: { _type: Type.String, _description: 'The choice as the update shows it.' },
+      },
+      _default: [
+        { uuid: '50be4b26-6c5b-5aaa-9254-3bfd313b4522', label: 'Q28 day BPG' },
+        { uuid: '2f3ee632-dd14-51b0-a4ec-de10e7958019', label: 'Q21 day BPG' },
+        { uuid: '91230c88-6a90-5d45-af50-fa6155fe5dd7', label: 'Q14 day BPG' },
+        { uuid: 'b9884219-358a-594b-94f5-f8a8863a25f3', label: 'Oral penicillin V' },
+        { uuid: 'f2e06eb2-5c25-5e53-9e01-246112d05976', label: 'Oral sulfadiazine' },
+        { uuid: 'fb8b6676-689b-5daa-83f7-1456210c587f', label: 'Oral erythromycin' },
+        { uuid: 'f6f25d63-bd1a-51cb-9596-e74a19759429', label: 'Oral clarithromycin' },
+        { uuid: '1af922b8-acee-56c8-b184-eaef4e58e23a', label: 'Oral azithromycin' },
+        { uuid: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Other non-coded' },
+      ],
+      _description:
+        "The regimens Update prophylaxis offers, as the consultation form's Secondary Antibiotic Prophylaxis does.",
+    },
+    durations: {
+      _type: Type.Array,
+      _elements: {
+        uuid: { _type: Type.UUID, _description: 'The duration answer.' },
+        label: { _type: Type.String, _description: 'The choice as the update shows it.' },
+      },
+      _default: [
+        { uuid: '6f2c4ca8-a499-5851-975b-5bfb426143a9', label: '1 year and reassess' },
+        { uuid: 'a3f9bcd3-787f-58b3-ae36-c494725a67eb', label: '2 years and reassess' },
+        { uuid: '024cdfe6-c2eb-521c-8616-4729ac35439e', label: '5 years or until age 21, whichever is longer' },
+        { uuid: 'ecc08a4c-6494-5737-b142-f59d18c07db1', label: '10 years or until age 40, whichever is longer' },
+        { uuid: 'e13a5d80-2ba1-5927-b4e6-7369473222e1', label: 'Lifetime' },
+      ],
+      _description:
+        "The durations Update prophylaxis offers, as the consultation form's Secondary Antibiotic Prophylaxis Duration does.",
+    },
+    reasons: {
+      _type: Type.Array,
+      _elements: {
+        uuid: { _type: Type.UUID, _description: 'The reason answer.' },
+        label: { _type: Type.String, _description: 'The choice as the update shows it.' },
+      },
+      _default: [
+        { uuid: '121689AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Allergy' },
+        { uuid: '148888AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Anaphylaxis' },
+        { uuid: 'eaf16fa9-03d7-5846-94c3-b02805889ed9', label: 'Provider stopped' },
+        { uuid: '39af49bd-5dd0-5acd-8ffb-260bc83dbfd7', label: 'Patient preference' },
+        { uuid: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Other non-coded' },
+      ],
+      _description:
+        "The reasons Update prophylaxis offers for stopping, as the consultation form's Reason Stopped does.",
+    },
+  },
   actIdentifierType: {
     _type: Type.UUID,
     _default: '240f85fa-46e1-540e-9234-2796c623f7ea',
@@ -849,6 +923,16 @@ export interface Config {
   };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
+  prophylaxisUpdate: {
+    encounterType: string;
+    concepts: Record<
+      'prescription' | 'dateStarted' | 'dateStopped' | 'reasonStopped' | 'duration' | 'consultationDate' | 'none',
+      string
+    >;
+    regimens: Array<{ uuid: string; label: string }>;
+    durations: Array<{ uuid: string; label: string }>;
+    reasons: Array<{ uuid: string; label: string }>;
+  };
   actIdentifierType: string;
   patientInformationForm: string;
   singleRecordForms: Array<string>;
