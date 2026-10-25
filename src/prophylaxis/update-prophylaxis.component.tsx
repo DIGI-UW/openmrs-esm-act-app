@@ -81,7 +81,7 @@ function UpdateModal({
       showSnackbar({
         kind: 'error',
         title: t('prophylaxisNotUpdated', 'The prophylaxis could not be updated'),
-        subtitle: t('referralNeedsLocation', 'Choose a login location first'),
+        subtitle: t('prophylaxisNeedsLocation', 'Choose a login location first'),
       });
       return;
     }

@@ -497,6 +497,7 @@
   "prophylaxisDueOn": "Prophylaxis due {{date}}",
   "prophylaxisDueThisWeek": "Prophylaxis due this week",
   "prophylaxisDueToday": "Prophylaxis due today",
+  "prophylaxisNeedsLocation": "Choose a login location first",
   "prophylaxisNotUpdated": "The prophylaxis could not be updated",
   "prophylaxisOverdue": "Prophylaxis overdue",
   "prophylaxisPlan": "Prophylaxis plan",

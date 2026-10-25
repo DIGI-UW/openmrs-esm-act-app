@@ -69,6 +69,7 @@ export function currentPrescriptionOf(
   for (const encounter of encounters.filter((one) => groupsOf(one).length)) {
     const day = dayOfEncounter(encounter);
     const first = firstOfDay.get(day);
+    // Approximates ACT Core's smallest encounter id of the day, which REST does not expose.
     if (!first || encounter.encounterDatetime < first.encounterDatetime) {
       firstOfDay.set(day, encounter);
     }
