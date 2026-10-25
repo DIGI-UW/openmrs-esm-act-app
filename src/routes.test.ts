@@ -196,7 +196,7 @@ describe('routes.json privileges', () => {
     }
   });
 
-  it("adds one patient banner action, Update patient status, and its modal, as OpenMRS prints the patient's identifier sticker", () => {
+  it('adds one patient banner action, Update patient status, and its modal; OpenMRS prints the identifier sticker itself', () => {
     expect(
       routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot').map(({ name }) => name),
     ).toEqual(['act-update-patient-status']);
@@ -222,7 +222,8 @@ describe('routes.json privileges', () => {
   });
 
   it('declares a privilege on every extension but Download data, Logs, Update patient status, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
-    // They gate themselves, each on its own privileges or on being signed in.
+    // They gate themselves: Download data and Update patient status on either of two privileges, Logs on either audit
+    // privilege, the Admin nav per link, the session timeout on being signed in.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',

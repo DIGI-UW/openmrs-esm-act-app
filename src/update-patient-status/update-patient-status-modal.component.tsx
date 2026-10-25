@@ -98,7 +98,7 @@ export default function UpdatePatientStatusModal({
         diedNow = true;
       }
       if (enrolmentActive && mayEditPrograms) {
-        await endEnrolment(enrolment!.uuid, chosen.uuid, date);
+        await endEnrolment(enrolment!.uuid, chosen.uuid, date, enrolment!.dateEnrolled);
       }
     } catch (e) {
       showSnackbar({

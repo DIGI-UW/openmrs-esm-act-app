@@ -134,10 +134,13 @@ export async function markDead(personUuid: string, deathDate: string, cause: str
 }
 
 /** Ends the enrolment on the date in the given terminal state, which the registry, worklists and Dashboard read. */
-export async function endEnrolment(enrolmentUuid: string, stateUuid: string, date: string) {
+export async function endEnrolment(enrolmentUuid: string, stateUuid: string, date: string, dateEnrolled: string) {
+  // A bare day reads as midnight, which core rejects as before an enrolment that carries a time of day.
+  const sent = serverDate(date);
+  const end = new Date(sent).getTime() < new Date(dateEnrolled).getTime() ? dateEnrolled : sent;
   await openmrsFetch(`${restBaseUrl}/programenrollment/${enrolmentUuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: { dateCompleted: serverDate(date), states: [{ state: stateUuid, startDate: serverDate(date) }] },
+    body: { dateCompleted: end, states: [{ state: stateUuid, startDate: end }] },
   });
 }

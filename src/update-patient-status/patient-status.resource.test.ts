@@ -167,16 +167,25 @@ describe('the requests', () => {
   });
 
   it('ends an enrolment on the date in the terminal state', async () => {
-    await endEnrolment('pe', 'ltfu', '2020-10-24');
+    await endEnrolment('pe', 'ltfu', '2020-10-24', '2020-01-10T00:00:00.000+0000');
 
     expect(urlOf(0)).toBe(`${restBaseUrl}/programenrollment/pe`);
     expect(bodyOf(0)).toEqual({ dateCompleted: '2020-10-24', states: [{ state: 'ltfu', startDate: '2020-10-24' }] });
   });
 
+  it("sends the enrolment's own instant when the date is its day, as a bare day would be before its time", async () => {
+    const enrolled = '2026-10-23T11:01:51.000+0000';
+    await endEnrolment('pe', 'ltfu', '2026-10-23', enrolled);
+    await endEnrolment('pe', 'ltfu', '2026-10-24', enrolled);
+
+    expect(bodyOf(0)).toEqual({ dateCompleted: enrolled, states: [{ state: 'ltfu', startDate: enrolled }] });
+    expect(bodyOf(1)).toEqual({ dateCompleted: '2026-10-24', states: [{ state: 'ltfu', startDate: '2026-10-24' }] });
+  });
+
   it('sends today as the present moment, so a clock ahead of the server is not the future', async () => {
     const today = dayjs().format('YYYY-MM-DD');
     await markDead('person', today, '');
-    await endEnrolment('pe', 'ltfu', today);
+    await endEnrolment('pe', 'ltfu', today, '2020-01-10T00:00:00.000+0000');
 
     const sent = [
       (bodyOf(0) as { deathDate: string }).deathDate,
