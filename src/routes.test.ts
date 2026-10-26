@@ -297,6 +297,7 @@ describe('routes.json workspaces', () => {
   });
 
   it.each([
+    ['act-clinic-form-workspace', 'act-clinics', '/home/act-clinics'],
     ['act-study-form-workspace', 'act-studies', '/home/act-studies'],
     ['act-user-form-workspace', 'act-users', '/home/act-users'],
     ['act-reset-password-workspace', 'act-users', '/home/act-users'],

@@ -11,6 +11,15 @@ describe('configSchema', () => {
         cardiac: ['RHD Tertiary', 'RHD District'],
         primaryCare: ['RHD Community'],
       },
+      clinics: {
+        levels: [
+          { tag: 'RHD Tertiary', level: 'Tertiary' },
+          { tag: 'RHD District', level: 'District' },
+          { tag: 'RHD Community', level: 'Community' },
+        ],
+        types: ['Public', 'Private Not-For-Profit', 'Private For-Profit'],
+        newClinicTags: ['Visit Location', 'Queue Location', 'Login Location'],
+      },
       flagLists: {
         namePrefix: 'RHD ',
         names: [],
@@ -45,7 +54,7 @@ describe('configSchema', () => {
       },
       instanceAdminQuickActions: {
         formsAndSitesUrl: '${openmrsBase}/admin/forms/form.list',
-        rolePermissionsUrl: '${openmrsBase}/admin/users/users.list',
+        rolePermissionsUrl: '${openmrsSpaBase}/home/act-role-permissions',
         researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
       },
       instanceAdminKpis: { report: '6494be01-b4ae-46af-8d7f-058a2f95c115' },
@@ -83,7 +92,7 @@ describe('configSchema', () => {
       },
       adminLinks: {
         usersUrl: '${openmrsSpaBase}/home/act-users',
-        clinicsUrl: '${openmrsBase}/admin/locations/location.list',
+        clinicsUrl: '${openmrsSpaBase}/home/act-clinics',
         studiesUrl: '${openmrsSpaBase}/home/act-studies',
         refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',
         logsUrl: '${openmrsSpaBase}/home/act-logs',

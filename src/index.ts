@@ -127,6 +127,8 @@ export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/fla
 
 export const enrollmentWorkspace = getAsyncLifecycle(() => import('./research/enrollment.workspace'), options);
 
+export const clinicFormWorkspace = getAsyncLifecycle(() => import('./clinics/clinic-form.workspace'), options);
+
 export const studyFormWorkspace = getAsyncLifecycle(() => import('./studies/study-form.workspace'), options);
 
 export const userFormWorkspace = getAsyncLifecycle(() => import('./users/user-form.workspace'), options);
@@ -215,6 +217,23 @@ export const instanceAdminDashboard = getAsyncLifecycle(
 export const usersDashboardLink = getAsyncLifecycle(() => import('./users/users-dashboard-link.component'), options);
 
 export const usersDashboard = getAsyncLifecycle(() => import('./users/users.component'), options);
+
+export const clinicsDashboardLink = getAsyncLifecycle(
+  () => import('./clinics/clinics-dashboard-link.component'),
+  options,
+);
+
+export const clinicsDashboard = getAsyncLifecycle(() => import('./clinics/clinics.component'), options);
+
+export const rolePermissionsDashboardLink = getAsyncLifecycle(
+  () => import('./role-permissions/role-permissions-dashboard-link.component'),
+  options,
+);
+
+export const rolePermissionsDashboard = getAsyncLifecycle(
+  () => import('./role-permissions/role-permissions.component'),
+  options,
+);
 
 export const dashboardLink = getAsyncLifecycle(() => import('./dashboard/dashboard-link.component'), options);
 
