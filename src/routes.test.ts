@@ -209,6 +209,15 @@ describe('routes.json privileges', () => {
     expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-patient-status', group: 'patient-chart' });
   });
 
+  it('opens Update prophylaxis in a workspace of the patient chart', () => {
+    expect(routeFile.workspaces2).toContainEqual({
+      name: 'act-update-prophylaxis-workspace',
+      component: 'updateProphylaxisWorkspace',
+      window: 'act-update-prophylaxis',
+    });
+    expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-prophylaxis', group: 'patient-chart' });
+  });
+
   it('shows Update patient status to a user who may edit programmes or people, or to a super user, and to no one else', () => {
     const expression = routes.extensions.find(
       (extension) => extension.name === 'act-update-patient-status',

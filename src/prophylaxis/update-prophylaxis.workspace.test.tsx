@@ -2,18 +2,21 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   getDefaultsFromConfigSchema,
+  launchWorkspace2,
   openmrsFetch,
   restBaseUrl,
   showSnackbar,
   useSession,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import UpdateProphylaxis from './update-prophylaxis.component';
+import UpdateProphylaxisWorkspace from './update-prophylaxis.workspace';
 
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
 const { concepts } = config.prophylaxisUpdate;
@@ -64,18 +67,27 @@ const posts = () =>
 const memberValue = (group: Record<string, unknown>, concept: string) =>
   (group.groupMembers as Array<{ concept: string; value: unknown }>).find((one) => one.concept === concept)?.value;
 
+const closeWorkspace = vi.fn();
 async function openUpdate() {
   render(
     <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
-      <UpdateProphylaxis patientUuid="winnie" />
+      <UpdateProphylaxisWorkspace
+        workspaceProps={null}
+        windowProps={null}
+        groupProps={{ patientUuid: 'winnie' }}
+        launchChildWorkspace={vi.fn()}
+        closeWorkspace={closeWorkspace}
+        workspaceName="act-update-prophylaxis-workspace"
+        windowName="act-update-prophylaxis"
+        isRootWorkspace
+        showActionMenu={false}
+      />
     </SWRConfig>,
   );
-  const button = await screen.findByRole('button', { name: /Update prophylaxis/ });
-  await waitFor(() => expect(button).toBeEnabled());
-  await userEvent.click(button);
+  await screen.findByTestId('current-prescription');
 }
 
-describe('UpdateProphylaxis', () => {
+describe('UpdateProphylaxisWorkspace', () => {
   beforeEach(async () => {
     await signInWith(['Add Encounters']);
     vi.mocked(useSession).mockReturnValue({
@@ -83,6 +95,7 @@ describe('UpdateProphylaxis', () => {
       sessionLocation: { uuid: 'gulu', display: 'Gulu' },
     } as never);
     vi.mocked(showSnackbar).mockClear();
+    closeWorkspace.mockReset();
   });
 
   it('shows the current regimen, start and duration, and saves a changed regimen as a new encounter starting today', async () => {
@@ -113,6 +126,7 @@ describe('UpdateProphylaxis', () => {
     expect(memberValue(body.obs[1], concepts.dateStarted)).toBe('2026-06-10');
     expect(body.obs.find((one) => one.concept === concepts.duration)?.value).toBe('two');
     expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
   });
 
   it('keeps the start of a regimen that is not changed', async () => {
@@ -182,7 +196,7 @@ describe('UpdateProphylaxis', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
-  it('keeps the modal open and says why when the save is refused', async () => {
+  it('keeps the workspace open and says why when the save is refused', async () => {
     serve([prescribed('earlier', '2026-06-10T09:00:00.000+0000')]);
     await openUpdate();
     const serving = vi.mocked(openmrsFetch).getMockImplementation()!;
@@ -196,6 +210,40 @@ describe('UpdateProphylaxis', () => {
 
     await waitFor(() => expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
     expect(screen.getByTestId('current-prescription')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(closeWorkspace).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(closeWorkspace).toHaveBeenCalledWith();
+  });
+
+  it('flags unsaved changes once the form is edited, so closing the workspace asks first', async () => {
+    serve([prescribed('earlier', '2026-06-10T09:00:00.000+0000')]);
+    await openUpdate();
+    const unsaved = () => vi.mocked(Workspace2).mock.lastCall![0].hasUnsavedChanges;
+
+    expect(unsaved()).toBe(false);
+    await userEvent.selectOptions(screen.getByLabelText('Regimen'), q21);
+    expect(unsaved()).toBe(true);
+  });
+});
+
+describe('UpdateProphylaxis', () => {
+  beforeEach(async () => {
+    await signInWith(['Add Encounters']);
+    vi.mocked(launchWorkspace2).mockClear();
+  });
+
+  it('opens the workspace, which takes the patient from the chart, once the prescription has loaded', async () => {
+    serve([prescribed('earlier', '2026-06-10T09:00:00.000+0000')]);
+    render(
+      <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+        <UpdateProphylaxis patientUuid="winnie" />
+      </SWRConfig>,
+    );
+    const button = await screen.findByRole('button', { name: /Update prophylaxis/ });
+    await waitFor(() => expect(button).toBeEnabled());
+
+    await userEvent.click(button);
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-update-prophylaxis-workspace');
   });
 });

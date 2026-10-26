@@ -117,6 +117,11 @@ export const updatePatientStatusWorkspace = getAsyncLifecycle(
   options,
 );
 
+export const updateProphylaxisWorkspace = getAsyncLifecycle(
+  () => import('./prophylaxis/update-prophylaxis.workspace'),
+  options,
+);
+
 export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/flag-gaps.workspace'), options);
 
 export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);

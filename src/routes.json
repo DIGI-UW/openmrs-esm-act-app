@@ -820,6 +820,10 @@
     {
       "name": "act-update-patient-status",
       "group": "patient-chart"
+    },
+    {
+      "name": "act-update-prophylaxis",
+      "group": "patient-chart"
     }
   ],
   "workspaces2": [
@@ -842,6 +846,11 @@
       "name": "act-update-patient-status-workspace",
       "component": "updatePatientStatusWorkspace",
       "window": "act-update-patient-status"
+    },
+    {
+      "name": "act-update-prophylaxis-workspace",
+      "component": "updateProphylaxisWorkspace",
+      "window": "act-update-prophylaxis"
     }
   ]
 }
