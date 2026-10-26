@@ -8,6 +8,9 @@ import { signInWith } from '../access/sign-in.test-helper';
 import RefreshFlags from './refresh-flags.component';
 import { type RefreshStatus } from './refresh-flags.resource';
 
+// The run chart snapshot tile has its own tests; here the page's refresh is under test.
+vi.mock('./run-chart-snapshot-tile.component', () => ({ RunChartSnapshotTile: () => null }));
+
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const earlier = '2026-10-07T20:37:04Z';

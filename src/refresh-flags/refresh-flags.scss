@@ -3,6 +3,9 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
 .page {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
   padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
 }
 
@@ -23,4 +26,32 @@
 
 .lastRefreshed {
   @include type.type-style('heading-compact-01');
+}
+
+.heading {
+  @include type.type-style('heading-compact-02');
+}
+
+.subheading {
+  @include type.type-style('heading-compact-01');
+}
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ok {
+  color: #0e6027;
+}
+
+.bad {
+  display: flex;
+  flex-direction: column;
+  color: #a2191f;
+}
+
+.reason {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
 }
