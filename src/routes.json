@@ -816,6 +816,10 @@
     {
       "name": "act-studies",
       "scopePattern": "/home/act-studies"
+    },
+    {
+      "name": "act-users",
+      "scopePattern": "/home/act-users"
     }
   ],
   "workspaceWindows2": [
@@ -840,6 +844,11 @@
       "name": "act-studies-form",
       "group": "act-studies",
       "width": "narrow"
+    },
+    {
+      "name": "act-users-form",
+      "group": "act-users",
+      "width": "wider"
     }
   ],
   "workspaces2": [
@@ -867,6 +876,16 @@
       "name": "act-study-form-workspace",
       "component": "studyFormWorkspace",
       "window": "act-studies-form"
+    },
+    {
+      "name": "act-user-form-workspace",
+      "component": "userFormWorkspace",
+      "window": "act-users-form"
+    },
+    {
+      "name": "act-reset-password-workspace",
+      "component": "resetPasswordWorkspace",
+      "window": "act-users-form"
     }
   ]
 }

@@ -277,6 +277,8 @@ describe('routes.json workspaces', () => {
   it.each([
     ['act-enrollment-workspace', 'act-research', '/patient/patient-1/chart/act-research'],
     ['act-study-form-workspace', 'act-studies', '/home/act-studies'],
+    ['act-user-form-workspace', 'act-users', '/home/act-users'],
+    ['act-reset-password-workspace', 'act-users', '/home/act-users'],
   ])('opens %s in the %s group, scoped to the page %s', (name, group, page) => {
     const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
     const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
