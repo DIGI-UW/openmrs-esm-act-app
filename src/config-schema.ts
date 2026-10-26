@@ -24,6 +24,36 @@ export const configSchema = {
     cardiac: locationTags('cardiac clinics', ['RHD Tertiary', 'RHD District']),
     primaryCare: locationTags('primary care clinics', ['RHD Community']),
   },
+  clinics: {
+    levels: {
+      _type: Type.Array,
+      _elements: {
+        _type: Type.Object,
+        tag: { _type: Type.String, _description: 'The location tag that gives a clinic this level.' },
+        level: { _type: Type.String, _description: "The level as the clinic's description names it." },
+      },
+      _default: [
+        { tag: 'RHD Tertiary', level: 'Tertiary' },
+        { tag: 'RHD District', level: 'District' },
+        { tag: 'RHD Community', level: 'Community' },
+      ],
+      _description:
+        "The levels the Clinics page offers, as ACT 2.0's, each by its location tag. A clinic's description holds its type and level, as the distro seeds them: 'Public, District level'. Keep the tags the same as clinicLocationTags, which the rest of ACT reads; a clinic's parent is one of the levels whose tag is in clinicLocationTags.cardiac.",
+    },
+    types: {
+      _type: Type.Array,
+      _elements: { _type: Type.String },
+      _default: ['Public', 'Private Not-For-Profit', 'Private For-Profit'],
+      _description: "The types the Clinics page offers, as ACT 2.0's; a clinic keeps a type of its own when edited.",
+    },
+    newClinicTags: {
+      _type: Type.Array,
+      _elements: { _type: Type.String },
+      _default: ['Visit Location', 'Queue Location', 'Login Location'],
+      _description:
+        'Location tags a clinic added on the Clinics page gets beside its level, so users sign in and record visits there.',
+    },
+  },
   flagLists: {
     namePrefix: {
       _type: Type.String,
@@ -136,8 +166,8 @@ export const configSchema = {
       '${openmrsBase}/admin/forms/form.list',
     ),
     rolePermissionsUrl: link(
-      "Where the Role permissions quick action on the Instance dashboard leads: OpenMRS's user management, the same page the left nav's Users and roles opens.",
-      '${openmrsBase}/admin/users/users.list',
+      "Where the Role permissions quick action on the Instance dashboard leads: ACT's Role permissions page, which sets the capabilities each ACT role has.",
+      '${openmrsSpaBase}/home/act-role-permissions',
     ),
     researchParticipationUrl: link(
       "Where the Research participation quick action on the Instance dashboard leads: OpenMRS's module configuration, for a user holding App: act.instanceAdmin.",
@@ -207,8 +237,8 @@ export const configSchema = {
       '${openmrsSpaBase}/home/act-users',
     ),
     clinicsUrl: link(
-      "Where the left nav's Clinics leads: OpenMRS's locations, for a user holding Manage Locations.",
-      '${openmrsBase}/admin/locations/location.list',
+      "Where the left nav's Clinics leads: ACT's Clinics page, for a user holding Manage Locations.",
+      '${openmrsSpaBase}/home/act-clinics',
     ),
     studiesUrl: link(
       "Where the left nav's Studies leads: the Studies dashboard in this app, for a user holding App: act.studies.",
@@ -277,6 +307,53 @@ export const configSchema = {
       _description:
         "The report's steps the ACT home widget and the Dashboard draw, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
     },
+  },
+  reportCatalogue: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.Object,
+      id: {
+        _type: Type.String,
+        _description: "What the report page's link names it by: /home/act-report?report=<id>.",
+      },
+      report: {
+        _type: Type.String,
+        _description: 'The report, by uuid or name, whose rows the page shows as a table.',
+      },
+      label: { _type: Type.String, _description: 'What the Reports page and the report page call it.' },
+      description: { _type: Type.String, _description: 'A line on the Reports page saying what the report holds.' },
+      clinicColumn: {
+        _type: Type.String,
+        _default: '',
+        _description:
+          "The report's column naming a row's clinic, by which a user limited to clinics is held to theirs. Blank for a report with none, which such a user is not offered.",
+      },
+    },
+    _default: [
+      {
+        id: 'visits',
+        report: 'b2c3d4e5-f6a7-8901-abcd-234567890abc',
+        label: 'Visits',
+        description: 'Each RHD clinic visit in a period, with its encounters and the patient.',
+        clinicColumn: 'location',
+      },
+      {
+        id: 'encounters',
+        report: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+        label: 'Encounters',
+        description: 'Each RHD encounter in a period, with its type, location and provider.',
+        clinicColumn: 'location',
+      },
+      {
+        id: 'inr-monitoring',
+        report: 'd3a1f2b4-7c8e-4f90-b123-456789abcdef',
+        label: 'INR monitoring',
+        description: 'Each INR reading of the patients on warfarin in a period, with the target range.',
+        clinicColumn: 'location',
+      },
+    ],
+    _description:
+      'The reports the Reports page offers to open as a table, each with Download CSV. A report that names patients shows them as the Registry does, to whoever may open the Reports page.',
   },
   registry: {
     report: {
@@ -853,6 +930,7 @@ export type EchoField =
 
 export interface Config {
   clinicLocationTags: { cardiac: Array<string>; primaryCare: Array<string> };
+  clinics: { levels: Array<{ tag: string; level: string }>; types: Array<string>; newClinicTags: Array<string> };
   flagLists: {
     namePrefix: string;
     names: Array<string>;
@@ -890,6 +968,7 @@ export interface Config {
     downloadUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
+  reportCatalogue: Array<{ id: string; report: string; label: string; description: string; clinicColumn: string }>;
   registry: { report: string; showBpgColumns: boolean };
   dashboard: {
     registrantsReport: string;

@@ -1,0 +1,37 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
+.clinics {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 12rem) auto;
+  gap: layout.$spacing-05;
+  align-items: end;
+}
+
+.note {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  max-width: 48rem;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.form {
+  display: grid;
+  gap: layout.$spacing-05;
+}

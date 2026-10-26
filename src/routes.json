@@ -283,6 +283,23 @@
       "privileges": "App: act.reports"
     },
     {
+      "name": "act-report-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "reportViewDashboardLink",
+      "meta": {
+        "name": "act-report",
+        "slot": "act-report-dashboard-slot",
+        "title": "reports"
+      },
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-report-dashboard",
+      "slot": "act-report-dashboard-slot",
+      "component": "reportViewDashboard",
+      "privileges": "App: act.reports"
+    },
+    {
       "name": "act-facility-reports-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "facilityReportsDashboardLink",
@@ -373,6 +390,40 @@
       "slot": "act-users-dashboard-slot",
       "component": "usersDashboard",
       "privileges": "Edit Users"
+    },
+    {
+      "name": "act-clinics-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "clinicsDashboardLink",
+      "meta": {
+        "name": "act-clinics",
+        "slot": "act-clinics-dashboard-slot",
+        "title": "clinics"
+      },
+      "privileges": "Manage Locations"
+    },
+    {
+      "name": "act-clinics-dashboard",
+      "slot": "act-clinics-dashboard-slot",
+      "component": "clinicsDashboard",
+      "privileges": "Manage Locations"
+    },
+    {
+      "name": "act-role-permissions-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "rolePermissionsDashboardLink",
+      "meta": {
+        "name": "act-role-permissions",
+        "slot": "act-role-permissions-dashboard-slot",
+        "title": "rolePermissions"
+      },
+      "privileges": "Manage Roles"
+    },
+    {
+      "name": "act-role-permissions-dashboard",
+      "slot": "act-role-permissions-dashboard-slot",
+      "component": "rolePermissionsDashboard",
+      "privileges": "Manage Roles"
     },
     {
       "name": "act-studies-dashboard-link",
@@ -794,12 +845,6 @@
       ]
     }
   ],
-  "modals": [
-    {
-      "name": "update-patient-status-modal",
-      "component": "updatePatientStatusModal"
-    }
-  ],
   "workspaceGroups2": [
     {
       "name": "act-waiting-list",
@@ -808,6 +853,18 @@
     {
       "name": "act-screen-positive",
       "scopePattern": "/home/act-screen-positive"
+    },
+    {
+      "name": "act-clinics",
+      "scopePattern": "^/home/act-clinics"
+    },
+    {
+      "name": "act-studies",
+      "scopePattern": "^/home/act-studies"
+    },
+    {
+      "name": "act-users",
+      "scopePattern": "^/home/act-users"
     }
   ],
   "workspaceWindows2": [
@@ -822,6 +879,39 @@
       "group": "act-screen-positive",
       "width": "extra-wide",
       "canMaximize": true
+    },
+    {
+      "name": "act-update-patient-status",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-update-prophylaxis",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-research-form",
+      "group": "patient-chart",
+      "width": "narrow"
+    },
+    {
+      "name": "act-clinics-form",
+      "group": "act-clinics",
+      "width": "narrow"
+    },
+    {
+      "name": "act-studies-form",
+      "group": "act-studies",
+      "width": "narrow"
+    },
+    {
+      "name": "act-users-form",
+      "group": "act-users",
+      "width": "wider"
+    },
+    {
+      "name": "act-reset-password",
+      "group": "act-users",
+      "width": "narrow"
     }
   ],
   "workspaces2": [
@@ -839,6 +929,41 @@
       "name": "act-screen-positive-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-update-patient-status-workspace",
+      "component": "updatePatientStatusWorkspace",
+      "window": "act-update-patient-status"
+    },
+    {
+      "name": "act-update-prophylaxis-workspace",
+      "component": "updateProphylaxisWorkspace",
+      "window": "act-update-prophylaxis"
+    },
+    {
+      "name": "act-enrollment-workspace",
+      "component": "enrollmentWorkspace",
+      "window": "act-research-form"
+    },
+    {
+      "name": "act-clinic-form-workspace",
+      "component": "clinicFormWorkspace",
+      "window": "act-clinics-form"
+    },
+    {
+      "name": "act-study-form-workspace",
+      "component": "studyFormWorkspace",
+      "window": "act-studies-form"
+    },
+    {
+      "name": "act-user-form-workspace",
+      "component": "userFormWorkspace",
+      "window": "act-users-form"
+    },
+    {
+      "name": "act-reset-password-workspace",
+      "component": "resetPasswordWorkspace",
+      "window": "act-reset-password"
     }
   ]
 }

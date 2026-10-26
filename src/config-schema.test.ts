@@ -11,6 +11,15 @@ describe('configSchema', () => {
         cardiac: ['RHD Tertiary', 'RHD District'],
         primaryCare: ['RHD Community'],
       },
+      clinics: {
+        levels: [
+          { tag: 'RHD Tertiary', level: 'Tertiary' },
+          { tag: 'RHD District', level: 'District' },
+          { tag: 'RHD Community', level: 'Community' },
+        ],
+        types: ['Public', 'Private Not-For-Profit', 'Private For-Profit'],
+        newClinicTags: ['Visit Location', 'Queue Location', 'Login Location'],
+      },
       flagLists: {
         namePrefix: 'RHD ',
         names: [],
@@ -45,7 +54,7 @@ describe('configSchema', () => {
       },
       instanceAdminQuickActions: {
         formsAndSitesUrl: '${openmrsBase}/admin/forms/form.list',
-        rolePermissionsUrl: '${openmrsBase}/admin/users/users.list',
+        rolePermissionsUrl: '${openmrsSpaBase}/home/act-role-permissions',
         researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
       },
       instanceAdminKpis: { report: '6494be01-b4ae-46af-8d7f-058a2f95c115' },
@@ -83,7 +92,7 @@ describe('configSchema', () => {
       },
       adminLinks: {
         usersUrl: '${openmrsSpaBase}/home/act-users',
-        clinicsUrl: '${openmrsBase}/admin/locations/location.list',
+        clinicsUrl: '${openmrsSpaBase}/home/act-clinics',
         studiesUrl: '${openmrsSpaBase}/home/act-studies',
         refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',
         logsUrl: '${openmrsSpaBase}/home/act-logs',
@@ -106,6 +115,29 @@ describe('configSchema', () => {
           { step: 'Adherent', label: 'adherentEightyPercent' },
         ],
       },
+      reportCatalogue: [
+        {
+          id: 'visits',
+          report: 'b2c3d4e5-f6a7-8901-abcd-234567890abc',
+          label: 'Visits',
+          description: 'Each RHD clinic visit in a period, with its encounters and the patient.',
+          clinicColumn: 'location',
+        },
+        {
+          id: 'encounters',
+          report: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+          label: 'Encounters',
+          description: 'Each RHD encounter in a period, with its type, location and provider.',
+          clinicColumn: 'location',
+        },
+        {
+          id: 'inr-monitoring',
+          report: 'd3a1f2b4-7c8e-4f90-b123-456789abcdef',
+          label: 'INR monitoring',
+          description: 'Each INR reading of the patients on warfarin in a period, with the target range.',
+          clinicColumn: 'location',
+        },
+      ],
       registry: {
         report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
         showBpgColumns: false,

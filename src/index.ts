@@ -19,6 +19,7 @@ import dueForProphylaxisDashboardLinkComponent from './due-for-prophylaxis/due-f
 import patientsOnProphylaxisDashboardLinkComponent from './enter-prophylaxis/patients-on-prophylaxis-dashboard-link.component';
 import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
+import reportViewDashboardLinkComponent from './report-view/report-view-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
 import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
 import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
@@ -53,11 +54,6 @@ export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/pro
 
 export const updatePatientStatusButton = getAsyncLifecycle(
   () => import('./update-patient-status/update-patient-status-button.component'),
-  options,
-);
-
-export const updatePatientStatusModal = getAsyncLifecycle(
-  () => import('./update-patient-status/update-patient-status-modal.component'),
   options,
 );
 
@@ -117,7 +113,27 @@ export const cardiacTestsDashboard = getAsyncLifecycle(
   options,
 );
 
+export const updatePatientStatusWorkspace = getAsyncLifecycle(
+  () => import('./update-patient-status/update-patient-status.workspace'),
+  options,
+);
+
+export const updateProphylaxisWorkspace = getAsyncLifecycle(
+  () => import('./prophylaxis/update-prophylaxis.workspace'),
+  options,
+);
+
 export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/flag-gaps.workspace'), options);
+
+export const enrollmentWorkspace = getAsyncLifecycle(() => import('./research/enrollment.workspace'), options);
+
+export const clinicFormWorkspace = getAsyncLifecycle(() => import('./clinics/clinic-form.workspace'), options);
+
+export const studyFormWorkspace = getAsyncLifecycle(() => import('./studies/study-form.workspace'), options);
+
+export const userFormWorkspace = getAsyncLifecycle(() => import('./users/user-form.workspace'), options);
+
+export const resetPasswordWorkspace = getAsyncLifecycle(() => import('./users/reset-password.workspace'), options);
 
 export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);
 
@@ -180,6 +196,10 @@ export const reportsDashboardLink = getSyncLifecycle(reportsDashboardLinkCompone
 
 export const reportsDashboard = getAsyncLifecycle(() => import('./programme-report/reports.component'), options);
 
+export const reportViewDashboardLink = getSyncLifecycle(reportViewDashboardLinkComponent, options);
+
+export const reportViewDashboard = getAsyncLifecycle(() => import('./report-view/report-view.component'), options);
+
 export const facilityReportsDashboardLink = getSyncLifecycle(facilityReportsDashboardLinkComponent, options);
 
 export const facilityReportsDashboard = getAsyncLifecycle(
@@ -197,6 +217,23 @@ export const instanceAdminDashboard = getAsyncLifecycle(
 export const usersDashboardLink = getAsyncLifecycle(() => import('./users/users-dashboard-link.component'), options);
 
 export const usersDashboard = getAsyncLifecycle(() => import('./users/users.component'), options);
+
+export const clinicsDashboardLink = getAsyncLifecycle(
+  () => import('./clinics/clinics-dashboard-link.component'),
+  options,
+);
+
+export const clinicsDashboard = getAsyncLifecycle(() => import('./clinics/clinics.component'), options);
+
+export const rolePermissionsDashboardLink = getAsyncLifecycle(
+  () => import('./role-permissions/role-permissions-dashboard-link.component'),
+  options,
+);
+
+export const rolePermissionsDashboard = getAsyncLifecycle(
+  () => import('./role-permissions/role-permissions.component'),
+  options,
+);
 
 export const dashboardLink = getAsyncLifecycle(() => import('./dashboard/dashboard-link.component'), options);
 

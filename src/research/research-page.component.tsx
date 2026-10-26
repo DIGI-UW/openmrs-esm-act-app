@@ -21,6 +21,7 @@ import {
   ErrorState,
   formatDate,
   isDesktop,
+  launchWorkspace2,
   parseDate,
   showSnackbar,
   useConfig,
@@ -30,8 +31,13 @@ import {
 import { type Config } from '../config-schema';
 import { PRIVILEGE_ENTER_CLINICAL_FORMS } from '../constants';
 import { TableEmptyState } from '../table-filters/empty-state.component';
-import { EnrollmentModal } from './enrollment-modal.component';
-import { saveResearchOptIn, type StudyEnrollment, useResearchAnswers, useStudyEnrollments } from './research.resource';
+import {
+  activeStudyUuids,
+  saveResearchOptIn,
+  type StudyEnrollment,
+  useResearchAnswers,
+  useStudyEnrollments,
+} from './research.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './research-page.scss';
 
@@ -106,11 +112,11 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
   const answers = useResearchAnswers(patientUuid);
   const { optIn, consent, dead } = answers;
   const participation = useStudyEnrollments(patientUuid);
-  const { enrollments, studies, mutate } = participation;
+  const { enrollments, studies } = participation;
   const error = participation.error ?? answers.error;
   const isLoading = participation.isLoading || answers.isLoading;
-  const [editing, setEditing] = useState<string | null>(null);
-  const edited = enrollments.find((enrollment) => enrollment.uuid === editing);
+  const enrol = (enrollmentUuid?: string) =>
+    launchWorkspace2('act-enrollment-workspace', { patientUuid, enrollmentUuid });
   const title = t('researchParticipation', 'Research participation');
   const headers = [
     t('study', 'Study'),
@@ -121,11 +127,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
   ];
   const statusName = (enrollment: StudyEnrollment) =>
     enrollment.study.states.find((state) => state.uuid === enrollment.stateUuid);
-  const activeIn = new Set(
-    enrollments
-      .filter((enrollment) => !enrollment.dateCompleted && !statusName(enrollment)?.terminal)
-      .map((enrollment) => enrollment.study.uuid),
-  );
+  const activeIn = activeStudyUuids(enrollments);
   const available = studies.filter((study) => !activeIn.has(study.uuid));
   const consented = consent === yesConcept;
   const optedIn = optIn === yesConcept;
@@ -180,7 +182,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
                     hasIconOnly
                     renderIcon={Edit}
                     iconDescription={t('editParticipation', 'Edit participation')}
-                    onClick={() => setEditing(enrollment.uuid)}
+                    onClick={() => enrol(enrollment.uuid)}
                   />
                 </UserHasAccess>
               </TableCell>
@@ -200,7 +202,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
             size="sm"
             renderIcon={Add}
             disabled={!mayEnrol || !available.length}
-            onClick={() => setEditing('new')}
+            onClick={() => enrol()}
           >
             {t('addParticipation', 'Add participation')}
           </Button>
@@ -234,15 +236,6 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
         />
       )}
       {body}
-      {(editing === 'new' || edited) && (
-        <EnrollmentModal
-          patientUuid={patientUuid}
-          studies={available}
-          enrollment={edited}
-          onClose={() => setEditing(null)}
-          onSaved={() => mutate()}
-        />
-      )}
     </div>
   );
 }

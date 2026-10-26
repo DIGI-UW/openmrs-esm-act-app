@@ -261,7 +261,7 @@ describe('Home quick action tiles', () => {
     );
     expect(screen.getByRole('link', { name: /Role permissions/ })).toHaveAttribute(
       'href',
-      '/openmrs/admin/users/users.list',
+      '/openmrs/spa/home/act-role-permissions',
     );
     expect(screen.getByRole('link', { name: /Research participation/ })).toHaveAttribute(
       'href',

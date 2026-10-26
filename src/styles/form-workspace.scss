@@ -1,0 +1,20 @@
+@use '@carbon/layout';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.fields {
+  padding: layout.$spacing-05;
+}
+
+.button {
+  height: layout.$spacing-10;
+  display: flex;
+  align-content: flex-start;
+  align-items: baseline;
+  min-width: 50%;
+}

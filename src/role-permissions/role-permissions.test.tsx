@@ -1,0 +1,392 @@
+import React from 'react';
+import { SWRConfig } from 'swr';
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { signInWith } from '../access/sign-in.test-helper';
+import RolePermissions from './role-permissions.component';
+
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+
+const capability = (uuid: string, name: string, description: string, privileges: Array<string>) => ({
+  uuid,
+  display: `Application: ACT ${name}`,
+  description,
+  privileges: privileges.map((display) => ({ display })),
+  inheritedRoles: [],
+});
+const role = (
+  uuid: string,
+  name: string,
+  inherits: Array<{ uuid: string; display: string }>,
+  privileges: Array<string> = [],
+) => ({
+  uuid,
+  display: `Organizational: ACT ${name}`,
+  description: `${name} description`,
+  privileges: privileges.map((display) => ({ display })),
+  inheritedRoles: inherits.map(({ uuid, display }) => ({ uuid, display })),
+});
+
+const registry = capability('cap-registry', 'Registry', 'ACT home, the registry and worklists', ['App: act.registry']);
+const exportsCap = capability('cap-exports', 'Exports', 'Download ACT lists as CSV', ['Task: act.lists.export']);
+const research = capability('cap-research', 'Study Management', 'Create and rename research studies', [
+  'Task: act.manageStudies',
+]);
+const clinician = role('role-clinician', 'Clinician', [registry, exportsCap]);
+const siteAdmin = role('role-site', 'Site Administrator', [clinician, registry], ['Delete Patients']);
+const dataClerk = role('role-clerk', 'Data Clerk', [registry]);
+const roles = [
+  clinician,
+  siteAdmin,
+  dataClerk,
+  registry,
+  exportsCap,
+  research,
+  { uuid: 'role-other', display: 'Provider', description: '', privileges: [], inheritedRoles: [] },
+];
+
+type Call = { url: string; method: string; body: unknown };
+
+function backend(fails?: string, all: Array<ReturnType<typeof role>> = roles) {
+  const writes: Array<Call> = [];
+  mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
+    const method = init?.method ?? 'GET';
+    if (method !== 'GET') {
+      writes.push({ url, method, body: init?.body });
+      if (fails) {
+        throw Object.assign(new Error('400'), { responseBody: { error: { message: fails } } });
+      }
+      return { data: {} };
+    }
+    if (url.includes('/role?')) {
+      const start = Number(new URLSearchParams(url.split('?')[1]).get('startIndex') ?? 0);
+      return { data: { results: all.slice(start, start + 4), totalCount: all.length } };
+    }
+    return { data: {} };
+  }) as never);
+  return writes;
+}
+
+function renderPage() {
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <RolePermissions />
+    </SWRConfig>,
+  );
+}
+
+const box = (roleName: string, capabilityName: string) =>
+  screen.getByRole('checkbox', { name: `${roleName}: ${capabilityName}` });
+
+// Holds Registry's and Exports' privileges, not Study Management's nor Delete Patients.
+const instanceAdmin = ['Manage Roles', 'App: act.registry', 'Task: act.lists.export'];
+
+const siteAdministration = capability('cap-site', 'Site Administration', 'Manage users and roles', ['Get Roles']);
+const instance = role('role-instance', 'Instance Administrator', [siteAdministration], ['Manage Roles']);
+const authenticated = (privileges: Array<string> = []) => ({
+  ...role('role-authenticated', '', [], privileges),
+  display: 'Authenticated',
+});
+
+/** Signs in a user holding Manage Roles and Get Roles who has these roles. */
+async function signInHolding(held: Array<{ uuid: string; display: string }>) {
+  await signInWith(['Manage Roles', 'Get Roles']);
+  const session = vi.mocked(useSession)();
+  vi.mocked(useSession).mockReturnValue({
+    ...session,
+    user: { ...session.user, roles: held.map(({ uuid, display }) => ({ uuid, display })) },
+  } as never);
+}
+
+describe('Role permissions', () => {
+  it('lists the ACT roles against the ACT capabilities, each capability with what it gives, ticked where a role inherits it', async () => {
+    backend();
+    await signInWith(instanceAdmin);
+
+    renderPage();
+
+    await screen.findByRole('heading', { name: 'Role permissions' });
+    const header = await screen.findAllByRole('columnheader');
+    expect(header.map((cell) => cell.textContent)).toEqual([
+      'Role',
+      'ExportsDownload ACT lists as CSV',
+      'RegistryACT home, the registry and worklists',
+      'Study ManagementCreate and rename research studies',
+      '',
+    ]);
+    expect(screen.getAllByTestId('act-role-row').map((row) => within(row).getAllByRole('cell')[0].textContent)).toEqual(
+      ['Clinician', 'Data Clerk', 'Site Administrator'],
+    );
+    expect(box('Clinician', 'Registry')).toBeChecked();
+    expect(box('Clinician', 'Exports')).toBeChecked();
+    expect(box('Clinician', 'Study Management')).not.toBeChecked();
+    expect(box('Data Clerk', 'Exports')).not.toBeChecked();
+    expect(screen.queryByText('Provider')).not.toBeInTheDocument();
+    expect(screen.getByText(/through another role shows ticked/)).toBeInTheDocument();
+    expect(screen.getByText(/replaces changes made here/)).toBeInTheDocument();
+  });
+
+  it("saves a role's capabilities, keeping a role it inherits that is not an ACT capability", async () => {
+    const writes = backend();
+    await signInWith([...instanceAdmin, 'Delete Patients']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(screen.getByRole('button', { name: 'Save Site Administrator' })).toBeDisabled();
+    await userEvent.click(box('Site Administrator', 'Registry'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Site Administrator' }));
+
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toEqual({
+      url: expect.stringMatching(/\/role\/role-site$/),
+      method: 'POST',
+      body: { inheritedRoles: ['role-clinician'] },
+    });
+  });
+
+  it("leaves a role read only, and says why, when the user lacks one of the role's own privileges, as OpenMRS refuses that save", async () => {
+    backend();
+    await signInWith(instanceAdmin);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    const row = screen.getAllByTestId('act-role-row')[2];
+    expect(box('Site Administrator', 'Registry')).toBeDisabled();
+    expect(within(row).queryByRole('button', { name: /Save/ })).not.toBeInTheDocument();
+    expect(within(row).getByText('Read only: you need Delete Patients')).toBeInTheDocument();
+    expect(box('Clinician', 'Exports')).toBeEnabled();
+  });
+
+  it('gives no role a capability the user does not hold, and removes any, as OpenMRS checks only what a role holds itself', async () => {
+    backend();
+    await signInWith(['Manage Roles', 'App: act.registry']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Clinician', 'Study Management')).toBeDisabled();
+    expect(box('Data Clerk', 'Exports')).toBeDisabled();
+    expect(box('Clinician', 'Exports')).toBeChecked();
+    expect(box('Clinician', 'Exports')).toBeEnabled();
+    expect(box('Clinician', 'Registry')).toBeEnabled();
+  });
+
+  it('saves a capability given to a role beside the ones it keeps', async () => {
+    const writes = backend();
+    await signInWith(instanceAdmin);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Data Clerk', 'Exports'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Data Clerk' }));
+
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toEqual({
+      url: expect.stringMatching(/\/role\/role-clerk$/),
+      method: 'POST',
+      body: { inheritedRoles: ['cap-registry', 'cap-exports'] },
+    });
+  });
+
+  it('puts back a capability taken away by mistake, though the user could not give it', async () => {
+    backend();
+    await signInWith(['Manage Roles', 'App: act.registry']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Clinician', 'Exports'));
+    expect(box('Clinician', 'Exports')).not.toBeChecked();
+    expect(box('Clinician', 'Exports')).toBeEnabled();
+    await userEvent.click(box('Clinician', 'Exports'));
+
+    expect(box('Clinician', 'Exports')).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Save Clinician' })).toBeDisabled();
+  });
+
+  it('shows a capability a role has through another role as ticked, to change on that role', async () => {
+    backend();
+    await signInWith([...instanceAdmin, 'Delete Patients']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    const viaClinician = screen.getByRole('checkbox', { name: 'Site Administrator: Exports, through Clinician' });
+    expect(viaClinician).toBeChecked();
+    expect(viaClinician).toBeDisabled();
+    expect(screen.getByTitle('Site Administrator: Exports, through Clinician')).toContainElement(viaClinician);
+    expect(screen.queryByTitle('Clinician: Exports')).not.toBeInTheDocument();
+  });
+
+  it('says a direct tie taken away leaves a capability the role has through another role, and can be put back', async () => {
+    backend();
+    await signInWith([...instanceAdmin, 'Delete Patients']);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Site Administrator', 'Registry'));
+    const still = screen.getByRole('checkbox', { name: 'Site Administrator: Registry, still had through Clinician' });
+    expect(still).not.toBeChecked();
+    expect(still).toBeEnabled();
+    expect(screen.getByTitle('Site Administrator: Registry, still had through Clinician')).toContainElement(still);
+
+    await userEvent.click(still);
+    expect(box('Site Administrator', 'Registry')).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Save Site Administrator' })).toBeDisabled();
+  });
+
+  it('keeps on your own roles a capability that is your last way to Get Roles, as OpenMRS needs it to save any role', async () => {
+    const site = role('role-site', 'Site Administrator', [siteAdministration]);
+    backend(undefined, [instance, site, siteAdministration, authenticated()]);
+    await signInHolding([instance, site]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+    await userEvent.click(box('Site Administrator', 'Site Administration'));
+
+    const kept = screen.getByRole('checkbox', {
+      name: 'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+    });
+    expect(kept).toBeChecked();
+    expect(kept).toBeDisabled();
+    expect(
+      screen.getByTitle(
+        'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+      ),
+    ).toContainElement(kept);
+    await userEvent.click(box('Site Administrator', 'Site Administration'));
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+  });
+
+  it('keeps that capability while the only other way to Get Roles is unsaved on another row, as each row saves alone', async () => {
+    const plain = role('role-plain', 'Clinician', []);
+    const writes = backend(undefined, [instance, plain, siteAdministration, authenticated()]);
+    await signInHolding([instance, plain]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Clinician', 'Site Administration'));
+    const kept = screen.getByRole('checkbox', {
+      name: 'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+    });
+    expect(kept).toBeDisabled();
+    await userEvent.click(kept);
+
+    expect(screen.getByRole('button', { name: 'Save Instance Administrator' })).toBeDisabled();
+    expect(writes).toHaveLength(0);
+  });
+
+  it('lets you swap that capability for another giving Get Roles on the same row, as they save together', async () => {
+    const userManagement = capability('cap-users', 'User Management', 'Manage users', ['Get Roles']);
+    const writes = backend(undefined, [instance, siteAdministration, userManagement]);
+    await signInHolding([instance]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Instance Administrator', 'User Management'));
+    await userEvent.click(box('Instance Administrator', 'Site Administration'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Instance Administrator' }));
+
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].body).toEqual({ inheritedRoles: ['cap-users'] });
+  });
+
+  it('lets you take that capability from your own role when another of your roles gives you Get Roles', async () => {
+    const full = { ...role('role-full', 'Full', [], ['Get Roles']), display: 'Privilege Level: Full' };
+    const sysAdmin = { ...role('role-sysadmin', 'Sysadmin', [full]), display: 'Organizational: System Administrator' };
+    backend(undefined, [instance, sysAdmin, full, siteAdministration]);
+    await signInHolding([instance, sysAdmin]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+  });
+
+  it('lets you take that capability from your own role when Authenticated gives you Get Roles', async () => {
+    backend(undefined, [instance, siteAdministration, authenticated(['Get Roles'])]);
+    await signInHolding([instance]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+  });
+
+  it('keeps on your own role a capability whose privilege you would lose, as no one could give it back here', async () => {
+    const clinicAdministration = capability('cap-clinics', 'Clinic Administration', 'Manage clinics', [
+      'Manage Locations',
+    ]);
+    const mine = role(
+      'role-instance',
+      'Instance Administrator',
+      [siteAdministration, clinicAdministration],
+      ['Manage Roles'],
+    );
+    const writes = backend(undefined, [mine, siteAdministration, clinicAdministration, authenticated(['Get Roles'])]);
+    await signInHolding([mine]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    const kept = screen.getByRole('checkbox', {
+      name: 'Instance Administrator: Clinic Administration, kept: without it you would lose Manage Locations, and could not give it back here',
+    });
+    expect(kept).toBeChecked();
+    expect(kept).toBeDisabled();
+    await userEvent.click(kept);
+    expect(screen.getByRole('button', { name: 'Save Instance Administrator' })).toBeDisabled();
+    expect(writes).toHaveLength(0);
+  });
+
+  it('lets you take a capability from your own role when another of your roles holds its privilege', async () => {
+    const clinicAdministration = capability('cap-clinics', 'Clinic Administration', 'Manage clinics', [
+      'Manage Locations',
+    ]);
+    const mine = role('role-instance', 'Instance Administrator', [clinicAdministration], ['Manage Roles']);
+    const other = role('role-global', 'Global Administrator', [clinicAdministration]);
+    backend(undefined, [mine, other, clinicAdministration, authenticated(['Get Roles'])]);
+    await signInHolding([mine, other]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Clinic Administration')).toBeEnabled();
+  });
+
+  it('counts an unsaved untick on another row as removed, so the last way to Get Roles stays kept', async () => {
+    const userManagement = capability('cap-users', 'User Management', 'Manage users', ['Get Roles']);
+    const mine = role('role-instance', 'Instance Administrator', [siteAdministration], ['Manage Roles']);
+    const other = role('role-users', 'User Manager', [userManagement]);
+    backend(undefined, [mine, other, siteAdministration, userManagement, authenticated()]);
+    await signInHolding([mine, other]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+    await userEvent.click(box('User Manager', 'User Management'));
+
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+      }),
+    ).toBeDisabled();
+  });
+
+  it('says so when there are no ACT roles', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [], totalCount: 0 } } as never);
+    await signInWith(instanceAdmin);
+    renderPage();
+
+    expect(await screen.findByText('There are no ACT roles to display')).toBeInTheDocument();
+  });
+
+  it("shows the server's reason when it refuses a role, and keeps the change to try again", async () => {
+    backend('You must have the privileges of the role');
+    await signInWith(instanceAdmin);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    await userEvent.click(box('Clinician', 'Exports'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Clinician' }));
+
+    expect(await screen.findByText('You must have the privileges of the role')).toBeInTheDocument();
+    expect(box('Clinician', 'Exports')).not.toBeChecked();
+  });
+});

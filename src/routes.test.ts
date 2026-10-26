@@ -74,6 +74,8 @@ describe('routes.json privileges', () => {
     ['act-back-to-act-link', 'Get Patients'],
     ['act-reports-dashboard-link', screenPrivileges.reports],
     ['act-reports-dashboard', screenPrivileges.reports],
+    ['act-report-dashboard-link', screenPrivileges.reports],
+    ['act-report-dashboard', screenPrivileges.reports],
     ['act-dashboard-link', screenPrivileges.dashboard],
     ['act-dashboard', screenPrivileges.dashboard],
     ['act-facility-reports-dashboard-link', screenPrivileges.dataClerk],
@@ -196,11 +198,26 @@ describe('routes.json privileges', () => {
     }
   });
 
-  it('adds one patient banner action, Update patient status, and its modal; OpenMRS prints the identifier sticker itself', () => {
+  it('adds one patient banner action, Update patient status, and its workspace; OpenMRS prints the identifier sticker itself', () => {
     expect(
       routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot').map(({ name }) => name),
     ).toEqual(['act-update-patient-status']);
-    expect(routeFile.modals).toEqual([{ name: 'update-patient-status-modal', component: 'updatePatientStatusModal' }]);
+    expect(routeFile).not.toHaveProperty('modals');
+    expect(routeFile.workspaces2).toContainEqual({
+      name: 'act-update-patient-status-workspace',
+      component: 'updatePatientStatusWorkspace',
+      window: 'act-update-patient-status',
+    });
+    expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-patient-status', group: 'patient-chart' });
+  });
+
+  it('opens Update prophylaxis in a workspace of the patient chart', () => {
+    expect(routeFile.workspaces2).toContainEqual({
+      name: 'act-update-prophylaxis-workspace',
+      component: 'updateProphylaxisWorkspace',
+      window: 'act-update-prophylaxis',
+    });
+    expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-prophylaxis', group: 'patient-chart' });
   });
 
   it('shows Update patient status to a user who may edit programmes or people, or to a super user, and to no one else', () => {
@@ -254,4 +271,49 @@ describe('routes.json privileges', () => {
       expect(evaluate(expression, session(['App: act.home'], ['Organizational: ACT Clinician']))).toBe(false);
     },
   );
+});
+
+const workspaceRoutes = routeFile as unknown as {
+  workspaceGroups2: Array<{ name: string; scopePattern: string }>;
+  workspaceWindows2: Array<{ name: string; group: string }>;
+  workspaces2: Array<{ name: string; component: string; window: string }>;
+};
+
+/** The patient chart app defines this group; an ACT window joins it, as O3's own chart windows do. */
+const patientChartGroup = 'patient-chart';
+
+describe('routes.json workspaces', () => {
+  it('puts every workspace in an ACT window in a group, and names each only once', () => {
+    const groups = workspaceRoutes.workspaceGroups2.map((group) => group.name);
+    const windows = workspaceRoutes.workspaceWindows2.map((window) => window.name);
+    expect(new Set(groups).size).toBe(groups.length);
+    expect(new Set(windows).size).toBe(windows.length);
+    workspaceRoutes.workspaceWindows2
+      .filter((window) => window.group !== patientChartGroup)
+      .forEach((window) => expect(groups).toContain(window.group));
+    workspaceRoutes.workspaces2
+      .filter((workspace) => workspace.window.startsWith('act-'))
+      .forEach((workspace) => expect(windows).toContain(workspace.window));
+  });
+
+  it.each([
+    ['act-clinic-form-workspace', 'act-clinics', '/home/act-clinics'],
+    ['act-study-form-workspace', 'act-studies', '/home/act-studies'],
+    ['act-user-form-workspace', 'act-users', '/home/act-users'],
+    ['act-reset-password-workspace', 'act-users', '/home/act-users'],
+  ])('opens %s in the %s group, scoped to the page %s', (name, group, page) => {
+    const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
+    const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
+    const scope = workspaceRoutes.workspaceGroups2.find((candidate) => candidate.name === window?.group);
+    expect(scope?.name).toBe(group);
+    const pattern = new RegExp(scope.scopePattern);
+    expect(pattern.test(page)).toBe(true);
+    expect(pattern.test(`/openmrs/spa${page}`)).toBe(false);
+  });
+
+  it('opens the enrolment workspace in the patient chart group', () => {
+    const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === 'act-enrollment-workspace');
+    const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
+    expect(window?.group).toBe(patientChartGroup);
+  });
 });
