@@ -808,6 +808,10 @@
     {
       "name": "act-screen-positive",
       "scopePattern": "/home/act-screen-positive"
+    },
+    {
+      "name": "act-research",
+      "scopePattern": "/patient/([^/]+)/chart/act-research"
     }
   ],
   "workspaceWindows2": [
@@ -822,6 +826,11 @@
       "group": "act-screen-positive",
       "width": "extra-wide",
       "canMaximize": true
+    },
+    {
+      "name": "act-research-form",
+      "group": "act-research",
+      "width": "narrow"
     }
   ],
   "workspaces2": [
@@ -839,6 +848,11 @@
       "name": "act-screen-positive-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-enrollment-workspace",
+      "component": "enrollmentWorkspace",
+      "window": "act-research-form"
     }
   ]
 }
