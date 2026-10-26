@@ -49,6 +49,16 @@
 
 .chart {
   min-width: 0;
+
+  // Carbon classes the second of two groups, the median, stroke-2-1-2.
+  :global(path.line.stroke-2-1-2) {
+    stroke-dasharray: 6 4;
+  }
+
+  // Invisible but still hoverable, so the median's tooltip stays.
+  :global(circle.dot.stroke-2-1-2) {
+    opacity: 0;
+  }
 }
 
 .tooltip {

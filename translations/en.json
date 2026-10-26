@@ -694,7 +694,6 @@
   "runChartHistoryStarts": "History starts on the first night the snapshot ran.",
   "runChartHistoryStartsFirstNight": "History starts the first night the snapshot runs.",
   "runChartLatest": "Latest, {{date}}: {{detail}}",
-  "runChartMedian": "Median of the period",
   "runChartMedianValue": "Median {{value}}",
   "runChartMetricActiveRegistrants": "Active registrants",
   "runChartMetricAdherent": "Adherent 80%+, % of active registrants",

@@ -29,6 +29,7 @@ const escapeHtml = (text: string) =>
  */
 export function RunChartLine({
   name,
+  axisTitle,
   points,
   median,
   shifts,
@@ -38,6 +39,8 @@ export function RunChartLine({
   compact,
 }: {
   name: string;
+  /** The left axis's title; none on the compact chart. */
+  axisTitle?: string;
   points: Array<RunChartPoint>;
   /** Drawn, with the shifts, when it is given. */
   median: number | null;
@@ -50,12 +53,12 @@ export function RunChartLine({
 }) {
   const { t } = useTranslation();
   const valueGroup = t('runChartValue', 'Value');
-  const medianGroup = t('runChartMedian', 'Median of the period');
+  const medianGroup = median === null ? null : t('runChartMedianValue', 'Median {{value}}', { value: median });
   const held = withValue(points);
 
   const data = useStable([
     ...held.map((point) => ({ group: valueGroup, date: localDay(point.date), value: point.value })),
-    ...(median === null
+    ...(medianGroup === null
       ? []
       : held.map((point) => ({ group: medianGroup, date: localDay(point.date), value: median }))),
   ]);
@@ -79,7 +82,7 @@ export function RunChartLine({
     resizable: true,
     toolbar: { enabled: false },
     legend: { enabled: !compact },
-    color: { scale: { [valueGroup]: teal, [medianGroup]: purple } },
+    color: { scale: { [valueGroup]: teal, ...(medianGroup ? { [medianGroup]: purple } : {}) } },
     points: { enabled: true, radius: 3 },
     axes: {
       bottom: {
@@ -103,6 +106,7 @@ export function RunChartLine({
         mapsTo: 'value',
         scaleType: ScaleTypes.LINEAR,
         visible: !compact,
+        ...(compact || !axisTitle ? {} : { title: axisTitle }),
         // A percent is never above 100, and Carbon's own scale would stretch past it or clip.
         ...(kind === 'percent' ? { domain: [0, 100] } : {}),
       },

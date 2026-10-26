@@ -1,7 +1,7 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LineChart } from '@carbon/charts-react';
 import { signInWith } from '../access/sign-in.test-helper';
@@ -99,8 +99,9 @@ describe('RunCharts', () => {
     render(<RunCharts />);
 
     const { data, options } = lastChartProps();
-    expect(data.filter((item) => item.group === 'Median of the period').map((item) => item.value)).toEqual(
-      Array(10).fill(79),
+    expect(data.filter((item) => item.group === 'Median 79').map((item) => item.value)).toEqual(Array(10).fill(79));
+    expect(options.tooltip.customHTML([{ group: 'Median 79', date: new Date(2026, 0, 12), value: 79 }])).toContain(
+      'Median 79',
     );
     expect(options.axes.bottom.highlights.data).toEqual([
       {
@@ -179,11 +180,6 @@ describe('RunCharts', () => {
 
     expect(html).toContain('Week of');
     expect(html).toContain('70% · 70 of 100 patient-days');
-    expect(
-      lastChartProps().options.tooltip.customHTML([
-        { group: 'Median of the period', date: new Date(2026, 0, 12), value: 5 },
-      ]),
-    ).toContain('Median 5');
   });
 
   it('says when the snapshots started and the latest figure before a chart can be drawn', () => {
@@ -336,6 +332,35 @@ describe('RunCharts', () => {
 
     expect(screen.getByText('No clinic on your account to chart')).toBeInTheDocument();
     expect(asks().every((params) => params === null)).toBe(true);
+  });
+
+  it('titles the left axis with the metric chosen', async () => {
+    const user = userEvent.setup();
+    render(<RunCharts />);
+    expect(lastChartProps().options.axes.left.title).toMatch(/^Retained in care.*%/);
+
+    await user.selectOptions(screen.getByLabelText('Metric'), 'active_registrants');
+
+    expect(lastChartProps().options.axes.left.title).toBe('Active registrants');
+  });
+
+  it('names no clinic, and shows no tiles, for a limited administrator with none', () => {
+    limitTo({ status: 'ready', uuids: [], names: [] });
+    vi.mocked(useClinics).mockReturnValue([]);
+    render(<RunCharts />);
+
+    expect(screen.queryByText(/All clinics/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/All eight metrics/)).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId('run-chart-tile')).toHaveLength(0);
+  });
+
+  it('writes the default metric into the address when it has filters but no metric', async () => {
+    window.history.replaceState({}, '', '/home/act-run-charts?from=2026-01-01&to=2026-06-30&points=week');
+    render(<RunCharts />);
+
+    await waitFor(() =>
+      expect(new URLSearchParams(window.location.search).get('metric')).toBe('active_registrants_seen_last_7_months'),
+    );
   });
 
   it('says so, with a way to try again, when the run chart cannot load', async () => {

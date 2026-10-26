@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Button, ContentSwitcher, InlineNotification, Select, SelectItem, SkeletonText, Switch } from '@carbon/react';
@@ -128,6 +128,13 @@ export default function RunCharts() {
   );
   const [filters, update, pending] = useUrlFilters(filterKeys, defaults);
 
+  useEffect(() => {
+    if (!pending && !filters.metric) {
+      update({ metric: defaultMetric });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending, filters.metric]);
+
   const limited = limit.status === 'ready';
   const metric = isMetric(filters.metric) ? filters.metric : defaultMetric;
   const period: RunChartPeriod = isPeriod(filters.points) ? filters.points : defaultPeriod;
@@ -152,6 +159,7 @@ export default function RunCharts() {
   const median = hasMedian ? chart.median : null;
   const runs = useMemo(() => shifts(chart.points, median), [chart.points, median]);
 
+  const noClinic = limited && !clinic;
   const hrefFor = (id: string) => {
     const query = new URLSearchParams(window.location.search);
     query.set('metric', id);
@@ -161,7 +169,7 @@ export default function RunCharts() {
   const kind = kindOf(metric);
 
   const body = () => {
-    if (limited && !clinic && !pending) {
+    if (noClinic && !pending) {
       return (
         <InlineNotification
           kind="info"
@@ -203,6 +211,7 @@ export default function RunCharts() {
       <>
         <RunChartLine
           name={`${label}, ${clinicName}`}
+          axisTitle={label}
           points={chart.points}
           median={median}
           shifts={runs}
@@ -234,7 +243,7 @@ export default function RunCharts() {
         </div>
         <section className={styles.card} aria-labelledby="run-chart-title">
           <h2 id="run-chart-title" className={styles.title}>
-            {t('runChartTitle', '{{metric}}, {{clinic}}', { metric: label, clinic: clinicName })}
+            {noClinic ? label : t('runChartTitle', '{{metric}}, {{clinic}}', { metric: label, clinic: clinicName })}
           </h2>
           <p className={styles.sub}>
             {kind === 'percent'
@@ -301,23 +310,25 @@ export default function RunCharts() {
           </div>
           {body()}
         </section>
-        <section aria-labelledby="run-chart-all">
-          <h2 id="run-chart-all" className={styles.title}>
-            {t('runChartAllMetrics', 'All eight metrics, {{clinic}}', { clinic: clinicName })}
-          </h2>
-          <div className={styles.tiles}>
-            {runChartMetrics.map((entry) => (
-              <MetricTile
-                key={entry.id}
-                id={entry.id}
-                params={params}
-                current={entry.id === metric}
-                hrefFor={hrefFor}
-                onOpen={(id) => update({ metric: id })}
-              />
-            ))}
-          </div>
-        </section>
+        {!noClinic && (
+          <section aria-labelledby="run-chart-all">
+            <h2 id="run-chart-all" className={styles.title}>
+              {t('runChartAllMetrics', 'All eight metrics, {{clinic}}', { clinic: clinicName })}
+            </h2>
+            <div className={styles.tiles}>
+              {runChartMetrics.map((entry) => (
+                <MetricTile
+                  key={entry.id}
+                  id={entry.id}
+                  params={params}
+                  current={entry.id === metric}
+                  hrefFor={hrefFor}
+                  onOpen={(id) => update({ metric: id })}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </>
   );
