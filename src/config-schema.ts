@@ -127,12 +127,18 @@ export const configSchema = {
     prophylaxisForms: {
       _type: Type.Array,
       _elements: {
-        label: { _type: Type.String, _description: 'The choice as ACT home shows it.' },
+        label: {
+          _type: Type.String,
+          _description: 'The choice as ACT home shows it: a translation key, or text shown as written.',
+        },
         url: { _type: Type.String, _description: 'Where the choice leads.' },
       },
+      // Keep these markers: extraction reads them to give en.json the default labels as keys.
+      // t('enterBpg', 'Enter BPG')
+      // t('enterOralProphylaxis', 'Enter oral prophylaxis')
       _default: [
-        { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
-        { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
+        { label: 'enterBpg', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
+        { label: 'enterOralProphylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
       ],
       _description:
         'The choices the Enter prophylaxis quick action offers when enterProphylaxisInFastDataEntry is true, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
@@ -276,17 +282,27 @@ export const configSchema = {
       _elements: {
         _type: Type.Object,
         step: { _type: Type.String, _description: "The report row's step value." },
-        label: { _type: Type.String, _description: 'What the ACT home widget and the Dashboard call it.' },
+        label: {
+          _type: Type.String,
+          _description:
+            'What the ACT home widget and the Dashboard call it: a translation key, or text shown as written.',
+        },
       },
+      // Keep these markers: extraction reads them to give en.json the default labels as keys.
+      // t('active', 'Active')
+      // t('prescribed', 'Prescribed')
+      // t('initiated', 'Initiated')
+      // t('coveredToday', 'Covered today')
+      // t('adherentEightyPercent', 'Adherent (80%+)')
       _default: [
-        { step: 'Active', label: 'Active' },
-        { step: 'Prescribed', label: 'Prescribed' },
-        { step: 'Prescribed Prophylaxis', label: 'Prescribed' },
-        { step: 'Initiated', label: 'Initiated' },
-        { step: 'Initiated BPG', label: 'Initiated' },
-        { step: 'Covered today', label: 'Covered today' },
-        { step: 'Adherent (80%+)', label: 'Adherent (80%+)' },
-        { step: 'Adherent', label: 'Adherent (80%+)' },
+        { step: 'Active', label: 'active' },
+        { step: 'Prescribed', label: 'prescribed' },
+        { step: 'Prescribed Prophylaxis', label: 'prescribed' },
+        { step: 'Initiated', label: 'initiated' },
+        { step: 'Initiated BPG', label: 'initiated' },
+        { step: 'Covered today', label: 'coveredToday' },
+        { step: 'Adherent (80%+)', label: 'adherentEightyPercent' },
+        { step: 'Adherent', label: 'adherentEightyPercent' },
       ],
       _description:
         "The report's steps the ACT home widget and the Dashboard draw, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
@@ -781,7 +797,11 @@ export const configSchema = {
   urgencyBands: {
     _type: Type.Array,
     _elements: {
-      label: { _type: Type.String, _description: 'What the waiting list and its Urgency filter call the band.' },
+      label: {
+        _type: Type.String,
+        _description:
+          'What the waiting list and its Urgency filter call the band: a translation key, or text shown as written.',
+      },
       shortLabel: {
         _type: Type.String,
         _description: "What ACT home's waiting list widget calls the band; without one, it uses label.",
@@ -789,29 +809,37 @@ export const configSchema = {
       concept: { _type: Type.ConceptUuid, _description: 'The answer that records this band.' },
       deadlineDays: { _type: Type.Number, _description: 'Days allowed before a patient in this band is overdue.' },
     },
+    // Keep these markers: extraction reads them to give en.json the default labels as keys.
+    // t('urgencyEmergent', '1: Emergent (24 hours)')
+    // t('urgencyWithinOneWeek', '1 - within 1 week')
+    // t('urgencyWithinOneMonth', '2 - within 1 month')
+    // t('urgencyUrgent', '2: Urgent (60 days)')
+    // t('urgencyWithinThreeMonths', '3 - within 3 months')
+    // t('urgencyElective', '3: Elective (180 days)')
+    // t('urgencyWithinSixMonths', '4 - within 6 months')
     _default: [
       {
-        label: '1: Emergent (24 hours)',
+        label: 'urgencyEmergent',
         shortLabel: '1: Emergent',
         concept: '1fe15210-4490-58b0-a38c-bb0386e98482',
         deadlineDays: 1,
       },
-      { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
-      { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
+      { label: 'urgencyWithinOneWeek', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
+      { label: 'urgencyWithinOneMonth', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
       {
-        label: '2: Urgent (60 days)',
+        label: 'urgencyUrgent',
         shortLabel: '2: Urgent',
         concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
         deadlineDays: 60,
       },
-      { label: '3 - within 3 months', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
+      { label: 'urgencyWithinThreeMonths', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
       {
-        label: '3: Elective (180 days)',
+        label: 'urgencyElective',
         shortLabel: '3: Elective',
         concept: '2666bf97-7400-57c7-b535-7903e22ced34',
         deadlineDays: 180,
       },
-      { label: '4 - within 6 months', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
+      { label: 'urgencyWithinSixMonths', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
     ],
     _description:
       "Urgency bands for the procedural waiting list, most urgent first: ACT 2.0's three urgencies, which answer the RHD Consultation Visit's Urgency, with the days allowed before a recommendation is overdue. The four answers they replaced keep their old deadlines, for recommendations saved before, and every band sits in deadline order. A recommendation whose answer no band names keeps the answer's name, is not marked overdue and is listed after the bands.",

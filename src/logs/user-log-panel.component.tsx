@@ -124,7 +124,7 @@ export function UserLogPanel({
       time: entry.eventTime,
       source: 'signIns' as const,
       text: <strong>{signInLabels[entry.eventType] ?? entry.eventType}</strong>,
-      summary: describeSignInDetails(entry.details),
+      summary: describeSignInDetails(t, entry.details),
     })),
   ]
     .sort((a, b) => b.time.localeCompare(a.time))
@@ -182,6 +182,7 @@ export function UserLogPanel({
       {failed && (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadLog', 'Could not load the log')}
@@ -196,7 +197,7 @@ export function UserLogPanel({
         <dl className={styles.panelEntries}>
           {entries.map((entry) => (
             <div key={entry.key}>
-              <dt>{logTime(entry.time)}</dt>
+              <dt>{logTime(t, entry.time)}</dt>
               <dd>
                 <span
                   className={`${styles.dot} ${dotClass[entry.source]}`}

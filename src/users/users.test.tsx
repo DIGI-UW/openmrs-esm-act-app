@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { getCoreTranslation, openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { CLINICS_PROPERTY } from '../clinic-limit';
 import Users from './users.component';
@@ -120,6 +120,37 @@ describe('Users', () => {
     expect(await rowOf('Ruth Okot')).toHaveTextContent('Disabled');
     await userEvent.type(screen.getByRole('searchbox', { name: 'Search users' }), 'clinician');
     expect(screen.getAllByTestId('act-user-row')).toHaveLength(2);
+  });
+
+  it('shows its switch state and notice icon, and shows and hides a password in the add, reset and disable dialogs', async () => {
+    backend();
+    await signInAs(SA);
+    renderPage();
+
+    expect(await screen.findByText('Off')).toBeInTheDocument();
+    expect(screen.getByTitle('info icon')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('switch', { name: 'Show disabled users' }));
+    expect(screen.getByText('On')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear search input' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add user' }));
+    let dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByRole('button', { name: 'Show password' })).toHaveLength(2);
+    await userEvent.click(within(dialog).getAllByRole('button', { name: 'Show password' })[0]);
+    expect(within(dialog).getByRole('button', { name: 'Hide password' })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Reset password' }));
+    dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByRole('button', { name: 'Show password' })).toHaveLength(2);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Disable user' }));
+    dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(getCoreTranslation).toHaveBeenCalledWith('close');
   });
 
   it('tells a site administrator it administers the users of its clinics, and offers it the clinician roles and its clinic', async () => {
