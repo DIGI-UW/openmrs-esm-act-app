@@ -201,6 +201,7 @@ function WorklistRows({ title, csvName, entries, isLoading, error, action }: Wor
       return (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadWorklistPatients', 'Could not load the worklist patients')}
@@ -225,6 +226,7 @@ function WorklistRows({ title, csvName, entries, isLoading, error, action }: Wor
     return (
       <>
         <Search
+          closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
           size="md"
           className={styles.search}
           labelText={t('searchThisList', 'Search this list')}

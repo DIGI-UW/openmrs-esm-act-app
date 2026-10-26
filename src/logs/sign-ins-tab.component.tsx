@@ -77,7 +77,7 @@ export function SignInsTab({
 
   const rows = (page?.results ?? []).map((entry) => ({
     key: String(entry.id),
-    time: <span title={fullTime(entry.eventTime)}>{logTime(entry.eventTime)}</span>,
+    time: <span title={fullTime(entry.eventTime)}>{logTime(t, entry.eventTime)}</span>,
     user: <LogUserCell user={{ uuid: entry.userUUID, username: entry.username }} />,
     action: (
       <LogActionCell
@@ -86,7 +86,9 @@ export function SignInsTab({
             {labels[entry.eventType] ?? entry.eventType}
           </Tag>
         }
-        summary={[describeSignInDetails(entry.details), describeBrowser(entry.userAgent)].filter(Boolean).join(', ')}
+        summary={[describeSignInDetails(t, entry.details), describeBrowser(t, entry.userAgent)]
+          .filter(Boolean)
+          .join(', ')}
       />
     ),
     target: entry.ipAddress ?? '',
@@ -94,14 +96,14 @@ export function SignInsTab({
       <>
         <div>
           {entry.details && (
-            <DetailLine label={t('details', 'Details')}>{describeSignInDetails(entry.details)}</DetailLine>
+            <DetailLine label={t('details', 'Details')}>{describeSignInDetails(t, entry.details)}</DetailLine>
           )}
           <DetailLine label={labels[entry.eventType] ?? entry.eventType}>{fullTime(entry.eventTime)}</DetailLine>
         </div>
         <div>
           {entry.sessionId && <DetailLine label={t('session', 'Session')}>{entry.sessionId}</DetailLine>}
           {(entry.ipAddress || entry.userAgent) && (
-            <DetailLine label={t('from', 'From')}>{describeClient(entry.ipAddress, entry.userAgent)}</DetailLine>
+            <DetailLine label={t('from', 'From')}>{describeClient(t, entry.ipAddress, entry.userAgent)}</DetailLine>
           )}
           <p className={styles.detailLine}>
             <ConfigurableLink to={adminLinks.securityAuditUrl}>
@@ -125,7 +127,7 @@ export function SignInsTab({
       fullTime(entry.eventTime),
       entry.username ?? '',
       labels[entry.eventType] ?? entry.eventType,
-      describeSignInDetails(entry.details),
+      describeSignInDetails(t, entry.details),
       entry.ipAddress ?? '',
     ]);
 

@@ -35,7 +35,7 @@ import {
   useCountParams,
 } from './dashboard-figure';
 import { DashboardFigure } from './dashboard-figure.component';
-import { type Count, registrantCounts, share, waitlistCounts } from './dashboard-counts';
+import { type Count, registrantCounts, share, waitlistCounts, waitlistName } from './dashboard-counts';
 import styles from './dashboard.scss';
 
 type Scope = Record<string, string>;
@@ -111,6 +111,7 @@ function Section({
           <div className={styles.state}>
             <InlineNotification
               kind="error"
+              statusIconDescription={t('errorIcon', 'error icon')}
               lowContrast
               hideCloseButton
               title={t('couldNotLoadSection', '{{section}} could not load', { section: name })}
@@ -403,14 +404,14 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   <TableRow>
                     <TableHeader>{t('procedure', 'Procedure')}</TableHeader>
                     {waitlist.urgencies.map((urgency) => (
-                      <TableHeader key={urgency}>{urgency}</TableHeader>
+                      <TableHeader key={urgency}>{waitlistName(t, urgency)}</TableHeader>
                     ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {waitlist.rows.map((row) => (
                     <TableRow key={row.procedure} data-testid="dashboard-waitlist-row">
-                      <TableCell>{row.procedure}</TableCell>
+                      <TableCell>{waitlistName(t, row.procedure)}</TableCell>
                       {row.counts.map((count, index) => (
                         <TableCell key={waitlist.urgencies[index]}>
                           <CountLink
@@ -440,16 +441,20 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                 data={waitlist.urgencies.flatMap((urgency, index) =>
                   waitlist.rows
                     .filter((row) => row.counts[index])
-                    .map((row) => ({ group: urgency, key: row.procedure, value: row.counts[index] })),
+                    .map((row) => ({
+                      group: waitlistName(t, urgency),
+                      key: waitlistName(t, row.procedure),
+                      value: row.counts[index],
+                    })),
                 )}
-                groups={waitlist.urgencies}
+                groups={waitlist.urgencies.map((urgency) => waitlistName(t, urgency))}
                 colours="urgency"
                 height="18rem"
               />
               <ul className={styles.totals}>
                 {waitlist.rows.map((row) => (
                   <li key={row.procedure} className={styles.legendRow} data-testid="dashboard-waitlist-total">
-                    <span>{row.procedure}</span>
+                    <span>{waitlistName(t, row.procedure)}</span>
                     <span className={styles.count}>
                       <CountLink
                         value={row.counts.reduce((sum, count) => sum + count, 0)}
@@ -653,6 +658,7 @@ function ScreeningFromRegistrations({
         <div className={styles.registrationControls}>
           <InlineNotification
             kind="info"
+            statusIconDescription={t('infoIcon', 'info icon')}
             lowContrast
             hideCloseButton
             title={t(
@@ -770,6 +776,7 @@ export default function Dashboard() {
         {sessionScope.status === 'error' ? (
           <InlineNotification
             kind="error"
+            statusIconDescription={t('errorIcon', 'error icon')}
             lowContrast
             hideCloseButton
             title={t('couldNotLoadDashboard', 'Could not load the dashboard')}

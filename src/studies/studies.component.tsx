@@ -19,6 +19,7 @@ import { Add, Edit } from '@carbon/react/icons';
 import {
   ConfigurableLink,
   formatDate,
+  getCoreTranslation,
   isDesktop,
   CohortsPictogram,
   showSnackbar,
@@ -87,6 +88,7 @@ function StudyNameModal({
 
   return (
     <Modal
+      closeButtonLabel={getCoreTranslation('close')}
       open
       modalHeading={study ? t('renameStudy', 'Rename study') : t('createStudy', 'Create study')}
       primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
@@ -99,6 +101,7 @@ function StudyNameModal({
       {saveError && (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotSaveStudy', 'Could not save the study')}
@@ -142,6 +145,7 @@ function StudiesTable({
   const table = error ? (
     <InlineNotification
       kind="error"
+      statusIconDescription={t('errorIcon', 'error icon')}
       lowContrast
       hideCloseButton
       title={t('couldNotLoadStudies', 'Could not load the studies')}
@@ -290,6 +294,7 @@ function ParticipantsTable({
     body = (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadParticipants', 'Could not load the study participants')}

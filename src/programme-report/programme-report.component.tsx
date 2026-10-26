@@ -239,6 +239,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
       {error || sessionScope.status === 'error' ? (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadReports', 'Could not load the report')}

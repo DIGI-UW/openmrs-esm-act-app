@@ -51,7 +51,7 @@ describe('Procedural waiting list', () => {
       'Date of birth': '15-Mar-2016',
       Type: 'Catheterization',
       Procedure: 'Mitral balloon valvuloplasty',
-      Urgency: '3: Elective (180 days)',
+      Urgency: 'urgencyElective',
       District: 'KITGUM',
       Contraindications: 'Yes',
       'Suitable for repair': 'No',
@@ -94,6 +94,29 @@ describe('Procedural waiting list', () => {
 
       expect(shownIds()[2]).toBe('b');
     });
+  });
+
+  it('keeps filtering by the configured name of an urgency band when it is shown translated, in its column and its filter alike', async () => {
+    dataset({ rows: waitingListRows });
+
+    render(<WaitingList />);
+
+    const row = screen.getByRole('row', { name: /rhd00001\b/ });
+    expect(within(row).getByRole('cell', { name: 'urgencyElective' })).toBeInTheDocument();
+    const urgency = screen.getByRole('combobox', { name: 'Urgency' });
+    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: 'urgencyElective' }));
+    expect(urgency).toHaveValue('urgencyElective');
+  });
+
+  it("shows the report's own urgency name, which no band covers, as it is", async () => {
+    dataset({ rows: [{ ...waitingListRows[0], urgency: 'Urgent', urgency_concept: 'no-such-band' }] });
+
+    render(<WaitingList />);
+
+    expect(screen.getByRole('cell', { name: 'Urgent' })).toBeInTheDocument();
+    const urgency = screen.getByRole('combobox', { name: 'Urgency' });
+    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: 'Urgent' }));
+    expect(urgency).toHaveValue('Urgent');
   });
 
   it('evaluates the configured report', () => {

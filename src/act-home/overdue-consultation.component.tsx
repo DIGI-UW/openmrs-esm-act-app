@@ -81,6 +81,7 @@ export default function OverdueConsultation() {
       {error ? (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadOverdueConsultations', 'Could not load the patients overdue for consultation')}

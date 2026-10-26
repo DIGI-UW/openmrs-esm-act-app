@@ -28,6 +28,7 @@ jobs:
           node-version: 20
       - run: yarn install --immutable
       - run: yarn verify
+      - run: yarn check-translations
       - run: yarn build
 
   pre_release:
