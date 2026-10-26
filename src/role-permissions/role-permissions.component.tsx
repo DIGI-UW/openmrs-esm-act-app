@@ -80,8 +80,7 @@ export default function RolePermissions() {
     }
     setDrafts((current) => ({ ...current, [role.uuid]: next }));
   };
-  // OpenMRS loads a role to save it only for a user who holds Get Roles.
-  const holdsGetRoles = (changing: string, dropping?: string) => {
+  const holds = (privilege: string, changing: string, dropping?: string) => {
     const seen = new Set<string>();
     const reaches = (uuid: string): boolean => {
       const role = all.find((other) => other.uuid === uuid);
@@ -91,12 +90,12 @@ export default function RolePermissions() {
       seen.add(uuid);
       const tied = role.inheritedRoles.map((other) => other.uuid);
       const own = saved.get(uuid);
-      // Saving one row leaves the others' unsaved ticks unsent.
+      // Saving one row leaves the others' unsaved ticks unsent; their unsaved unticks count as removed.
       const keeps =
         uuid === changing ? [...chosenFor(role)] : [...(own ?? [])].filter((other) => chosenFor(role).has(other));
       const inherits = own ? [...tied.filter((other) => !own.has(other)), ...keeps] : tied;
       return (
-        role.privileges.some(({ display }) => display === 'Get Roles') ||
+        role.privileges.some(({ display }) => display === privilege) ||
         inherits.filter((other) => uuid !== changing || other !== dropping).some(reaches)
       );
     };
@@ -105,6 +104,11 @@ export default function RolePermissions() {
       reaches(held.uuid),
     );
   };
+  // Privileges only this capability gives you: losing one means it could not be given back here.
+  const lostWith = (role: Role, capability: Role) =>
+    capability.privileges
+      .map(({ display }) => display)
+      .filter((privilege) => holds(privilege, role.uuid) && !holds(privilege, role.uuid, capability.uuid));
   const save = async (role: Role) => {
     setSaving(role.uuid);
     setSaveError(null);
@@ -167,10 +171,8 @@ export default function RolePermissions() {
                     const before = saved.get(role.uuid).has(capability.uuid);
                     const via = !before && inherited.get(capability.uuid);
                     const stillVia = before && !chosen.has(capability.uuid) && inherited.get(capability.uuid);
-                    const kept =
-                      chosen.has(capability.uuid) &&
-                      holdsGetRoles(role.uuid) &&
-                      !holdsGetRoles(role.uuid, capability.uuid);
+                    const lost = chosen.has(capability.uuid) ? lostWith(role, capability) : [];
+                    const kept = lost.length > 0;
                     const label = via
                       ? t('capabilityThrough', '{{role}}: {{capability}}, through {{through}}', {
                           role: name,
@@ -186,15 +188,26 @@ export default function RolePermissions() {
                             interpolation: { escapeValue: false },
                           })
                         : kept
-                          ? t(
-                              'capabilityKeptForGetRoles',
-                              '{{role}}: {{capability}}, kept: without it you would lose Get Roles, which saving a role needs',
-                              {
-                                role: name,
-                                capability: capabilityName(capability),
-                                interpolation: { escapeValue: false },
-                              },
-                            )
+                          ? lost.includes('Get Roles')
+                            ? t(
+                                'capabilityKeptForGetRoles',
+                                '{{role}}: {{capability}}, kept: without it you would lose Get Roles, which saving a role needs',
+                                {
+                                  role: name,
+                                  capability: capabilityName(capability),
+                                  interpolation: { escapeValue: false },
+                                },
+                              )
+                            : t(
+                                'capabilityKeptForPrivileges',
+                                '{{role}}: {{capability}}, kept: without it you would lose {{privileges}}, and could not give it back here',
+                                {
+                                  role: name,
+                                  capability: capabilityName(capability),
+                                  privileges: lost.join(', '),
+                                  interpolation: { escapeValue: false },
+                                },
+                              )
                           : `${name}: ${capabilityName(capability)}`;
                     return (
                       <TableCell key={capability.uuid} title={via || stillVia || kept ? label : undefined}>
@@ -257,7 +270,7 @@ export default function RolePermissions() {
         <p className={styles.note}>
           {t(
             'rolePermissionsNote',
-            "Each ACT role is built from these capabilities. You can give a role a capability whose privileges you hold, and take away one it has directly, unless it is how you hold Get Roles, which saving a role needs. A capability a role has through another role shows ticked and is changed on that role. Before giving a role more, check that the administrators who assign it hold those privileges too, or OpenMRS will not let them save anyone who has that role. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
+            "Each ACT role is built from these capabilities. You can give a role a capability whose privileges you hold, and take away one it has directly, unless it is how you hold one of its privileges, such as Get Roles, which saving a role needs. A capability a role has through another role shows ticked and is changed on that role. Before giving a role more, check that the administrators who assign it hold those privileges too, or OpenMRS will not let them save anyone who has that role. The roles come from the distribution's roles file, and an update to that file replaces changes made here.",
           )}
         </p>
         {saveError && (

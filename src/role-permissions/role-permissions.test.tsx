@@ -311,6 +311,64 @@ describe('Role permissions', () => {
     expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
   });
 
+  it('keeps on your own role a capability whose privilege you would lose, as no one could give it back here', async () => {
+    const clinicAdministration = capability('cap-clinics', 'Clinic Administration', 'Manage clinics', [
+      'Manage Locations',
+    ]);
+    const mine = role(
+      'role-instance',
+      'Instance Administrator',
+      [siteAdministration, clinicAdministration],
+      ['Manage Roles'],
+    );
+    const writes = backend(undefined, [mine, siteAdministration, clinicAdministration, authenticated(['Get Roles'])]);
+    await signInHolding([mine]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    const kept = screen.getByRole('checkbox', {
+      name: 'Instance Administrator: Clinic Administration, kept: without it you would lose Manage Locations, and could not give it back here',
+    });
+    expect(kept).toBeChecked();
+    expect(kept).toBeDisabled();
+    await userEvent.click(kept);
+    expect(screen.getByRole('button', { name: 'Save Instance Administrator' })).toBeDisabled();
+    expect(writes).toHaveLength(0);
+  });
+
+  it('lets you take a capability from your own role when another of your roles holds its privilege', async () => {
+    const clinicAdministration = capability('cap-clinics', 'Clinic Administration', 'Manage clinics', [
+      'Manage Locations',
+    ]);
+    const mine = role('role-instance', 'Instance Administrator', [clinicAdministration], ['Manage Roles']);
+    const other = role('role-global', 'Global Administrator', [clinicAdministration]);
+    backend(undefined, [mine, other, clinicAdministration, authenticated(['Get Roles'])]);
+    await signInHolding([mine, other]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Clinic Administration')).toBeEnabled();
+  });
+
+  it('counts an unsaved untick on another row as removed, so the last way to Get Roles stays kept', async () => {
+    const userManagement = capability('cap-users', 'User Management', 'Manage users', ['Get Roles']);
+    const mine = role('role-instance', 'Instance Administrator', [siteAdministration], ['Manage Roles']);
+    const other = role('role-users', 'User Manager', [userManagement]);
+    backend(undefined, [mine, other, siteAdministration, userManagement, authenticated()]);
+    await signInHolding([mine, other]);
+    renderPage();
+    await screen.findAllByTestId('act-role-row');
+
+    expect(box('Instance Administrator', 'Site Administration')).toBeEnabled();
+    await userEvent.click(box('User Manager', 'User Management'));
+
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'Instance Administrator: Site Administration, kept: without it you would lose Get Roles, which saving a role needs',
+      }),
+    ).toBeDisabled();
+  });
+
   it('says so when there are no ACT roles', async () => {
     mockOpenmrsFetch.mockResolvedValue({ data: { results: [], totalCount: 0 } } as never);
     await signInWith(instanceAdmin);
