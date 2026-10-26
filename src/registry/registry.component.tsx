@@ -239,6 +239,7 @@ function RegistryTable() {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadRegistry', 'Could not load the registry')}
@@ -265,6 +266,7 @@ function RegistryTable() {
     <>
       <div className={styles.filters}>
         <Search
+          closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
           labelText={t('searchRegistryWithAlternateId', 'Search by name, ACT ID or alternate ID')}
           placeholder={t('searchRegistryWithAlternateId', 'Search by name, ACT ID or alternate ID')}
           value={filters.q}

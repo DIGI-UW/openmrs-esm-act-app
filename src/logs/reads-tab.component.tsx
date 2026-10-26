@@ -64,7 +64,7 @@ export function ReadsTab({
 
   const rows = (page?.results ?? []).map((entry) => ({
     key: entry.id,
-    time: <span title={fullTime(entry.from)}>{logTimeRange(entry.from, entry.to)}</span>,
+    time: <span title={fullTime(entry.from)}>{logTimeRange(t, entry.from, entry.to)}</span>,
     user: <LogUserCell user={entry.user} />,
     action: (
       <LogActionCell
@@ -93,7 +93,7 @@ export function ReadsTab({
         <div>
           {entry.sessionId && <DetailLine label={t('session', 'Session')}>{entry.sessionId}</DetailLine>}
           {(entry.ip || entry.userAgent) && (
-            <DetailLine label={t('from', 'From')}>{describeClient(entry.ip, entry.userAgent)}</DetailLine>
+            <DetailLine label={t('from', 'From')}>{describeClient(t, entry.ip, entry.userAgent)}</DetailLine>
           )}
           {entry.patient && entry.sameClinicAsUser !== null && (
             <DetailLine label={t('patientsClinic', "Patient's clinic")}>

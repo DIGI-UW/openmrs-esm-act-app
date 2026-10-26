@@ -123,12 +123,14 @@ export function CascadeBars({
   shareOf?: Record<string, string>;
   figureOf?: (label: string) => Figure;
 }) {
-  const data = useStable(steps.map(({ label, value }) => ({ group: label, value })));
+  const { t } = useTranslation();
+  // Translate only what is shown: figureOf and shareOf match the label as configured or reported.
+  const data = useStable(steps.map(({ label, value }) => ({ group: t(label), value })));
   const options = useStable({
     ...base(name, '16rem'),
     color: {
       scale: scaleOf(
-        steps.map(({ label }) => label),
+        steps.map(({ label }) => t(label)),
         [teal],
       ),
     },
@@ -146,7 +148,7 @@ export function CascadeBars({
       <ol className={styles.steps}>
         {cascadeShares(steps, shareOf).map((step) => (
           <li key={step.label} className={styles.step} data-testid={testId}>
-            <span>{step.label}</span>
+            <span>{t(step.label)}</span>
             <span className={styles.count}>
               <CountLink value={step.value} figure={figureOf?.(step.label)} />
             </span>

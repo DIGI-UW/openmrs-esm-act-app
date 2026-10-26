@@ -17,6 +17,7 @@ import {
 import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { restErrorMessage } from '../rest-error-message';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
+import { usePaginationText } from '../table-filters/pagination-text';
 import { type LogUser, PAGE_SIZES, type Paging } from './logs.resource';
 import styles from './logs.scss';
 
@@ -134,6 +135,7 @@ export function LogTable({
   emptyMessage,
 }: LogTableProps) {
   const { t } = useTranslation();
+  const paginationText = usePaginationText();
   const desktop = isDesktop(useLayoutType());
   const [expanded, setExpanded] = useState<string | null>(null);
   const headers = [t('time', 'Time'), t('user', 'User'), t('action', 'Action'), t('target', 'Target'), ...columns];
@@ -142,6 +144,7 @@ export function LogTable({
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadLog', 'Could not load the log')}
@@ -207,6 +210,7 @@ export function LogTable({
       <div className={styles.footer}>
         <span className={styles.newestFirst}>{t('newestFirst', 'Newest first')}</span>
         <Pagination
+          {...paginationText}
           page={Math.floor(paging.startIndex / paging.limit) + 1}
           pageSize={paging.limit}
           pageSizes={PAGE_SIZES}

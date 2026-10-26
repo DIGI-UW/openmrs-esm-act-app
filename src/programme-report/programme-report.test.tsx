@@ -147,11 +147,11 @@ describe('Reports', () => {
 
     const steps = await screen.findAllByTestId('cascade-step');
     expect(steps.map((step) => step.textContent)).toEqual([
-      'Active18',
-      'Prescribed15',
-      'Initiated11',
-      'Covered today9',
-      'Adherent (80%+)4',
+      'active18',
+      'prescribed15',
+      'initiated11',
+      'coveredToday9',
+      'adherentEightyPercent4',
     ]);
     expect(screen.getByRole('heading', { name: 'Care cascade' })).toBeInTheDocument();
     expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
