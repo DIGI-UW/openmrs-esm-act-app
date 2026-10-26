@@ -1,21 +1,16 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { getCoreTranslation, openmrsFetch } from '@openmrs/esm-framework';
+import { launchWorkspace2 } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Studies from './studies.component';
+import { backendAnswers } from './studies.test-helper';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
-
-const mockOpenmrsFetch = vi.mocked(openmrsFetch);
-
-const studies = [
-  { uuid: 'arc', name: 'ARC', states: [] },
-  { uuid: 'miller', name: 'Miller', states: [] },
-];
 
 const participant = (overrides: Record<string, unknown>) => ({
   patient_uuid: 'patient-1',
@@ -54,22 +49,6 @@ const rows = [
     study_id: 'M-1',
   }),
 ];
-
-/** `saveFails` is the REST error a failed save responds with. */
-function backendAnswers(saveFails?: Record<string, unknown>) {
-  const posts: Array<{ url: string; body: unknown }> = [];
-  mockOpenmrsFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
-    if (init?.method === 'POST') {
-      posts.push({ url, body: init.body });
-      if (saveFails) {
-        throw Object.assign(new Error('400'), { responseBody: { error: saveFails } });
-      }
-      return { data: {} } as never;
-    }
-    return { data: { results: studies } } as never;
-  });
-  return posts;
-}
 
 const studyRow = async (name: string) =>
   within(await screen.findByRole('table', { name: 'Studies' })).getByRole('row', { name: new RegExp(`^${name}`) });
@@ -134,96 +113,6 @@ describe('Studies', () => {
     ).toEqual(['ARC', '--', '--']);
   });
 
-  it("says why a study could not be saved, from the server's exception when it has no validation errors", async () => {
-    backendAnswers({ message: '[Could not save the program]' });
-    renderPage();
-
-    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
-    await userEvent.type(screen.getByLabelText('Study name'), 'Stage Study 2');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    expect(await screen.findByText('[Could not save the program]')).toBeInTheDocument();
-  });
-
-  it("takes the name of its dialog's close button from the core translations", async () => {
-    backendAnswers();
-    renderPage();
-
-    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
-
-    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' })).toBeInTheDocument();
-    expect(getCoreTranslation).toHaveBeenCalledWith('close');
-  });
-
-  it('creates a study by name', async () => {
-    const posts = backendAnswers();
-    renderPage();
-
-    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(screen.getByText('Enter a name for the study')).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText('Study name'), '  Stage Study 2 ');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() =>
-      expect(posts).toEqual([{ url: '/ws/rest/v1/actcore/studies', body: { name: 'Stage Study 2' } }]),
-    );
-  });
-
-  it('reloads the participants after a rename, as their rows carry the study name', async () => {
-    const posts = backendAnswers();
-    renderPage();
-
-    const arc = await studyRow('ARC');
-    await userEvent.click(within(arc).getByRole('button', { name: 'Rename study' }));
-    await userEvent.clear(screen.getByLabelText('Study name'));
-    await userEvent.type(screen.getByLabelText('Study name'), 'ARC 2');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => expect(posts).toEqual([{ url: '/ws/rest/v1/actcore/studies/arc', body: { name: 'ARC 2' } }]));
-    await waitFor(() => expect(vi.mocked(useReportDataset).mock.results[0].value.mutate).toHaveBeenCalled());
-  });
-
-  it("keeps showing an opened study's participants after it is renamed", async () => {
-    backendAnswers();
-    const view = renderPage();
-    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'ARC' }));
-
-    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'Rename study' }));
-    await userEvent.clear(screen.getByLabelText('Study name'));
-    await userEvent.type(screen.getByLabelText('Study name'), 'ARC 2');
-    vi.mocked(useReportDataset).mockReturnValue({
-      columns: [],
-      rows: rows.map((row) => (row.study === 'ARC' ? { ...row, study: 'ARC 2' } : row)),
-      isLoading: false,
-      error: undefined,
-      mutate: vi.fn(),
-    });
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(screen.queryByLabelText('Study name')).not.toBeInTheDocument());
-    view.rerender(
-      <SWRConfig value={{ provider: () => new Map() }}>
-        <Studies />
-      </SWRConfig>,
-    );
-
-    expect(screen.getByLabelText('Study')).toHaveValue('ARC 2');
-    expect(within(screen.getByRole('table', { name: 'Study participants' })).getAllByRole('row')).toHaveLength(3);
-  });
-
-  it("says why a study could not be renamed, in the server's words", async () => {
-    backendAnswers({ globalErrors: [{ message: 'A program is already named Miller' }] });
-    renderPage();
-
-    const arc = await studyRow('ARC');
-    await userEvent.click(within(arc).getByRole('button', { name: 'Rename study' }));
-    await userEvent.clear(screen.getByLabelText('Study name'));
-    await userEvent.type(screen.getByLabelText('Study name'), 'Miller');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    expect(await screen.findByText('A program is already named Miller')).toBeInTheDocument();
-  });
-
   it('offers neither create nor rename to a user who may not manage studies', async () => {
     await signInWith(['App: act.studies']);
     backendAnswers();
@@ -234,6 +123,85 @@ describe('Studies', () => {
     expect(screen.queryByRole('button', { name: /Create study/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rename study' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
+  });
+
+  it('opens the study form to create a study', async () => {
+    backendAnswers();
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-study-form-workspace', {
+      studyUuid: undefined,
+      onRenamed: expect.any(Function),
+    });
+  });
+
+  it('opens the study form to rename the study of its row', async () => {
+    backendAnswers();
+    renderPage();
+
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Rename study' }));
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-study-form-workspace', {
+      studyUuid: 'miller',
+      onRenamed: expect.any(Function),
+    });
+  });
+
+  it('restores the open study form when it is opened again, even after the page renders again, but not for another study', async () => {
+    backendAnswers();
+    renderPage();
+    const propsOfLaunch = () => vi.mocked(launchWorkspace2).mock.lastCall[1] as Record<string, unknown>;
+
+    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
+    const create = propsOfLaunch();
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Rename study' }));
+    const rename = propsOfLaunch();
+    await userEvent.click(screen.getByRole('button', { name: /Create study/ }));
+    expect(restoresOpenWorkspace(create, propsOfLaunch())).toBe(true);
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Miller' }));
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Rename study' }));
+
+    expect(restoresOpenWorkspace(rename, propsOfLaunch())).toBe(true);
+    expect(restoresOpenWorkspace(create, rename)).toBe(false);
+  });
+
+  it("keeps showing an opened study's participants after it is renamed", async () => {
+    backendAnswers();
+    const view = renderPage();
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'ARC' }));
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'Rename study' }));
+    const { onRenamed } = vi.mocked(launchWorkspace2).mock.lastCall[1] as { onRenamed: (a: string, b: string) => void };
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: rows.map((row) => (row.study === 'ARC' ? { ...row, study: 'ARC 2' } : row)),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    act(() => onRenamed('ARC', 'ARC 2'));
+    view.rerender(
+      <SWRConfig value={{ provider: () => new Map() }}>
+        <Studies />
+      </SWRConfig>,
+    );
+
+    expect(screen.getByLabelText('Study')).toHaveValue('ARC 2');
+    expect(within(screen.getByRole('table', { name: 'Study participants' })).getAllByRole('row')).toHaveLength(3);
+  });
+
+  it("leaves the opened study's filter alone when another study is renamed", async () => {
+    backendAnswers();
+    renderPage();
+    await userEvent.click(within(await studyRow('ARC')).getByRole('button', { name: 'ARC' }));
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Rename study' }));
+    const { onRenamed } = vi.mocked(launchWorkspace2).mock.lastCall[1] as { onRenamed: (a: string, b: string) => void };
+
+    act(() => onRenamed('Miller', 'Miller 2'));
+
+    expect(screen.getByLabelText('Study')).toHaveValue('ARC');
   });
 
   it('lists every participant, filtered by study and by status', async () => {
