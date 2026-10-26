@@ -194,6 +194,7 @@ const FlagGapsWorkspace: React.FC<
       return (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadGaps', 'Could not load the missing data')}

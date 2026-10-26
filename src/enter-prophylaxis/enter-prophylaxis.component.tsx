@@ -31,6 +31,7 @@ export function EnterProphylaxisSearch({ onClose, prophylaxis }: { onClose: () =
     >
       <InlineNotification
         kind="info"
+        statusIconDescription={t('infoIcon', 'info icon')}
         lowContrast
         hideCloseButton
         title={label}

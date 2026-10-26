@@ -38,6 +38,7 @@ function PatientsOnProphylaxis() {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadPatientsOnProphylaxis', 'Could not load the patients on prophylaxis')}
@@ -47,6 +48,7 @@ function PatientsOnProphylaxis() {
   return (
     <>
       <Search
+        closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
         labelText={t('searchByNameOrActId', 'Search by name or ACT ID')}
         placeholder={t('searchByNameOrActId', 'Search by name or ACT ID')}
         value={search}

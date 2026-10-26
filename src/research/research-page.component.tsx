@@ -223,6 +223,7 @@ export default function ResearchPage({ patientUuid }: { patientUuid: string }) {
         <InlineNotification
           className={styles.notice}
           kind="warning"
+          statusIconDescription={t('warningIcon', 'warning icon')}
           lowContrast
           hideCloseButton
           title={t('stillActiveInAStudy', 'Still active in a study')}

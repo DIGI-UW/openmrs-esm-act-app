@@ -60,6 +60,7 @@ export function CareCascadeCard({
       {error ? (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotLoadCareCascade', 'Could not load the care cascade')}
@@ -73,7 +74,7 @@ export function CareCascadeCard({
           <div className={styles.steps}>
             {steps.map((row) => (
               <div key={row.step} data-testid="cascade-step" className={styles.step}>
-                <span>{row.label}</span>
+                <span>{t(row.label)}</span>
                 <span className={styles.track}>
                   <span
                     data-testid="cascade-bar"

@@ -55,6 +55,7 @@ function ActivityDetailRow({ entry, label }: { entry: ActivityEntry; label: stri
     fields = (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadFields', "Could not load the form's fields")}
@@ -101,7 +102,7 @@ function ActivityDetailRow({ entry, label }: { entry: ActivityEntry; label: stri
           </DetailLine>
         )}
         {(entry.ip || entry.userAgent) && (
-          <DetailLine label={t('from', 'From')}>{describeClient(entry.ip, entry.userAgent)}</DetailLine>
+          <DetailLine label={t('from', 'From')}>{describeClient(t, entry.ip, entry.userAgent)}</DetailLine>
         )}
         {entry.target?.kind === 'patient' && entry.target.uuid && (
           <p className={styles.detailLine}>
@@ -176,7 +177,7 @@ export function ActivityTab({
 
   const rows = (page?.results ?? []).map((entry, index) => ({
     key: entry.revisionId === null ? `row-${paging.startIndex + index}` : String(entry.revisionId),
-    time: <span title={fullTime(entry.time)}>{logTime(entry.time)}</span>,
+    time: <span title={fullTime(entry.time)}>{logTime(t, entry.time)}</span>,
     user: <LogUserCell user={entry.user} />,
     action: (
       <LogActionCell
