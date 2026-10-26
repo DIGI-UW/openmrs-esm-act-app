@@ -4,7 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { signInWith } from './access/sign-in.test-helper';
-import { ALL_CLINICS_PRIVILEGE, CLINICS_PROPERTY, isClinicLimited, limitRows, parseClinics } from './clinic-limit';
+import {
+  ALL_CLINICS_PRIVILEGE,
+  CLINICS_PROPERTY,
+  isClinicLimited,
+  limitRows,
+  parseClinics,
+  useClinicLimit,
+} from './clinic-limit';
 import { useReportDataset } from './reports/report-dataset.resource';
 
 const ACIMI = 'acimi-uuid';
@@ -39,15 +46,30 @@ function respond() {
   }) as never);
 }
 
-function renderRegistry() {
+function swrWrapper() {
   const cache = new Map();
-  return renderHook(() => useReportDataset('f1a2b3c4-d5e6-7890-abcd-ef1234567890'), {
-    wrapper: ({ children }) => <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>{children}</SWRConfig>,
-  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>{children}</SWRConfig>
+  );
+}
+
+function renderRegistry() {
+  return renderHook(() => useReportDataset('f1a2b3c4-d5e6-7890-abcd-ef1234567890'), { wrapper: swrWrapper() });
 }
 
 describe('clinic limit', () => {
   beforeEach(() => respond());
+
+  it('returns the same limit on every render while nothing about it changes', async () => {
+    await signInSiteAdmin(`${ACIMI}`);
+    const { result, rerender } = renderHook(() => useClinicLimit(), { wrapper: swrWrapper() });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const first = result.current;
+
+    rerender();
+
+    expect(result.current).toBe(first);
+  });
 
   it('reads the clinics on an account without blanks or repeats', () => {
     expect(parseClinics(' a, ,b,a ')).toEqual(['a', 'b']);

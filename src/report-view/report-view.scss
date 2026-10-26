@@ -1,0 +1,54 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.reportView {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.description {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: layout.$spacing-05;
+}
+
+.search {
+  flex: 1 1 16rem;
+  max-width: 28rem;
+}
+
+.count {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+}
+
+// A wide report scrolls inside its box, so the page stays at the screen's width on a tablet.
+.tableContainer {
+  overflow-x: auto;
+}
+
+.link {
+  justify-self: start;
+}
+
+.catalogue {
+  display: grid;
+  gap: layout.$spacing-03;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catalogueItem {
+  display: grid;
+  gap: layout.$spacing-01;
+}

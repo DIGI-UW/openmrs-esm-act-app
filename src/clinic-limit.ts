@@ -61,18 +61,20 @@ export function useClinicLimit(): ClinicLimit {
       ),
     ),
   );
-  if (!limited) {
-    return { status: 'none' };
-  }
-  if (!uuids.length) {
-    // An account with no clinic sees no clinic's patients, as ACT Core lets it see no other user.
-    return { status: 'ready', uuids, names: [] };
-  }
-  if (!data && !error) {
-    return { status: 'pending' };
-  }
-  // A clinic that cannot be named matches no row, so a failure shows fewer patients, never more.
-  return { status: 'ready', uuids, names: data ?? [] };
+  return useMemo((): ClinicLimit => {
+    if (!limited) {
+      return { status: 'none' };
+    }
+    if (!uuids.length) {
+      // An account with no clinic sees no clinic's patients, as ACT Core lets it see no other user.
+      return { status: 'ready', uuids, names: [] };
+    }
+    if (!data && !error) {
+      return { status: 'pending' };
+    }
+    // A clinic that cannot be named matches no row, so a failure shows fewer patients, never more.
+    return { status: 'ready', uuids, names: data ?? [] };
+  }, [limited, uuids, data, error]);
 }
 
 /**
