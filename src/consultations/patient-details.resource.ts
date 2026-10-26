@@ -32,7 +32,6 @@ export const diagnosisConcepts = {
   encounterType: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
   group: '594b4495-36dc-52a6-9810-15a9e2e2dcb9',
   category: '1a5aa050-661d-5e89-95d7-c1eba476df22',
-  priority: '97c025b2-f42c-5c53-8aaa-0506c8dd3774',
   active: 'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
   started: '62321320-695e-5319-a306-40dfd6ad94b7',
   ended: 'e9f2fceb-05be-577f-bf76-dde0647f01db',
@@ -67,13 +66,12 @@ export function useLatestDiagnosis(patientUuid: string | null) {
 export interface DiagnosisRow {
   key: string;
   diagnosis: string;
-  priority: string;
   active: string;
   started: string | null;
   ended: string | null;
 }
 
-/** One Diagnosis answer group as a table row: the category with its details, and its priority, status and dates. */
+/** One Diagnosis answer group as a table row: the category with its details, and its status and dates. */
 export function toDiagnosisRow(group: GroupedObs, key: string): DiagnosisRow {
   const one = (concept: string) => answersIn(group.groupMembers, concept)[0]?.value;
   const category = answerText(one(diagnosisConcepts.category));
@@ -84,7 +82,6 @@ export function toDiagnosisRow(group: GroupedObs, key: string): DiagnosisRow {
   return {
     key,
     diagnosis: details.length ? `${category} (${details.join(', ')})` : category,
-    priority: answerText(one(diagnosisConcepts.priority)),
     active: answerText(one(diagnosisConcepts.active)),
     started: one(diagnosisConcepts.started) ? String(one(diagnosisConcepts.started)) : null,
     ended: one(diagnosisConcepts.ended) ? String(one(diagnosisConcepts.ended)) : null,

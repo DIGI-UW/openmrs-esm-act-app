@@ -153,7 +153,6 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   type Row = (typeof diagnoses)[number];
   const columns: Array<Column<Row>> = [
     { header: t('diagnosis', 'Diagnosis'), text: (one) => one.diagnosis },
-    { header: t('priority', 'Priority'), text: (one) => one.priority || '--' },
     { header: t('active', 'Active'), text: (one) => one.active || '--' },
     { header: t('started', 'Started'), text: (one) => day(one.started) },
     { header: t('ended', 'Ended'), text: (one) => day(one.ended) },

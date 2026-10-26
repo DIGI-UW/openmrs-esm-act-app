@@ -150,6 +150,64 @@ describe('toMedications', () => {
     expect(active[0]).toMatchObject({ started: '2025-06-15', dose: '5 mg' });
   });
 
+  it('puts a medicine in Past for any Date Stopped, even one still to come', () => {
+    const { active, past } = toMedications(
+      [consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStopped, '2099-01-01']])])],
+      c,
+    );
+
+    expect(active).toEqual([]);
+    expect(past.map((one) => one.stopped)).toEqual(['2099-01-01']);
+  });
+
+  it('starts a medicine at a later recorded Date Started rather than the consultation that first listed it', () => {
+    const { active } = toMedications(
+      [
+        consultation('new', '2026-04-01', [medication(aspirin, [[c.dateStarted, '2026-03-01']])]),
+        consultation('old', '2026-01-10', [medication(aspirin)]),
+      ],
+      c,
+    );
+
+    expect(active[0].started).toBe('2026-03-01');
+  });
+
+  it('keeps the previous dose and interval when the latest record leaves them blank', () => {
+    const { active } = toMedications(
+      [
+        consultation('new', '2026-04-01', [medication(aspirin)]),
+        consultation('old', '2026-01-10', [
+          medication(aspirin, [
+            [c.medicationDose, '75 mg'],
+            [c.medicationInterval, coded('daily', 'Once a day')],
+          ]),
+        ]),
+      ],
+      c,
+    );
+
+    expect(active[0]).toMatchObject({ dose: '75 mg', interval: 'Once a day' });
+  });
+
+  it('lets the later obs win when a consultation lists the same medicine twice', () => {
+    const { active, past } = toMedications(
+      [
+        consultation('only', '2026-04-01', [
+          medication(warfarin, [
+            [c.medicationDose, '3 mg'],
+            [c.dateStopped, '2026-03-01'],
+          ]),
+          medication(warfarin, [[c.medicationDose, '5 mg']]),
+        ]),
+      ],
+      c,
+    );
+
+    expect(past).toEqual([]);
+    expect(active).toHaveLength(1);
+    expect(active[0]).toMatchObject({ dose: '5 mg', stopped: null });
+  });
+
   it('keeps a medicine active when a later consultation leaves it out', () => {
     const { active } = toMedications(
       [
@@ -233,7 +291,10 @@ describe('the Consultation visits page tables', () => {
     serve({
       consultations: [
         consultation('new', '2026-04-01', [
-          medication(aspirin, [[c.medicationDose, '75 mg']]),
+          medication(aspirin, [
+            [c.medicationDose, '75 mg'],
+            [c.medicationInterval, coded('daily', 'Once a day')],
+          ]),
           medication(warfarin, [[c.dateStopped, '2026-03-01']]),
         ]),
       ],
@@ -244,6 +305,7 @@ describe('the Consultation visits page tables', () => {
     const active = await screen.findByRole('table', { name: 'Active' });
     expect(within(active).getByText('Aspirin')).toBeInTheDocument();
     expect(within(active).getByText('75 mg')).toBeInTheDocument();
+    expect(within(active).getByText('Once a day')).toBeInTheDocument();
     const past = screen.getByRole('table', { name: 'Past' });
     expect(within(past).getByText('Warfarin')).toBeInTheDocument();
     expect(within(past).getByText(/Mar.*2026/)).toBeInTheDocument();
@@ -271,11 +333,10 @@ describe('the Consultation visits page tables', () => {
     expect(screen.getByRole('table', { name: 'Past' })).toBeInTheDocument();
   });
 
-  it('shows every diagnosis with its priority, status and dates', async () => {
-    const diagnosis = (name: string, priority: string, active: string) =>
+  it('shows every diagnosis with its status and dates', async () => {
+    const diagnosis = (name: string, active: string) =>
       obs(diagnosisConcepts.group, null, [
         obs(diagnosisConcepts.category, coded(name, name)),
-        obs(diagnosisConcepts.priority, coded(priority, priority)),
         obs(diagnosisConcepts.active, coded(active, active)),
         obs(diagnosisConcepts.started, '2025-02-03'),
       ]);
@@ -284,7 +345,7 @@ describe('the Consultation visits page tables', () => {
         {
           uuid: 'pi',
           encounterDatetime: '2026-03-01T09:00:00.000+0300',
-          obs: [diagnosis('Rheumatic Heart Disease', 'Primary', 'Yes'), diagnosis('Congenital', 'Secondary', 'No')],
+          obs: [diagnosis('Rheumatic Heart Disease', 'Yes'), diagnosis('Congenital', 'No')],
         } as ChartEncounter,
       ],
     });
@@ -293,8 +354,8 @@ describe('the Consultation visits page tables', () => {
 
     const rows = await screen.findAllByTestId('repeated-row');
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveTextContent(/Rheumatic Heart Disease.*Primary.*Yes.*Feb.*2025/);
-    expect(rows[1]).toHaveTextContent(/Congenital.*Secondary.*No/);
+    expect(rows[0]).toHaveTextContent(/Rheumatic Heart Disease.*Yes.*Feb.*2025/);
+    expect(rows[1]).toHaveTextContent(/Congenital.*No/);
   });
 
   it('shows only the diagnoses of the latest Patient Information', async () => {
