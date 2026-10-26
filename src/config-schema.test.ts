@@ -115,6 +115,29 @@ describe('configSchema', () => {
           { step: 'Adherent', label: 'adherentEightyPercent' },
         ],
       },
+      reportCatalogue: [
+        {
+          id: 'visits',
+          report: 'b2c3d4e5-f6a7-8901-abcd-234567890abc',
+          label: 'Visits',
+          description: 'Each RHD clinic visit in a period, with its encounters and the patient.',
+          clinicColumn: 'location',
+        },
+        {
+          id: 'encounters',
+          report: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+          label: 'Encounters',
+          description: 'Each RHD encounter in a period, with its type, location and provider.',
+          clinicColumn: 'location',
+        },
+        {
+          id: 'inr-monitoring',
+          report: 'd3a1f2b4-7c8e-4f90-b123-456789abcdef',
+          label: 'INR monitoring',
+          description: 'Each INR reading of the patients on warfarin in a period, with the target range.',
+          clinicColumn: 'location',
+        },
+      ],
       registry: {
         report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
         showBpgColumns: false,

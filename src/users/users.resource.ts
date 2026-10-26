@@ -4,6 +4,7 @@ import { type LoggedInUser, openmrsFetch, restBaseUrl, useConfig, useSession } f
 import { CLINICS_PROPERTY, parseClinics } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
+import { useClinics } from '../programme-report/clinics.resource';
 
 export interface ActUser {
   uuid: string;
@@ -72,6 +73,12 @@ export function useRoleChoices() {
       ),
   );
   return { roles: data ?? [], error, isLoading: Boolean(roleUuids.length) && !data && !error };
+}
+
+/** The clinics a user may be given: those tagged as clinics, and for a site administrator only its own. */
+export function useClinicChoices() {
+  const { clinicLocationTags } = useConfig<Config>();
+  return useClinics([...clinicLocationTags.primaryCare, ...clinicLocationTags.cardiac]);
 }
 
 export interface UserForm {
