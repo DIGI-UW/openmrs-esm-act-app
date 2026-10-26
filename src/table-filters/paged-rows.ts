@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usePagination } from '@openmrs/esm-framework';
+import { usePaginationText } from './pagination-text';
 
 const pageSizes = [10, 25, 50, 100];
 
@@ -7,9 +8,11 @@ const pageSizes = [10, 25, 50, 100];
 export function usePagedRows<T>(rows: Array<T>, filters: object) {
   const [pageSize, setPageSize] = useState(pageSizes[0]);
   const { results, currentPage, goTo } = usePagination(rows, pageSize);
+  const text = usePaginationText();
   // A change of filters, chosen on the page or by following its nav link again, starts from the first page.
   useEffect(() => goTo(1), [filters, goTo]);
   const paginationProps = {
+    ...text,
     page: currentPage,
     pageSize,
     pageSizes,

@@ -2,6 +2,7 @@ import { createContext, useMemo } from 'react';
 import { type TFunction } from 'i18next';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
+import { waitlistName } from './dashboard-counts';
 
 export const sections = ['registrants', 'waitlist', 'cascade', 'optimisation'] as const;
 
@@ -90,8 +91,11 @@ export function rowUnit(figure: Figure): 'patient' | 'consultation' | 'recommend
   return figure.figure === 'waitlist' && figure.breakdown !== 'total' ? 'recommendation' : 'patient';
 }
 
-/** The section and the figure's own label, as the banner and the figure chip name them. */
-export function figureNames(t: TFunction, figure: Figure) {
+/**
+ * The section and the figure's own label, as the banner and the figure chip name them; a cascade step by its
+ * configured label, as its bar does.
+ */
+export function figureNames(t: TFunction, figure: Figure, cascadeSteps: Config['careCascade']['steps']) {
   switch (figure.figure) {
     case 'registrants':
       return figure.breakdown === 'status'
@@ -108,10 +112,19 @@ export function figureNames(t: TFunction, figure: Figure) {
           ? { section: t('waitingForAProcedure', 'Waiting for a procedure'), label: undefined }
           : {
               section: t('proceduralWaitlist', 'Procedural waitlist'),
-              label: [figure.procedure, figure.urgency].filter(Boolean).join(', ') || undefined,
+              label:
+                [figure.procedure, figure.urgency]
+                  .filter(Boolean)
+                  .map((name) => waitlistName(t, name))
+                  .join(', ') || undefined,
             };
-    case 'cascade':
-      return { section: t('rhdCareCascade', 'RHD care cascade'), label: figure.step || t('active', 'Active') };
+    case 'cascade': {
+      const shown = withStep(figure).step;
+      return {
+        section: t('rhdCareCascade', 'RHD care cascade'),
+        label: t(cascadeSteps.find(({ step }) => step === shown)?.label ?? shown),
+      };
+    }
     case 'optimisation':
       return {
         section: t('medicalOptimisation', 'Medical optimisation'),

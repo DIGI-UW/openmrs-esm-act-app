@@ -87,6 +87,7 @@ export function PatientSearchPanel({ onClose, onSelect, label, children }: Patie
     >
       <div className={styles.searchBar}>
         <Search
+          closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
           autoFocus
           size="lg"
           labelText={t('searchForPatient', 'Search for a patient by name or ACT ID')}
@@ -124,6 +125,7 @@ export function PatientSearchPanel({ onClose, onSelect, label, children }: Patie
         {searching && search.error ? (
           <InlineNotification
             kind="error"
+            statusIconDescription={t('errorIcon', 'error icon')}
             lowContrast
             hideCloseButton
             title={t('couldNotSearch', 'Could not search for patients')}

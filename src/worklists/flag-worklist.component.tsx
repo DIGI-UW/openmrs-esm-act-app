@@ -47,7 +47,9 @@ function dueBy(t: TFunction, value: unknown) {
  */
 export default function FlagWorklist(state: WorklistState) {
   const { t } = useTranslation();
-  const { flag, title, tone, dueDateColumn } = useConfig<FlagWorklistConfig>();
+  const config = useConfig<FlagWorklistConfig>();
+  const { flag, tone, dueDateColumn } = config;
+  const title = t(config.title);
   const { list, isLoading, error } = useRhdFlagList(flag);
   const registry = useSessionClinicReport(useRegistryReport(), bothClinics);
   const entries = useMemo(

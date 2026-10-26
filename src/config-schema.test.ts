@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+import en from '../translations/en.json';
+import { flagWorklists } from './worklists/flag-worklists';
 
 describe('configSchema', () => {
   it("defaults to the clinic tags, RHD flags and the consultation form's urgency bands", () => {
@@ -32,8 +34,8 @@ describe('configSchema', () => {
         enterProphylaxisInFastDataEntry: false,
         enterProphylaxisUrl: '${openmrsSpaBase}/forms',
         prophylaxisForms: [
-          { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
-          { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
+          { label: 'enterBpg', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
+          { label: 'enterOralProphylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
         ],
         findPatientInPanel: true,
         findPatientUrl: '${openmrsSpaBase}/search?query=',
@@ -94,14 +96,14 @@ describe('configSchema', () => {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [
-          { step: 'Active', label: 'Active' },
-          { step: 'Prescribed', label: 'Prescribed' },
-          { step: 'Prescribed Prophylaxis', label: 'Prescribed' },
-          { step: 'Initiated', label: 'Initiated' },
-          { step: 'Initiated BPG', label: 'Initiated' },
-          { step: 'Covered today', label: 'Covered today' },
-          { step: 'Adherent (80%+)', label: 'Adherent (80%+)' },
-          { step: 'Adherent', label: 'Adherent (80%+)' },
+          { step: 'Active', label: 'active' },
+          { step: 'Prescribed', label: 'prescribed' },
+          { step: 'Prescribed Prophylaxis', label: 'prescribed' },
+          { step: 'Initiated', label: 'initiated' },
+          { step: 'Initiated BPG', label: 'initiated' },
+          { step: 'Covered today', label: 'coveredToday' },
+          { step: 'Adherent (80%+)', label: 'adherentEightyPercent' },
+          { step: 'Adherent', label: 'adherentEightyPercent' },
         ],
       },
       registry: {
@@ -270,27 +272,27 @@ describe('configSchema', () => {
       sessionTimeout: { idleMinutes: 30, warningMinutes: 3, keepAliveMinutes: 10 },
       urgencyBands: [
         {
-          label: '1: Emergent (24 hours)',
+          label: 'urgencyEmergent',
           shortLabel: '1: Emergent',
           concept: '1fe15210-4490-58b0-a38c-bb0386e98482',
           deadlineDays: 1,
         },
-        { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
-        { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
+        { label: 'urgencyWithinOneWeek', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
+        { label: 'urgencyWithinOneMonth', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
         {
-          label: '2: Urgent (60 days)',
+          label: 'urgencyUrgent',
           shortLabel: '2: Urgent',
           concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
           deadlineDays: 60,
         },
-        { label: '3 - within 3 months', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
+        { label: 'urgencyWithinThreeMonths', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
         {
-          label: '3: Elective (180 days)',
+          label: 'urgencyElective',
           shortLabel: '3: Elective',
           concept: '2666bf97-7400-57c7-b535-7903e22ced34',
           deadlineDays: 180,
         },
-        { label: '4 - within 6 months', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
+        { label: 'urgencyWithinSixMonths', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
       ],
     });
   });
@@ -332,5 +334,19 @@ describe('urgencyBands', () => {
     expect(messages.some((message) => message.includes('urgencyBands[0].deadlineDays'))).toBe(true);
     expect(messages.some((message) => message.includes('urgencyBands[1].deadline'))).toBe(true);
     consoleError.mockRestore();
+  });
+});
+
+describe('default labels', () => {
+  it('are each a key in en.json, as the app translates a label by it', () => {
+    const { careCascade, quickActions, urgencyBands } = getDefaultsFromConfigSchema(configSchema);
+    const labels = [
+      ...careCascade.steps.map((step) => step.label),
+      ...quickActions.prophylaxisForms.map((form) => form.label),
+      ...urgencyBands.map((band) => band.label),
+      ...Object.values(flagWorklists).map((worklist) => worklist.title),
+    ];
+
+    expect(labels.filter((label) => typeof en[label] !== 'string')).toEqual([]);
   });
 });
