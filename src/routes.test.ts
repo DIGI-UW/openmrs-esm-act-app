@@ -74,6 +74,8 @@ describe('routes.json privileges', () => {
     ['act-back-to-act-link', 'Get Patients'],
     ['act-reports-dashboard-link', screenPrivileges.reports],
     ['act-reports-dashboard', screenPrivileges.reports],
+    ['act-report-dashboard-link', screenPrivileges.reports],
+    ['act-report-dashboard', screenPrivileges.reports],
     ['act-dashboard-link', screenPrivileges.dashboard],
     ['act-dashboard', screenPrivileges.dashboard],
     ['act-facility-reports-dashboard-link', screenPrivileges.dataClerk],

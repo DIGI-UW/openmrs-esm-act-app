@@ -278,6 +278,53 @@ export const configSchema = {
         "The report's steps the ACT home widget and the Dashboard draw, in this order, each by its step value and with the label it shows. A step the report does not return is left out. The report's Oral and BPG rows split Prescribed, so they are left out by default. The defaults also match the step names the report used before it had Covered today, so a distro on that report still draws its four steps.",
     },
   },
+  reportCatalogue: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.Object,
+      id: {
+        _type: Type.String,
+        _description: "What the report page's link names it by: /home/act-report?report=<id>.",
+      },
+      report: {
+        _type: Type.String,
+        _description: 'The report, by uuid or name, whose rows the page shows as a table.',
+      },
+      label: { _type: Type.String, _description: 'What the Reports page and the report page call it.' },
+      description: { _type: Type.String, _description: 'A line on the Reports page saying what the report holds.' },
+      clinicColumn: {
+        _type: Type.String,
+        _default: '',
+        _description:
+          "The report's column naming a row's clinic, by which a user limited to clinics is held to theirs. Blank for a report with none, which such a user is not offered.",
+      },
+    },
+    _default: [
+      {
+        id: 'visits',
+        report: 'b2c3d4e5-f6a7-8901-abcd-234567890abc',
+        label: 'Visits',
+        description: 'Each RHD clinic visit in a period, with its encounters and the patient.',
+        clinicColumn: 'location',
+      },
+      {
+        id: 'encounters',
+        report: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+        label: 'Encounters',
+        description: 'Each RHD encounter in a period, with its type, location and provider.',
+        clinicColumn: 'location',
+      },
+      {
+        id: 'inr-monitoring',
+        report: 'd3a1f2b4-7c8e-4f90-b123-456789abcdef',
+        label: 'INR monitoring',
+        description: 'Each INR reading of the patients on warfarin in a period, with the target range.',
+        clinicColumn: 'location',
+      },
+    ],
+    _description:
+      'The reports the Reports page offers to open as a table, each with Download CSV. A report that names patients shows them as the Registry does, to whoever may open the Reports page.',
+  },
   registry: {
     report: {
       _type: Type.String,
@@ -884,6 +931,7 @@ export interface Config {
     downloadUrl: string;
   };
   careCascade: { report: string; reportUrl: string; steps: Array<{ step: string; label: string }> };
+  reportCatalogue: Array<{ id: string; report: string; label: string; description: string; clinicColumn: string }>;
   registry: { report: string; showBpgColumns: boolean };
   dashboard: {
     registrantsReport: string;
