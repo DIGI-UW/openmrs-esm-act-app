@@ -1,17 +1,7 @@
 import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import {
-  Button,
-  ButtonSet,
-  Form,
-  InlineLoading,
-  InlineNotification,
-  Select,
-  SelectItem,
-  Stack,
-  TextInput,
-} from '@carbon/react';
+import { Button, ButtonSet, Form, InlineNotification, Select, SelectItem, Stack, TextInput } from '@carbon/react';
 import {
   OpenmrsDatePicker,
   parseDate,
@@ -21,6 +11,7 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { RecordLoading } from '../record-loading.component';
 import { restErrorMessage } from '../rest-error-message';
 import { type Study } from '../studies/studies.resource';
 import {
@@ -230,14 +221,16 @@ const EnrollmentWorkspace: React.FC<Workspace2DefinitionProps<EnrollmentWorkspac
 }) => {
   const { t } = useTranslation();
   const { patientUuid, enrollmentUuid } = workspaceProps;
-  const { enrollments, studies, mutate } = useStudyEnrollments(patientUuid);
+  const { enrollments, studies, error, isLoading, mutate } = useStudyEnrollments(patientUuid);
   const enrollment = enrollments.find((candidate) => candidate.uuid === enrollmentUuid);
 
   if (enrollmentUuid && !enrollment) {
     return (
-      <Workspace2 title={t('editParticipation', 'Edit participation')}>
-        <InlineLoading description={t('loading', 'Loading...')} />
-      </Workspace2>
+      <RecordLoading
+        title={t('editParticipation', 'Edit participation')}
+        settled={Boolean(error) || !isLoading}
+        notFound={t('couldNotLoadParticipation', 'Could not load this participation')}
+      />
     );
   }
   const activeIn = activeStudyUuids(enrollments);

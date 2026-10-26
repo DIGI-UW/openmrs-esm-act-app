@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, ButtonSet, Form, InlineLoading, InlineNotification, PasswordInput } from '@carbon/react';
+import { Button, ButtonSet, Form, InlineNotification, PasswordInput } from '@carbon/react';
 import { showSnackbar, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import { RecordLoading } from '../record-loading.component';
 import { restErrorMessage } from '../rest-error-message';
 import { type ActUser, fullName, resetPassword, useUsers } from './users.resource';
 import formStyles from '../styles/form-workspace.scss';
@@ -103,14 +104,24 @@ const ResetPasswordWorkspace: React.FC<Workspace2DefinitionProps<ResetPasswordWo
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
-  const { users } = useUsers();
+  const { users, error, isLoading } = useUsers();
   const user = users.find((candidate) => candidate.uuid === workspaceProps.userUuid);
+  const disabled = Boolean(user?.retired);
+
+  // Disabling the user closes the form, as the modal kept the two apart.
+  useEffect(() => {
+    if (disabled) {
+      closeWorkspace({ discardUnsavedChanges: true });
+    }
+  }, [disabled, closeWorkspace]);
 
   if (!user) {
     return (
-      <Workspace2 title={t('resetPassword', 'Reset password')}>
-        <InlineLoading description={t('loading', 'Loading...')} />
-      </Workspace2>
+      <RecordLoading
+        title={t('resetPassword', 'Reset password')}
+        settled={Boolean(error) || !isLoading}
+        notFound={t('couldNotLoadUser', 'Could not load this user')}
+      />
     );
   }
   return <ResetPasswordForm user={user} closeWorkspace={closeWorkspace} />;

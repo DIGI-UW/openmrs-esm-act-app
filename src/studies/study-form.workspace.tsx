@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, ButtonSet, Form, InlineLoading, InlineNotification, Stack, TextInput } from '@carbon/react';
+import { Button, ButtonSet, Form, InlineNotification, Stack, TextInput } from '@carbon/react';
 import { showSnackbar, useConfig, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { RecordLoading } from '../record-loading.component';
 import { restErrorMessage } from '../rest-error-message';
 import { saveStudy, type Study, useStudies } from './studies.resource';
 import styles from '../styles/form-workspace.scss';
@@ -102,14 +103,16 @@ const StudyFormWorkspace: React.FC<Workspace2DefinitionProps<StudyFormWorkspaceP
 }) => {
   const { t } = useTranslation();
   const { studyUuid, onRenamed } = workspaceProps ?? {};
-  const { studies } = useStudies();
+  const { studies, error, isLoading } = useStudies();
   const study = studies.find((candidate) => candidate.uuid === studyUuid);
 
   if (studyUuid && !study) {
     return (
-      <Workspace2 title={t('renameStudy', 'Rename study')}>
-        <InlineLoading description={t('loading', 'Loading...')} />
-      </Workspace2>
+      <RecordLoading
+        title={t('renameStudy', 'Rename study')}
+        settled={Boolean(error) || !isLoading}
+        notFound={t('couldNotLoadStudy', 'Could not load this study')}
+      />
     );
   }
   return <StudyForm study={study} onRenamed={onRenamed} closeWorkspace={closeWorkspace} />;

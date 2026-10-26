@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { ErrorState, launchWorkspace2, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import ResearchPage from './research-page.component';
 import { arcEnrollment, backendAnswers, closedState, no, optInType, yes } from './research.test-helper';
 
@@ -188,6 +189,22 @@ describe('Research participation', () => {
       patientUuid: 'patient-1',
       enrollmentUuid: 'enrollment-arc',
     });
+  });
+
+  it('does not bring back the open Add participation form for Edit participation, or the reverse', async () => {
+    backendAnswers();
+    renderPage();
+    const propsOfLaunch = () => vi.mocked(launchWorkspace2).mock.lastCall[1] as Record<string, unknown>;
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add participation/ }));
+    const add = propsOfLaunch();
+    await userEvent.click(
+      within(await screen.findByRole('row', { name: /ARC/ })).getByRole('button', { name: 'Edit participation' }),
+    );
+    const edit = propsOfLaunch();
+
+    expect(restoresOpenWorkspace(add, edit)).toBe(false);
+    expect(restoresOpenWorkspace(edit, add)).toBe(false);
   });
 
   it('shows participation without changing it to a user who does not record clinical forms', async () => {

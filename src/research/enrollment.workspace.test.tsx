@@ -313,6 +313,14 @@ describe('Enrollment workspace', () => {
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
     expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ title: 'Participation saved' }));
+    await waitFor(() => expect(enrollmentLoads()).toBe(2));
+  });
+
+  it('says so when the participation to edit is not among those loaded', async () => {
+    backendAnswers();
+    renderWorkspace('missing');
+
+    expect(await screen.findByText('Could not load this participation')).toBeInTheDocument();
   });
 
   it('stays open and keeps the form when the save fails', async () => {

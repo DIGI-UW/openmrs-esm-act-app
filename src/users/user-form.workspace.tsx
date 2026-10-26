@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
   ButtonSet,
   Checkbox,
   Form,
-  InlineLoading,
   InlineNotification,
   PasswordInput,
   RadioButton,
@@ -13,6 +12,7 @@ import {
   TextInput,
 } from '@carbon/react';
 import { showSnackbar, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import { RecordLoading } from '../record-loading.component';
 import { restErrorMessage } from '../rest-error-message';
 import {
   type ActUser,
@@ -62,8 +62,7 @@ function UserFormBody({ user, mutate, closeWorkspace }: UserFormBodyProps) {
   };
   const toggle = (key: 'roles' | 'clinics', uuid: string, checked: boolean) =>
     change({ [key]: checked ? [...form[key], uuid] : form[key].filter((one) => one !== uuid) });
-  // A role the administrator may not give, which only an instance administrator could have given,
-  // stays as it is.
+  // A role the administrator may not give, which an instance administrator gave, stays as it is.
   const offeredRoles = new Set(roleChoices.roles.map((role) => role.uuid));
   const otherRoles = user?.roles.filter((role) => !offeredRoles.has(role.uuid)) ?? [];
   const otherClinics = form.clinics.filter((uuid) => !clinicChoices.some((clinic) => clinic.uuid === uuid));
@@ -252,14 +251,24 @@ const UserFormWorkspace: React.FC<Workspace2DefinitionProps<UserFormWorkspacePro
 }) => {
   const { t } = useTranslation();
   const userUuid = workspaceProps?.userUuid;
-  const { users, mutate } = useUsers();
+  const { users, error, isLoading, mutate } = useUsers();
   const user = users.find((candidate) => candidate.uuid === userUuid);
+  const disabled = Boolean(user?.retired);
+
+  // Disabling the user being edited closes the form, as the modal kept the two apart.
+  useEffect(() => {
+    if (disabled) {
+      closeWorkspace({ discardUnsavedChanges: true });
+    }
+  }, [disabled, closeWorkspace]);
 
   if (userUuid && !user) {
     return (
-      <Workspace2 title={t('editUser', 'Edit user')}>
-        <InlineLoading description={t('loading', 'Loading...')} />
-      </Workspace2>
+      <RecordLoading
+        title={t('editUser', 'Edit user')}
+        settled={Boolean(error) || !isLoading}
+        notFound={t('couldNotLoadUser', 'Could not load this user')}
+      />
     );
   }
   return <UserFormBody user={user} mutate={mutate} closeWorkspace={closeWorkspace} />;

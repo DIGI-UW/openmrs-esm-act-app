@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { launchWorkspace2 } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Studies from './studies.component';
 import { backendAnswers } from './studies.test-helper';
 
@@ -146,6 +147,24 @@ describe('Studies', () => {
       studyUuid: 'miller',
       onRenamed: expect.any(Function),
     });
+  });
+
+  it('restores the open study form when it is opened again, even after the page renders again, but not for another study', async () => {
+    backendAnswers();
+    renderPage();
+    const propsOfLaunch = () => vi.mocked(launchWorkspace2).mock.lastCall[1] as Record<string, unknown>;
+
+    await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));
+    const create = propsOfLaunch();
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Rename study' }));
+    const rename = propsOfLaunch();
+    await userEvent.click(screen.getByRole('button', { name: /Create study/ }));
+    expect(restoresOpenWorkspace(create, propsOfLaunch())).toBe(true);
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Miller' }));
+    await userEvent.click(within(await studyRow('Miller')).getByRole('button', { name: 'Rename study' }));
+
+    expect(restoresOpenWorkspace(rename, propsOfLaunch())).toBe(true);
+    expect(restoresOpenWorkspace(create, rename)).toBe(false);
   });
 
   it("keeps showing an opened study's participants after it is renamed", async () => {

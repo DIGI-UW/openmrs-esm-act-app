@@ -290,7 +290,7 @@ export default function Users() {
               kind="primary"
               size="md"
               renderIcon={Add}
-              onClick={() => launchWorkspace2('act-user-form-workspace')}
+              onClick={() => launchWorkspace2('act-user-form-workspace', { userUuid: undefined })}
             >
               {t('addUser', 'Add user')}
             </Button>

@@ -168,6 +168,23 @@ describe('User form workspace', () => {
     expect(writes.length).toBeGreaterThan(0);
   });
 
+  it('says so when the user to edit is not among the users loaded', async () => {
+    backend();
+    await signInAs(SA);
+    renderWorkspace('nobody');
+
+    expect(await screen.findByText('Could not load this user')).toBeInTheDocument();
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+  });
+
+  it('closes the form of a user who is disabled while it is open', async () => {
+    backend();
+    await signInAs(IA);
+    renderWorkspace('ruth');
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+  });
+
   it('keeps the workspace open when the save fails', async () => {
     backend('Down');
     await signInAs(SA);

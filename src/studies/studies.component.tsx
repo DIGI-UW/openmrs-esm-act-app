@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -307,9 +307,14 @@ export default function Studies() {
   const { participantsReport } = useConfig<Config>().studies;
   const { rows, isLoading, error } = useReportDataset(participantsReport);
   const [filters, setFilters] = useUrlFilters(filterKeys);
-  // The workspace reports a rename after the render that opened it.
-  const filtersRef = useRef(filters);
-  filtersRef.current = filters;
+  // A callback of fixed identity, so opening the form again is not read as new props.
+  const latest = useRef({ filters, setFilters });
+  latest.current = { filters, setFilters };
+  const onRenamed = useCallback((from: string, to: string) => {
+    if (latest.current.filters.study === from) {
+      latest.current.setFilters({ study: to });
+    }
+  }, []);
   return (
     <>
       <ActPageHeader title={t('studies', 'Studies')} illustration={<CohortsPictogram />} />
@@ -318,11 +323,7 @@ export default function Studies() {
           rows={rows}
           countsUnknown={isLoading || !!error}
           onOpen={(study) => setFilters({ study: study.name, status: '' })}
-          onRenamed={(from, to) => {
-            if (filtersRef.current.study === from) {
-              setFilters({ study: to });
-            }
-          }}
+          onRenamed={onRenamed}
         />
         <ParticipantsTable rows={rows} isLoading={isLoading} error={error} filters={filters} setFilters={setFilters} />
       </div>

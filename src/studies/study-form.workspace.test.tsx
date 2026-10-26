@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { showSnackbar, Workspace2 } from '@openmrs/esm-framework';
+import { openmrsFetch, showSnackbar, Workspace2 } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import StudyFormWorkspace from './study-form.workspace';
@@ -68,6 +68,27 @@ describe('Study form workspace', () => {
     await waitFor(() =>
       expect(posts).toEqual([{ url: '/ws/rest/v1/actcore/studies', body: { name: 'Stage Study 2' } }]),
     );
+  });
+
+  it('says so when the study to rename is not among the studies loaded', async () => {
+    backendAnswers();
+    renderWorkspace('nope');
+
+    expect(await screen.findByText('Could not load this study')).toBeInTheDocument();
+  });
+
+  it('reloads the studies after a save', async () => {
+    backendAnswers();
+    renderWorkspace();
+    const studyLoads = () =>
+      vi.mocked(openmrsFetch).mock.calls.filter(([url, init]) => !init?.method && String(url).endsWith('/studies'))
+        .length;
+    await userEvent.type(screen.getByLabelText('Study name'), 'Stage Study 2');
+    await waitFor(() => expect(studyLoads()).toBe(1));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(studyLoads()).toBe(2));
   });
 
   it('reloads the participants after a rename, as their rows carry the study name', async () => {

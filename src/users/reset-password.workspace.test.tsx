@@ -9,12 +9,12 @@ import { backend, SA, signInAs } from './users.test-helper';
 
 const closeWorkspace = vi.fn();
 
-async function renderWorkspace() {
+async function renderWorkspace(userUuid = 'grace') {
   await signInAs(SA);
   render(
     <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
       <ResetPasswordWorkspace
-        workspaceProps={{ userUuid: 'grace' }}
+        workspaceProps={{ userUuid }}
         windowProps={null}
         groupProps={null}
         launchChildWorkspace={vi.fn()}
@@ -26,7 +26,6 @@ async function renderWorkspace() {
       />
     </SWRConfig>,
   );
-  await screen.findByLabelText('New password');
 }
 
 describe('Reset password workspace', () => {
@@ -35,6 +34,7 @@ describe('Reset password workspace', () => {
   it('names the user whose password it resets, and shows and hides a password', async () => {
     backend();
     await renderWorkspace();
+    await screen.findByLabelText('New password');
 
     expect(screen.getByRole('heading', { name: 'Reset the password of Grace Okot' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Show password' })).toHaveLength(2);
@@ -42,9 +42,24 @@ describe('Reset password workspace', () => {
     expect(screen.getByRole('button', { name: 'Hide password' })).toBeInTheDocument();
   });
 
+  it('says so when the user is not among the users loaded', async () => {
+    backend();
+    await renderWorkspace('nobody');
+
+    expect(await screen.findByText('Could not load this user')).toBeInTheDocument();
+  });
+
+  it('closes the form of a user who is disabled while it is open', async () => {
+    backend();
+    await renderWorkspace('ruth');
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+  });
+
   it("resets a user's password and closes the workspace", async () => {
     const writes = backend();
     await renderWorkspace();
+    await screen.findByLabelText('New password');
 
     await userEvent.type(screen.getByLabelText('New password'), 'Changed123');
     await userEvent.type(screen.getByLabelText('Confirm password'), 'Changed123');
@@ -62,6 +77,7 @@ describe('Reset password workspace', () => {
   it('asks for a password, and for the same one twice, before it saves', async () => {
     const writes = backend();
     await renderWorkspace();
+    await screen.findByLabelText('New password');
 
     await userEvent.click(screen.getByRole('button', { name: 'Reset password' }));
     expect(screen.getByText('Enter a password')).toBeInTheDocument();
@@ -77,6 +93,7 @@ describe('Reset password workspace', () => {
   it("shows the server's reason when it refuses, and stays open", async () => {
     backend('You may not reset this password');
     await renderWorkspace();
+    await screen.findByLabelText('New password');
 
     await userEvent.type(screen.getByLabelText('New password'), 'Changed123');
     await userEvent.type(screen.getByLabelText('Confirm password'), 'Changed123');
@@ -89,6 +106,7 @@ describe('Reset password workspace', () => {
   it('asks the framework to guard unsaved changes only once a password is typed, and cancels on Cancel', async () => {
     backend();
     await renderWorkspace();
+    await screen.findByLabelText('New password');
     const guard = () => vi.mocked(Workspace2).mock.lastCall[0].hasUnsavedChanges;
     expect(guard()).toBe(false);
 

@@ -828,11 +828,11 @@
     },
     {
       "name": "act-studies",
-      "scopePattern": "/home/act-studies"
+      "scopePattern": "^/home/act-studies"
     },
     {
       "name": "act-users",
-      "scopePattern": "/home/act-users"
+      "scopePattern": "^/home/act-users"
     }
   ],
   "workspaceWindows2": [

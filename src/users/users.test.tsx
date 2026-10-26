@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getCoreTranslation, launchWorkspace2 } from '@openmrs/esm-framework';
+import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Users from './users.component';
 import { backend, IA, SA, signInAs } from './users.test-helper';
 
@@ -71,7 +72,7 @@ describe('Users', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Add user' }));
 
-    expect(launchWorkspace2).toHaveBeenCalledWith('act-user-form-workspace');
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-user-form-workspace', { userUuid: undefined });
   });
 
   it('opens the user form to edit, and the password form to reset, the user of its row', async () => {
@@ -83,6 +84,23 @@ describe('Users', () => {
     expect(launchWorkspace2).toHaveBeenLastCalledWith('act-user-form-workspace', { userUuid: 'grace' });
     await userEvent.click(within(await rowOf('James Okot')).getByRole('button', { name: 'Reset password' }));
     expect(launchWorkspace2).toHaveBeenLastCalledWith('act-reset-password-workspace', { userUuid: 'james' });
+  });
+
+  it('does not bring back the open Add user form for Edit user, or the open Edit form for Add user', async () => {
+    backend();
+    await signInAs(SA);
+    renderPage();
+    const propsOfLaunch = () => vi.mocked(launchWorkspace2).mock.lastCall[1] as Record<string, unknown>;
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add user' }));
+    const add = propsOfLaunch();
+    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Edit user' }));
+    const edit = propsOfLaunch();
+
+    expect(restoresOpenWorkspace(add, edit)).toBe(false);
+    expect(restoresOpenWorkspace(edit, add)).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Add user' }));
+    expect(restoresOpenWorkspace(add, propsOfLaunch())).toBe(true);
   });
 
   it('disables a user', async () => {

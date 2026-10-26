@@ -290,7 +290,9 @@ describe('routes.json workspaces', () => {
     const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
     const scope = workspaceRoutes.workspaceGroups2.find((candidate) => candidate.name === window?.group);
     expect(scope?.name).toBe(group);
-    expect(new RegExp(scope.scopePattern).test(page)).toBe(true);
+    const pattern = new RegExp(scope.scopePattern);
+    expect(pattern.test(page)).toBe(true);
+    expect(pattern.test(`/openmrs/spa${page}`)).toBe(false);
   });
 
   it('opens the enrolment workspace in the patient chart group', () => {
