@@ -695,6 +695,7 @@
   "uncheckAll": "Uncheck all",
   "unknownUser": "unknown",
   "updateDiagnosis": "Update diagnosis",
+  "updateProphylaxis": "Update prophylaxis",
   "upToDate": "Up to date",
   "urgency": "Urgency",
   "urgencyElective": "3: Elective (180 days)",
@@ -740,10 +741,5 @@
   "worklists": "Worklists",
   "worklistsDescription": "Patients needing action, by list",
   "wouldLikeToBeConsidered": "Would the patient like to be considered for research?",
-  "yes": "Yes",
-  "recordDiagnosis": "Record diagnosis",
-  "updateDiagnosis": "Update diagnosis",
-  "updateProphylaxis": "Update prophylaxis",
-  "adherenceTwelveMonths": "Adherence (12 months)",
-  "onTimeCountMonths": "{{given}} of {{total}} on time, {{months}} months"
+  "yes": "Yes"
 }
