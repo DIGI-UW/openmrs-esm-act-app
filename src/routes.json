@@ -810,10 +810,6 @@
       "scopePattern": "/home/act-screen-positive"
     },
     {
-      "name": "act-research",
-      "scopePattern": "/patient/([^/]+)/chart/act-research"
-    },
-    {
       "name": "act-studies",
       "scopePattern": "/home/act-studies"
     },
@@ -837,7 +833,7 @@
     },
     {
       "name": "act-research-form",
-      "group": "act-research",
+      "group": "patient-chart",
       "width": "narrow"
     },
     {
