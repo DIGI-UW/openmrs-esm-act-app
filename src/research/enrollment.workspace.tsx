@@ -1,31 +1,48 @@
 import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { Form, InlineNotification, Modal, Select, SelectItem, Stack, TextInput } from '@carbon/react';
-import { getCoreTranslation, OpenmrsDatePicker, parseDate, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { Button, ButtonSet, Form, InlineNotification, Select, SelectItem, Stack, TextInput } from '@carbon/react';
+import {
+  OpenmrsDatePicker,
+  parseDate,
+  showSnackbar,
+  useConfig,
+  Workspace2,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { RecordLoading } from '../record-loading.component';
 import { restErrorMessage } from '../rest-error-message';
 import { type Study } from '../studies/studies.resource';
-import { type EnrollmentInput, saveEnrollment, type StudyEnrollment } from './research.resource';
+import {
+  activeStudyUuids,
+  type EnrollmentInput,
+  saveEnrollment,
+  type StudyEnrollment,
+  useStudyEnrollments,
+} from './research.resource';
+import styles from '../styles/form-workspace.scss';
 
 const day = (date: Date | null) => (date ? dayjs(date).format('YYYY-MM-DD') : null);
 const toDate = (value: string | null) => (value ? parseDate(value) : null);
 
-interface EnrollmentModalProps {
+export interface EnrollmentWorkspaceProps {
+  patientUuid: string;
+  /** The enrolment to edit; a new one when absent. */
+  enrollmentUuid?: string;
+}
+
+interface EnrollmentFormProps {
   patientUuid: string;
   /** The studies a new enrolment may be in: those the patient is not active in. */
   studies: Array<Study>;
   /** The enrolment to edit, as last loaded; a new one when absent. */
   enrollment?: StudyEnrollment;
-  onClose: () => void;
-  onSaved: () => void;
+  mutate: () => unknown;
+  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
 }
 
-/**
- * Adds or edits a participation, as ACT 2.0's Participation dialog: study, Study ID and status are required, no date
- * is in the future, and an Inactive status takes a completion date, not before enrolment.
- */
-export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onSaved }: EnrollmentModalProps) {
+function EnrollmentForm({ patientUuid, studies, enrollment, mutate, closeWorkspace }: EnrollmentFormProps) {
   const { t } = useTranslation();
   const { studyParticipantIdAttributeType } = useConfig<Config>().studies;
   const [studyUuid, setStudyUuid] = useState(enrollment?.study.uuid ?? '');
@@ -34,6 +51,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
   const [dateEnrolled, setDateEnrolled] = useState<Date | null>(toDate(enrollment?.dateEnrolled ?? null));
   const [stateUuid, setStateUuid] = useState(enrollment?.stateUuid ?? '');
   const [dateCompleted, setDateCompleted] = useState<Date | null>(toDate(enrollment?.dateCompleted ?? null));
+  const [dirty, setDirty] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -62,6 +80,12 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
             : null,
   };
   const shown = (key: keyof typeof errors) => (submitted ? errors[key] : null);
+  const edited =
+    <T,>(set: (value: T) => void) =>
+    (value: T) => {
+      setDirty(true);
+      set(value);
+    };
 
   const submit = async () => {
     setSubmitted(true);
@@ -80,33 +104,24 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
     try {
       await saveEnrollment(patientUuid, input, studyParticipantIdAttributeType, enrollment);
       showSnackbar({ kind: 'success', title: t('participationSaved', 'Participation saved') });
-      onSaved();
-      onClose();
+      mutate();
+      closeWorkspace({ discardUnsavedChanges: true });
     } catch (e) {
       setSaveError(restErrorMessage(e));
       // Some requests may have saved before the failure, so a retry is planned from the reloaded enrolment.
-      onSaved();
+      mutate();
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal
-      closeButtonLabel={getCoreTranslation('close')}
-      open
-      modalHeading={
-        enrollment ? t('editParticipation', 'Edit participation') : t('addParticipation', 'Add participation')
-      }
-      primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
-      secondaryButtonText={t('cancel', 'Cancel')}
-      primaryButtonDisabled={saving}
-      onRequestSubmit={submit}
-      onRequestClose={onClose}
-      size="sm"
+    <Workspace2
+      title={enrollment ? t('editParticipation', 'Edit participation') : t('addParticipation', 'Add participation')}
+      hasUnsavedChanges={dirty}
     >
-      <Form onSubmit={(event) => event.preventDefault()}>
-        <Stack gap={5}>
+      <Form className={styles.form} onSubmit={(event) => event.preventDefault()}>
+        <Stack gap={5} className={styles.fields}>
           {saveError && (
             <InlineNotification
               kind="error"
@@ -127,6 +142,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
               invalid={!!shown('study')}
               invalidText={shown('study')}
               onChange={(event) => {
+                setDirty(true);
                 setStudyUuid(event.target.value);
                 const chosen = studies.find((s) => s.uuid === event.target.value);
                 setStateUuid(chosen?.states.find((s) => s.initial)?.uuid ?? '');
@@ -144,7 +160,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
             value={studyId}
             invalid={!!shown('studyId')}
             invalidText={shown('studyId')}
-            onChange={(event) => setStudyId(event.target.value)}
+            onChange={(event) => edited(setStudyId)(event.target.value)}
           />
           <OpenmrsDatePicker
             id="enrollment-date"
@@ -153,7 +169,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
             maxDate={today}
             invalid={!!shown('dateEnrolled')}
             invalidText={shown('dateEnrolled')}
-            onChange={(date) => setDateEnrolled(date ?? null)}
+            onChange={(date) => edited(setDateEnrolled)(date ?? null)}
           />
           <Select
             id="enrollment-status"
@@ -162,7 +178,7 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
             disabled={!study}
             invalid={!!shown('state')}
             invalidText={shown('state')}
-            onChange={(event) => setStateUuid(event.target.value)}
+            onChange={(event) => edited(setStateUuid)(event.target.value)}
           >
             <SelectItem value="" text={t('chooseAStatus', 'Choose a status')} />
             {states.map((s) => (
@@ -178,11 +194,55 @@ export function EnrollmentModal({ patientUuid, studies, enrollment, onClose, onS
               maxDate={today}
               invalid={!!shown('dateCompleted')}
               invalidText={shown('dateCompleted')}
-              onChange={(date) => setDateCompleted(date ?? null)}
+              onChange={(date) => edited(setDateCompleted)(date ?? null)}
             />
           )}
         </Stack>
+        <ButtonSet>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button className={styles.button} kind="primary" disabled={saving} onClick={submit}>
+            {saving ? t('saving', 'Saving...') : t('save', 'Save')}
+          </Button>
+        </ButtonSet>
       </Form>
-    </Modal>
+    </Workspace2>
   );
 }
+
+/**
+ * Adds or edits a participation, as ACT 2.0's Participation dialog: study, Study ID and status are required, no date
+ * is in the future, and an Inactive status takes a completion date, not before enrolment.
+ */
+const EnrollmentWorkspace: React.FC<Workspace2DefinitionProps<EnrollmentWorkspaceProps>> = ({
+  workspaceProps,
+  closeWorkspace,
+}) => {
+  const { t } = useTranslation();
+  const { patientUuid, enrollmentUuid } = workspaceProps;
+  const { enrollments, studies, error, isLoading, mutate } = useStudyEnrollments(patientUuid);
+  const enrollment = enrollments.find((candidate) => candidate.uuid === enrollmentUuid);
+
+  if (enrollmentUuid && !enrollment) {
+    return (
+      <RecordLoading
+        title={t('editParticipation', 'Edit participation')}
+        settled={Boolean(error) || !isLoading}
+        notFound={t('couldNotLoadParticipation', 'Could not load this participation')}
+      />
+    );
+  }
+  const activeIn = activeStudyUuids(enrollments);
+  return (
+    <EnrollmentForm
+      patientUuid={patientUuid}
+      studies={studies.filter((study) => !activeIn.has(study.uuid))}
+      enrollment={enrollment}
+      mutate={mutate}
+      closeWorkspace={closeWorkspace}
+    />
+  );
+};
+
+export default EnrollmentWorkspace;

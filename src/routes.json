@@ -825,6 +825,14 @@
     {
       "name": "act-screen-positive",
       "scopePattern": "/home/act-screen-positive"
+    },
+    {
+      "name": "act-studies",
+      "scopePattern": "^/home/act-studies"
+    },
+    {
+      "name": "act-users",
+      "scopePattern": "^/home/act-users"
     }
   ],
   "workspaceWindows2": [
@@ -839,6 +847,26 @@
       "group": "act-screen-positive",
       "width": "extra-wide",
       "canMaximize": true
+    },
+    {
+      "name": "act-research-form",
+      "group": "patient-chart",
+      "width": "narrow"
+    },
+    {
+      "name": "act-studies-form",
+      "group": "act-studies",
+      "width": "narrow"
+    },
+    {
+      "name": "act-users-form",
+      "group": "act-users",
+      "width": "wider"
+    },
+    {
+      "name": "act-reset-password",
+      "group": "act-users",
+      "width": "narrow"
     }
   ],
   "workspaces2": [
@@ -856,6 +884,26 @@
       "name": "act-screen-positive-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-enrollment-workspace",
+      "component": "enrollmentWorkspace",
+      "window": "act-research-form"
+    },
+    {
+      "name": "act-study-form-workspace",
+      "component": "studyFormWorkspace",
+      "window": "act-studies-form"
+    },
+    {
+      "name": "act-user-form-workspace",
+      "component": "userFormWorkspace",
+      "window": "act-users-form"
+    },
+    {
+      "name": "act-reset-password-workspace",
+      "component": "resetPasswordWorkspace",
+      "window": "act-reset-password"
     }
   ]
 }

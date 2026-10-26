@@ -120,6 +120,14 @@ export const cardiacTestsDashboard = getAsyncLifecycle(
 
 export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/flag-gaps.workspace'), options);
 
+export const enrollmentWorkspace = getAsyncLifecycle(() => import('./research/enrollment.workspace'), options);
+
+export const studyFormWorkspace = getAsyncLifecycle(() => import('./studies/study-form.workspace'), options);
+
+export const userFormWorkspace = getAsyncLifecycle(() => import('./users/user-form.workspace'), options);
+
+export const resetPasswordWorkspace = getAsyncLifecycle(() => import('./users/reset-password.workspace'), options);
+
 export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);
 
 export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-home-dashboard.component'), options);
