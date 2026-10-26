@@ -280,6 +280,10 @@ describe('configSchema', () => {
           { uuid: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Other non-coded' },
         ],
       },
+      patientStatus: {
+        programUuid: '7d73e143-a550-5a9d-aecd-dd771add098d',
+        deathConcept: '159AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
       actIdentifierType: '240f85fa-46e1-540e-9234-2796c623f7ea',
       procedures: {
         encounterType: 'c9b87090-8768-50be-987e-8ca0a8983429',

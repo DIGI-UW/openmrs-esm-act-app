@@ -745,6 +745,12 @@
       ]
     },
     {
+      "name": "act-update-patient-status",
+      "slot": "patient-actions-slot",
+      "component": "updatePatientStatusButton",
+      "displayExpression": "session.user.privileges.some((privilege) => ['Edit Patient Programs', 'Edit People'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+    },
+    {
       "name": "act-clinicians-only-note",
       "component": "cliniciansOnlyNote",
       "privileges": [
@@ -803,6 +809,12 @@
         "Get Encounters",
         "Get Observations"
       ]
+    }
+  ],
+  "modals": [
+    {
+      "name": "update-patient-status-modal",
+      "component": "updatePatientStatusModal"
     }
   ],
   "workspaceGroups2": [

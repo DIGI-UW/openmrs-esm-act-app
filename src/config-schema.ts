@@ -769,6 +769,20 @@ export const configSchema = {
         "The reasons Update prophylaxis offers for stopping, as the consultation form's Reason Stopped does.",
     },
   },
+  patientStatus: {
+    programUuid: {
+      _type: Type.UUID,
+      _default: '7d73e143-a550-5a9d-aecd-dd771add098d',
+      _description:
+        "The registry programme whose enrolment holds a patient's status: Update patient status ends it in one of the terminal states of its workflow, which the registry, the worklists and the Dashboard read.",
+    },
+    deathConcept: {
+      _type: Type.UUID,
+      _default: '159AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description:
+        "The concept of the workflow's Deceased state, which also marks the person dead as Mark patient deceased did.",
+    },
+  },
   actIdentifierType: {
     _type: Type.UUID,
     _default: '240f85fa-46e1-540e-9234-2796c623f7ea',
@@ -999,6 +1013,7 @@ export interface Config {
   };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
+  patientStatus: { programUuid: string; deathConcept: string };
   prophylaxisUpdate: {
     encounterType: string;
     concepts: Record<
