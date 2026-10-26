@@ -1,8 +1,8 @@
 import React from 'react';
 import dayjs from 'dayjs';
-import { SWRConfig } from 'swr';
+import { SWRConfig, useSWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   getDefaultsFromConfigSchema,
@@ -68,9 +68,16 @@ const memberValue = (group: Record<string, unknown>, concept: string) =>
   (group.groupMembers as Array<{ concept: string; value: unknown }>).find((one) => one.concept === concept)?.value;
 
 const closeWorkspace = vi.fn();
+let refetch: () => Promise<unknown>;
+function Refetch() {
+  const { mutate } = useSWRConfig();
+  refetch = () => mutate(() => true);
+  return null;
+}
 async function openUpdate() {
   render(
     <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      <Refetch />
       <UpdateProphylaxisWorkspace
         workspaceProps={null}
         windowProps={null}
@@ -215,6 +222,21 @@ describe('UpdateProphylaxisWorkspace', () => {
     expect(closeWorkspace).toHaveBeenCalledWith();
   });
 
+  it('starts the form over from the prescription when another workspace changes it while this one is open', async () => {
+    serve([prescribed('earlier', '2026-06-10T09:00:00.000+0000')]);
+    await openUpdate();
+    await userEvent.selectOptions(screen.getByLabelText('Regimen'), q21);
+
+    serve([
+      prescribed('earlier', '2026-06-10T09:00:00.000+0000'),
+      prescribed('later', '2026-07-10T09:00:00.000+0000', '2026-07-10'),
+    ]);
+    await act(() => refetch());
+
+    await waitFor(() => expect(screen.getByLabelText('Regimen')).toHaveValue(q28.uuid));
+    expect(screen.getByLabelText('Date started')).toHaveValue('2026-07-10');
+  });
+
   it('flags unsaved changes once the form is edited, so closing the workspace asks first', async () => {
     serve([prescribed('earlier', '2026-06-10T09:00:00.000+0000')]);
     await openUpdate();
@@ -223,6 +245,8 @@ describe('UpdateProphylaxisWorkspace', () => {
     expect(unsaved()).toBe(false);
     await userEvent.selectOptions(screen.getByLabelText('Regimen'), q21);
     expect(unsaved()).toBe(true);
+    await userEvent.selectOptions(screen.getByLabelText('Regimen'), q28.uuid);
+    expect(unsaved()).toBe(false);
   });
 });
 

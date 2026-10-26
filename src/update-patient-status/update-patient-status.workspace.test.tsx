@@ -108,7 +108,7 @@ function workspace() {
     </SWRConfig>
   );
 }
-async function openModal() {
+async function openWorkspace() {
   render(workspace());
   await screen.findByTestId('current-status');
 }
@@ -123,7 +123,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it("offers the workflow's terminal states to a patient in the registry, and ends the enrolment in the one chosen", async () => {
     serve();
-    await openModal();
+    await openWorkspace();
 
     expect(screen.getByTestId('current-status')).toHaveTextContent('Active');
     expect(optionNames()).toEqual(['Choose a status', 'Lost to follow-up', 'Physical relocation', 'Deceased']);
@@ -141,7 +141,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('marks the person dead first, with the cause, then ends the enrolment, for Deceased', async () => {
     serve();
-    await openModal();
+    await openWorkspace();
 
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     expect(screen.getByLabelText('Date of death')).toBeInTheDocument();
@@ -159,7 +159,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('says the death was saved when the enrolment is refused, and a second Save repeats only the enrolment', async () => {
     serve({ failEnrolment: true });
-    await openModal();
+    await openWorkspace();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
 
@@ -182,7 +182,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('refuses a date before the enrolment or after today', async () => {
     serve();
-    await openModal();
+    await openWorkspace();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'ltfu');
     const date = screen.getByLabelText('Date of status change');
 
@@ -210,7 +210,7 @@ describe('UpdatePatientStatusWorkspace', () => {
       ],
     };
     serve({ enrolments: [startsLater] });
-    await openModal();
+    await openWorkspace();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'ltfu');
     const date = screen.getByLabelText('Date of status change');
 
@@ -224,7 +224,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('keeps Save disabled for Deceased until a cause is typed, as core refuses a death without one', async () => {
     serve();
-    await openModal();
+    await openWorkspace();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     const save = screen.getByRole('button', { name: 'Save' });
 
@@ -237,7 +237,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('refuses a death date before the birthdate, also with no active enrolment', async () => {
     serve({ enrolments: [] });
-    await openModal();
+    await openWorkspace();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     await userEvent.type(screen.getByLabelText('Cause of death'), 'Malaria');
     const date = screen.getByLabelText('Date of death');
@@ -253,20 +253,20 @@ describe('UpdatePatientStatusWorkspace', () => {
   it('offers a user who may only edit people Deceased alone', async () => {
     await signInWith(['Edit People']);
     serve();
-    await openModal();
+    await openWorkspace();
     expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
   });
 
   it('offers a user who may only edit programmes the other statuses', async () => {
     await signInWith(['Edit Patient Programs']);
     serve();
-    await openModal();
+    await openWorkspace();
     expect(optionNames()).toEqual(['Choose a status', 'Lost to follow-up', 'Physical relocation']);
   });
 
   it('offers a patient with no active enrolment Deceased alone, saved as a person update only', async () => {
     serve({ enrolments: [completed] });
-    await openModal();
+    await openWorkspace();
 
     expect(screen.getByTestId('current-status')).toHaveTextContent('Lost to follow-up');
     expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
@@ -280,7 +280,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('offers a patient in no programme Deceased as a person update, as Mark patient deceased did', async () => {
     serve({ enrolments: [] });
-    await openModal();
+    await openWorkspace();
 
     expect(screen.getByTestId('current-status')).toHaveTextContent('Not in the registry');
     expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
@@ -288,7 +288,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('ends only the enrolment, dated as the death was, for a patient already dead whose enrolment is still active', async () => {
     serve({ person: { dead: true, deathDate: '2026-07-04T00:00:00.000+0000' } });
-    await openModal();
+    await openWorkspace();
 
     expect(screen.getByTestId('current-status')).toHaveTextContent(/Deceased/);
     expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
@@ -303,7 +303,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('only shows the status of a patient who is dead and out of the registry, with nothing to save', async () => {
     serve({ enrolments: [completed], person: { dead: true, deathDate: '2026-08-02T00:00:00.000+0000' } });
-    await openModal();
+    await openWorkspace();
 
     expect(screen.getByText('There is nothing to update for this patient.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
@@ -314,7 +314,7 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('keeps the fields, Save and Cancel together under the heading, and closes on Cancel', async () => {
     serve();
-    await openModal();
+    await openWorkspace();
 
     expect(screen.getByRole('heading', { name: 'Update patient status' })).toBeInTheDocument();
     expect(screen.getByLabelText('Status')).toBeInTheDocument();
@@ -325,12 +325,14 @@ describe('UpdatePatientStatusWorkspace', () => {
 
   it('flags unsaved changes once a status is chosen, so closing the workspace asks first', async () => {
     serve();
-    await openModal();
+    await openWorkspace();
     const unsaved = () => vi.mocked(Workspace2).mock.lastCall![0].hasUnsavedChanges;
 
     expect(unsaved()).toBe(false);
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'ltfu');
     expect(unsaved()).toBe(true);
+    await userEvent.selectOptions(screen.getByLabelText('Status'), '');
+    expect(unsaved()).toBe(false);
   });
 });
 

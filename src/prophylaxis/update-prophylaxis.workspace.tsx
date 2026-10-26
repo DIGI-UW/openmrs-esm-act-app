@@ -235,6 +235,11 @@ export default function UpdateProphylaxisWorkspace({ closeWorkspace, groupProps:
       <InlineLoading className={styles.body} description={t('loading', 'Loading...')} />
     </Workspace2>
   ) : (
-    <UpdateForm patientUuid={patientUuid} prescription={prescription} closeWorkspace={closeWorkspace} />
+    <UpdateForm
+      key={prescription?.encounter.uuid}
+      patientUuid={patientUuid}
+      prescription={prescription}
+      closeWorkspace={closeWorkspace}
+    />
   );
 }
