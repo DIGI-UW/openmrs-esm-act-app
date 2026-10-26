@@ -845,6 +845,11 @@
       "name": "act-users-form",
       "group": "act-users",
       "width": "wider"
+    },
+    {
+      "name": "act-reset-password",
+      "group": "act-users",
+      "width": "narrow"
     }
   ],
   "workspaces2": [
@@ -881,7 +886,7 @@
     {
       "name": "act-reset-password-workspace",
       "component": "resetPasswordWorkspace",
-      "window": "act-users-form"
+      "window": "act-reset-password"
     }
   ]
 }
