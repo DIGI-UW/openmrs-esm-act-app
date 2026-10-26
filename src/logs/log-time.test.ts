@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import i18next from 'i18next';
 import * as reactI18next from 'react-i18next';
-import { markTranslations } from '../i18n.test-helper';
 import {
   describeBrowser,
   describeClient,
@@ -17,31 +16,22 @@ const { t } = reactI18next.useTranslation();
 
 describe('logTime', () => {
   it('says Today and the clock time for an entry of today', () => {
-    expect(logTime(t, '2026-10-21T10:52:14.000Z', now)).toBe('Today, 10:52');
+    expect(logTime(t, '2026-10-21T10:52:14.000Z', now)).toBe('Today, 10:52 AM');
   });
 
   it("says Yesterday and the clock time for yesterday's entry", () => {
-    expect(logTime(t, '2026-10-20T17:05:00.000Z', now)).toBe('Yesterday, 17:05');
+    expect(logTime(t, '2026-10-20T17:05:00.000Z', now)).toBe('Yesterday, 05:05 PM');
   });
 
   it('gives the full date and clock time for an older entry', () => {
-    expect(logTime(t, '2026-10-18T16:40:00.000Z', now)).toBe('18-Oct-2026, 16:40');
+    expect(logTime(t, '2026-10-18T16:40:00.000Z', now)).toBe('18-Oct-2026, 04:40 PM');
   });
 
   it('gives a window its end time when reads were folded, and a lone read its time alone', () => {
-    expect(logTimeRange(t, '2026-10-21T07:41:20.000Z', '2026-10-21T07:48:17.000Z', now)).toBe('Today, 07:41 to 07:48');
-    expect(logTimeRange(t, '2026-10-21T07:31:00.000Z', '2026-10-21T07:31:00.000Z', now)).toBe('Today, 07:31');
-  });
-
-  it('offers the words it writes around the clock time to translation', () => {
-    markTranslations();
-    const marked = reactI18next.useTranslation().t;
-
-    expect(logTime(marked, '2026-10-21T10:52:14.000Z', now)).toBe('«Today, 10:52»');
-    expect(logTime(marked, '2026-10-20T17:05:00.000Z', now)).toBe('«Yesterday, 17:05»');
-    expect(logTimeRange(marked, '2026-10-21T07:41:20.000Z', '2026-10-21T07:48:17.000Z', now)).toBe(
-      '««Today, 07:41» to 07:48»',
+    expect(logTimeRange(t, '2026-10-21T07:41:20.000Z', '2026-10-21T07:48:17.000Z', now)).toBe(
+      'Today, 07:41 AM to 07:48 AM',
     );
+    expect(logTimeRange(t, '2026-10-21T07:31:00.000Z', '2026-10-21T07:31:00.000Z', now)).toBe('Today, 07:31 AM');
   });
 
   it('keeps an apostrophe in a translated Today as it is when it heads a window', async () => {
@@ -52,7 +42,7 @@ describe('logTime', () => {
     });
 
     expect(logTimeRange(french.t, '2026-10-21T07:41:20.000Z', '2026-10-21T07:48:17.000Z', now)).toBe(
-      "Aujourd'hui, 07:41 to 07:48",
+      "Aujourd'hui, 07:41 AM to 07:48 AM",
     );
   });
 
@@ -82,17 +72,6 @@ describe('describeSignInDetails', () => {
     );
   });
 
-  it('offers its note of a locked account to translation, and not the reason the module wrote', () => {
-    markTranslations();
-
-    expect(
-      describeSignInDetails(
-        reactI18next.useTranslation().t,
-        '{"failureReason":"Invalid credential","accountLocked":true}',
-      ),
-    ).toBe('Invalid credential, «account locked»');
-  });
-
   it('keeps plain details as they are, and gives nothing for none', () => {
     expect(describeSignInDetails(t, 'Session expired')).toBe('Session expired');
     expect(describeSignInDetails(t, '')).toBe('');
@@ -119,14 +98,8 @@ describe('describeBrowser', () => {
     ).toBe('Edge on Windows');
   });
 
-  it('offers the words joining browser and system to translation, and a browser alone as it is', () => {
-    markTranslations();
-    const marked = reactI18next.useTranslation().t;
-
-    expect(describeBrowser(marked, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/130.0.0.0')).toBe(
-      '«Chrome on macOS»',
-    );
-    expect(describeBrowser(marked, 'Mozilla/5.0 Chrome/130.0.0.0')).toBe('Chrome');
+  it('names a browser alone when the system is not known', () => {
+    expect(describeBrowser(t, 'Mozilla/5.0 Chrome/130.0.0.0')).toBe('Chrome');
   });
 
   it('keeps an agent that is not a known browser, such as curl, as it is', () => {

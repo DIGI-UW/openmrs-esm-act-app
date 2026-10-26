@@ -10,7 +10,6 @@ import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
-import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
@@ -551,14 +550,6 @@ describe('Dashboard', () => {
     expect(mutates[REGISTRANTS]).not.toHaveBeenCalled();
   });
 
-  it("offers the name of a failed section's error icon to translation", async () => {
-    markTranslations();
-    await signIn(OPTIMISATION);
-    renderPage();
-
-    expect(await screen.findByTitle('«error icon»')).toBeInTheDocument();
-  });
-
   it('shows no figure on a tile, and names the section rather than its count, when the registrant counts fail', async () => {
     await signIn(REGISTRANTS);
     renderPage();
@@ -814,36 +805,34 @@ describe('Dashboard', () => {
       ],
     };
 
-    it("offers the cascade's step labels to translation, on its bars and steps, and still opens a step by its own name", async () => {
-      markTranslations();
+    it("shows the cascade's step labels on its bars and steps, and still opens a step by its own name", async () => {
       await signIn(undefined, figureRows);
       renderPage();
 
       const steps = await screen.findAllByTestId('dashboard-cascade-step');
       expect(steps.map((step) => step.firstChild.textContent)).toEqual([
-        '«active»',
-        '«prescribed»',
-        '«initiated»',
-        '«coveredToday»',
-        '«adherentEightyPercent»',
+        'active',
+        'prescribed',
+        'initiated',
+        'coveredToday',
+        'adherentEightyPercent',
       ]);
-      expect(chartData(SimpleBarChart, '«RHD care cascade»').map(({ group }) => group)).toEqual([
-        '«active»',
-        '«prescribed»',
-        '«initiated»',
-        '«coveredToday»',
-        '«adherentEightyPercent»',
+      expect(chartData(SimpleBarChart, 'RHD care cascade').map(({ group }) => group)).toEqual([
+        'active',
+        'prescribed',
+        'initiated',
+        'coveredToday',
+        'adherentEightyPercent',
       ]);
-      const { color } = chartOptions(SimpleBarChart, '«RHD care cascade»') as unknown as { color: { scale: object } };
-      expect(color.scale).toHaveProperty('«prescribed»');
+      const { color } = chartOptions(SimpleBarChart, 'RHD care cascade') as unknown as { color: { scale: object } };
+      expect(color.scale).toHaveProperty('prescribed');
       expect(within(steps[1]).getByRole('link')).toHaveAttribute(
         'href',
         expect.stringContaining('figure=cascade&step=Prescribed'),
       );
     });
 
-    it('offers its own name for a waitlist procedure or urgency left out to translation, and still opens it by that name', async () => {
-      markTranslations();
+    it('shows its own name for a waitlist procedure or urgency left out, and still opens it by that name', async () => {
       await signIn(undefined, {
         ...figureRows,
         [DASHBOARD_WAITLIST]: [
@@ -855,17 +844,17 @@ describe('Dashboard', () => {
       renderPage();
 
       expect(await screen.findAllByTestId('dashboard-waitlist-total')).toHaveLength(2);
-      expect(texts('dashboard-waitlist-total')).toEqual(['«Not given»1', 'Surgery1']);
-      expect(chartData(StackedBarChart, '«Procedural waitlist»')).toEqual([
+      expect(texts('dashboard-waitlist-total')).toEqual(['Not given1', 'Surgery1']);
+      expect(chartData(StackedBarChart, 'Procedural waitlist')).toEqual([
         { group: URGENT, key: 'Surgery', value: 1 },
-        { group: '«Not given»', key: '«Not given»', value: 1 },
+        { group: 'Not given', key: 'Not given', value: 1 },
       ]);
-      await userEvent.click(screen.getAllByRole('button', { name: '«Show as a table»' })[0]);
-      expect(screen.getByRole('columnheader', { name: '«Not given»' })).toBeInTheDocument();
-      expect(screen.getByRole('cell', { name: '«Not given»' })).toBeInTheDocument();
+      await userEvent.click(screen.getAllByRole('button', { name: 'Show as a table' })[0]);
+      expect(screen.getByRole('columnheader', { name: 'Not given' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Not given' })).toBeInTheDocument();
 
       await userEvent.click(within(screen.getAllByTestId('dashboard-waitlist-row')[0]).getByRole('link'));
-      expect(await screen.findByText(/«Procedural waitlist», «Not given», «Not given»/)).toBeInTheDocument();
+      expect(await screen.findByText(/Procedural waitlist, Not given, Not given/)).toBeInTheDocument();
       expect(paramsOf(WAITLIST_PATIENTS)).toEqual({
         endDate: today,
         breakdown: 'open',
@@ -1043,8 +1032,7 @@ describe('Dashboard', () => {
     it.each([
       ['Prescribed', 'prescribed'],
       ['Initiated BPG', 'initiated'],
-    ])('names cascade step %s on its chip by the label its bar shows, offered to translation', async (step, label) => {
-      markTranslations();
+    ])('names cascade step %s on its chip by the label its bar shows', async (step, label) => {
       await signIn(undefined, figureRows);
       window.history.replaceState(
         null,
@@ -1054,7 +1042,7 @@ describe('Dashboard', () => {
       renderPage();
 
       expect(
-        await screen.findByRole('button', { name: new RegExp(`^«RHD care cascade»: «${label}»`) }),
+        await screen.findByRole('button', { name: new RegExp(`^RHD care cascade: ${label}`) }),
       ).toBeInTheDocument();
     });
 

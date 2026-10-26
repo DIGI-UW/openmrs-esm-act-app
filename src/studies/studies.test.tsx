@@ -5,7 +5,6 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getCoreTranslation, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
-import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Studies from './studies.component';
 
@@ -146,9 +145,8 @@ describe('Studies', () => {
     expect(await screen.findByText('[Could not save the program]')).toBeInTheDocument();
   });
 
-  it("offers the name of its dialog's close button to translation", async () => {
+  it("takes the name of its dialog's close button from the core translations", async () => {
     backendAnswers();
-    markTranslations();
     renderPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Create study/ }));

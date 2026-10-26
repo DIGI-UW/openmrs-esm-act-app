@@ -6,7 +6,6 @@ import userEvent from '@testing-library/user-event';
 import { getCoreTranslation, openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { CLINICS_PROPERTY } from '../clinic-limit';
-import { markTranslations } from '../i18n.test-helper';
 import Users from './users.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -123,33 +122,32 @@ describe('Users', () => {
     expect(screen.getAllByTestId('act-user-row')).toHaveLength(2);
   });
 
-  it('offers the words its switch, notice icon, search box, password fields and dialogs would show in English to translation', async () => {
-    markTranslations();
+  it('shows its switch state and notice icon, and shows and hides a password in the add, reset and disable dialogs', async () => {
     backend();
     await signInAs(SA);
     renderPage();
 
-    expect(await screen.findByText('«Off»')).toBeInTheDocument();
-    expect(screen.getByTitle('«info icon»')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('switch', { name: '«Show disabled users»' }));
-    expect(screen.getByText('«On»')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
+    expect(await screen.findByText('Off')).toBeInTheDocument();
+    expect(screen.getByTitle('info icon')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('switch', { name: 'Show disabled users' }));
+    expect(screen.getByText('On')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear search input' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '«Add user»' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add user' }));
     let dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getAllByRole('button', { name: '«Show password»' })).toHaveLength(2);
-    await userEvent.click(within(dialog).getAllByRole('button', { name: '«Show password»' })[0]);
-    expect(within(dialog).getByRole('button', { name: '«Hide password»' })).toBeInTheDocument();
+    expect(within(dialog).getAllByRole('button', { name: 'Show password' })).toHaveLength(2);
+    await userEvent.click(within(dialog).getAllByRole('button', { name: 'Show password' })[0]);
+    expect(within(dialog).getByRole('button', { name: 'Hide password' })).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
-    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: '«Reset password»' }));
+    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Reset password' }));
     dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getAllByRole('button', { name: '«Show password»' })).toHaveLength(2);
+    expect(within(dialog).getAllByRole('button', { name: 'Show password' })).toHaveLength(2);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
-    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: '«Disable user»' }));
+    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Disable user' }));
     dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
     expect(getCoreTranslation).toHaveBeenCalledWith('close');

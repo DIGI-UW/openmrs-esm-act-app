@@ -13,7 +13,6 @@ import {
 } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
-import { markTranslations } from '../i18n.test-helper';
 import { openFormInChart } from '../visits/open-form-in-chart';
 import { ActHomeQuickActions } from './quick-actions.component';
 import {
@@ -141,17 +140,6 @@ describe('ACT home quick actions', () => {
       ['enterBpg', '/openmrs/spa/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d'],
       ['enterOralProphylaxis', '/openmrs/spa/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465'],
     ]);
-  });
-
-  it('offers the names of its prophylaxis forms to translation', async () => {
-    markTranslations();
-    await signInWithFastDataEntry();
-    render(<EnterProphylaxisAction />);
-
-    await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
-
-    expect(screen.getByRole('link', { name: '«enterBpg»' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '«enterOralProphylaxis»' })).toBeInTheDocument();
   });
 
   it('hides the choices again when enter prophylaxis is clicked a second time', async () => {

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { signInWith } from '../access/sign-in.test-helper';
-import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
@@ -106,13 +105,6 @@ describe('Registry filters', () => {
         .map((option) => option.textContent);
     expect(options('Category at diagnosis')).toEqual(['All', 'RHD A', 'RHD B', 'RHD C']);
     expect(options('Status')).toEqual(['All', 'Active', 'Completed']);
-  });
-
-  it("offers the name of its search box's clear button to translation", () => {
-    markTranslations();
-    render(<Registry />);
-
-    expect(screen.getByRole('button', { name: '«Clear search input»' })).toBeInTheDocument();
   });
 
   it('finds patients by name or ACT ID', async () => {

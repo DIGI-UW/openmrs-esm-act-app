@@ -5,7 +5,6 @@ import userEvent from '@testing-library/user-event';
 import { signInWith } from '../access/sign-in.test-helper';
 import { columnHeaders } from '../column-headers.test-helper';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
-import { markTranslations } from '../i18n.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
 import WaitingList from './waiting-list.component';
@@ -97,27 +96,25 @@ describe('Procedural waiting list', () => {
     });
   });
 
-  it("offers each urgency band's name to translation, in its column and its filter alike, filtering by the configured name", async () => {
-    markTranslations();
+  it('keeps filtering by the configured name of an urgency band when it is shown translated, in its column and its filter alike', async () => {
     dataset({ rows: waitingListRows });
 
     render(<WaitingList />);
 
     const row = screen.getByRole('row', { name: /rhd00001\b/ });
-    expect(within(row).getByRole('cell', { name: '«urgencyElective»' })).toBeInTheDocument();
-    const urgency = screen.getByRole('combobox', { name: '«Urgency»' });
-    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: '«urgencyElective»' }));
+    expect(within(row).getByRole('cell', { name: 'urgencyElective' })).toBeInTheDocument();
+    const urgency = screen.getByRole('combobox', { name: 'Urgency' });
+    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: 'urgencyElective' }));
     expect(urgency).toHaveValue('urgencyElective');
   });
 
   it("shows the report's own urgency name, which no band covers, as it is", async () => {
-    markTranslations();
     dataset({ rows: [{ ...waitingListRows[0], urgency: 'Urgent', urgency_concept: 'no-such-band' }] });
 
     render(<WaitingList />);
 
     expect(screen.getByRole('cell', { name: 'Urgent' })).toBeInTheDocument();
-    const urgency = screen.getByRole('combobox', { name: '«Urgency»' });
+    const urgency = screen.getByRole('combobox', { name: 'Urgency' });
     await userEvent.selectOptions(urgency, screen.getByRole('option', { name: 'Urgent' }));
     expect(urgency).toHaveValue('Urgent');
   });

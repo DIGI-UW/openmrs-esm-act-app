@@ -132,15 +132,6 @@ others to the login page. The times are
 `sessionTimeout.idleMinutes` (30; 0 switches the warning off), `warningMinutes` (3) and `keepAliveMinutes` (10), and
 `idleMinutes` should match the server's session timeout.
 
-## Translations
-
-The app's own text is in `translations/en.json`; another language is a file beside it. A configured label (a care
-cascade step, a flag worklist title, an urgency band, a prophylaxis form choice) is a translation key, as in other O3
-apps: the defaults are keys in `en.json`, such as `coveredToday`, and a distro may set its own key and give its text
-per language under `"Translation overrides"` for `@act-registry/esm-act-app`. A label that is no key shows as
-written. Common words such as Close come from O3's core translations. After changing a string, run
-`yarn extract-translations` and commit `translations/en.json` with the change.
-
 ## Requirements
 
 - Backend: webservices.rest 2.40.0 or later, ACT Core with the gap look-up, cohort 3.7.3 or later for the RHD flag

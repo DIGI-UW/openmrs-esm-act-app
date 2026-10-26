@@ -2,7 +2,7 @@ import { type TFunction } from 'i18next';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate, formatTime } from '@openmrs/esm-framework';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -19,7 +19,7 @@ export function parseAuditTime(value: string) {
 /** A row's time: "Today, 10:52" or "Yesterday, 17:05" for recent entries, else the full date and time. */
 export function logTime(t: TFunction, iso: string, now = new Date()) {
   const time = dayjs(iso);
-  const clock = time.format('HH:mm');
+  const clock = formatTime(time.toDate());
   if (time.isSame(now, 'day')) {
     return t('logToday', 'Today, {{time}}', { time: clock });
   }
@@ -36,7 +36,7 @@ export function logTimeRange(t: TFunction, from: string, to: string, now = new D
     ? start
     : t('logTimeRange', '{{start}} to {{end}}', {
         start,
-        end: dayjs(to).format('HH:mm'),
+        end: formatTime(dayjs(to).toDate()),
         interpolation: { escapeValue: false },
       });
 }

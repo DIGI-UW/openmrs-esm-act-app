@@ -10,6 +10,6 @@ export function usePaginationText() {
     itemRangeText: (min: number, max: number, total: number) =>
       t('itemRange', '{{min}}–{{max}} of {{count}} items', { min, max, count: total }),
     pageRangeText: (_current: number, total: number) =>
-      getCoreTranslation('paginationOfPages', undefined, { count: total }),
+      getCoreTranslation('paginationOfPages', 'of {{count}} pages', { count: total }),
   };
 }

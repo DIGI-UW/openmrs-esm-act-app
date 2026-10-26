@@ -5,7 +5,6 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
-import { markTranslations } from '../i18n.test-helper';
 import { downloadCsv } from '../table-filters/csv';
 import Logs from './logs.component';
 import { activityDetails, activityEntries, downloadEntries, readEntries, signInEntries } from './logs.fixture';
@@ -187,35 +186,35 @@ describe('Logs', () => {
       expect(rowTexts()).toEqual([
         [
           '',
-          'Today, 10:52',
+          'Today, 10:52 AM',
           'Sarah Namusokeclinician · Clinician',
           'SavedRHD BPG Delivery6 fields set',
           'Grace Akellorhd00001',
         ],
         [
           '',
-          'Today, 10:40',
+          'Today, 10:40 AM',
           'Joseph OdongocommunityClinician · Community Clinician',
           'EditedRHD Oral Adherence2 fields changed: Date of Adherence Estimate, Adherence',
           'Samuel Okellorhd00002',
         ],
         [
           '',
-          'Today, 09:15',
+          'Today, 09:15 AM',
           'Sarah Namusokeclinician · Clinician',
           'VoidedRHD EchocardiogramReason: entered on the wrong patient',
           'Lakot Lamwakarhd00409',
         ],
         [
           '',
-          'Today, 08:30',
+          'Today, 08:30 AM',
           'Mary AchendataClerk · Data Clerk',
           'FlagDismissed flag RHD prophylaxis not prescribedReason: prescribed elsewhere',
           'Agnes Lamwakarhd00031',
         ],
         [
           '',
-          'Yesterday, 17:05',
+          'Yesterday, 05:05 PM',
           'James KatoinstanceAdmin · Instance Administrator',
           'UserCreated user Data Clerk at Acimi HCIII',
           'Mary Achen',
@@ -224,28 +223,26 @@ describe('Logs', () => {
       expect(screen.getByText('Newest first')).toBeInTheDocument();
     });
 
-    it("offers its pager's own words to translation", async () => {
-      markTranslations();
+    it("shows its pager's own words", async () => {
       backend();
       await signInWith(BOTH);
 
       renderPage();
 
       await screen.findByText('Grace Akello');
-      expect(screen.getByText('«Items per page:»')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '«Next page»' })).toBeInTheDocument();
+      expect(screen.getByText('Items per page:')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Next page' })).toBeInTheDocument();
     });
 
-    it("offers the words it writes around a row's time to translation, on every tab that shows one", async () => {
-      markTranslations();
+    it("writes the words around a row's time, on every tab that shows one", async () => {
       backend();
       await signInWith(BOTH);
       renderPage();
 
-      expect(await screen.findByText('«Today, 10:52»')).toBeInTheDocument();
-      expect(screen.getByText('«Yesterday, 17:05»')).toBeInTheDocument();
+      expect(await screen.findByText('Today, 10:52 AM')).toBeInTheDocument();
+      expect(screen.getByText('Yesterday, 05:05 PM')).toBeInTheDocument();
       await userEvent.click(screen.getByRole('tab', { name: /Patients opened/ }));
-      expect(await screen.findByText('««Today, 07:41» to 07:48»')).toBeInTheDocument();
+      expect(await screen.findByText('Today, 07:41 AM to 07:48 AM')).toBeInTheDocument();
     });
 
     it('expands a flag dismissal, which ACT Core records outside the audit log, without asking for a revision', async () => {
@@ -447,21 +444,21 @@ describe('Logs', () => {
       expect(rowTexts()).toEqual([
         [
           '',
-          'Today, 07:41 to 07:48',
+          'Today, 07:41 AM to 07:48 AM',
           'Joseph OdongocommunityClinician · Community Clinician',
           'Opened the chart3 times in 7 minutes',
           'Grace Akellorhd00001',
         ],
         [
           '',
-          'Today, 07:17',
+          'Today, 07:17 AM',
           'Joseph OdongocommunityClinician · Community Clinician',
           "Opened the chartthe patient record; the patient is at Uganda Heart Institute, not the user's clinic",
           'Patrick Ojokrhd00004',
         ],
         [
           '',
-          'Yesterday, 16:02',
+          'Yesterday, 04:02 PM',
           'Joseph OdongocommunityClinician · Community Clinician',
           'Searched for "Akello", 4 results',
           'Patient search',
@@ -539,7 +536,7 @@ describe('Logs', () => {
       expect(rowTexts()).toEqual([
         [
           '',
-          'Today, 10:50',
+          'Today, 10:50 AM',
           'Sarah Namusokeclinician · Clinician',
           'Downloaded3 fields, All dates',
           'RHD BPG Delivery',
@@ -548,7 +545,7 @@ describe('Logs', () => {
         ],
         [
           '',
-          'Today, 10:49',
+          'Today, 10:49 AM',
           'James KatoinstanceAdmin · Instance Administrator',
           'Downloaded1 fields, 2026-07-01 to 2026-09-30',
           'RHD Consultation Visit',
@@ -557,7 +554,7 @@ describe('Logs', () => {
         ],
         [
           '',
-          'Yesterday, 09:03',
+          'Yesterday, 09:03 AM',
           'Peter OcensiteAdmin · Site Administrator',
           'DownloadedRegistry list, 4 columns',
           'Registry list',
@@ -642,9 +639,9 @@ describe('Logs', () => {
       await open();
 
       expect(rowTexts()).toEqual([
-        ['', 'Today, 07:39', 'communityClinician', 'Signed inChrome on macOS', '172.21.0.1'],
-        ['', 'Today, 07:38', 'communityClinician', 'Sign-in failedInvalid credential', '172.21.0.1'],
-        ['', 'Yesterday, 18:10', 'dataClerk', 'Signed out', '172.21.0.9'],
+        ['', 'Today, 07:39 AM', 'communityClinician', 'Signed inChrome on macOS', '172.21.0.1'],
+        ['', 'Today, 07:38 AM', 'communityClinician', 'Sign-in failedInvalid credential', '172.21.0.1'],
+        ['', 'Yesterday, 06:10 PM', 'dataClerk', 'Signed out', '172.21.0.9'],
       ]);
       expect(await screen.findByTestId('failed-sign-ins')).toHaveTextContent('Failed sign-ins in the last 7 days: 9');
       expect(lastUrl(calls, '/securityauditlogs?page')).toBe('/ws/rest/v1/securityauditlogs?page=0&size=20');
