@@ -9,15 +9,44 @@ import { type Figure, FigureLinks } from './dashboard-figure';
 import styles from './dashboard.scss';
 
 // Each chart is given its colours as a scale, so a printed legend's swatch can show the same colour.
-const teal = '#005d5d';
-const palette = [teal, '#ff832b', '#6929c4', '#1192e8', '#9f1853', '#b28600', '#198038', '#002d9c', '#fa4d56'];
+const teal = '#009d9a';
+const notRecorded = '#c6c6c6';
+// A colour means one thing on every chart, so a label the reports send keeps its colour wherever it is drawn.
+const labelColours: Record<string, string> = {
+  Active: teal,
+  'Rheumatic Heart Disease/Rheumatic Fever': teal,
+  'Lost to follow-up': '#ee538b',
+  Deceased: '#393939',
+  'Voluntary inactivity': '#8a3800',
+  'Physical relocation': '#5e2900',
+  Normal: '#42be65',
+  'Confirmatory echo normal': '#42be65',
+  'CHD spontaneous resolution': '#6fdc8c',
+  'Congenital heart disease': '#a56eff',
+  'Other heart disease': '#b28600',
+  Other: '#b28600',
+  School: '#0f62fe',
+  Community: '#33b1ff',
+  'Health facility': '#82cfff',
+  'Not recorded': notRecorded,
+  'No status recorded': notRecorded,
+};
+// For a label not named above, in order: none of these is a named label's colour.
+const spareColours = ['#9f1853', '#002d9c', '#6929c4', '#005d5d', '#a2191f'];
 // 1: emergent, 2: urgent and 3: elective, by the number an urgency starts with.
 const urgencyColours = ['#da1e28', '#ff832b', '#f1c21b'];
-const doneColours = [teal, '#a6c8ff'];
-const unnumberedColours = ['#8d8d8d', '#525252', '#c6c6c6'];
+const doneColours = [teal, '#e0e0e0'];
+const unnumberedColours = ['#8d8d8d', '#525252', notRecorded];
 
-const scaleOf = (labels: Array<string>, colours = palette) =>
+const scaleOf = (labels: Array<string>, colours: Array<string>) =>
   Object.fromEntries(labels.map((label, index) => [label, colours[index % colours.length]]));
+
+const labelScaleOf = (labels: Array<string>) => {
+  const unnamed = labels.filter((label) => !labelColours[label]);
+  return Object.fromEntries(
+    labels.map((label) => [label, labelColours[label] ?? spareColours[unnamed.indexOf(label) % spareColours.length]]),
+  );
+};
 
 // Carbon redraws a chart whenever its data or options is a new object.
 function useStable<T>(value: T): T {
@@ -76,7 +105,7 @@ export function CountsDonut({
   figureOf?: (label: string) => Figure;
 }) {
   const { t } = useTranslation();
-  const scale = scaleOf(counts.map(({ label }) => label));
+  const scale = labelScaleOf(counts.map(({ label }) => label));
   const total = counts.reduce((sum, { value }) => sum + value, 0);
   const data = useStable(counts.map(({ label, value }) => ({ group: label, value })));
   const options = useStable({
