@@ -47,4 +47,20 @@ describe('RunChartLine drawn by Carbon', () => {
     expect(sheet).toMatch(new RegExp(`circle\\.dot\\.${medianClass}\\)\\s*\\{[^}]*opacity: 0`));
     expect(within(screen.getByRole('group', { name: 'Data groups' })).getByText('Median 30')).toBeInTheDocument();
   });
+
+  it('keeps the median dashed when the median changes while the chart stays mounted', () => {
+    const { rerender } = render(
+      <RunChartLine name="Retained" points={days(12)} median={30} shifts={[]} period="day" kind="count" />,
+    );
+    rerender(<RunChartLine name="Retained" points={days(13)} median={31} shifts={[]} period="day" kind="count" />);
+
+    const medianLine = screen
+      .getAllByRole('graphics-symbol')
+      .find(
+        (symbol) =>
+          symbol.getAttribute('aria-roledescription') === 'line' &&
+          symbol.getAttribute('aria-label') === Array(13).fill(31).join(','),
+      );
+    expect(medianLine).toHaveClass('stroke-2-1-2');
+  });
 });

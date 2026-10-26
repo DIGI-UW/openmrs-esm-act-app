@@ -132,7 +132,8 @@ export function RunChartLine({
 
   return (
     <div className={styles.chart} data-testid="run-chart">
-      <LineChart data={data} options={options as never} />
+      {/* Carbon numbers its data groups as it meets them, and the scss styles the median by that number. */}
+      <LineChart key={medianGroup} data={data} options={options as never} />
       <table className={styles.hidden}>
         <caption>{name}</caption>
         <thead>
