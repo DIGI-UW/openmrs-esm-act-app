@@ -196,14 +196,34 @@ describe('routes.json privileges', () => {
     }
   });
 
-  it("adds no patient banner action or modal, as OpenMRS prints the patient's identifier sticker", () => {
-    expect(routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot')).toEqual([]);
-    expect(routeFile).not.toHaveProperty('modals');
+  it('adds one patient banner action, Update patient status, and its modal; OpenMRS prints the identifier sticker itself', () => {
+    expect(
+      routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot').map(({ name }) => name),
+    ).toEqual(['act-update-patient-status']);
+    expect(routeFile.modals).toEqual([{ name: 'update-patient-status-modal', component: 'updatePatientStatusModal' }]);
   });
 
-  it('declares a privilege on every extension but Download data, Logs, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
-    // They gate themselves: Download data on either of its two privileges, Logs on either audit privilege, the Admin
-    // nav per link, the session timeout on being signed in.
+  it('shows Update patient status to a user who may edit programmes or people, or to a super user, and to no one else', () => {
+    const expression = routes.extensions.find(
+      (extension) => extension.name === 'act-update-patient-status',
+    )?.displayExpression;
+    const session = (privileges: Array<string>, roles: Array<string> = []) => ({
+      session: {
+        user: {
+          privileges: privileges.map((display) => ({ display })),
+          roles: roles.map((display) => ({ display })),
+        },
+      },
+    });
+    expect(evaluate(expression, session(['Edit Patient Programs']))).toBe(true);
+    expect(evaluate(expression, session(['Edit People']))).toBe(true);
+    expect(evaluate(expression, session([], ['System Developer']))).toBe(true);
+    expect(evaluate(expression, session(['Get Patients']))).toBe(false);
+  });
+
+  it('declares a privilege on every extension but Download data, Logs, Update patient status, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
+    // They gate themselves: Download data and Update patient status on either of two privileges, Logs on either audit
+    // privilege, the Admin nav per link, the session timeout on being signed in.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',
@@ -211,6 +231,7 @@ describe('routes.json privileges', () => {
       'act-logs-dashboard',
       'act-admin-nav',
       'act-session-timeout',
+      'act-update-patient-status',
     ]);
   });
 
