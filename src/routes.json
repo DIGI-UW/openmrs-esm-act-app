@@ -811,12 +811,6 @@
       ]
     }
   ],
-  "modals": [
-    {
-      "name": "update-patient-status-modal",
-      "component": "updatePatientStatusModal"
-    }
-  ],
   "workspaceGroups2": [
     {
       "name": "act-waiting-list",
@@ -847,6 +841,14 @@
       "group": "act-screen-positive",
       "width": "extra-wide",
       "canMaximize": true
+    },
+    {
+      "name": "act-update-patient-status",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-update-prophylaxis",
+      "group": "patient-chart"
     },
     {
       "name": "act-research-form",
@@ -884,6 +886,16 @@
       "name": "act-screen-positive-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-update-patient-status-workspace",
+      "component": "updatePatientStatusWorkspace",
+      "window": "act-update-patient-status"
+    },
+    {
+      "name": "act-update-prophylaxis-workspace",
+      "component": "updateProphylaxisWorkspace",
+      "window": "act-update-prophylaxis"
     },
     {
       "name": "act-enrollment-workspace",
