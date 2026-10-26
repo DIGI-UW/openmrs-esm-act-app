@@ -812,6 +812,10 @@
     {
       "name": "act-research",
       "scopePattern": "/patient/([^/]+)/chart/act-research"
+    },
+    {
+      "name": "act-studies",
+      "scopePattern": "/home/act-studies"
     }
   ],
   "workspaceWindows2": [
@@ -830,6 +834,11 @@
     {
       "name": "act-research-form",
       "group": "act-research",
+      "width": "narrow"
+    },
+    {
+      "name": "act-studies-form",
+      "group": "act-studies",
       "width": "narrow"
     }
   ],
@@ -853,6 +862,11 @@
       "name": "act-enrollment-workspace",
       "component": "enrollmentWorkspace",
       "window": "act-research-form"
+    },
+    {
+      "name": "act-study-form-workspace",
+      "component": "studyFormWorkspace",
+      "window": "act-studies-form"
     }
   ]
 }

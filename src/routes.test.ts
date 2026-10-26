@@ -274,14 +274,14 @@ describe('routes.json workspaces', () => {
       .forEach((workspace) => expect(windows).toContain(workspace.window));
   });
 
-  it.each([['act-enrollment-workspace', 'act-research', '/patient/patient-1/chart/act-research']])(
-    'opens %s in the %s group, scoped to the page %s',
-    (name, group, page) => {
-      const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
-      const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
-      const scope = workspaceRoutes.workspaceGroups2.find((candidate) => candidate.name === window?.group);
-      expect(scope?.name).toBe(group);
-      expect(new RegExp(scope.scopePattern).test(page)).toBe(true);
-    },
-  );
+  it.each([
+    ['act-enrollment-workspace', 'act-research', '/patient/patient-1/chart/act-research'],
+    ['act-study-form-workspace', 'act-studies', '/home/act-studies'],
+  ])('opens %s in the %s group, scoped to the page %s', (name, group, page) => {
+    const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
+    const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
+    const scope = workspaceRoutes.workspaceGroups2.find((candidate) => candidate.name === window?.group);
+    expect(scope?.name).toBe(group);
+    expect(new RegExp(scope.scopePattern).test(page)).toBe(true);
+  });
 });

@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTableSkeleton,
   InlineNotification,
-  Modal,
   Pagination,
   Table,
   TableBody,
@@ -13,16 +12,14 @@ import {
   TableHeader,
   TableRow,
   Tag,
-  TextInput,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
 import {
   ConfigurableLink,
   formatDate,
-  getCoreTranslation,
   isDesktop,
+  launchWorkspace2,
   CohortsPictogram,
-  showSnackbar,
   useConfig,
   useLayoutType,
   UserHasAccess,
@@ -33,14 +30,13 @@ import { PRIVILEGE_MANAGE_STUDIES } from '../constants';
 import { patientChartUrl } from '../patient-chart-url';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
-import { restErrorMessage } from '../rest-error-message';
 import { distinctValues, matchesColumns } from '../table-filters/distinct-values';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { useUrlFilters } from '../table-filters/url-filters';
-import { saveStudy, type Study, useStudies } from './studies.resource';
+import { type Study, useStudies } from './studies.resource';
 import styles from './studies.scss';
 
 const filterKeys = ['study', 'status'] as const;
@@ -51,92 +47,24 @@ const reportDate = (value: unknown) => {
   return date ? formatDate(date, { time: false, noToday: true }) : '';
 };
 
-function StudyNameModal({
-  study,
-  onClose,
-  onSaved,
-}: {
-  study?: Study;
-  onClose: () => void;
-  onSaved: (name: string) => void;
-}) {
-  const { t } = useTranslation();
-  const [name, setName] = useState(study?.name ?? '');
-  const [submitted, setSubmitted] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const invalid = submitted && !name.trim();
-
-  const submit = async () => {
-    setSubmitted(true);
-    if (!name.trim()) {
-      return;
-    }
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await saveStudy(name.trim(), study?.uuid);
-      showSnackbar({ kind: 'success', title: t('studySaved', 'Study saved') });
-      onSaved(name.trim());
-      onClose();
-    } catch (e) {
-      setSaveError(restErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal
-      closeButtonLabel={getCoreTranslation('close')}
-      open
-      modalHeading={study ? t('renameStudy', 'Rename study') : t('createStudy', 'Create study')}
-      primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
-      secondaryButtonText={t('cancel', 'Cancel')}
-      primaryButtonDisabled={saving}
-      onRequestSubmit={submit}
-      onRequestClose={onClose}
-      size="sm"
-    >
-      {saveError && (
-        <InlineNotification
-          kind="error"
-          statusIconDescription={t('errorIcon', 'error icon')}
-          lowContrast
-          hideCloseButton
-          title={t('couldNotSaveStudy', 'Could not save the study')}
-          subtitle={saveError}
-        />
-      )}
-      <TextInput
-        id="study-name"
-        labelText={t('studyName', 'Study name')}
-        value={name}
-        invalid={invalid}
-        invalidText={t('enterAStudyName', 'Enter a name for the study')}
-        onChange={(event) => setName(event.target.value)}
-      />
-    </Modal>
-  );
-}
-
 function StudiesTable({
   rows,
   countsUnknown,
   onOpen,
-  onSaved,
+  onRenamed,
 }: {
   rows: Array<ReportRow>;
   /** The participants are loading or failed to load, so no count is shown. */
   countsUnknown: boolean;
   onOpen: (study: Study) => void;
-  /** Reloads the participants, whose rows carry the study's name. */
-  onSaved: (renamed?: { from: string; to: string }) => void;
+  /** Follows a study to its new name. */
+  onRenamed: (from: string, to: string) => void;
 }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { studies, error, isLoading, mutate } = useStudies();
-  const [editing, setEditing] = useState<Study | 'new' | null>(null);
+  const { studies, error, isLoading } = useStudies();
+  const openForm = (study?: Study) =>
+    launchWorkspace2('act-study-form-workspace', { studyUuid: study?.uuid, onRenamed });
   const count = (study: Study, activeOnly: boolean) =>
     countsUnknown
       ? '--'
@@ -189,7 +117,7 @@ function StudiesTable({
                   hasIconOnly
                   renderIcon={Edit}
                   iconDescription={t('renameStudy', 'Rename study')}
-                  onClick={() => setEditing(study)}
+                  onClick={() => openForm(study)}
                 />
               </UserHasAccess>
             </TableCell>
@@ -204,22 +132,12 @@ function StudiesTable({
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>{t('studies', 'Studies')}</h2>
         <UserHasAccess privilege={PRIVILEGE_MANAGE_STUDIES}>
-          <Button kind="ghost" size="sm" renderIcon={Add} onClick={() => setEditing('new')}>
+          <Button kind="ghost" size="sm" renderIcon={Add} onClick={() => openForm()}>
             {t('createStudy', 'Create study')}
           </Button>
         </UserHasAccess>
       </div>
       {table}
-      {editing && (
-        <StudyNameModal
-          study={editing === 'new' ? undefined : editing}
-          onClose={() => setEditing(null)}
-          onSaved={(name) => {
-            mutate();
-            onSaved(editing === 'new' ? undefined : { from: editing.name, to: name });
-          }}
-        />
-      )}
     </section>
   );
 }
@@ -387,8 +305,11 @@ function ParticipantsTable({
 export default function Studies() {
   const { t } = useTranslation();
   const { participantsReport } = useConfig<Config>().studies;
-  const { rows, isLoading, error, mutate } = useReportDataset(participantsReport);
+  const { rows, isLoading, error } = useReportDataset(participantsReport);
   const [filters, setFilters] = useUrlFilters(filterKeys);
+  // The workspace reports a rename after the render that opened it.
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
   return (
     <>
       <ActPageHeader title={t('studies', 'Studies')} illustration={<CohortsPictogram />} />
@@ -397,10 +318,9 @@ export default function Studies() {
           rows={rows}
           countsUnknown={isLoading || !!error}
           onOpen={(study) => setFilters({ study: study.name, status: '' })}
-          onSaved={(renamed) => {
-            mutate();
-            if (renamed && filters.study === renamed.from) {
-              setFilters({ study: renamed.to });
+          onRenamed={(from, to) => {
+            if (filtersRef.current.study === from) {
+              setFilters({ study: to });
             }
           }}
         />

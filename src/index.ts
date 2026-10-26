@@ -121,6 +121,8 @@ export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/fla
 
 export const enrollmentWorkspace = getAsyncLifecycle(() => import('./research/enrollment.workspace'), options);
 
+export const studyFormWorkspace = getAsyncLifecycle(() => import('./studies/study-form.workspace'), options);
+
 export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);
 
 export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-home-dashboard.component'), options);
