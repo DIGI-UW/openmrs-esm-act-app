@@ -756,6 +756,7 @@
       "name": "act-consultation-card",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "consultationCard",
+      "meta": { "fullWidth": true },
       "privileges": [
         "Get Encounters",
         "Get Observations"
@@ -765,6 +766,7 @@
       "name": "act-inr-card",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "inrCard",
+      "meta": { "fullWidth": true },
       "privileges": [
         "Get Encounters",
         "Get Observations"
