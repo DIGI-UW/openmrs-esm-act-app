@@ -197,7 +197,7 @@ describe('Flag worklist', () => {
     render(<FlagWorklist {...tile} />);
 
     expect(vi.mocked(useRhdFlagList)).toHaveBeenCalledWith('RHD lost to follow-up');
-    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('2Lost to follow-up');
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('2lostToFollowUp');
     expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'red');
     expect(screen.getByRole('link')).toHaveAttribute('href', '/worklists?list=this');
   });
@@ -207,9 +207,9 @@ describe('Flag worklist', () => {
     const onSelect = vi.fn();
     render(<FlagWorklist view="choice" selected onSelect={onSelect} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /Lost to follow-up/ }));
+    await userEvent.click(screen.getByRole('button', { name: /lostToFollowUp/ }));
 
-    expect(screen.getByRole('button', { name: /Lost to follow-up/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /lostToFollowUp/ })).toHaveAttribute('aria-pressed', 'true');
     expect(onSelect).toHaveBeenCalled();
   });
 
@@ -218,11 +218,11 @@ describe('Flag worklist', () => {
     reports({ registry: [registryRow(1, 'RHD lost to follow-up')] });
 
     const { unmount } = render(<FlagWorklist {...tile} />);
-    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1«Lost to follow-up»');
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1«lostToFollowUp»');
     unmount();
     render(<FlagWorklist {...list} />);
 
-    expect(screen.getByRole('heading', { name: '«Lost to follow-up»' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '«lostToFollowUp»' })).toBeInTheDocument();
   });
 
   it('shows nothing where ACT Core keeps no list for its flag', () => {
@@ -245,7 +245,7 @@ describe('Flag worklist', () => {
 
     render(<FlagWorklist {...list} />);
 
-    expect(screen.getByRole('heading', { name: 'Lost to follow-up' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'lostToFollowUp' })).toBeInTheDocument();
     expect(tableRows()).toEqual([['Patient 1rhd00001', '11 M', 'RHD B', 'Q28 day BPG', 'On the list for 12 days']]);
     // The download is recorded through ACT Core before the file is made.
     vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
@@ -579,7 +579,7 @@ describe('Worklists at the clinic you are signed in at', () => {
     reports({ registry });
 
     const { unmount } = render(<FlagWorklist {...tile} />);
-    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent(`${patients.length}Lost`));
+    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent(`${patients.length}lost`));
     unmount();
     render(<FlagWorklist {...list} />);
 

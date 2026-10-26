@@ -29,14 +29,11 @@ const renderNodes = (reactNodes) => {
   });
 };
 
-const en = require('../translations/en.json');
-
-// A key given without a default reads its English from en.json, as i18next does at runtime.
 const useMock = [(k) => k, {}];
 useMock.t = (k, o, values = {}) =>
   Object.entries(values).reduce(
     (text, [name, value]) => text.replace(new RegExp(`{{${name}}}`, 'g'), () => String(value)),
-    (o && o.defaultValue) || (typeof o === 'string' ? o : (en[k] ?? k)),
+    (o && o.defaultValue) || (typeof o === 'string' ? o : k),
   );
 useMock.i18n = {};
 

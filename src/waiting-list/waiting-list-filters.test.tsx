@@ -98,12 +98,7 @@ describe('Procedural waiting list filters and CSV', () => {
       'Mitral balloon valvuloplasty',
       'Mitral valve repair/replacement',
     ]);
-    expect(options('Urgency')).toEqual([
-      'All',
-      '1: Emergent (24 hours)',
-      '2: Urgent (60 days)',
-      '3: Elective (180 days)',
-    ]);
+    expect(options('Urgency')).toEqual(['All', 'urgencyEmergent', 'urgencyUrgent', 'urgencyElective']);
   });
 
   it("keeps offering every recommendation's values once a filter is set, so another can be picked", async () => {
@@ -114,12 +109,7 @@ describe('Procedural waiting list filters and CSV', () => {
 
     expect(options('Cardiac clinic')).toEqual(['All', 'Gulu RRH', 'Lira RRH']);
     expect(options('Procedure type')).toEqual(['All', 'Catheterization', 'Surgery']);
-    expect(options('Urgency')).toEqual([
-      'All',
-      '1: Emergent (24 hours)',
-      '2: Urgent (60 days)',
-      '3: Elective (180 days)',
-    ]);
+    expect(options('Urgency')).toEqual(['All', 'urgencyEmergent', 'urgencyUrgent', 'urgencyElective']);
   });
 
   it.each([
@@ -127,7 +117,7 @@ describe('Procedural waiting list filters and CSV', () => {
     ['Primary care clinic', 'Anyeke HCIV', (i: number) => i % 2 === 1],
     ['Procedure type', 'Catheterization', (i: number) => i % 3 === 0],
     ['Specific procedure', 'Mitral valve repair/replacement', (i: number) => i % 3 !== 0],
-    ['Urgency', '2: Urgent (60 days)', (i: number) => i % 3 === 1],
+    ['Urgency', 'urgencyUrgent', (i: number) => i % 3 === 1],
   ])('narrows the rows by %s', async (label, option, kept) => {
     render(<WaitingList />);
     await userEvent.selectOptions(screen.getByLabelText(/items per page/i), '50');
@@ -158,7 +148,7 @@ describe('Procedural waiting list filters and CSV', () => {
     });
     render(<WaitingList />);
 
-    await choose('Urgency', '1: Emergent (24 hours)');
+    await choose('Urgency', 'urgencyEmergent');
     await choose('Procedure type', 'Catheterization');
     await choose('Procedure type', '');
     await choose('Urgency', '');
@@ -171,7 +161,7 @@ describe('Procedural waiting list filters and CSV', () => {
   it('keeps the filters in the URL and restores them from it', async () => {
     const { unmount } = render(<WaitingList />);
     await choose('Procedure type', 'Surgery');
-    await choose('Urgency', '2: Urgent (60 days)');
+    await choose('Urgency', 'urgencyUrgent');
     await waitFor(() => expect(new URLSearchParams(window.location.search).get('urgency')).toBe('urgencyUrgent'));
     expect(new URLSearchParams(window.location.search).get('type')).toBe('Surgery');
     unmount();

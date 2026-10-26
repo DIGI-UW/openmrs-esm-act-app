@@ -309,18 +309,18 @@ describe('Dashboard', () => {
 
     expect(await screen.findAllByTestId('dashboard-cascade-step')).toHaveLength(5);
     expect(texts('dashboard-cascade-step')).toEqual([
-      'Active4',
-      'Prescribed375%',
-      'Initiated3100%',
-      'Covered today267%',
-      'Adherent (80%+)133%',
+      'active4',
+      'prescribed375%',
+      'initiated3100%',
+      'coveredToday267%',
+      'adherentEightyPercent133%',
     ]);
     expect(chartData(SimpleBarChart, 'RHD care cascade')).toEqual([
-      { group: 'Active', value: 4 },
-      { group: 'Prescribed', value: 3 },
-      { group: 'Initiated', value: 3 },
-      { group: 'Covered today', value: 2 },
-      { group: 'Adherent (80%+)', value: 1 },
+      { group: 'active', value: 4 },
+      { group: 'prescribed', value: 3 },
+      { group: 'initiated', value: 3 },
+      { group: 'coveredToday', value: 2 },
+      { group: 'adherentEightyPercent', value: 1 },
     ]);
   });
 
@@ -433,11 +433,11 @@ describe('Dashboard', () => {
 
     fireEvent.change(screen.getByLabelText('Figures as of'), { target: { value: '2026-01-15' } });
 
-    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Prescribed375%', 'Initiated3100%']);
+    expect(texts('dashboard-cascade-step')).toEqual(['active4', 'prescribed375%', 'initiated3100%']);
     expect(chartData(SimpleBarChart, 'RHD care cascade')).toEqual([
-      { group: 'Active', value: 4 },
-      { group: 'Prescribed', value: 3 },
-      { group: 'Initiated', value: 3 },
+      { group: 'active', value: 4 },
+      { group: 'prescribed', value: 3 },
+      { group: 'initiated', value: 3 },
     ]);
     expect(screen.getByText(/ACT Core keeps them only for today/)).toBeInTheDocument();
   });
@@ -490,7 +490,7 @@ describe('Dashboard', () => {
 
     fireEvent.change(screen.getByLabelText('Figures as of'), { target: { value: '2026-01-15' } });
 
-    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Initiated250%']);
+    expect(texts('dashboard-cascade-step')).toEqual(['active4', 'initiated250%']);
   });
 
   it('evaluates no report for a date before 1900, such as a year still being typed', async () => {
@@ -801,7 +801,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-cascade-step')).toHaveLength(3);
-    expect(texts('dashboard-cascade-step')).toEqual(['Active4', 'Initiated4100%', 'Adherent (80%+)125%']);
+    expect(texts('dashboard-cascade-step')).toEqual(['active4', 'initiated4100%', 'adherentEightyPercent125%']);
   });
 
   describe('the patients behind a figure', () => {
@@ -821,21 +821,21 @@ describe('Dashboard', () => {
 
       const steps = await screen.findAllByTestId('dashboard-cascade-step');
       expect(steps.map((step) => step.firstChild.textContent)).toEqual([
-        '«Active»',
-        '«Prescribed»',
-        '«Initiated»',
-        '«Covered today»',
-        '«Adherent (80%+)»',
+        '«active»',
+        '«prescribed»',
+        '«initiated»',
+        '«coveredToday»',
+        '«adherentEightyPercent»',
       ]);
       expect(chartData(SimpleBarChart, '«RHD care cascade»').map(({ group }) => group)).toEqual([
-        '«Active»',
-        '«Prescribed»',
-        '«Initiated»',
-        '«Covered today»',
-        '«Adherent (80%+)»',
+        '«active»',
+        '«prescribed»',
+        '«initiated»',
+        '«coveredToday»',
+        '«adherentEightyPercent»',
       ]);
       const { color } = chartOptions(SimpleBarChart, '«RHD care cascade»') as unknown as { color: { scale: object } };
-      expect(color.scale).toHaveProperty('«Prescribed»');
+      expect(color.scale).toHaveProperty('«prescribed»');
       expect(within(steps[1]).getByRole('link')).toHaveAttribute(
         'href',
         expect.stringContaining('figure=cascade&step=Prescribed'),
@@ -1036,13 +1036,13 @@ describe('Dashboard', () => {
       window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Active');
       renderPage();
 
-      expect(await screen.findByText(/^Opened from the Dashboard: RHD care cascade, Active/)).toBeInTheDocument();
+      expect(await screen.findByText(/^Opened from the Dashboard: RHD care cascade, active/)).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /^RHD care cascade/ })).not.toBeInTheDocument();
     });
 
     it.each([
-      ['Prescribed', 'Prescribed'],
-      ['Initiated BPG', 'Initiated'],
+      ['Prescribed', 'prescribed'],
+      ['Initiated BPG', 'initiated'],
     ])('names cascade step %s on its chip by the label its bar shows, offered to translation', async (step, label) => {
       markTranslations();
       await signIn(undefined, figureRows);
@@ -1082,9 +1082,9 @@ describe('Dashboard', () => {
       window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?figure=cascade&step=Prescribed');
       renderPage();
 
-      await userEvent.click(await screen.findByRole('button', { name: /^RHD care cascade: Prescribed/ }));
+      await userEvent.click(await screen.findByRole('button', { name: /^RHD care cascade: prescribed/ }));
 
-      expect(await screen.findByText(/^Opened from the Dashboard: RHD care cascade, Active/)).toBeInTheDocument();
+      expect(await screen.findByText(/^Opened from the Dashboard: RHD care cascade, active/)).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /^RHD care cascade/ })).not.toBeInTheDocument();
     });
 

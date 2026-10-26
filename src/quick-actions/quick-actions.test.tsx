@@ -131,15 +131,15 @@ describe('ACT home quick actions', () => {
 
     const enter = screen.getByRole('button', { name: /enter prophylaxis/i });
     expect(enter).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('link', { name: /enter bpg/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /enterBpg/ })).not.toBeInTheDocument();
 
     await userEvent.click(enter);
 
     expect(enter).toHaveAttribute('aria-expanded', 'true');
     const choices = within(screen.getByRole('list', { name: /enter prophylaxis/i })).getAllByRole('link');
     expect(choices.map((choice) => [choice.textContent, choice.getAttribute('href')])).toEqual([
-      ['Enter BPG', '/openmrs/spa/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d'],
-      ['Enter oral prophylaxis', '/openmrs/spa/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465'],
+      ['enterBpg', '/openmrs/spa/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d'],
+      ['enterOralProphylaxis', '/openmrs/spa/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465'],
     ]);
   });
 
@@ -150,8 +150,8 @@ describe('ACT home quick actions', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
 
-    expect(screen.getByRole('link', { name: '«Enter BPG»' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '«Enter oral prophylaxis»' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '«enterBpg»' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '«enterOralProphylaxis»' })).toBeInTheDocument();
   });
 
   it('hides the choices again when enter prophylaxis is clicked a second time', async () => {
@@ -161,7 +161,7 @@ describe('ACT home quick actions', () => {
     await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
     await userEvent.click(screen.getByRole('button', { name: /enter prophylaxis/i }));
 
-    expect(screen.queryByRole('link', { name: /enter bpg/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /enterBpg/ })).not.toBeInTheDocument();
   });
 
   it('links enter prophylaxis straight to its screen when no prophylaxis forms are configured', async () => {

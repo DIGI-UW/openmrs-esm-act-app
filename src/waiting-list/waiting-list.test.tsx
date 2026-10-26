@@ -52,7 +52,7 @@ describe('Procedural waiting list', () => {
       'Date of birth': '15-Mar-2016',
       Type: 'Catheterization',
       Procedure: 'Mitral balloon valvuloplasty',
-      Urgency: '3: Elective (180 days)',
+      Urgency: 'urgencyElective',
       District: 'KITGUM',
       Contraindications: 'Yes',
       'Suitable for repair': 'No',
@@ -104,9 +104,9 @@ describe('Procedural waiting list', () => {
     render(<WaitingList />);
 
     const row = screen.getByRole('row', { name: /rhd00001\b/ });
-    expect(within(row).getByRole('cell', { name: '«3: Elective (180 days)»' })).toBeInTheDocument();
+    expect(within(row).getByRole('cell', { name: '«urgencyElective»' })).toBeInTheDocument();
     const urgency = screen.getByRole('combobox', { name: '«Urgency»' });
-    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: '«3: Elective (180 days)»' }));
+    await userEvent.selectOptions(urgency, screen.getByRole('option', { name: '«urgencyElective»' }));
     expect(urgency).toHaveValue('urgencyElective');
   });
 

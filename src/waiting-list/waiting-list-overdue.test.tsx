@@ -128,7 +128,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
       .getAllByRole('row')
       .slice(1)
       .map((tr) => within(tr).getAllByRole('cell')[headers.indexOf('Urgency')].textContent);
-    expect(urgencies).toEqual(['1: Emergent (24 hours)', '2 - within 1 month']);
+    expect(urgencies).toEqual(['urgencyEmergent', '2 - within 1 month']);
   });
 
   it('counts whole days, so an afternoon view shows the same days pending as a morning one', () => {
