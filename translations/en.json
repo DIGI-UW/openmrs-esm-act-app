@@ -144,6 +144,7 @@
   "couldNotDownload": "Could not download the data",
   "couldNotLoad": "could not load",
   "couldNotLoadCareCascade": "Could not load the care cascade",
+  "couldNotLoadClinic": "Could not load this clinic",
   "couldNotLoadClinics": "Could not load the clinics",
   "couldNotLoadDashboard": "Could not load the dashboard",
   "couldNotLoadDueForProphylaxis": "Could not load the patients due for prophylaxis",

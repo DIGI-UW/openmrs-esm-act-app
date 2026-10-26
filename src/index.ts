@@ -127,6 +127,8 @@ export const flagGapsWorkspace = getAsyncLifecycle(() => import('./flag-gaps/fla
 
 export const enrollmentWorkspace = getAsyncLifecycle(() => import('./research/enrollment.workspace'), options);
 
+export const clinicFormWorkspace = getAsyncLifecycle(() => import('./clinics/clinic-form.workspace'), options);
+
 export const studyFormWorkspace = getAsyncLifecycle(() => import('./studies/study-form.workspace'), options);
 
 export const userFormWorkspace = getAsyncLifecycle(() => import('./users/user-form.workspace'), options);

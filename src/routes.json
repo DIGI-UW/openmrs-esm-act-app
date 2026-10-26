@@ -855,6 +855,10 @@
       "scopePattern": "/home/act-screen-positive"
     },
     {
+      "name": "act-clinics",
+      "scopePattern": "^/home/act-clinics"
+    },
+    {
       "name": "act-studies",
       "scopePattern": "^/home/act-studies"
     },
@@ -887,6 +891,11 @@
     {
       "name": "act-research-form",
       "group": "patient-chart",
+      "width": "narrow"
+    },
+    {
+      "name": "act-clinics-form",
+      "group": "act-clinics",
       "width": "narrow"
     },
     {
@@ -935,6 +944,11 @@
       "name": "act-enrollment-workspace",
       "component": "enrollmentWorkspace",
       "window": "act-research-form"
+    },
+    {
+      "name": "act-clinic-form-workspace",
+      "component": "clinicFormWorkspace",
+      "window": "act-clinics-form"
     },
     {
       "name": "act-study-form-workspace",
