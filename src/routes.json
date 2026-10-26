@@ -794,12 +794,6 @@
       ]
     }
   ],
-  "modals": [
-    {
-      "name": "update-patient-status-modal",
-      "component": "updatePatientStatusModal"
-    }
-  ],
   "workspaceGroups2": [
     {
       "name": "act-waiting-list",
@@ -822,6 +816,10 @@
       "group": "act-screen-positive",
       "width": "extra-wide",
       "canMaximize": true
+    },
+    {
+      "name": "act-update-patient-status",
+      "group": "patient-chart"
     }
   ],
   "workspaces2": [
@@ -839,6 +837,11 @@
       "name": "act-screen-positive-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-update-patient-status-workspace",
+      "component": "updatePatientStatusWorkspace",
+      "window": "act-update-patient-status"
     }
   ]
 }

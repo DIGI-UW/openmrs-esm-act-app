@@ -56,11 +56,6 @@ export const updatePatientStatusButton = getAsyncLifecycle(
   options,
 );
 
-export const updatePatientStatusModal = getAsyncLifecycle(
-  () => import('./update-patient-status/update-patient-status-modal.component'),
-  options,
-);
-
 export const scanPatientCardDashboardLink = getSyncLifecycle(scanPatientCardDashboardLinkComponent, options);
 
 export const scanPatientCardDashboard = getAsyncLifecycle(
@@ -114,6 +109,11 @@ export const cardiacTestsDashboardLink = getSyncLifecycle(createDashboard(cardia
 
 export const cardiacTestsDashboard = getAsyncLifecycle(
   () => import('./cardiac-tests/cardiac-tests.component'),
+  options,
+);
+
+export const updatePatientStatusWorkspace = getAsyncLifecycle(
+  () => import('./update-patient-status/update-patient-status.workspace'),
   options,
 );
 

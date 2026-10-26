@@ -196,11 +196,17 @@ describe('routes.json privileges', () => {
     }
   });
 
-  it('adds one patient banner action, Update patient status, and its modal; OpenMRS prints the identifier sticker itself', () => {
+  it('adds one patient banner action, Update patient status, and its workspace; OpenMRS prints the identifier sticker itself', () => {
     expect(
       routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot').map(({ name }) => name),
     ).toEqual(['act-update-patient-status']);
-    expect(routeFile.modals).toEqual([{ name: 'update-patient-status-modal', component: 'updatePatientStatusModal' }]);
+    expect(routeFile).not.toHaveProperty('modals');
+    expect(routeFile.workspaces2).toContainEqual({
+      name: 'act-update-patient-status-workspace',
+      component: 'updatePatientStatusWorkspace',
+      window: 'act-update-patient-status',
+    });
+    expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-patient-status', group: 'patient-chart' });
   });
 
   it('shows Update patient status to a user who may edit programmes or people, or to a super user, and to no one else', () => {
