@@ -69,6 +69,10 @@ export function RunChartLine({
         : t('runChartShiftBelow', 'Shift: {{count}} in a row below the median', { count: shift.length }),
   }));
 
+  // The options are kept while they serialise alike, and a function does not, so the tooltip reads this.
+  const live = useRef({ held, period, kind, t, medianGroup });
+  live.current = { held, period, kind, t, medianGroup };
+
   const options = useStable({
     accessibility: { svgAriaLabel: name },
     height,
@@ -88,7 +92,8 @@ export function RunChartLine({
                 highlightStartMapsTo: 'startHighlight',
                 highlightEndMapsTo: 'endHighlight',
                 labelMapsTo: 'label',
-                color: green,
+                // Carbon reads a highlight's colour from a scale by its label.
+                color: { scale: Object.fromEntries(highlights.map((highlight) => [highlight.label, green])) },
                 data: highlights,
               },
             }
@@ -104,6 +109,7 @@ export function RunChartLine({
     },
     tooltip: {
       customHTML: (items: Array<{ group: string; date: Date; value: number }>) => {
+        const { held, period, kind, t, medianGroup } = live.current;
         const item = items[0];
         if (!item) {
           return '';

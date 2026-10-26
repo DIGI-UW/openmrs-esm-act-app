@@ -22,6 +22,7 @@ import {
 } from './run-chart-metrics';
 import { changeOf, localDay, MIN_POINTS_FOR_CHART, MIN_POINTS_FOR_MEDIAN, shifts, withValue } from './run-chart-stats';
 import { pointDetail } from './run-chart-tooltip';
+import { useClinicName } from './run-chart-clinic-name';
 import { HistoryNotice } from './run-chart-history-notice.component';
 import { RunChartLine } from './run-chart-line.component';
 import { type RunChartParams, useRunChart } from './run-chart.resource';
@@ -134,13 +135,13 @@ export default function RunCharts() {
   const to = validDay(filters.to) ? filters.to : isoDay(new Date());
   // A limited administrator is held to their clinics whatever the URL says, not to all clinics.
   const clinic = limited
-    ? clinics.some((c) => c.uuid === filters.clinic)
+    ? limit.uuids.includes(filters.clinic)
       ? filters.clinic
-      : (clinics[0]?.uuid ?? '')
+      : (clinics[0]?.uuid ?? limit.uuids[0] ?? '')
     : filters.clinic;
-  const clinicName = clinics.find((c) => c.uuid === clinic)?.display ?? t('allClinics', 'All clinics');
+  const clinicName = useClinicName(clinics, clinic);
   const backwards = dayjs(from).isAfter(to, 'day');
-  const waiting = pending || limit.status === 'pending' || (limited && !clinics.length);
+  const waiting = pending || limit.status === 'pending' || (limited && !clinic);
   const params: RunChartParams | null =
     waiting || backwards ? null : { metric, clinic: clinic || null, startDate: from, endDate: to, points: period };
 
@@ -160,7 +161,7 @@ export default function RunCharts() {
   const kind = kindOf(metric);
 
   const body = () => {
-    if (limited && !clinics.length && !pending) {
+    if (limited && !clinic && !pending) {
       return (
         <InlineNotification
           kind="info"

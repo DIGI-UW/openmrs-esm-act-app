@@ -9,6 +9,7 @@ import { type ClinicLimit, useClinicLimit } from '../clinic-limit';
 import { useClinics } from '../programme-report/clinics.resource';
 import { type RunChartPoint } from './run-chart-stats';
 import { type RunChartParams, useRunChart } from './run-chart.resource';
+import { RunChartLine } from './run-chart-line.component';
 import RunCharts from './run-charts.component';
 
 vi.mock('./run-chart.resource', () => ({ useRunChart: vi.fn() }));
@@ -110,6 +111,53 @@ describe('RunCharts', () => {
     ]);
     expect(options.axes.bottom.highlights.highlightStartMapsTo).toBe('startHighlight');
     expect(options.axes.bottom.highlights.highlightEndMapsTo).toBe('endHighlight');
+    expect(options.axes.bottom.highlights.color).toEqual({
+      scale: { 'Shift: 6 in a row above the median': '#a7f0ba' },
+    });
+  });
+
+  it('keeps the tooltip current when the period and points change but the options serialise alike', () => {
+    const week = [point(0, 60, 100), point(1, 70, 100)];
+    const month = [
+      { ...point(0, 55, 100), date: '2026-02-01' },
+      { ...point(0, 65, 100), date: '2026-03-01' },
+    ];
+    const props = { name: 'Retained', median: null, shifts: [], kind: 'percent' as const };
+    const { rerender } = render(<RunChartLine {...props} points={week} period="week" />);
+    rerender(<RunChartLine {...props} points={month} period="month" />);
+
+    const html = lastChartProps().options.tooltip.customHTML([
+      { group: 'Value', date: new Date(2026, 2, 1), value: 65 },
+    ]);
+
+    expect(html).toContain('65% · 65 of 100 patient-days');
+    expect(html).not.toContain('Week of');
+  });
+
+  it('asks the notice for the days from well before any snapshot, whatever range is chosen', () => {
+    vi.mocked(useRunChart).mockImplementation((params) => answer(params ? [point(0, 57, 100)] : []) as never);
+    window.history.replaceState({}, '', '/home/act-run-charts?from=2026-10-01');
+    render(<RunCharts />);
+
+    expect(asks().find((params) => params?.points === 'day')?.startDate).toBe('2000-01-01');
+    expect(asks().find((params) => params?.points === 'week')?.startDate).toBe('2026-10-01');
+  });
+
+  it('never calls a chosen clinic All clinics while the clinic list loads', () => {
+    vi.mocked(useClinics).mockReturnValue([]);
+    window.history.replaceState({}, '', '/home/act-run-charts?clinic=gulu-uuid');
+    render(<RunCharts />);
+
+    expect(screen.getByRole('heading', { name: /Retained in care.*, gulu-uuid$/ })).toBeInTheDocument();
+  });
+
+  it('charts a limited administrator their clinic, not a notice of none, while its list is empty', () => {
+    limitTo({ status: 'ready', uuids: [GULU.uuid], names: [GULU.display] });
+    vi.mocked(useClinics).mockReturnValue([]);
+    render(<RunCharts />);
+
+    expect(screen.queryByText('No clinic on your account to chart')).not.toBeInTheDocument();
+    expect(asks().some((params) => params?.clinic === GULU.uuid)).toBe(true);
   });
 
   it('holds a percent to 0 to 100 and leaves a count to its own scale', async () => {

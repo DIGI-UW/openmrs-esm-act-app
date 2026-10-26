@@ -68,6 +68,13 @@ describe('RunChartCard', () => {
     expect(LineChart).toHaveBeenCalled();
   });
 
+  it('never calls a chosen clinic All clinics while the clinic list loads', () => {
+    vi.mocked(useClinics).mockReturnValue([]);
+    render(<RunChartCard scope={{ primaryCareClinic: ACIMI.uuid }} />);
+
+    expect(screen.getByRole('heading', { name: /Retained in care.*, acimi-uuid$/ })).toBeInTheDocument();
+  });
+
   it('shows the latest value with the figures behind it, and no median before there is one', () => {
     render(<RunChartCard scope={{}} />);
 

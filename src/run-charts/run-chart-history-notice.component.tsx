@@ -8,10 +8,13 @@ import { pointDetail } from './run-chart-tooltip';
 import { type RunChartParams, useRunChart } from './run-chart.resource';
 import styles from './run-charts.scss';
 
+// The range chosen says nothing of when snapshots started, so the days are asked for from long before.
+const earliestDay = '2000-01-01';
+
 /** Before a chart can be drawn: when the snapshots started and the latest figure, both from the nightly points. */
 export function HistoryNotice({ params, clinic }: { params: RunChartParams; clinic: string }) {
   const { t } = useTranslation();
-  const days = useRunChart({ ...params, points: 'day' });
+  const days = useRunChart({ ...params, startDate: earliestDay, points: 'day' });
   if (days.isLoading) {
     return <SkeletonText paragraph lineCount={2} />;
   }

@@ -8,6 +8,7 @@ import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { useClinics } from '../programme-report/clinics.resource';
 import { HistoryNotice } from './run-chart-history-notice.component';
+import { useClinicName } from './run-chart-clinic-name';
 import { RunChartLine } from './run-chart-line.component';
 import { defaultMetric, defaultPeriod, kindOf, metricLabel } from './run-chart-metrics';
 import { MIN_POINTS_FOR_CHART, MIN_POINTS_FOR_MEDIAN, shifts, withValue } from './run-chart-stats';
@@ -30,7 +31,7 @@ export function RunChartCard({ scope }: { scope: Record<string, string> }) {
   const limited = limit.status === 'ready';
   const chosen = scope.primaryCareClinic || scope.cardiacClinic || '';
   const clinic = limited ? (limit.uuids.includes(chosen) ? chosen : (limit.uuids[0] ?? '')) : chosen;
-  const clinicName = clinics.find((candidate) => candidate.uuid === clinic)?.display ?? t('allClinics', 'All clinics');
+  const clinicName = useClinicName(clinics, clinic);
   const waiting = limit.status === 'pending' || (limited && !clinic);
   const params: RunChartParams | null = waiting
     ? null
