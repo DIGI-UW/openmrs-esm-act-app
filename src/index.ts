@@ -51,6 +51,16 @@ export const sessionTimeout = getAsyncLifecycle(() => import('./session-timeout/
 export const nextStepsCard = getAsyncLifecycle(() => import('./next-steps/next-steps-card.component'), options);
 export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
 
+export const updatePatientStatusButton = getAsyncLifecycle(
+  () => import('./update-patient-status/update-patient-status-button.component'),
+  options,
+);
+
+export const updatePatientStatusModal = getAsyncLifecycle(
+  () => import('./update-patient-status/update-patient-status-modal.component'),
+  options,
+);
+
 export const scanPatientCardDashboardLink = getSyncLifecycle(scanPatientCardDashboardLinkComponent, options);
 
 export const scanPatientCardDashboard = getAsyncLifecycle(
