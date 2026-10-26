@@ -59,7 +59,10 @@ export function RunChartSnapshotTile() {
     }
   };
 
-  const result = (run: RunChartRun | null) => {
+  const result = (run: RunChartRun | null, today: boolean) => {
+    if (!run && today) {
+      return <span>{t('runChartNightNotRunYet', 'Not run yet today')}</span>;
+    }
     if (!run) {
       return (
         <span className={styles.bad}>
@@ -88,26 +91,31 @@ export function RunChartSnapshotTile() {
     if (isLoading) {
       return <SkeletonText width="12rem" />;
     }
-    if (error || !runs) {
-      return (
-        <InlineNotification
-          kind="error"
-          statusIconDescription={t('errorIcon', 'error icon')}
-          lowContrast
-          hideCloseButton
-          title={t('couldNotLoadSnapshots', 'Could not load the run chart snapshots')}
-          subtitle={error?.message}
-        />
-      );
+    const loadError = error && (
+      <InlineNotification
+        kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
+        lowContrast
+        hideCloseButton
+        title={t('couldNotLoadSnapshots', 'Could not load the run chart snapshots')}
+        subtitle={error.message}
+      />
+    );
+    if (!runs) {
+      return loadError;
     }
+    const lastTakenAt = runs.lastTaken && formatDatetime(new Date(runs.lastTaken.finished));
     return (
       <>
+        {loadError}
         <p className={styles.lastRefreshed}>
           {runs.lastTaken
-            ? t('runChartLastTaken', 'Last taken {{when}}, for {{count}} clinics', {
-                when: formatDatetime(new Date(runs.lastTaken.finished)),
-                count: runs.lastTaken.clinics,
-              })
+            ? runs.lastTaken.clinics === 1
+              ? t('runChartLastTakenOneClinic', 'Last taken {{when}}, for 1 clinic', { when: lastTakenAt })
+              : t('runChartLastTaken', 'Last taken {{when}}, for {{clinics}} clinics', {
+                  when: lastTakenAt,
+                  clinics: runs.lastTaken.clinics,
+                })
             : t('runChartNotTakenYet', 'Not taken yet')}
         </p>
         {runs.running && <p>{t('snapshotAlreadyRunning', 'A snapshot is already running')}</p>}
@@ -130,14 +138,14 @@ export function RunChartSnapshotTile() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {nights(runs.runs).map(({ date, run }) => (
+              {nights(runs.runs).map(({ date, today, run }) => (
                 <TableRow key={date} data-testid="run-chart-night">
                   <TableCell>{formatDate(new Date(`${date}T00:00:00`), { time: false, noToday: true })}</TableCell>
                   <TableCell>{run && run.status === 'taken' ? run.rows : run ? '0' : '–'}</TableCell>
                   <TableCell>
-                    {run ? t('secondsTook', '{{count}} s', { count: seconds(run.durationMillis) }) : '–'}
+                    {run ? t('secondsTook', '{{seconds}} s', { seconds: seconds(run.durationMillis) }) : '–'}
                   </TableCell>
-                  <TableCell>{result(run)}</TableCell>
+                  <TableCell>{result(run, today)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

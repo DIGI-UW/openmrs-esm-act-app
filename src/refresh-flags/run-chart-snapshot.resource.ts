@@ -31,7 +31,7 @@ export interface SnapshotAnswer {
   clinics: number | null;
 }
 
-const runsUrl = `${restBaseUrl}/actcore/runchart/runs?limit=30`;
+const runsUrl = `${restBaseUrl}/actcore/runchart/runs?limit=100`;
 const snapshotUrl = `${restBaseUrl}/actcore/runchart`;
 
 /** The latest runs, read again every 5 seconds while one is in progress. */

@@ -46,12 +46,31 @@ describe('nightsOf', () => {
     expect(nightsOf([], today).every((night) => night.run === null)).toBe(true);
   });
 
-  it('shows a night by its latest run when a snapshot was taken again that day', () => {
+  it('shows a night by its latest taken run when a snapshot was taken again that day', () => {
     const failed = run('2026-10-21', '2026-10-21T02:05:00Z', 'failed');
     const again = { ...run('2026-10-21', '2026-10-21T09:40:00Z'), source: 'manual' as const };
 
     expect(nightsOf([again, failed], today)[0].run).toBe(again);
     expect(nightsOf([failed, again], today)[0].run).toBe(again);
+  });
+
+  it('keeps a night taken when a later run that day failed, since the failed run kept the rows', () => {
+    const taken = run('2026-10-21', '2026-10-21T02:05:00Z');
+    const failed = { ...run('2026-10-21', '2026-10-21T09:40:00Z', 'failed'), source: 'manual' as const };
+
+    expect(nightsOf([failed, taken], today)[0].run).toBe(taken);
+    expect(nightsOf([taken, failed], today)[0].run).toBe(taken);
+  });
+
+  it('shows a night by its latest failed run when none was taken', () => {
+    const early = run('2026-10-21', '2026-10-21T02:05:00Z', 'failed');
+    const late = run('2026-10-21', '2026-10-21T09:40:00Z', 'failed');
+
+    expect(nightsOf([early, late], today)[0].run).toBe(late);
+  });
+
+  it('marks only today as the night in progress', () => {
+    expect(nightsOf([], today).map((night) => night.today)).toEqual([true, false, false, false, false, false, false]);
   });
 
   it('leaves out runs older than the nights listed', () => {

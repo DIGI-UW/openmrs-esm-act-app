@@ -1,3 +1,4 @@
+@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
@@ -42,13 +43,13 @@
 }
 
 .ok {
-  color: #0e6027;
+  color: colors.$green-60;
 }
 
 .bad {
   display: flex;
   flex-direction: column;
-  color: #a2191f;
+  color: colors.$red-60;
 }
 
 .reason {
