@@ -9,12 +9,23 @@ import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type Medication, useMedications } from './medications.resource';
 import styles from './medications.scss';
 
-/** Add opens the Medication Update form, for a user who may record it. */
-function useAddMedication(patientUuid: string) {
-  const { medications } = useConfig<Config>();
+type Row = ReturnType<typeof useMedications>['active'][number];
+
+/**
+ * Add opens the Medication Update form, for a user who may record it. Edit reopens a medicine's latest record in its
+ * own form, Medication Update or the consultation, for a user who may record that form.
+ */
+function useMedicationForms(patientUuid: string) {
+  const { consultations, medications } = useConfig<Config>();
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
-  const may = useMayEnterForm(medications.form);
-  return may ? { add: () => open(medications.form), isOpening } : null;
+  const mayUpdate = useMayEnterForm(medications.form);
+  const mayConsult = useMayEnterForm(consultations.form);
+  const mayEdit = (row: Row) => (row.form === medications.form ? mayUpdate : mayConsult);
+  return {
+    add: mayUpdate ? { add: () => open(medications.form), isOpening } : null,
+    edit: (row: Row) => (mayEdit(row) ? () => open(row.form, undefined, row.encounterUuid) : null),
+    isOpening,
+  };
 }
 
 /** A medicine as OpenMRS's medication list reads one: its name in bold, then its dose and interval. */
@@ -45,11 +56,11 @@ function MedicationsCard({
 }: {
   title: string;
   lowercase: string;
-  columns: Array<Column<Medication>>;
-  rows: Array<Medication>;
+  columns: Array<Column<Row>>;
+  rows: Array<Row>;
   isLoading: boolean;
   error?: Error;
-  add?: ReturnType<typeof useAddMedication>;
+  add?: ReturnType<typeof useMedicationForms>['add'];
 }) {
   const { t } = useTranslation();
   if (error) {
@@ -80,32 +91,52 @@ function MedicationsCard({
 
 /**
  * The patient chart's Medications page, as OpenMRS's: the cardiac medicines taken now and those stopped, from
- * consultations and Medication Update. Add opens Medication Update, which records a medicine or stops one.
+ * consultations and Medication Update. Add opens Medication Update, which records a medicine or stops one, and Edit
+ * reopens the record a row comes from, where a Date Stopped moves it to Past.
  */
 export default function Medications({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { active, past, error, isLoading } = useMedications(patientUuid);
-  const add = useAddMedication(patientUuid);
-  const startDate: Column<Medication> = { header: t('startDate', 'Start date'), text: (one) => day(one.started) };
-  const details: Column<Medication> = {
+  const forms = useMedicationForms(patientUuid);
+  const startDate: Column<Row> = { header: t('startDate', 'Start date'), text: (one) => day(one.started) };
+  const details: Column<Row> = {
     header: t('details', 'Details'),
     text: (one) => <Details medication={one} />,
+  };
+  const edit: Column<Row> = {
+    header: '',
+    text: (one) => {
+      const open = forms.edit(one);
+      return (
+        open && (
+          <Button
+            kind="ghost"
+            size="sm"
+            disabled={forms.isOpening}
+            aria-label={t('editMedicine', 'Edit {{medicine}}', { medicine: one.name })}
+            onClick={open}
+          >
+            {t('edit', 'Edit')}
+          </Button>
+        )
+      );
+    },
   };
   return (
     <div className={styles.cards}>
       <MedicationsCard
         title={t('activeMedications', 'Active medications')}
         lowercase={t('activeMedicationsLowercase', 'active medications')}
-        columns={[startDate, details]}
+        columns={[startDate, details, edit]}
         rows={active}
         isLoading={isLoading}
         error={error}
-        add={add}
+        add={forms.add}
       />
       <MedicationsCard
         title={t('pastMedications', 'Past medications')}
         lowercase={t('pastMedicationsLowercase', 'past medications')}
-        columns={[startDate, details, { header: t('endDate', 'End date'), text: (one) => day(one.stopped) }]}
+        columns={[startDate, details, { header: t('endDate', 'End date'), text: (one) => day(one.stopped) }, edit]}
         rows={past}
         isLoading={isLoading}
         error={error}

@@ -301,13 +301,28 @@ describe('the Medications page', () => {
     expect(within(screen.getByRole('table', { name: 'Past medications' })).getByText('Warfarin')).toBeInTheDocument();
   });
 
-  it('shows the medicines without Add to a user who may not record Medication Update', async () => {
+  it("reopens a medicine's latest record in its own form from its Edit", async () => {
+    serve({
+      consultations: [consultation('visit', '2026-01-10', [medication(warfarin), medication(aspirin)])],
+      updates: [consultation('update', '2026-03-05', [medication(warfarin, [[c.dateStopped, '2026-03-01']])])],
+    });
+
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Warfarin' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.medications.form, undefined, 'update');
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Aspirin' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'visit');
+  });
+
+  it('shows the medicines without Add or Edit to a user who may not record the forms', async () => {
     serve({ consultations: [consultation('new', '2026-04-01', [medication(aspirin)])], mayEnter: false });
 
     renderPage();
 
     expect(await screen.findByRole('table', { name: 'Active medications' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Add/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
   });
 
   it('says when there is nothing active or nothing past', async () => {

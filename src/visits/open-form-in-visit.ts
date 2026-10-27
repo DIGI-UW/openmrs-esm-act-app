@@ -72,6 +72,7 @@ export type FormLauncher = (workspaceName: string, workspaceProps: object) => un
  * starting a visit, as the chart has closed that workspace by then.
  * A form in `singleRecordForms`, such as Patient Information, holds one current record per patient: for a patient who
  * has one, it opens their latest for editing, without starting a visit, rather than adding a second.
+ * Given an `encounterUuid`, it opens that saved record for editing in the same way.
  */
 export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = launchInClinicalFormsWindow) {
   const { t } = useTranslation();
@@ -83,7 +84,7 @@ export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = l
   const opening = useRef(false);
 
   const open = useCallback(
-    async (formUuid: string, focusConcept?: string) => {
+    async (formUuid: string, focusConcept?: string, encounterUuid?: string) => {
       // A second click while a visit is starting would start a second visit.
       if (opening.current) {
         return;
@@ -101,8 +102,9 @@ export function useOpenFormInVisit(patientUuid: string, launch: FormLauncher = l
           forms.current.delete(formUuid);
           throw e;
         });
-        const latest =
-          singleRecordForms.includes(formUuid) && form.encounterType?.uuid
+        const latest = encounterUuid
+          ? { uuid: encounterUuid }
+          : singleRecordForms.includes(formUuid) && form.encounterType?.uuid
             ? await latestEncounterOf(patientUuid, form.encounterType.uuid)
             : null;
         if (latest) {

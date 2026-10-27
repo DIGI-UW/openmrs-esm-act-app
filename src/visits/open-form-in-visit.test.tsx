@@ -103,6 +103,24 @@ describe('useOpenFormInVisit', () => {
     ]);
   });
 
+  it('edits the saved record it is given, without starting a visit', async () => {
+    const { result } = renderHook(() => useOpenFormInVisit('winnie'));
+
+    await act(() => result.current.open(bpgForm.uuid, undefined, 'saved-delivery'));
+
+    expect(saveVisit).not.toHaveBeenCalled();
+    expect(openedForms()).toEqual([
+      [
+        'patient-form-entry-workspace',
+        expect.objectContaining({
+          form: bpgForm,
+          encounterUuid: 'saved-delivery',
+          additionalProps: expect.objectContaining({ mode: 'edit' }),
+        }),
+      ],
+    ]);
+  });
+
   it('starts Patient Information afresh, in a visit, for a patient who has none', async () => {
     patientInformationWith([]);
     chart.setState({ visitContext: { uuid: 'old-visit', patient: { uuid: 'winnie' } } });

@@ -21,6 +21,8 @@ export interface Medication {
   interval: string;
   started: string;
   stopped: string | null;
+  /** The latest record that lists the medicine, which Edit opens. */
+  encounterUuid: string;
 }
 
 /**
@@ -49,8 +51,10 @@ export function toMedications(encounters: Array<ChartEncounter>, concepts: Conce
         interval: '',
         started: encounter.encounterDatetime,
         stopped: null,
+        encounterUuid: '',
         recordedStart: '',
       };
+      row.encounterUuid = encounter.uuid;
       row.dose = text(concepts.medicationDose) || row.dose;
       row.interval = text(concepts.medicationInterval) || row.interval;
       row.stopped = text(concepts.dateStopped) || null;
@@ -68,13 +72,24 @@ export function toMedications(encounters: Array<ChartEncounter>, concepts: Conce
   };
 }
 
-/** The cardiac medications recorded in consultations and in Medication Update, read together. */
+/**
+ * The cardiac medications recorded in consultations and in Medication Update, read together, each with the form of
+ * its latest record.
+ */
 export function useMedications(patientUuid: string) {
   const { consultations, medications } = useConfig<Config>();
   const fromConsultations = useChartEncounters(patientUuid, consultations.encounterType);
   const fromUpdates = useChartEncounters(patientUuid, medications.encounterType);
+  const updates = new Set(fromUpdates.encounters.map((encounter) => encounter.uuid));
+  const withForm = (rows: Array<Medication>) =>
+    rows.map((row) => ({ ...row, form: updates.has(row.encounterUuid) ? medications.form : consultations.form }));
+  const { active, past } = toMedications(
+    [...fromConsultations.encounters, ...fromUpdates.encounters],
+    consultations.concepts,
+  );
   return {
-    ...toMedications([...fromConsultations.encounters, ...fromUpdates.encounters], consultations.concepts),
+    active: withForm(active),
+    past: withForm(past),
     error: fromConsultations.error ?? fromUpdates.error,
     isLoading: fromConsultations.isLoading || fromUpdates.isLoading,
   };
