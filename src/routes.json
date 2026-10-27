@@ -947,6 +947,10 @@
     {
       "name": "act-users",
       "scopePattern": "^/home/act-users"
+    },
+    {
+      "name": "act-dashboard",
+      "scopePattern": "^/home/act-dashboard"
     }
   ],
   "workspaceWindows2": [
@@ -993,6 +997,11 @@
     {
       "name": "act-reset-password",
       "group": "act-users",
+      "width": "narrow"
+    },
+    {
+      "name": "act-dashboard-export",
+      "group": "act-dashboard",
       "width": "narrow"
     }
   ],
@@ -1046,6 +1055,11 @@
       "name": "act-reset-password-workspace",
       "component": "resetPasswordWorkspace",
       "window": "act-reset-password"
+    },
+    {
+      "name": "act-dashboard-export-workspace",
+      "component": "dashboardExportWorkspace",
+      "window": "act-dashboard-export"
     }
   ]
 }

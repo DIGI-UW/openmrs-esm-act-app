@@ -120,6 +120,146 @@
   grid-column: 1 / -1;
 }
 
+// What the print shows above the sections, in place of the page header and filters.
+.printHeader {
+  display: none;
+
+  h1 {
+    @include type.type-style('heading-04');
+  }
+
+  p {
+    @include type.type-style('body-compact-01');
+    color: $text-02;
+  }
+}
+
+.exportChoices {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+}
+
+.exportSummary {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.exportFieldset {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.exportLegend {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.exportAll {
+  display: flex;
+  gap: layout.$spacing-03;
+}
+
+// Exporting: a chosen section shows even in a closed tab or a collapsed card, without its buttons; the rest of the
+// page stays as it is.
+:global(body.act-dashboard-exporting),
+:global(body.act-dashboard-printing) {
+  :global([role='tabpanel'][data-export-chosen]),
+  :global([data-export-chosen] [data-collapsible-body]) {
+    display: block !important;
+  }
+
+  :global([data-export-chosen] button) {
+    display: none !important;
+  }
+}
+
+// Below the page's end, the paper stays white rather than the app's grey.
+:global(html:has(> body.act-dashboard-printing)) {
+  background: #ffffff !important;
+}
+
+// Printing: the page at the paper's width with only the chosen sections, set on screen first so charts draw at it.
+:global(body.act-dashboard-printing) {
+  .page {
+    width: 186mm;
+    background: #ffffff;
+  }
+
+  .printHeader {
+    display: block;
+    padding: 0 0 layout.$spacing-05;
+    border-bottom: 2px solid colors.$teal-70;
+    margin-bottom: layout.$spacing-05;
+  }
+
+  background: #ffffff !important;
+
+  .noPrint,
+  .keepTogether:not(:global([data-export-chosen])),
+  :global([data-print-path] > :not([data-print-path]):not([data-print-page])),
+  :global([data-export-section]:not([data-export-chosen])),
+  :global([role='tabpanel']:not([data-export-chosen])),
+  :global([role='tablist']),
+  .page button {
+    display: none !important;
+  }
+
+  :global([data-print-path]:not(body)) {
+    position: static !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    background: #ffffff !important;
+  }
+
+  .content,
+  :global([role='tabpanel']) {
+    padding: 0;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  // On paper a chart is narrower than on screen: in portrait it takes the width, its numbers under it, so its labels
+  // stay level rather than turned and crowding the bars.
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :global([data-export-section]),
+  .keepTogether {
+    break-inside: avoid;
+  }
+
+  .page a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+:global(body.act-dashboard-printing[data-print-orientation='landscape']) {
+  .page {
+    width: 273mm;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wide .split {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+
 // A section in a tab, below the tab list.
 .embedded {
   padding-top: layout.$spacing-05;

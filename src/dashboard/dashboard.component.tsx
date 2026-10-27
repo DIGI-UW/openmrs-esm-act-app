@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { Trans, useTranslation } from 'react-i18next';
 import {
@@ -22,7 +22,14 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { OpenmrsDatePicker, ReportsPictogram, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  OpenmrsDatePicker,
+  ReportsPictogram,
+  useConfig,
+  useLayoutType,
+  useSession,
+} from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
@@ -32,10 +39,11 @@ import { useClinics } from '../programme-report/clinics.resource';
 import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
-import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { urlWithFilters, useUrlFilters } from '../table-filters/url-filters';
 import { CascadeBars, CountLink, CountsDonut, labelColour, StackedBars } from './dashboard-charts.component';
 import { type CountRow, CountsCsv, type CsvPart, countRows, csvParts, useCountsCsv } from './dashboard-csv';
+import { type ExportSection, sectionAttribute } from './dashboard-export';
+import { DashboardExportButton } from './dashboard-export.component';
 import {
   type Figure,
   FigureLinks,
@@ -197,6 +205,7 @@ function Section({
   emptyText,
   embedded,
   collapse,
+  exportId,
   children,
 }: {
   title: string;
@@ -216,6 +225,8 @@ function Section({
   embedded?: boolean;
   /** Whether the section is collapsed to its title, and how it is toggled. */
   collapse?: { collapsed: boolean; onToggle: () => void };
+  /** The section an export can choose it as. */
+  exportId?: ExportSection;
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
@@ -259,9 +270,11 @@ function Section({
     </>
   );
   return embedded ? (
-    <div className={styles.embedded}>{body}</div>
+    <div className={styles.embedded} {...{ [sectionAttribute]: exportId }}>
+      {body}
+    </div>
   ) : (
-    <div className={wide ? styles.wide : undefined}>
+    <div className={wide ? styles.wide : undefined} {...{ [sectionAttribute]: exportId }}>
       <ActHomeCard title={title} tag={tag} {...collapse}>
         {body}
       </ActHomeCard>
@@ -551,7 +564,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
 
   return (
     <>
-      <div className={styles.figures}>
+      <div className={styles.figures} {...{ [sectionAttribute]: 'keyFigures' }}>
         <FigureTile
           label={t('registered', 'Registered')}
           value={registrants.registered}
@@ -597,6 +610,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           })}
           state={stateOf(registrantsReport, !registrants.registered)}
           collapse={collapsible('status')}
+          exportId="status"
           {...section}
         >
           <CountsDonut
@@ -623,6 +637,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           }
           state={stateOf(cascadeReport, allZero(cascade))}
           collapse={collapsible('cascade')}
+          exportId="cascade"
           {...section}
         >
           <CascadeBars
@@ -640,6 +655,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           state={stateOf(registrantsReport, !registrants.active)}
           wide
           collapse={collapsible('active')}
+          exportId="active"
           {...section}
         >
           <div className={styles.columns}>
@@ -686,6 +702,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           state={stateOf(waitlistReport, !waitlist.total && !waitlist.performed.bmv && !waitlist.performed.surgery)}
           wide
           collapse={collapsible('waitlist')}
+          exportId="waitlist"
           {...section}
         >
           {waitlistAsTable ? (
@@ -804,6 +821,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           )}
           wide
           collapse={collapsible('optimisation')}
+          exportId="optimisation"
           {...section}
         >
           <div className={styles.split}>
@@ -859,7 +877,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           </div>
         </Section>
         {dashboard.showScreening && (
-          <div className={styles.wide}>
+          <div className={`${styles.wide} ${styles.keepTogether}`}>
             <ActHomeCard
               {...collapsible('screening')}
               title={t('screening', 'Screening')}
@@ -897,6 +915,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                         isEmpty: allZero(screening) && allZero(diagnoses),
                       }}
                       embedded
+                      exportId="screeningCascade"
                       {...section}
                     >
                       <div className={styles.columns}>
@@ -940,7 +959,9 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           </div>
         )}
         <div className={styles.wide}>
-          <RunChartCard scope={scope} />
+          <div {...{ [sectionAttribute]: 'runCharts' }}>
+            <RunChartCard scope={scope} />
+          </div>
         </div>
       </div>
     </>
@@ -1032,6 +1053,7 @@ function ScreeningFromRegistrations({
       clinic={clinic}
       onShowAll={onShowAll}
       embedded
+      exportId="registrations"
       controls={
         <div className={styles.registrationControls}>
           <InlineNotification
@@ -1205,6 +1227,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
       clinic={clinic}
       onShowAll={onShowAll}
       embedded
+      exportId="rhdScreening"
       emptyText={
         clinic
           ? t('noScreeningCountsAt', 'No screening counts entered for {{clinic}} in the period', { clinic })
@@ -1334,6 +1357,10 @@ export default function Dashboard() {
     [],
   );
   const csvRows = csvParts.flatMap((part) => csv[part]?.rows ?? []);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const session = useSession();
+  const { dashboard } = useConfig<Config>();
+  const showScreening = dashboard.showScreening;
   // As RHD screening names what it counts: a site administrator's own clinics when no clinic is chosen.
   const limit = useClinicLimit();
   const clinicsCounted =
@@ -1343,8 +1370,27 @@ export default function Dashboard() {
       : t('everyClinic', 'every clinic'));
 
   return (
-    <div className={styles.page}>
-      <ActPageHeader title={t('dashboard', 'Dashboard')} illustration={<ReportsPictogram />} />
+    <div className={styles.page} ref={pageRef}>
+      <div className={styles.noPrint}>
+        <ActPageHeader title={t('dashboard', 'Dashboard')} illustration={<ReportsPictogram />} />
+      </div>
+      <header className={styles.printHeader}>
+        <h1>{t('dashboard', 'Dashboard')}</h1>
+        <p>
+          {clinicsCounted} ·{' '}
+          {t('figuresAsOfDate', 'figures as of {{date}}', {
+            date: formatDate(dayjs(asOf).toDate(), { time: false, noToday: true }),
+          })}
+        </p>
+        <p>
+          {t('printedByOn', 'Printed by {{user}} on {{date}}', {
+            user: session?.user?.person?.display ?? session?.user?.display ?? '',
+            date: formatDate(new Date(), { noToday: true }),
+          })}
+          {' · '}
+          {t('countsOnlyNoPatients', 'Counts only, no patient data')}
+        </p>
+      </header>
       <div className={styles.content}>
         {sessionScope.status === 'error' ? (
           <InlineNotification
@@ -1369,7 +1415,7 @@ export default function Dashboard() {
           />
         ) : (
           <>
-            <div className={`${styles.filters} ${styles.toolbar}`}>
+            <div className={`${styles.filters} ${styles.toolbar} ${styles.noPrint}`}>
               <ClinicFilters scope={scope} onChange={setScope} idPrefix="dashboard" />
               <OpenmrsDatePicker
                 id="dashboard-as-of"
@@ -1386,31 +1432,14 @@ export default function Dashboard() {
                 }}
               />
               <div className={styles.download}>
-                <DownloadCsvButton
-                  name="dashboard-counts"
-                  list="dashboard:counts"
-                  identifiers={false}
+                <DashboardExportButton
+                  container={pageRef}
+                  csvRows={csvRows}
+                  csvLoading={csvParts.some((part) => csv[part]?.isLoading)}
                   filters={{ endDate: asOf, ...scope }}
-                  headers={[
-                    t('csvSection', 'Section'),
-                    t('csvGroup', 'Group'),
-                    t('csvLabel', 'Label'),
-                    t('csvCount', 'Count'),
-                    t('period', 'Period'),
-                    t('csvClinics', 'Clinics'),
-                  ]}
-                  rows={() =>
-                    csvRows.map((row) => [
-                      row.section,
-                      row.group,
-                      row.label,
-                      String(row.count),
-                      row.period,
-                      clinicsCounted,
-                    ])
-                  }
-                  disabled={!csvRows.length || csvParts.some((part) => csv[part]?.isLoading)}
-                  size="md"
+                  clinics={clinicsCounted}
+                  asOf={asOf}
+                  showScreening={showScreening}
                 />
               </div>
             </div>

@@ -2,17 +2,28 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
-import { getDefaultsFromConfigSchema, openmrsFetch, useLayoutType, useSession } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  openmrsFetch,
+  showSnackbar,
+  useLayoutType,
+  useSession,
+} from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 import { downloadCsv } from '../table-filters/csv';
+vi.mock('./dashboard-images', () => ({ sectionPng: vi.fn(async () => new Uint8Array([1, 2, 3])) }));
+import { sectionPng } from './dashboard-images';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
+import { exportSections } from './dashboard-export';
+import { type DashboardExportWorkspaceProps } from './dashboard-export.workspace';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 // The card has its own tests; here it only shows what the Dashboard hands it.
@@ -1369,27 +1380,47 @@ describe('Dashboard', () => {
     });
   });
 
-  describe("the Dashboard's counts CSV", () => {
+  describe("the Dashboard's Export", () => {
     const downloaded = () => vi.mocked(downloadCsv).mock.calls.at(-1);
+    const recorded = () =>
+      vi
+        .mocked(openmrsFetch)
+        .mock.calls.filter(([url]) => String(url).endsWith('/actcore/download/record'))
+        .map(([, init]) => (init as { body: Record<string, unknown> }).body);
+    const allButRunCharts = exportSections.filter((section) => section !== 'runCharts');
+    const close = vi.fn();
 
-    it("gives every section's counts in one file, recorded in the download log without identifiers", async () => {
-      await signIn();
+    /** Opens the export workspace from the Dashboard, and gives what it was opened with. */
+    async function openExport(failing?: string) {
+      await signIn(failing);
       await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
       vi.mocked(downloadCsv).mockClear();
+      vi.mocked(launchWorkspace2).mockClear();
+      close.mockClear();
       renderPage();
-
       await screen.findAllByTestId('dashboard-screening-tile');
-      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Export' }));
+      expect(launchWorkspace2).toHaveBeenCalledWith('act-dashboard-export-workspace', expect.anything());
+      return vi.mocked(launchWorkspace2).mock.lastCall[1] as DashboardExportWorkspaceProps;
+    }
 
-      await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
-      expect(vi.mocked(openmrsFetch)).toHaveBeenCalledWith(
-        '/ws/rest/v1/actcore/download/record',
+    it('opens the export workspace beside the page, saying what the Dashboard counts', async () => {
+      const opened = await openExport();
+      expect(opened.summary).toMatch(/^every clinic · figures as of /);
+      expect(opened.showScreening).toBe(true);
+    });
+
+    it("gives every section's counts in one file, recorded in the download log without identifiers", async () => {
+      const opened = await openExport();
+      await act(() => opened.run({ format: 'csv', sections: allButRunCharts, orientation: 'portrait' }, close));
+
+      expect(downloadCsv).toHaveBeenCalled();
+      expect(close).toHaveBeenCalled();
+      expect(recorded().at(-1)).toEqual(
         expect.objectContaining({
-          body: expect.objectContaining({
-            list: 'dashboard:counts',
-            identifiers: false,
-            filters: expect.objectContaining({ endDate: today }),
-          }),
+          list: 'dashboard:counts',
+          identifiers: false,
+          filters: expect.objectContaining({ endDate: today }),
         }),
       );
       const [name, headers, rows] = downloaded();
@@ -1417,33 +1448,107 @@ describe('Dashboard', () => {
           ],
         ]),
       );
-      // The sections in the order the page shows them, run charts aside.
+      // The sections in the order the page shows them.
       expect([...new Set(rows.map(([section]) => section))].slice(0, 2)).toEqual(['Key figures', 'Registrant status']);
       expect(rows.at(-1)[0]).toBe('Screening, from registrations');
     });
 
-    it('leaves out a section that could not load, rather than giving its counts as zeros', async () => {
-      await signIn(REGISTRANTS);
-      await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
-      vi.mocked(downloadCsv).mockClear();
-      renderPage();
+    it('gives only the sections chosen, and leaves out one that could not load rather than giving zeros', async () => {
+      const opened = await openExport(REGISTRANTS);
+      const sections = allButRunCharts.filter((section) => section !== 'optimisation');
+      await act(() => opened.run({ format: 'csv', sections, orientation: 'portrait' }, close));
 
-      await screen.findAllByTestId('dashboard-screening-tile');
-      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
-
-      await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
-      const sections = new Set(downloaded()[2].map(([section]) => section));
-      expect(sections.has('Registrant status')).toBe(false);
-      expect(sections.has('Active registrants')).toBe(false);
-      expect(sections.has('Procedural waitlist')).toBe(true);
+      const written = new Set(downloaded()[2].map(([section]) => section));
+      expect(written.has('Registrant status')).toBe(false);
+      expect(written.has('Active registrants')).toBe(false);
+      expect(written.has('Medical optimisation')).toBe(false);
+      expect(written.has('Procedural waitlist')).toBe(true);
     });
 
-    it('offers no Download CSV to a user who may not export lists', async () => {
+    it('prints only the sections chosen, at the paper width, after recording the export and closing the workspace', async () => {
+      const print = vi.fn();
+      window.print = print;
+      const opened = await openExport();
+      await act(() =>
+        opened.run({ format: 'pdf', sections: ['status', 'rhdScreening'], orientation: 'landscape' }, close),
+      );
+
+      expect(print).toHaveBeenCalled();
+      expect(close).toHaveBeenCalled();
+      expect(recorded().at(-1)).toEqual(
+        expect.objectContaining({
+          list: 'dashboard:pdf',
+          columns: ['Registrant status', 'RHD screening'],
+          identifiers: false,
+        }),
+      );
+      expect(document.body).toHaveClass('act-dashboard-printing');
+      expect(document.body.dataset.printOrientation).toBe('landscape');
+      // The sections are marked by attributes, which no query by role reads.
+      // eslint-disable-next-line testing-library/no-node-access
+      const chosen = Array.from(document.querySelectorAll('[data-export-section][data-export-chosen]')).map((element) =>
+        element.getAttribute('data-export-section'),
+      );
+      expect(chosen).toEqual(['status', 'rhdScreening']);
+      // The closed tab holding RHD screening is marked to print too.
+      expect(screen.getAllByRole('tabpanel', { hidden: true })[1]).toHaveAttribute('data-export-chosen');
+
+      window.dispatchEvent(new Event('afterprint'));
+      expect(document.body).not.toHaveClass('act-dashboard-printing');
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(document.querySelectorAll('[data-export-chosen], [data-print-path], [data-print-page]')).toHaveLength(0);
+    });
+
+    it('zips a PNG of each section chosen, in page order, each named for its section', async () => {
+      vi.mocked(sectionPng).mockClear();
+      const saved: Array<string> = [];
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+        this: HTMLAnchorElement,
+      ) {
+        saved.push(this.download);
+      });
+      URL.createObjectURL = vi.fn(() => 'blob:dashboard');
+      URL.revokeObjectURL = vi.fn();
+      const opened = await openExport();
+      await act(() =>
+        opened.run({ format: 'images', sections: ['keyFigures', 'waitlist'], orientation: 'portrait' }, close),
+      );
+
+      expect(saved).toEqual([`dashboard-images-${today}.zip`]);
+      // The tiles have no title, so the band names them; the waitlist's card has its own, so its band does not.
+      expect(vi.mocked(sectionPng).mock.calls.map(([, title, subtitle]) => [title, subtitle])).toEqual([
+        ['Key figures', expect.stringMatching(/^every clinic · figures as of /)],
+        ['', expect.stringMatching(/^every clinic · figures as of /)],
+      ]);
+      expect(recorded().at(-1)).toEqual(expect.objectContaining({ list: 'dashboard:images', rows: 2 }));
+      expect(document.body).not.toHaveClass('act-dashboard-exporting');
+      click.mockRestore();
+    });
+
+    it('makes no file, and leaves the workspace open, when the export cannot be recorded', async () => {
+      const print = vi.fn();
+      window.print = print;
+      const opened = await openExport();
+      const served = vi.mocked(openmrsFetch).getMockImplementation();
+      vi.mocked(openmrsFetch).mockImplementation(((url: string, init: unknown) =>
+        url.endsWith('/actcore/download/record')
+          ? Promise.reject(new Error('down'))
+          : served(url, init as never)) as never);
+      await act(() => opened.run({ format: 'pdf', sections: ['status'], orientation: 'portrait' }, close));
+
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Could not record the download, so no file was made' }),
+      );
+      expect(print).not.toHaveBeenCalled();
+      expect(close).not.toHaveBeenCalled();
+    });
+
+    it('offers no Export to a user who may not export lists', async () => {
       await signIn();
       renderPage();
 
       await screen.findAllByTestId('dashboard-screening-tile');
-      expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Export' })).not.toBeInTheDocument();
     });
   });
 
