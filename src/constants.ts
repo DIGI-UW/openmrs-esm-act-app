@@ -10,6 +10,7 @@ export const PRIVILEGE_INSTANCE_ADMIN = 'App: act.instanceAdmin';
 export const PRIVILEGE_COMMUNITY_HOME = 'App: act.communityHome';
 export const PRIVILEGE_STATUS_FLAGS = 'App: act.statusFlags';
 export const PRIVILEGE_REPORTS = 'App: act.reports';
+export const PRIVILEGE_DASHBOARD = 'App: act.dashboard';
 export const PRIVILEGE_EXPORT_LISTS = 'Task: act.lists.export';
 export const PRIVILEGE_REFRESH_FLAGS = 'Task: act.refreshFlags';
 export const PRIVILEGE_STUDIES = 'App: act.studies';
@@ -19,13 +20,17 @@ export const PRIVILEGE_ENTER_PROPHYLAXIS = 'Task: act.enterProphylaxis';
 // The audit log module's (auditlogweb): changes such as saved forms, and reads such as opened patients.
 export const PRIVILEGE_VIEW_AUDIT_LOGS = 'View Audit Logs';
 export const PRIVILEGE_VIEW_READ_AUDIT_LOGS = 'View Read Audit Logs';
+export const PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS = 'View Security Audit Logs';
 export const PRIVILEGE_DOWNLOAD_DATA = 'Task: act.downloadData';
 export const PRIVILEGE_DOWNLOAD_IDENTIFIERS = 'Task: act.downloadIdentifiers';
 export const PRIVILEGE_DOWNLOAD_RESEARCH_DATA = 'Task: act.downloadResearchData';
+export const PRIVILEGE_SEND_REFERRAL = 'Task: act.sendReferral';
 
 // OpenMRS core privileges for the actions ACT offers, as the services that carry them out require.
 export const PRIVILEGE_ADD_PATIENTS = 'Add Patients';
 export const PRIVILEGE_GET_PATIENTS = 'Get Patients';
 export const PRIVILEGE_ADD_ENCOUNTERS = 'Add Encounters';
+export const PRIVILEGE_EDIT_PEOPLE = 'Edit People';
+export const PRIVILEGE_EDIT_PATIENT_PROGRAMS = 'Edit Patient Programs';
 export const PRIVILEGE_EDIT_USERS = 'Edit Users';
 export const PRIVILEGE_MANAGE_LOCATIONS = 'Manage Locations';

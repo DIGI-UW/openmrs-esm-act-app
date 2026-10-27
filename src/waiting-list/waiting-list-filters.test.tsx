@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
+import { columnHeaders } from '../column-headers.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
 import WaitingList from './waiting-list.component';
@@ -23,7 +24,7 @@ const rows = waitingListRows.map((row, i) => ({
 }));
 
 function shownIds() {
-  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+  const headers = columnHeaders();
   return screen
     .getAllByRole('row')
     .slice(1)
@@ -44,7 +45,10 @@ async function downloadedCsv() {
   const createObjectURL = vi.fn((blob: Blob) => 'blob:waiting-list');
   window.URL.createObjectURL = createObjectURL as never;
   window.URL.revokeObjectURL = vi.fn();
+  // The download is recorded through ACT Core before the file is made.
+  vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
   await userEvent.click(screen.getByRole('button', { name: /download csv/i }));
+  await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
   return (createObjectURL.mock.calls[0][0] as Blob).text();
 }
 
@@ -94,12 +98,7 @@ describe('Procedural waiting list filters and CSV', () => {
       'Mitral balloon valvuloplasty',
       'Mitral valve repair/replacement',
     ]);
-    expect(options('Urgency')).toEqual([
-      'All',
-      '1: Emergent (24 hours)',
-      '2: Urgent (60 days)',
-      '3: Elective (180 days)',
-    ]);
+    expect(options('Urgency')).toEqual(['All', 'urgencyEmergent', 'urgencyUrgent', 'urgencyElective']);
   });
 
   it("keeps offering every recommendation's values once a filter is set, so another can be picked", async () => {
@@ -110,12 +109,7 @@ describe('Procedural waiting list filters and CSV', () => {
 
     expect(options('Cardiac clinic')).toEqual(['All', 'Gulu RRH', 'Lira RRH']);
     expect(options('Procedure type')).toEqual(['All', 'Catheterization', 'Surgery']);
-    expect(options('Urgency')).toEqual([
-      'All',
-      '1: Emergent (24 hours)',
-      '2: Urgent (60 days)',
-      '3: Elective (180 days)',
-    ]);
+    expect(options('Urgency')).toEqual(['All', 'urgencyEmergent', 'urgencyUrgent', 'urgencyElective']);
   });
 
   it.each([
@@ -123,7 +117,7 @@ describe('Procedural waiting list filters and CSV', () => {
     ['Primary care clinic', 'Anyeke HCIV', (i: number) => i % 2 === 1],
     ['Procedure type', 'Catheterization', (i: number) => i % 3 === 0],
     ['Specific procedure', 'Mitral valve repair/replacement', (i: number) => i % 3 !== 0],
-    ['Urgency', '2: Urgent (60 days)', (i: number) => i % 3 === 1],
+    ['Urgency', 'urgencyUrgent', (i: number) => i % 3 === 1],
   ])('narrows the rows by %s', async (label, option, kept) => {
     render(<WaitingList />);
     await userEvent.selectOptions(screen.getByLabelText(/items per page/i), '50');
@@ -154,7 +148,7 @@ describe('Procedural waiting list filters and CSV', () => {
     });
     render(<WaitingList />);
 
-    await choose('Urgency', '1: Emergent (24 hours)');
+    await choose('Urgency', 'urgencyEmergent');
     await choose('Procedure type', 'Catheterization');
     await choose('Procedure type', '');
     await choose('Urgency', '');
@@ -167,15 +161,15 @@ describe('Procedural waiting list filters and CSV', () => {
   it('keeps the filters in the URL and restores them from it', async () => {
     const { unmount } = render(<WaitingList />);
     await choose('Procedure type', 'Surgery');
-    await choose('Urgency', '2: Urgent (60 days)');
-    await waitFor(() => expect(new URLSearchParams(window.location.search).get('urgency')).toBe('2: Urgent (60 days)'));
+    await choose('Urgency', 'urgencyUrgent');
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get('urgency')).toBe('urgencyUrgent'));
     expect(new URLSearchParams(window.location.search).get('type')).toBe('Surgery');
     unmount();
 
     render(<WaitingList />);
 
     expect(screen.getByLabelText('Procedure type')).toHaveValue('Surgery');
-    expect(screen.getByLabelText('Urgency')).toHaveValue('2: Urgent (60 days)');
+    expect(screen.getByLabelText('Urgency')).toHaveValue('urgencyUrgent');
     const expected = rows.filter((_, i) => i % 3 === 1).map((row) => row.rhd_id);
     expect(expected.length).toBeGreaterThan(0);
     expect([...shownIds()].sort()).toEqual([...expected].sort());

@@ -3,6 +3,7 @@ import { evaluate } from '@openmrs/esm-expression-evaluator';
 import routeFile from './routes.json';
 import {
   PRIVILEGE_ACT_HOME,
+  PRIVILEGE_DASHBOARD,
   PRIVILEGE_DUE_LIST,
   PRIVILEGE_COMMUNITY_HOME,
   PRIVILEGE_DATA_CLERK,
@@ -26,6 +27,7 @@ const screenPrivileges = {
   dataClerk: PRIVILEGE_DATA_CLERK,
   communityHome: PRIVILEGE_COMMUNITY_HOME,
   reports: PRIVILEGE_REPORTS,
+  dashboard: PRIVILEGE_DASHBOARD,
   instanceAdmin: PRIVILEGE_INSTANCE_ADMIN,
 };
 
@@ -72,6 +74,12 @@ describe('routes.json privileges', () => {
     ['act-back-to-act-link', 'Get Patients'],
     ['act-reports-dashboard-link', screenPrivileges.reports],
     ['act-reports-dashboard', screenPrivileges.reports],
+    ['act-report-dashboard-link', screenPrivileges.reports],
+    ['act-report-dashboard', screenPrivileges.reports],
+    ['act-run-charts-dashboard-link', screenPrivileges.dashboard],
+    ['act-run-charts-dashboard', screenPrivileges.dashboard],
+    ['act-dashboard-link', screenPrivileges.dashboard],
+    ['act-dashboard', screenPrivileges.dashboard],
     ['act-facility-reports-dashboard-link', screenPrivileges.dataClerk],
     ['act-facility-reports-dashboard', screenPrivileges.dataClerk],
     ['act-instance-admin-dashboard-link', screenPrivileges.instanceAdmin],
@@ -88,8 +96,6 @@ describe('routes.json privileges', () => {
     ['act-research-dashboard', 'App: act.studies'],
     ['act-refresh-flags-dashboard-link', 'Task: act.refreshFlags'],
     ['act-refresh-flags-dashboard', 'Task: act.refreshFlags'],
-    ['act-download-log-dashboard-link', 'View Read Audit Logs'],
-    ['act-download-log-dashboard', 'View Read Audit Logs'],
     ['act-home-due-for-prophylaxis', 'App: act.dueList'],
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
     ['act-patient-status-flags', [PRIVILEGE_STATUS_FLAGS, 'Get Encounters', 'Get Observations']],
@@ -143,6 +149,7 @@ describe('routes.json privileges', () => {
         'act-worklist-post-procedural-follow-up',
         'act-worklist-pregnancy-outcome',
         'act-worklist-inr-review',
+        'act-worklist-referred-to-clinician',
         'act-worklist-waiting-list',
       ],
     ],
@@ -180,6 +187,7 @@ describe('routes.json privileges', () => {
     ['act-worklist-post-procedural-follow-up', false],
     ['act-worklist-pregnancy-outcome', false],
     ['act-worklist-inr-review', false],
+    ['act-worklist-referred-to-clinician', false],
     ['act-worklist-waiting-list', false],
   ])('shows %s to a community clinician only (true), to everyone else (false), or by privilege alone', (name, cc) => {
     const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
@@ -192,20 +200,124 @@ describe('routes.json privileges', () => {
     }
   });
 
-  it("adds no patient banner action or modal, as OpenMRS prints the patient's identifier sticker", () => {
-    expect(routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot')).toEqual([]);
+  it('adds one patient banner action, Update patient status, and its workspace; OpenMRS prints the identifier sticker itself', () => {
+    expect(
+      routes.extensions.filter((extension) => extension.slot === 'patient-actions-slot').map(({ name }) => name),
+    ).toEqual(['act-update-patient-status']);
     expect(routeFile).not.toHaveProperty('modals');
+    expect(routeFile.workspaces2).toContainEqual({
+      name: 'act-update-patient-status-workspace',
+      component: 'updatePatientStatusWorkspace',
+      window: 'act-update-patient-status',
+    });
+    expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-patient-status', group: 'patient-chart' });
   });
 
-  it('declares a privilege on every extension but Download data, the Admin nav, the session timeout and the help-menu Docs, so none shows to every signed-in user', () => {
-    // They gate themselves: Download data on either of its two privileges, the Admin nav per link, the session
-    // timeout on being signed in, and the help-menu Docs on the help menu being open at all.
+  it('opens Update prophylaxis in a workspace of the patient chart', () => {
+    expect(routeFile.workspaces2).toContainEqual({
+      name: 'act-update-prophylaxis-workspace',
+      component: 'updateProphylaxisWorkspace',
+      window: 'act-update-prophylaxis',
+    });
+    expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-prophylaxis', group: 'patient-chart' });
+  });
+
+  it('shows Update patient status to a user who may edit programmes or people, or to a super user, and to no one else', () => {
+    const expression = routes.extensions.find(
+      (extension) => extension.name === 'act-update-patient-status',
+    )?.displayExpression;
+    const session = (privileges: Array<string>, roles: Array<string> = []) => ({
+      session: {
+        user: {
+          privileges: privileges.map((display) => ({ display })),
+          roles: roles.map((display) => ({ display })),
+        },
+      },
+    });
+    expect(evaluate(expression, session(['Edit Patient Programs']))).toBe(true);
+    expect(evaluate(expression, session(['Edit People']))).toBe(true);
+    expect(evaluate(expression, session([], ['System Developer']))).toBe(true);
+    expect(evaluate(expression, session(['Get Patients']))).toBe(false);
+  });
+
+  it('declares a privilege on every extension but Download data, Logs, Update patient status, the Admin nav, the session timeout and the help-menu Docs, so none shows to every signed-in user', () => {
+    // They gate themselves: Download data and Update patient status on either of two privileges, Logs on either audit
+    // privilege, the Admin nav per link, the session timeout on being signed in, and the help-menu Docs on the help menu being
+    // open at all.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',
+      'act-logs-dashboard-link',
+      'act-logs-dashboard',
       'act-admin-nav',
       'act-session-timeout',
       'act-help-docs',
+      'act-update-patient-status',
     ]);
+  });
+
+  it.each(['act-logs-dashboard-link', 'act-logs-dashboard'])(
+    'shows %s to a user holding any of the three audit privileges, or to a super user, and to no one else',
+    (name) => {
+      const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
+      const session = (privileges: Array<string>, roles: Array<string> = []) => ({
+        session: {
+          user: {
+            privileges: privileges.map((display) => ({ display })),
+            roles: roles.map((display) => ({ display })),
+          },
+        },
+      });
+      expect(evaluate(expression, session(['View Audit Logs']))).toBe(true);
+      expect(evaluate(expression, session(['View Read Audit Logs']))).toBe(true);
+      expect(evaluate(expression, session(['View Security Audit Logs']))).toBe(true);
+      expect(evaluate(expression, session([], ['System Developer']))).toBe(true);
+      expect(evaluate(expression, session(['App: act.home'], ['Organizational: ACT Clinician']))).toBe(false);
+    },
+  );
+});
+
+const workspaceRoutes = routeFile as unknown as {
+  workspaceGroups2: Array<{ name: string; scopePattern: string }>;
+  workspaceWindows2: Array<{ name: string; group: string }>;
+  workspaces2: Array<{ name: string; component: string; window: string }>;
+};
+
+/** The patient chart app defines this group; an ACT window joins it, as O3's own chart windows do. */
+const patientChartGroup = 'patient-chart';
+
+describe('routes.json workspaces', () => {
+  it('puts every workspace in an ACT window in a group, and names each only once', () => {
+    const groups = workspaceRoutes.workspaceGroups2.map((group) => group.name);
+    const windows = workspaceRoutes.workspaceWindows2.map((window) => window.name);
+    expect(new Set(groups).size).toBe(groups.length);
+    expect(new Set(windows).size).toBe(windows.length);
+    workspaceRoutes.workspaceWindows2
+      .filter((window) => window.group !== patientChartGroup)
+      .forEach((window) => expect(groups).toContain(window.group));
+    workspaceRoutes.workspaces2
+      .filter((workspace) => workspace.window.startsWith('act-'))
+      .forEach((workspace) => expect(windows).toContain(workspace.window));
+  });
+
+  it.each([
+    ['act-clinic-form-workspace', 'act-clinics', '/home/act-clinics'],
+    ['act-study-form-workspace', 'act-studies', '/home/act-studies'],
+    ['act-user-form-workspace', 'act-users', '/home/act-users'],
+    ['act-reset-password-workspace', 'act-users', '/home/act-users'],
+  ])('opens %s in the %s group, scoped to the page %s', (name, group, page) => {
+    const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
+    const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
+    const scope = workspaceRoutes.workspaceGroups2.find((candidate) => candidate.name === window?.group);
+    expect(scope?.name).toBe(group);
+    const pattern = new RegExp(scope.scopePattern);
+    expect(pattern.test(page)).toBe(true);
+    expect(pattern.test(`/openmrs/spa${page}`)).toBe(false);
+  });
+
+  it('opens the enrolment workspace in the patient chart group', () => {
+    const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === 'act-enrollment-workspace');
+    const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
+    expect(window?.group).toBe(patientChartGroup);
   });
 });

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
+import { columnHeaders } from '../column-headers.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { waitingListRows } from './waiting-list.fixture';
@@ -29,7 +30,7 @@ function row(id: string, concept: string, days: number) {
 }
 
 function shown() {
-  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+  const headers = columnHeaders();
   return screen
     .getAllByRole('row')
     .slice(1)
@@ -55,13 +56,13 @@ describe('Procedural waiting list days pending and overdue rows', () => {
 
   it("defaults to ACT 2.0's three urgencies, due in 24 hours, 60 days and 180 days, with the four answers they replaced, by deadline", () => {
     expect(urgencyBands.map((band) => [band.concept, band.deadlineDays, band.label, band.shortLabel])).toEqual([
-      [emergent, 1, '1: Emergent (24 hours)', '1: Emergent'],
-      ['406285f2-be72-5594-8664-c8568ad9bc88', 7, '1 - within 1 week', undefined],
-      ['82c5209b-c183-5bc9-941c-890eba821a44', 30, '2 - within 1 month', undefined],
-      [urgent, 60, '2: Urgent (60 days)', '2: Urgent'],
-      ['925610f9-1c3c-5396-880f-02a5fe309d53', 90, '3 - within 3 months', undefined],
-      [elective, 180, '3: Elective (180 days)', '3: Elective'],
-      ['57e3873e-018e-5ed6-b7d4-5f73ef464cbd', 180, '4 - within 6 months', undefined],
+      [emergent, 1, 'urgencyEmergent', '1: Emergent'],
+      ['406285f2-be72-5594-8664-c8568ad9bc88', 7, 'urgencyWithinOneWeek', undefined],
+      ['82c5209b-c183-5bc9-941c-890eba821a44', 30, 'urgencyWithinOneMonth', undefined],
+      [urgent, 60, 'urgencyUrgent', '2: Urgent'],
+      ['925610f9-1c3c-5396-880f-02a5fe309d53', 90, 'urgencyWithinThreeMonths', undefined],
+      [elective, 180, 'urgencyElective', '3: Elective'],
+      ['57e3873e-018e-5ed6-b7d4-5f73ef464cbd', 180, 'urgencyWithinSixMonths', undefined],
     ]);
   });
 
@@ -122,12 +123,12 @@ describe('Procedural waiting list days pending and overdue rows', () => {
 
     render(<WaitingList />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     const urgencies = screen
       .getAllByRole('row')
       .slice(1)
       .map((tr) => within(tr).getAllByRole('cell')[headers.indexOf('Urgency')].textContent);
-    expect(urgencies).toEqual(['1: Emergent (24 hours)', '2 - within 1 month']);
+    expect(urgencies).toEqual(['urgencyEmergent', '2 - within 1 month']);
   });
 
   it('counts whole days, so an afternoon view shows the same days pending as a morning one', () => {
@@ -217,7 +218,7 @@ describe('Procedural waiting list days pending and overdue rows', () => {
 
     render(<WaitingList />);
 
-    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    const headers = columnHeaders();
     const marked = within(screen.getAllByRole('row')[1])
       .getAllByRole('cell')
       .map((cell, i) => [headers[i], cell.getAttribute('data-days-pending')])

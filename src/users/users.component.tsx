@@ -2,14 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
-  Checkbox,
   DataTableSkeleton,
   InlineNotification,
   Modal,
   Pagination,
-  PasswordInput,
-  RadioButton,
-  RadioButtonGroup,
   Search,
   Table,
   TableBody,
@@ -18,23 +14,28 @@ import {
   TableHeader,
   TableRow,
   Tag,
-  TextInput,
   Toggle,
 } from '@carbon/react';
-import { Add, Edit, Locked, Password } from '@carbon/react/icons';
+import { Add, Catalog, Edit, Locked, Password } from '@carbon/react/icons';
 import {
+  getCoreTranslation,
   isDesktop,
+  launchWorkspace2,
   RegistrationPictogram,
   showSnackbar,
-  useConfig,
   useLayoutType,
   UserHasAccess,
+  userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useClinicLimit } from '../clinic-limit';
-import { type Config } from '../config-schema';
-import { useClinics } from '../programme-report/clinics.resource';
+import {
+  PRIVILEGE_VIEW_AUDIT_LOGS,
+  PRIVILEGE_VIEW_READ_AUDIT_LOGS,
+  PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS,
+} from '../constants';
+import { UserLogPanel } from '../logs/user-log-panel.component';
 import { restErrorMessage } from '../rest-error-message';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
@@ -43,286 +44,14 @@ import {
   clinicsOf,
   disableUser,
   fullName,
-  resetPassword,
   roleLabel,
-  saveUser,
-  type UserForm,
-  useRoleChoices,
+  useClinicChoices,
   useUsers,
 } from './users.resource';
 import styles from './users.scss';
 
 const PRIVILEGE_ADD_USERS = 'Add Users';
 const PRIVILEGE_EDIT_USER_PASSWORDS = 'Edit User Passwords';
-
-/** The clinics a user may be given: those tagged as clinics, and for a site administrator only its own. */
-function useClinicChoices() {
-  const { clinicLocationTags } = useConfig<Config>();
-  return useClinics([...clinicLocationTags.primaryCare, ...clinicLocationTags.cardiac]);
-}
-
-function UserModal({ user, onClose, onSaved }: { user?: ActUser; onClose: () => void; onSaved: () => void }) {
-  const { t } = useTranslation();
-  const roleChoices = useRoleChoices();
-  const clinicChoices = useClinicChoices();
-  const [form, setForm] = useState<UserForm>({
-    givenName: user?.person?.preferredName?.givenName ?? '',
-    familyName: user?.person?.preferredName?.familyName ?? '',
-    gender: user?.person?.gender ?? '',
-    username: user?.username ?? '',
-    password: '',
-    roles: user?.roles.map((role) => role.uuid) ?? [],
-    clinics: user ? clinicsOf(user) : [],
-  });
-  const [confirm, setConfirm] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const change = (patch: Partial<UserForm>) => setForm((current) => ({ ...current, ...patch }));
-  const toggle = (key: 'roles' | 'clinics', uuid: string, checked: boolean) =>
-    change({ [key]: checked ? [...form[key], uuid] : form[key].filter((one) => one !== uuid) });
-  // A role the administrator may not give, which only an instance administrator could have given, stays as it is.
-  const offeredRoles = new Set(roleChoices.roles.map((role) => role.uuid));
-  const otherRoles = user?.roles.filter((role) => !offeredRoles.has(role.uuid)) ?? [];
-  const otherClinics = form.clinics.filter((uuid) => !clinicChoices.some((clinic) => clinic.uuid === uuid));
-
-  const errors = {
-    givenName: !form.givenName.trim() && t('enterGivenName', 'Enter a given name'),
-    familyName: !form.familyName.trim() && t('enterFamilyName', 'Enter a family name'),
-    gender: !user && !form.gender && t('chooseSex', 'Choose a sex'),
-    username: !user && !form.username.trim() && t('enterUsername', 'Enter a username'),
-    password: !user && !form.password && t('enterPassword', 'Enter a password'),
-    confirm: !user && form.password !== confirm && t('passwordsDoNotMatch', 'The passwords do not match'),
-    roles: !form.roles.length && t('chooseARole', 'Choose at least one role'),
-    clinics: !form.clinics.length && t('chooseAClinic', 'Choose at least one clinic'),
-  };
-  const shown = (key: keyof typeof errors) => (submitted ? errors[key] || undefined : undefined);
-
-  const submit = async () => {
-    setSubmitted(true);
-    if (Object.values(errors).some(Boolean)) {
-      return;
-    }
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await saveUser(form, user);
-      showSnackbar({ kind: 'success', title: t('userSaved', 'User saved') });
-      onSaved();
-      onClose();
-    } catch (e) {
-      setSaveError(restErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal
-      open
-      modalHeading={user ? t('editUser', 'Edit user') : t('addUser', 'Add user')}
-      primaryButtonText={saving ? t('saving', 'Saving...') : t('save', 'Save')}
-      secondaryButtonText={t('cancel', 'Cancel')}
-      primaryButtonDisabled={saving}
-      onRequestSubmit={submit}
-      onRequestClose={onClose}
-      size="md"
-    >
-      <div className={styles.form}>
-        {saveError && (
-          <InlineNotification
-            kind="error"
-            lowContrast
-            hideCloseButton
-            title={t('couldNotSaveUser', 'Could not save the user')}
-            subtitle={saveError}
-          />
-        )}
-        <div className={styles.pair}>
-          <TextInput
-            id="user-given-name"
-            labelText={t('givenName', 'Given name')}
-            value={form.givenName}
-            invalid={Boolean(shown('givenName'))}
-            invalidText={shown('givenName')}
-            onChange={(event) => change({ givenName: event.target.value })}
-          />
-          <TextInput
-            id="user-family-name"
-            labelText={t('familyName', 'Family name')}
-            value={form.familyName}
-            invalid={Boolean(shown('familyName'))}
-            invalidText={shown('familyName')}
-            onChange={(event) => change({ familyName: event.target.value })}
-          />
-        </div>
-        {!user && (
-          <>
-            <RadioButtonGroup
-              legendText={t('sex', 'Sex')}
-              name="user-sex"
-              valueSelected={form.gender}
-              invalid={Boolean(shown('gender'))}
-              invalidText={shown('gender')}
-              onChange={(value) => change({ gender: String(value) })}
-            >
-              <RadioButton id="user-sex-f" labelText={t('female', 'Female')} value="F" />
-              <RadioButton id="user-sex-m" labelText={t('male', 'Male')} value="M" />
-            </RadioButtonGroup>
-            <TextInput
-              id="user-username"
-              labelText={t('username', 'Username')}
-              value={form.username}
-              invalid={Boolean(shown('username'))}
-              invalidText={shown('username')}
-              onChange={(event) => change({ username: event.target.value })}
-            />
-            <div className={styles.pair}>
-              <PasswordInput
-                id="user-password"
-                labelText={t('password', 'Password')}
-                helperText={t('passwordRule', 'At least 8 characters, with an upper case letter and a number')}
-                value={form.password}
-                invalid={Boolean(shown('password'))}
-                invalidText={shown('password')}
-                onChange={(event) => change({ password: event.target.value })}
-              />
-              <PasswordInput
-                id="user-password-confirm"
-                labelText={t('confirmPassword', 'Confirm password')}
-                value={confirm}
-                invalid={Boolean(shown('confirm'))}
-                invalidText={shown('confirm')}
-                onChange={(event) => setConfirm(event.target.value)}
-              />
-            </div>
-          </>
-        )}
-        <fieldset className={styles.choices}>
-          <legend className={styles.legend}>{t('roles', 'Roles')}</legend>
-          {roleChoices.error && (
-            <InlineNotification
-              kind="error"
-              lowContrast
-              hideCloseButton
-              title={t('couldNotLoadRoles', 'Could not load the roles')}
-            />
-          )}
-          {roleChoices.roles.map((role) => (
-            <Checkbox
-              key={role.uuid}
-              id={`user-role-${role.uuid}`}
-              labelText={roleLabel(role.display)}
-              checked={form.roles.includes(role.uuid)}
-              onChange={(_, { checked }) => toggle('roles', role.uuid, checked)}
-            />
-          ))}
-          {otherRoles.map((role) => (
-            <Checkbox
-              key={role.uuid}
-              id={`user-role-${role.uuid}`}
-              labelText={roleLabel(role.display)}
-              checked
-              disabled
-            />
-          ))}
-          {shown('roles') && <p className={styles.invalid}>{shown('roles')}</p>}
-        </fieldset>
-        <fieldset className={styles.choices}>
-          <legend className={styles.legend}>{t('clinics', 'Clinics')}</legend>
-          {clinicChoices.map((clinic) => (
-            <Checkbox
-              key={clinic.uuid}
-              id={`user-clinic-${clinic.uuid}`}
-              labelText={clinic.display}
-              checked={form.clinics.includes(clinic.uuid)}
-              onChange={(_, { checked }) => toggle('clinics', clinic.uuid, checked)}
-            />
-          ))}
-          {otherClinics.length > 0 && (
-            <p className={styles.helper}>
-              {t('otherClinicsKept', 'Also at {{count}} clinic not shown here, which is kept', {
-                count: otherClinics.length,
-              })}
-            </p>
-          )}
-          {shown('clinics') && <p className={styles.invalid}>{shown('clinics')}</p>}
-        </fieldset>
-      </div>
-    </Modal>
-  );
-}
-
-function PasswordModal({ user, onClose }: { user: ActUser; onClose: () => void }) {
-  const { t } = useTranslation();
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const missing = submitted && !password;
-  const mismatch = submitted && password !== confirm;
-
-  const submit = async () => {
-    setSubmitted(true);
-    if (!password || password !== confirm) {
-      return;
-    }
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await resetPassword(user, password);
-      showSnackbar({ kind: 'success', title: t('passwordReset', 'Password reset') });
-      onClose();
-    } catch (e) {
-      setSaveError(restErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal
-      open
-      modalHeading={t('resetPasswordFor', 'Reset the password of {{name}}', { name: fullName(user) || user.username })}
-      primaryButtonText={saving ? t('saving', 'Saving...') : t('resetPassword', 'Reset password')}
-      secondaryButtonText={t('cancel', 'Cancel')}
-      primaryButtonDisabled={saving}
-      onRequestSubmit={submit}
-      onRequestClose={onClose}
-      size="sm"
-    >
-      <div className={styles.form}>
-        {saveError && (
-          <InlineNotification
-            kind="error"
-            lowContrast
-            hideCloseButton
-            title={t('couldNotResetPassword', 'Could not reset the password')}
-            subtitle={saveError}
-          />
-        )}
-        <PasswordInput
-          id="reset-password"
-          labelText={t('newPassword', 'New password')}
-          helperText={t('passwordRule', 'At least 8 characters, with an upper case letter and a number')}
-          value={password}
-          invalid={missing}
-          invalidText={t('enterPassword', 'Enter a password')}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-        <PasswordInput
-          id="reset-password-confirm"
-          labelText={t('confirmPassword', 'Confirm password')}
-          value={confirm}
-          invalid={!missing && mismatch}
-          invalidText={t('passwordsDoNotMatch', 'The passwords do not match')}
-          onChange={(event) => setConfirm(event.target.value)}
-        />
-      </div>
-    </Modal>
-  );
-}
 
 function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation();
@@ -344,6 +73,7 @@ function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () =
   };
   return (
     <Modal
+      closeButtonLabel={getCoreTranslation('close')}
       open
       danger
       modalHeading={t('disableUserNamed', 'Disable {{name}}?', { name: fullName(user) || user.username })}
@@ -357,6 +87,7 @@ function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () =
       {saveError && (
         <InlineNotification
           kind="error"
+          statusIconDescription={t('errorIcon', 'error icon')}
           lowContrast
           hideCloseButton
           title={t('couldNotDisableUser', 'Could not disable the user')}
@@ -387,13 +118,23 @@ export default function Users() {
   const clinicChoices = useClinicChoices();
   const [query, setQuery] = useState('');
   const [showDisabled, setShowDisabled] = useState(false);
-  const [editing, setEditing] = useState<ActUser | 'new' | null>(null);
-  const [resetting, setResetting] = useState<ActUser | null>(null);
   const [disabling, setDisabling] = useState<ActUser | null>(null);
+  const [logOf, setLogOf] = useState<ActUser | null>(null);
   const clinicName = useMemo(
     () => new Map(clinicChoices.map((clinic) => [clinic.uuid, clinic.display])),
     [clinicChoices],
   );
+  const clinicNames = (user: ActUser) =>
+    clinicsOf(user)
+      .map((uuid) => clinicName.get(uuid))
+      .filter(Boolean)
+      .join(', ');
+  // The Log action reads the user's entries from the sources the signed-in administrator may read.
+  const mayReadLogs =
+    !!me &&
+    [PRIVILEGE_VIEW_AUDIT_LOGS, PRIVILEGE_VIEW_READ_AUDIT_LOGS, PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS].some((one) =>
+      userHasAccess(one, me),
+    );
 
   const shown = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -416,6 +157,7 @@ export default function Users() {
     body = (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadUsers', 'Could not load the users')}
@@ -450,12 +192,7 @@ export default function Users() {
                   <TableCell>{fullName(user)}</TableCell>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.roles.map((role) => roleLabel(role.display)).join(', ')}</TableCell>
-                  <TableCell>
-                    {clinicsOf(user)
-                      .map((uuid) => clinicName.get(uuid))
-                      .filter(Boolean)
-                      .join(', ')}
-                  </TableCell>
+                  <TableCell>{clinicNames(user)}</TableCell>
                   <TableCell>
                     <Tag size="sm" type={user.retired ? 'gray' : 'green'}>
                       {user.retired ? t('disabled', 'Disabled') : t('enabled', 'Enabled')}
@@ -470,7 +207,7 @@ export default function Users() {
                           hasIconOnly
                           renderIcon={Edit}
                           iconDescription={t('editUser', 'Edit user')}
-                          onClick={() => setEditing(user)}
+                          onClick={() => launchWorkspace2('act-user-form-workspace', { userUuid: user.uuid })}
                         />
                         <UserHasAccess privilege={PRIVILEGE_EDIT_USER_PASSWORDS}>
                           <Button
@@ -479,7 +216,7 @@ export default function Users() {
                             hasIconOnly
                             renderIcon={Password}
                             iconDescription={t('resetPassword', 'Reset password')}
-                            onClick={() => setResetting(user)}
+                            onClick={() => launchWorkspace2('act-reset-password-workspace', { userUuid: user.uuid })}
                           />
                         </UserHasAccess>
                         <Button
@@ -491,6 +228,16 @@ export default function Users() {
                           onClick={() => setDisabling(user)}
                         />
                       </>
+                    )}
+                    {mayReadLogs && (
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Catalog}
+                        iconDescription={t('log', 'Log')}
+                        onClick={() => setLogOf(user)}
+                      />
                     )}
                   </TableCell>
                 </TableRow>
@@ -510,6 +257,7 @@ export default function Users() {
         {limit.status === 'ready' && (
           <InlineNotification
             kind="info"
+            statusIconDescription={t('infoIcon', 'info icon')}
             lowContrast
             hideCloseButton
             title={t('limitedToYourClinics', 'The users of your clinics')}
@@ -521,6 +269,7 @@ export default function Users() {
         )}
         <div className={styles.toolbar}>
           <Search
+            closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
             size="lg"
             labelText={t('searchUsers', 'Search users')}
             placeholder={t('searchUsersPlaceholder', 'Search by name, username or role')}
@@ -528,6 +277,8 @@ export default function Users() {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Toggle
+            labelA={t('off', 'Off')}
+            labelB={t('on', 'On')}
             id="users-show-disabled"
             size="sm"
             labelText={t('showDisabledUsers', 'Show disabled users')}
@@ -535,17 +286,36 @@ export default function Users() {
             onToggle={(toggled) => setShowDisabled(toggled)}
           />
           <UserHasAccess privilege={PRIVILEGE_ADD_USERS}>
-            <Button kind="primary" size="md" renderIcon={Add} onClick={() => setEditing('new')}>
+            <Button
+              kind="primary"
+              size="md"
+              renderIcon={Add}
+              onClick={() => launchWorkspace2('act-user-form-workspace', { userUuid: undefined })}
+            >
               {t('addUser', 'Add user')}
             </Button>
           </UserHasAccess>
         </div>
-        {body}
+        {logOf ? (
+          <div className={styles.withPanel}>
+            {body}
+            <UserLogPanel
+              username={logOf.username}
+              name={fullName(logOf) || logOf.username}
+              subtitle={[
+                logOf.username,
+                logOf.roles.map((role) => roleLabel(role.display)).join(', '),
+                clinicNames(logOf),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              onClose={() => setLogOf(null)}
+            />
+          </div>
+        ) : (
+          body
+        )}
       </div>
-      {editing && (
-        <UserModal user={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} onSaved={mutate} />
-      )}
-      {resetting && <PasswordModal user={resetting} onClose={() => setResetting(null)} />}
       {disabling && <DisableModal user={disabling} onClose={() => setDisabling(null)} onSaved={mutate} />}
     </div>
   );

@@ -93,11 +93,11 @@ describe('CareCascade', () => {
     render(<CareCascade />);
 
     expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual([
-      'Active20',
-      'Prescribed17',
-      'Initiated11',
-      'Covered today9',
-      'Adherent (80%+)0',
+      'active20',
+      'prescribed17',
+      'initiated11',
+      'coveredToday9',
+      'adherentEightyPercent0',
     ]);
   });
 
@@ -116,10 +116,10 @@ describe('CareCascade', () => {
     render(<CareCascade />);
 
     expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual([
-      'Active20',
-      'Prescribed17',
-      'Initiated11',
-      'Adherent (80%+)0',
+      'active20',
+      'prescribed17',
+      'initiated11',
+      'adherentEightyPercent0',
     ]);
   });
 

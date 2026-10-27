@@ -7,6 +7,7 @@ import {
   type AssignedExtension,
   Extension,
   ExtensionSlot,
+  getCoreTranslation,
   getDefaultsFromConfigSchema,
   navigate,
   openmrsFetch,
@@ -195,7 +196,7 @@ describe('Flag worklist', () => {
     render(<FlagWorklist {...tile} />);
 
     expect(vi.mocked(useRhdFlagList)).toHaveBeenCalledWith('RHD lost to follow-up');
-    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('2Lost to follow-up');
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('2lostToFollowUp');
     expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'red');
     expect(screen.getByRole('link')).toHaveAttribute('href', '/worklists?list=this');
   });
@@ -205,10 +206,21 @@ describe('Flag worklist', () => {
     const onSelect = vi.fn();
     render(<FlagWorklist view="choice" selected onSelect={onSelect} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /Lost to follow-up/ }));
+    await userEvent.click(screen.getByRole('button', { name: /lostToFollowUp/ }));
 
-    expect(screen.getByRole('button', { name: /Lost to follow-up/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /lostToFollowUp/ })).toHaveAttribute('aria-pressed', 'true');
     expect(onSelect).toHaveBeenCalled();
+  });
+
+  it('shows its title on its tile and above its list', () => {
+    reports({ registry: [registryRow(1, 'RHD lost to follow-up')] });
+
+    const { unmount } = render(<FlagWorklist {...tile} />);
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('1lostToFollowUp');
+    unmount();
+    render(<FlagWorklist {...list} />);
+
+    expect(screen.getByRole('heading', { name: 'lostToFollowUp' })).toBeInTheDocument();
   });
 
   it('shows nothing where ACT Core keeps no list for its flag', () => {
@@ -231,9 +243,12 @@ describe('Flag worklist', () => {
 
     render(<FlagWorklist {...list} />);
 
-    expect(screen.getByRole('heading', { name: 'Lost to follow-up' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'lostToFollowUp' })).toBeInTheDocument();
     expect(tableRows()).toEqual([['Patient 1rhd00001', '11 M', 'RHD B', 'Q28 day BPG', 'On the list for 12 days']]);
+    // The download is recorded through ACT Core before the file is made.
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
     expect(vi.mocked(downloadCsv)).toHaveBeenCalledWith(
       expect.stringMatching(/^rhd-lost-to-follow-up-/),
       ['Patient', 'ACT ID', 'Age, sex', 'Diagnosis', 'Prophylaxis', 'Why on this list'],
@@ -256,6 +271,112 @@ describe('Flag worklist', () => {
     render(<FlagWorklist {...list} />);
 
     expect(screen.getByTestId('table-empty-state')).toHaveTextContent('There are no patients on this list to display');
+  });
+});
+
+describe('A worklist table', () => {
+  const flag = 'RHD lost to follow-up';
+  const since = (days: number) => `${flag}=${dayjs().subtract(days, 'day').format('YYYY-MM-DD')}`;
+  const onList = (i: number, overrides: Record<string, unknown> = {}, days = 5) => ({
+    ...registryRow(i, flag, since(days)),
+    ...overrides,
+  });
+  const patients = () => tableRows().map((row) => row[0].replace(/rhd\d+$/, ''));
+  const sortBy = (header: string) => userEvent.click(screen.getByRole('button', { name: new RegExp(`^${header}`) }));
+
+  beforeEach(async () => {
+    await signInWith(
+      [worklistsPrivilege, 'Task: act.lists.export'],
+      flagWorklists['act-worklist-lost-to-follow-up'] as unknown as Partial<Config>,
+    );
+    vi.mocked(useRhdFlagList).mockReturnValue({ list: { cohortUuid: 'cohort' }, isLoading: false, error: undefined });
+  });
+
+  it('sorts by a column, then reverses, then returns to the list order', async () => {
+    reports({ registry: [onList(2), onList(3), onList(1)] });
+    render(<FlagWorklist {...list} />);
+
+    await sortBy('Patient');
+    expect(patients()).toEqual(['Patient 1', 'Patient 2', 'Patient 3']);
+    await sortBy('Patient');
+    expect(patients()).toEqual(['Patient 3', 'Patient 2', 'Patient 1']);
+    await sortBy('Patient');
+    expect(patients()).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
+  });
+
+  it.each([
+    ['Age, sex', ['Patient 2', 'Patient 3', 'Patient 1']],
+    ['Why on this list', ['Patient 3', 'Patient 1', 'Patient 2']],
+  ])('sorts by %s, a number in the text by its value', async (header, expected) => {
+    reports({
+      registry: [onList(1, { age_years: 100 }, 12), onList(2, { age_years: 9 }, 100), onList(3, { age_years: 50 }, 9)],
+    });
+    render(<FlagWorklist {...list} />);
+
+    await sortBy(header);
+
+    expect(patients()).toEqual(expected);
+  });
+
+  it('sorts Age, sex by the age, a patient without one last', async () => {
+    reports({ registry: [onList(1, { age_years: '' }), onList(2, { age_years: 9 }), onList(3, { age_years: 50 })] });
+    render(<FlagWorklist {...list} />);
+
+    await sortBy('Age, sex');
+    expect(patients()).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
+    await sortBy('Age, sex');
+    expect(patients()).toEqual(['Patient 3', 'Patient 2', 'Patient 1']);
+  });
+
+  it('sorts all its patients, not only the page shown, and returns to the first page', async () => {
+    reports({ registry: Array.from({ length: 12 }, (_, i) => onList(i + 1)) });
+    render(<FlagWorklist {...list} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(patients()).toEqual(['Patient 11', 'Patient 12']);
+
+    await sortBy('Patient');
+    await sortBy('Patient');
+
+    expect(patients()[0]).toBe('Patient 12');
+  });
+
+  it("shows its pager's and search box's own words", () => {
+    reports({ registry: Array.from({ length: 12 }, (_, i) => onList(i + 1)) });
+
+    render(<FlagWorklist {...list} />);
+
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeInTheDocument();
+    expect(screen.getByText('Items per page:')).toBeInTheDocument();
+    expect(screen.getByText('1–10 of 12 items')).toBeInTheDocument();
+    expect(screen.getByText('of 2 pages')).toBeInTheDocument();
+    expect(getCoreTranslation).toHaveBeenCalledWith('paginationOfPages', 'of {{count}} pages', { count: 2 });
+    expect(screen.getByRole('button', { name: 'Clear search input' })).toBeInTheDocument();
+  });
+
+  it('shows the patients matching what is typed above it, and downloads those in the order shown', async () => {
+    reports({ registry: [onList(1), onList(2), onList(21), onList(3)] });
+    render(<FlagWorklist {...list} />);
+    await sortBy('Patient');
+    await sortBy('Patient');
+
+    await userEvent.type(screen.getByRole('searchbox'), 'patient 2');
+
+    expect(patients()).toEqual(['Patient 21', 'Patient 2']);
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
+    expect(vi.mocked(downloadCsv).mock.lastCall[2].map((row) => row[0])).toEqual(['Patient 21', 'Patient 2']);
+  });
+
+  it('says so when nothing matches what is typed, rather than saying the list is empty', async () => {
+    reports({ registry: [onList(1)] });
+    render(<FlagWorklist {...list} />);
+
+    await userEvent.type(screen.getByRole('searchbox'), 'nobody');
+
+    expect(screen.getByTestId('filter-empty-state')).toBeInTheDocument();
+    expect(screen.queryByText('There are no patients on this list to display')).not.toBeInTheDocument();
   });
 });
 
@@ -353,6 +474,12 @@ describe('Confirmatory echo worklist', () => {
     expect(screen.getByTestId('worklist-tile')).toHaveAttribute('data-tone', 'orange');
   });
 
+  it('says on its tile what the list holds', () => {
+    render(<ConfirmatoryEchoWorklist {...tile} />);
+
+    expect(screen.getByTestId('worklist-tile')).toHaveTextContent('Screened positive, no diagnosis details yet');
+  });
+
   it('chooses its list on the Worklists page for every user, rather than leaving it', async () => {
     await signInWith([worklistsPrivilege, 'App: act.screenPositive']);
     render(<ConfirmatoryEchoWorklist view="choice" onSelect={vi.fn()} />);
@@ -374,6 +501,21 @@ describe('Confirmatory echo worklist', () => {
 
     expect(tableRows()[0][0]).toBe('Patient 4rhd00004');
     expect(tableRows()[0][4]).toMatch(/^Screened positive · \S/);
+  });
+
+  it('sorts Why on this list by the date, its year and month before its day', async () => {
+    reports({
+      screenPositive: [
+        { ...registryRow(1), diagnosis_details: '', screen_date: '2026-11-02' },
+        { ...registryRow(2), diagnosis_details: '', screen_date: '2025-10-05' },
+        { ...registryRow(3), diagnosis_details: '', screen_date: '2026-10-05' },
+      ],
+    });
+    render(<ConfirmatoryEchoWorklist {...list} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /^Why on this list/ }));
+
+    expect(tableRows().map((row) => row[0].replace(/rhd\d+$/, ''))).toEqual(['Patient 2', 'Patient 3', 'Patient 1']);
   });
 });
 
@@ -434,7 +576,7 @@ describe('Worklists at the clinic you are signed in at', () => {
     reports({ registry });
 
     const { unmount } = render(<FlagWorklist {...tile} />);
-    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent(`${patients.length}Lost`));
+    await waitFor(() => expect(screen.getByTestId('worklist-tile')).toHaveTextContent(`${patients.length}lost`));
     unmount();
     render(<FlagWorklist {...list} />);
 

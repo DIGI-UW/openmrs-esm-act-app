@@ -103,6 +103,18 @@ export function useStudyEnrollments(patientUuid: string) {
   };
 }
 
+/** The studies a patient is active in: not completed, and not in an Inactive status. */
+export function activeStudyUuids(enrollments: Array<StudyEnrollment>) {
+  return new Set(
+    enrollments
+      .filter(
+        (enrollment) =>
+          !enrollment.dateCompleted && !enrollment.study.states.find((s) => s.uuid === enrollment.stateUuid)?.terminal,
+      )
+      .map((enrollment) => enrollment.study.uuid),
+  );
+}
+
 export interface EnrollmentInput {
   studyUuid: string;
   studyId: string;

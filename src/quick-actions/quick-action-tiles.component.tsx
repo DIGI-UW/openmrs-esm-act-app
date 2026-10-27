@@ -121,7 +121,7 @@ export function EnterProphylaxisAction() {
           {quickActions.prophylaxisForms.map((form) => (
             <li key={form.url}>
               <ConfigurableLink to={form.url} className={styles.choiceLink}>
-                {form.label}
+                {t(form.label)}
               </ConfigurableLink>
             </li>
           ))}

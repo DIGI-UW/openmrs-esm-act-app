@@ -1,3 +1,4 @@
+@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
@@ -20,17 +21,117 @@
   gap: layout.$spacing-05;
 }
 
-// A column that can shrink to nothing keeps the page at the screen's width on a tablet.
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: layout.$spacing-05;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.tileLabel,
+.tileNote {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.tileValue {
+  @include type.type-style('heading-05');
+}
+
+// A column that can shrink to nothing keeps the page at the screen's width on a phone; two on a wide screen.
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: layout.$spacing-05;
+
+  @media (min-width: 66rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.description {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin: -#{layout.$spacing-03} 0 layout.$spacing-05;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: layout.$spacing-05;
+}
+
+.chart {
+  min-width: 0;
+}
+
+.donut {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  align-items: center;
+  gap: layout.$spacing-05;
+}
+
+.legend,
+.totals,
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  margin-block: layout.$spacing-04;
+}
+
+.legendRow,
+.step {
+  @include type.type-style('body-compact-01');
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.totals .legendRow,
+.step {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.swatch {
+  width: layout.$spacing-04;
+  height: layout.$spacing-04;
+}
+
+.share {
+  @include type.type-style('label-01');
+  color: $text-02;
+  min-width: 2.5rem;
+  text-align: right;
 }
 
 .columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: layout.$spacing-07;
+}
+
+.registrationControls {
+  display: grid;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+}
+
+.registrationTiles {
+  display: grid;
+  gap: layout.$spacing-05;
 }
 
 .subheading {
@@ -44,20 +145,12 @@
   gap: layout.$spacing-03;
 }
 
-.bar,
-.measure {
+.bar {
   @include type.type-style('body-compact-01');
   display: grid;
+  grid-template-columns: minmax(6rem, 10rem) minmax(0, 1fr) 3rem;
   align-items: center;
   gap: layout.$spacing-04;
-}
-
-.bar {
-  grid-template-columns: minmax(6rem, 10rem) 1fr 3rem;
-}
-
-.measure {
-  grid-template-columns: minmax(10rem, 22rem) 1fr 6rem;
 }
 
 .track {
@@ -68,12 +161,18 @@
 .fill {
   display: block;
   height: 100%;
-  @include brand-01(background-color);
+  background-color: colors.$teal-50;
 }
 
 .count {
   @include type.type-style('heading-compact-01');
   text-align: right;
+}
+
+// Carbon draws a link inline-flex, which breaks a sentence at each figure it holds.
+.count :global(.cds--link),
+.performed :global(.cds--link) {
+  display: inline;
 }
 
 .tableContainer {
@@ -83,4 +182,34 @@
 .empty {
   @include type.type-style('body-compact-01');
   color: $text-02;
+}
+
+.performed {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-block: layout.$spacing-03;
+}
+
+.figure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+}
+
+.figureBanner {
+  @include type.type-style('body-compact-01');
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: $ui-01;
+  border-left: layout.$spacing-02 solid $interactive-01;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
 }

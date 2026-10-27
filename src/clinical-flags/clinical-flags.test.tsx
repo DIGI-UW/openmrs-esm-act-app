@@ -8,7 +8,7 @@ import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
 import { diagnosisConcepts } from '../consultations/patient-details.resource';
 import ClinicalFlags from './clinical-flags.component';
-import { needsConfirmatoryEcho, procedureStatus } from './clinical-flags';
+import { doneProcedures, needsConfirmatoryEcho, procedureStatus } from './clinical-flags';
 
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
 const c = config.consultations.concepts;
@@ -31,6 +31,15 @@ const recommending = (date: string, procedure: unknown, completed = false): Char
       obs(c.recommendation, null, [obs(c.recommendation, procedure), ...(completed ? [obs(c.completed, YES)] : [])]),
     ],
   }) as ChartEncounter;
+const p = config.procedures.concepts;
+/** A Procedures and Outcomes encounter recording a surgery, dated by its Date of Procedure. */
+const procedureDone = (date: string, procedure: unknown): ChartEncounter =>
+  ({
+    uuid: `procedure-${date}`,
+    encounterDatetime: '2026-10-22T09:00:00.000+0300',
+    obs: [obs(p.date, `${date}T00:00:00.000+0300`), obs(p.surgeryType, null, [obs(p.surgeryType, procedure)])],
+  }) as ChartEncounter;
+
 const plain = (date: string): ChartEncounter => ({
   uuid: date,
   encounterDatetime: `${date}T09:00:00.000+0300`,
@@ -69,6 +78,20 @@ describe('clinical banner flags', () => {
       procedureStatus([recommending('2026-09-01', MVR), plain('2026-03-01'), recommending('2025-06-01', MVR)], c, now),
     ).toBe('recent');
     expect(procedureStatus([recommending('2026-09-01', MVR), recommending('2025-06-01', AVR)], c, now)).toBe('recent');
+  });
+
+  it('counts a recommendation done once its procedure is recorded on Procedures and Outcomes on or after the consultation', () => {
+    const done = doneProcedures([procedureDone('2026-10-20', MVR)], p);
+    expect(done).toEqual([{ procedure: 'mvr', day: '2026-10-20' }]);
+    // Done after the recommendation, and on its day: no open recommendation.
+    expect(procedureStatus([recommending('2026-09-01', MVR)], c, now, done)).toBe('none');
+    expect(procedureStatus([recommending('2026-10-20', MVR)], c, now, done)).toBe('none');
+    // Recommended again after the procedure: open again, and recent.
+    expect(procedureStatus([recommending('2026-10-21', MVR), recommending('2026-09-01', MVR)], c, now, done)).toBe(
+      'recent',
+    );
+    // Another procedure stays open.
+    expect(procedureStatus([recommending('2026-09-01', AVR)], c, now, done)).toBe('recent');
   });
 
   it('needs a confirmatory echo while the latest screen is positive and no diagnosis is recorded', () => {

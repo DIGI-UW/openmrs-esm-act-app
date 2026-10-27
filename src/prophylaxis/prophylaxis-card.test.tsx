@@ -30,6 +30,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const config = getDefaultsFromConfigSchema(configSchema) as Config;
 const openForm = vi.fn();
 
 // Winnie Auma on the seeded distro, from actcore's prophylaxis endpoint.
@@ -43,9 +44,26 @@ const winnie = {
   onTime: { given: 3, total: 4, months: 6 },
 };
 
-function respondWith(summary: object | Error) {
-  mockOpenmrsFetch.mockImplementation((() =>
-    summary instanceof Error ? Promise.reject(summary) : Promise.resolve({ data: summary })) as never);
+/**
+ * The server: ACT Core's summary for every request but the patient's encounters, which hold `encounters`, and the
+ * update's encounter type, which its edit privilege guards.
+ */
+function respondWith(
+  summary: object | Error,
+  { encounters = [] as Array<object>, editPrivilege = 'Add Encounters' } = {},
+) {
+  mockOpenmrsFetch.mockImplementation(((url: string) => {
+    if (summary instanceof Error) {
+      return Promise.reject(summary);
+    }
+    if (String(url).includes('/encountertype/')) {
+      return Promise.resolve({ data: { editPrivilege: { display: editPrivilege } } });
+    }
+    if (String(url).includes('encounterType:(uuid),obs:(')) {
+      return Promise.resolve({ data: { results: encounters, totalCount: encounters.length } });
+    }
+    return Promise.resolve({ data: summary });
+  }) as never);
 }
 
 let mutateCache: ScopedMutator;
@@ -106,6 +124,27 @@ describe('ProphylaxisCard', () => {
     expect(field('next-due')).toHaveTextContent(/^10-Sept?-2026$/);
     expect(field('next-due')).toHaveAttribute('data-overdue', 'true');
     expect(field('on-time')).toHaveTextContent('3 of 4');
+  });
+
+  it("shows ACT Core's adherence as a percentage, with the on-time count beneath it", async () => {
+    respondWith({ ...winnie, adherence: 22 / 28 });
+
+    renderCard();
+
+    expect(await screen.findByText('Adherence (12 months)')).toBeInTheDocument();
+    expect(screen.queryByText('On-time (6 months)')).not.toBeInTheDocument();
+    expect(field('on-time')).toHaveTextContent(/^79%/);
+    expect(screen.getByTestId('prophylaxis-on-time-detail')).toHaveTextContent('3 of 4 on time, 6 months');
+  });
+
+  it('shows the adherence alone when no injection fell in the on-time window', async () => {
+    respondWith({ ...winnie, adherence: 1, onTime: null });
+
+    renderCard();
+
+    await screen.findByText('Adherence (12 months)');
+    expect(field('on-time')).toHaveTextContent(/^100%$/);
+    expect(screen.queryByTestId('prophylaxis-on-time-detail')).not.toBeInTheDocument();
   });
 
   it.each(['ok', 'dueSoon', 'dueToday'])('does not mark a next due that is %s', async (status) => {
@@ -300,8 +339,104 @@ describe('ProphylaxisCard', () => {
 
     renderCard();
 
-    await waitFor(() => expect(screen.getAllByRole('button')).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^Record/ })).toHaveLength(1));
     expect(screen.getByRole('button', { name: new RegExp(`^${action}`) })).toBeInTheDocument();
+  });
+
+  it.each(['BPG', 'Oral'])(
+    'offers a clinician both forms for a %s prescription, to change the regimen',
+    async (type) => {
+      await signInWith(['Add Encounters', 'Task: act.enterClinicalForms']);
+      respondWith({ ...winnie, type });
+
+      renderCard();
+
+      expect(await screen.findByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
+    },
+  );
+
+  describe('the current prescription and Update prophylaxis', () => {
+    const concepts = config.prophylaxisUpdate.concepts;
+    const prescribed = {
+      uuid: 'e1',
+      encounterDatetime: '2026-06-10T09:00:00.000+0000',
+      encounterType: { uuid: 'type' },
+      obs: [
+        {
+          uuid: 'g1',
+          concept: { uuid: concepts.prescription },
+          value: null,
+          groupMembers: [
+            { uuid: 'm1', concept: { uuid: concepts.prescription }, value: { uuid: 'q28', display: 'Q28 day BPG' } },
+            { uuid: 'm2', concept: { uuid: concepts.dateStarted }, value: '2026-06-10T00:00:00.000+0000' },
+          ],
+        },
+        {
+          uuid: 'd1',
+          concept: { uuid: concepts.duration },
+          value: { uuid: 'two', display: '2 years and reassess' },
+        },
+      ],
+    };
+
+    it('shows when the prescription in force started and how long it lasts', async () => {
+      respondWith(winnie, { encounters: [prescribed] });
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent(/10.*Jun.*2026/));
+      expect(field('duration')).toHaveTextContent('2 years and reassess');
+    });
+
+    it('shows the start of the last-started of two prescriptions in force', async () => {
+      const group = (uuid: string, started: string) => ({
+        uuid,
+        concept: { uuid: concepts.prescription },
+        value: null,
+        groupMembers: [
+          {
+            uuid: `${uuid}-r`,
+            concept: { uuid: concepts.prescription },
+            value: { uuid: 'q28', display: 'Q28 day BPG' },
+          },
+          { uuid: `${uuid}-s`, concept: { uuid: concepts.dateStarted }, value: `${started}T00:00:00.000+0000` },
+        ],
+      });
+      respondWith(winnie, {
+        encounters: [{ ...prescribed, obs: [group('late', '2026-06-10'), group('early', '2025-01-01')] }],
+      });
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent(/10.*Jun.*2026/));
+    });
+
+    it('says -- for a patient with no prescription on record', async () => {
+      respondWith(winnie);
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent('--'));
+      expect(field('duration')).toHaveTextContent('--');
+    });
+
+    it('offers Update prophylaxis to a user who may record the update encounter', async () => {
+      respondWith(winnie, { encounters: [prescribed] });
+
+      renderCard();
+
+      expect(await screen.findByRole('button', { name: /Update prophylaxis/ })).toBeInTheDocument();
+    });
+
+    it('offers it to nobody who lacks the encounter type edit privilege', async () => {
+      respondWith(winnie, { encounters: [prescribed], editPrivilege: 'Task: act.enterClinicalForms' });
+
+      renderCard();
+
+      await waitFor(() => expect(field('started')).toHaveTextContent(/Jun/));
+      expect(screen.queryByRole('button', { name: /Update prophylaxis/ })).not.toBeInTheDocument();
+    });
   });
 
   it('says Needs prescription instead of offering a form to a patient with no prescription in force', async () => {

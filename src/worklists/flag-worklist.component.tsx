@@ -8,7 +8,7 @@ import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { useRhdFlagList } from '../rhd-flags/rhd-flag-lists.resource';
 import { type FlagWorklistConfig } from './flag-worklists';
-import { Worklist, type WorklistState, WorklistTable } from './worklist.component';
+import { Worklist, type WorklistState, WorklistTable, whyKey } from './worklist.component';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -47,7 +47,9 @@ function dueBy(t: TFunction, value: unknown) {
  */
 export default function FlagWorklist(state: WorklistState) {
   const { t } = useTranslation();
-  const { flag, title, tone, dueDateColumn } = useConfig<FlagWorklistConfig>();
+  const config = useConfig<FlagWorklistConfig>();
+  const { flag, tone, dueDateColumn } = config;
+  const title = t(config.title);
   const { list, isLoading, error } = useRhdFlagList(flag);
   const registry = useSessionClinicReport(useRegistryReport(), bothClinics);
   const entries = useMemo(
@@ -57,6 +59,7 @@ export default function FlagWorklist(state: WorklistState) {
         .map((row) => ({
           row,
           why: dueDateColumn ? dueBy(t, row[dueDateColumn]) : onListSince(t, row, flag),
+          whyKey: dueDateColumn ? whyKey('', parseReportDate(row[dueDateColumn])) : undefined,
         })),
     [registry.rows, flag, dueDateColumn, t],
   );

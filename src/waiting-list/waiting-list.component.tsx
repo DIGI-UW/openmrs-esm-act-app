@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -31,6 +31,7 @@ import { useSessionClinicKind } from '../session-clinic';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
+import { type ColumnSort, type SortValue, sortHeaderProps, sortItems } from '../table-filters/column-sort';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { labelUrgencies, rankWaitingRows, type WaitingRow } from './urgency';
@@ -45,6 +46,23 @@ import styles from './waiting-list.scss';
 
 const waitingListFormEntryWorkspace = 'act-waiting-list-form-entry-workspace';
 
+const reportText = (column: string) => (waiting: WaitingRow) => String(waiting.row[column] ?? '') || null;
+
+// A column's sort value, urgency by its band, the most urgent first.
+const sortValues: Record<string, (waiting: WaitingRow) => SortValue> = {
+  actId: reportText('rhd_id'),
+  sex: reportText('sex'),
+  age: ({ row }) => (row.age_years == null || row.age_years === '' ? null : Number(row.age_years)),
+  dateOfBirth: ({ row }) => String(row.date_of_birth ?? '').slice(0, 10) || null,
+  type: reportText('procedure_type'),
+  procedure: reportText('procedure_name'),
+  urgency: (waiting) => waiting.band,
+  daysPending: (waiting) => waiting.daysPending,
+  district: reportText('district'),
+  contraindications: reportText('contraindications'),
+  suitableForRepair: reportText('suitable_for_repair'),
+};
+
 export function WaitingListTable() {
   const { t } = useTranslation();
   const { waitingList, urgencyBands } = useConfig<Config>();
@@ -52,13 +70,20 @@ export function WaitingListTable() {
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
+  // A band's name is translated where shown; the filter, kept in the URL, matches the configured name.
+  const urgencyText = (urgency: string) => (urgencyBands.some((band) => band.label === urgency) ? t(urgency) : urgency);
+  // Options follow the bands, most urgent first, as the rows do; a band's name may be a key that sorts otherwise.
+  const bandOf = (urgency: string) => urgencyBands.findIndex((band) => band.label === urgency) + 1 || 99;
   const [filters, setFilters, filtersPending] = useWaitingListFilters();
   const clinicKind = useSessionClinicKind();
   const ranked = useMemo(
     () => rankWaitingRows(filterWaitingList(rows, filters), urgencyBands),
     [rows, filters, urgencyBands],
   );
-  const { results, paginationProps } = usePagedRows(ranked, filters);
+  const [sort, setSort] = useState<ColumnSort | null>(null);
+  const sorted = useMemo(() => sortItems(ranked, sort, (waiting, key) => sortValues[key](waiting)), [ranked, sort]);
+  const pageKey = useMemo(() => ({ filters, sort }), [filters, sort]);
+  const { results, paginationProps } = usePagedRows(sorted, pageKey);
   // Opening a row again passes the same objects, which the open workspace takes as the same form rather than
   // prompting to close it.
   const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
@@ -90,40 +115,57 @@ export function WaitingListTable() {
       id={`waiting-list-${key}`}
       label={label}
       value={filters[key]}
-      options={distinctValues(rows, filterColumns[key])}
+      options={
+        key === 'urgency'
+          ? distinctValues(rows, filterColumns[key]).sort((a, b) => bandOf(a) - bandOf(b))
+          : distinctValues(rows, filterColumns[key])
+      }
       onChange={(value) => setFilters({ [key]: value })}
+      optionLabel={key === 'urgency' ? urgencyText : undefined}
     />
   );
   const text = (column: string) => (waiting: WaitingRow) => String(waiting.row[column] ?? '');
-  const columns: Array<{ header: string; text: (waiting: WaitingRow) => string; daysPending?: boolean }> = [
-    { header: t('actId', 'ACT ID'), text: text('rhd_id') },
-    { header: t('sex', 'Sex'), text: text('sex') },
-    { header: t('age', 'Age'), text: text('age_years') },
-    {
-      header: t('dateOfBirth', 'Date of birth'),
-      text: (waiting) => {
-        const born = parseReportDate(waiting.row.date_of_birth);
-        return born ? formatDate(born, { time: false, noToday: true }) : '';
+  const columns: Array<{ key: string; header: string; text: (waiting: WaitingRow) => string; daysPending?: boolean }> =
+    [
+      { key: 'actId', header: t('actId', 'ACT ID'), text: text('rhd_id') },
+      { key: 'sex', header: t('sex', 'Sex'), text: text('sex') },
+      { key: 'age', header: t('age', 'Age'), text: text('age_years') },
+      {
+        key: 'dateOfBirth',
+        header: t('dateOfBirth', 'Date of birth'),
+        text: (waiting) => {
+          const born = parseReportDate(waiting.row.date_of_birth);
+          return born ? formatDate(born, { time: false, noToday: true }) : '';
+        },
       },
-    },
-    { header: t('procedureType', 'Type'), text: text('procedure_type') },
-    { header: t('procedure', 'Procedure'), text: text('procedure_name') },
-    { header: t('urgency', 'Urgency'), text: text('urgency') },
-    {
-      header: t('daysPending', 'Days pending'),
-      text: (waiting) => String(waiting.daysPending ?? ''),
-      daysPending: true,
-    },
-    { header: t('district', 'District'), text: text('district') },
-    { header: t('contraindications', 'Contraindications'), text: text('contraindications') },
-    { header: t('suitableForRepair', 'Suitable for repair'), text: text('suitable_for_repair') },
-  ];
+      { key: 'type', header: t('procedureType', 'Type'), text: text('procedure_type') },
+      { key: 'procedure', header: t('procedure', 'Procedure'), text: text('procedure_name') },
+      { key: 'urgency', header: t('urgency', 'Urgency'), text: (waiting) => urgencyText(text('urgency')(waiting)) },
+      {
+        key: 'daysPending',
+        header: t('daysPending', 'Days pending'),
+        text: (waiting) => String(waiting.daysPending ?? ''),
+        daysPending: true,
+      },
+      { key: 'district', header: t('district', 'District'), text: text('district') },
+      {
+        key: 'contraindications',
+        header: t('contraindications', 'Contraindications'),
+        text: text('contraindications'),
+      },
+      {
+        key: 'suitableForRepair',
+        header: t('suitableForRepair', 'Suitable for repair'),
+        text: text('suitable_for_repair'),
+      },
+    ];
 
   // Where the session location's kind cannot be read, opening on every clinic would show patients not its own.
   if (error || clinicKind === 'error') {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadWaitingList', 'Could not load the procedural waiting list')}
@@ -161,9 +203,12 @@ export function WaitingListTable() {
       <div className={styles.actions}>
         <DownloadCsvButton
           name="waiting-list"
+          list={`worklist:${t('waitingList', 'Procedural waiting list')}`}
+          identifiers
+          filters={filters}
           headers={columns.map((column) => column.header)}
-          rows={() => ranked.map((waiting) => columns.map((column) => column.text(waiting)))}
-          disabled={!ranked.length}
+          rows={() => sorted.map((waiting) => columns.map((column) => column.text(waiting)))}
+          disabled={!sorted.length}
         />
       </div>
       {ranked.length ? (
@@ -172,7 +217,9 @@ export function WaitingListTable() {
             <TableHead>
               <TableRow>
                 {columns.map((column) => (
-                  <TableHeader key={column.header}>{column.header}</TableHeader>
+                  <TableHeader key={column.key} {...sortHeaderProps(sort, column.key, setSort)}>
+                    {column.header}
+                  </TableHeader>
                 ))}
                 <TableHeader aria-label={t('actions', 'Actions')} />
               </TableRow>

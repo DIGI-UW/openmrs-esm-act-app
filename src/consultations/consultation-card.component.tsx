@@ -1,10 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText } from '@carbon/react';
-import { AddIcon, CardHeader, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { AddIcon, CardHeader, EditIcon, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { useMayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
 import { useNextCardiologyVisit } from '../patient-status/cardiology.resource';
 import { daysUntil } from '../patient-status/due-tone';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { useStartConsultation } from './consultations.component';
 import { useConsultations } from './consultations.resource';
 import { useLatestDiagnosis, usePersonDetails } from './patient-details.resource';
@@ -16,12 +18,15 @@ import styles from '../styles/summary-card.scss';
  */
 export default function ConsultationCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { contactCard } = useConfig<Config>();
+  const { contactCard, patientInformationForm } = useConfig<Config>();
   const { consultations, isLoading } = useConsultations(patientUuid);
   const { nextDue } = useNextCardiologyVisit(patientUuid);
   const { diagnosis, isLoading: diagnosisLoading } = useLatestDiagnosis(patientUuid);
   const { attributes } = usePersonDetails(patientUuid);
   const start = useStartConsultation(patientUuid);
+  // Patient Information holds one record per patient, so this edits the latest rather than adding one (AR-150).
+  const mayUpdateDiagnosis = useMayEnterForm(patientInformationForm);
+  const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
   const [last] = consultations;
 
   const fields = [
@@ -64,7 +69,10 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
       ) : (
         <dl className={styles.fields}>
           {fields.map((field) => (
-            <div key={field.id} className={styles.field}>
+            <div
+              key={field.id}
+              className={field.id === 'diagnosis' ? `${styles.field} ${styles.wideField}` : styles.field}
+            >
               <dt className={styles.label}>{field.label}</dt>
               <dd
                 className={styles.value}
@@ -72,6 +80,18 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
                 data-overdue={String(Boolean(field.overdue))}
               >
                 {field.value}
+                {field.id === 'diagnosis' && mayUpdateDiagnosis && (
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    className={styles.fieldAction}
+                    renderIcon={(props) => <EditIcon size={16} {...props} />}
+                    disabled={isOpening}
+                    onClick={() => openForm(patientInformationForm)}
+                  >
+                    {diagnosis ? t('updateDiagnosis', 'Update diagnosis') : t('recordDiagnosis', 'Record diagnosis')}
+                  </Button>
+                )}
               </dd>
             </div>
           ))}

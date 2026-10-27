@@ -20,12 +20,49 @@ const isCompleted = (group: GroupedObs, completed: string) =>
     );
   });
 
-/** The procedures a consultation recommends and has not completed, by answer uuid. */
-function openProcedures(encounter: ChartEncounter, concepts: Config['consultations']['concepts']) {
+/** The calendar day of an OpenMRS timestamp as the server wrote it, as the reports' DATE() reads it. */
+const serverDay = (timestamp: string) => timestamp.slice(0, 10);
+
+/** A procedure recorded on Procedures and Outcomes: what was done, by answer uuid, and on which day. */
+export interface DoneProcedure {
+  procedure: string;
+  day: string;
+}
+
+/**
+ * The procedures each Procedures and Outcomes encounter records, dated by its Date of Procedure, else the encounter's
+ * date. Surgery and Catheterization Type are each a group whose member, of the same concept, holds the answer.
+ */
+export function doneProcedures(
+  encounters: Array<ChartEncounter>,
+  concepts: Config['procedures']['concepts'],
+): Array<DoneProcedure> {
+  const types = [concepts.surgeryType, concepts.catheterizationType];
+  return encounters.flatMap((encounter) => {
+    const dated = answersIn(encounter.obs, concepts.date)[0]?.value;
+    const day = serverDay(typeof dated === 'string' ? dated : encounter.encounterDatetime);
+    return (encounter.obs ?? [])
+      .flatMap((one) => [one, ...(one.groupMembers ?? [])])
+      .filter((one) => types.includes(one.concept.uuid) && one.value != null && typeof one.value === 'object')
+      .map((one) => ({ procedure: uuidOf(one.value), day }));
+  });
+}
+
+/**
+ * The procedures a consultation recommends and has not completed, by answer uuid: completed when answered Completed,
+ * or when the procedure is recorded on Procedures and Outcomes on or after the consultation's day (AR-162).
+ */
+function openProcedures(
+  encounter: ChartEncounter,
+  concepts: Config['consultations']['concepts'],
+  done: Array<DoneProcedure>,
+) {
+  const day = serverDay(encounter.encounterDatetime);
   return answersIn(encounter.obs, concepts.recommendation)
     .filter((group) => !isCompleted(group, concepts.completed))
     .map((group) => uuidOf(answersIn(group.groupMembers, concepts.recommendation)[0]?.value))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((procedure) => !done.some((one) => one.procedure === procedure && one.day >= day));
 }
 
 export type ProcedureStatus = 'recent' | 'old' | 'none';
@@ -40,17 +77,18 @@ export function procedureStatus(
   consultations: Array<ChartEncounter>,
   concepts: Config['consultations']['concepts'],
   now = new Date(),
+  done: Array<DoneProcedure> = [],
 ): ProcedureStatus | null {
   if (!consultations.length) {
     return null;
   }
-  const open = new Set(openProcedures(consultations[0], concepts));
+  const open = new Set(openProcedures(consultations[0], concepts, done));
   if (!open.size) {
     return 'none';
   }
   let first = consultations[0];
   for (const encounter of consultations.slice(1)) {
-    if (!openProcedures(encounter, concepts).some((procedure) => open.has(procedure))) {
+    if (!openProcedures(encounter, concepts, done).some((procedure) => open.has(procedure))) {
       break;
     }
     first = encounter;

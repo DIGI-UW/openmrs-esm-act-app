@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+import en from '../translations/en.json';
+import { flagWorklists } from './worklists/flag-worklists';
 
 describe('configSchema', () => {
   it("defaults to the clinic tags, RHD flags and the consultation form's urgency bands", () => {
@@ -9,11 +11,25 @@ describe('configSchema', () => {
         cardiac: ['RHD Tertiary', 'RHD District'],
         primaryCare: ['RHD Community'],
       },
+      clinics: {
+        levels: [
+          { tag: 'RHD Tertiary', level: 'Tertiary' },
+          { tag: 'RHD District', level: 'District' },
+          { tag: 'RHD Community', level: 'Community' },
+        ],
+        types: ['Public', 'Private Not-For-Profit', 'Private For-Profit'],
+        newClinicTags: ['Visit Location', 'Queue Location', 'Login Location'],
+      },
       flagLists: {
         namePrefix: 'RHD ',
         names: [],
         riskFlags: ['RHD prophylaxis overdue', 'RHD oral prophylaxis overdue', 'RHD lost to follow-up'],
-        earlyWarningFlags: ['RHD cardiology follow-up due', 'RHD INR review due', 'RHD no data for 5 months'],
+        earlyWarningFlags: [
+          'RHD cardiology follow-up due',
+          'RHD INR review due',
+          'RHD no data for 5 months',
+          'RHD referred to a clinician',
+        ],
         flagForms: [
           {
             flag: 'b1f7a2c0-0005-4a00-9000-000000000005',
@@ -27,8 +43,8 @@ describe('configSchema', () => {
         enterProphylaxisInFastDataEntry: false,
         enterProphylaxisUrl: '${openmrsSpaBase}/forms',
         prophylaxisForms: [
-          { label: 'Enter BPG', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
-          { label: 'Enter oral prophylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
+          { label: 'enterBpg', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
+          { label: 'enterOralProphylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
         ],
         findPatientInPanel: true,
         findPatientUrl: '${openmrsSpaBase}/search?query=',
@@ -38,7 +54,7 @@ describe('configSchema', () => {
       },
       instanceAdminQuickActions: {
         formsAndSitesUrl: '${openmrsBase}/admin/forms/form.list',
-        rolePermissionsUrl: '${openmrsBase}/admin/users/users.list',
+        rolePermissionsUrl: '${openmrsSpaBase}/home/act-role-permissions',
         researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
       },
       instanceAdminKpis: { report: '6494be01-b4ae-46af-8d7f-058a2f95c115' },
@@ -76,33 +92,65 @@ describe('configSchema', () => {
       },
       adminLinks: {
         usersUrl: '${openmrsSpaBase}/home/act-users',
-        clinicsUrl: '${openmrsBase}/admin/locations/location.list',
+        clinicsUrl: '${openmrsSpaBase}/home/act-clinics',
         studiesUrl: '${openmrsSpaBase}/home/act-studies',
         refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',
-        userActivityUrl: '${openmrsSpaBase}/audit-logs',
-        patientsOpenedUrl: '${openmrsBase}/module/auditlogweb/readauditlogs.form',
+        logsUrl: '${openmrsSpaBase}/home/act-logs',
+        auditLogsUrl: '${openmrsBase}/module/auditlogweb/auditlogs.form',
+        readAuditUrl: '${openmrsBase}/module/auditlogweb/readauditlogs.form',
+        securityAuditUrl: '${openmrsBase}/module/auditlogweb/securityauditlogs.form',
         downloadUrl: '${openmrsSpaBase}/home/act-download',
-        downloadLogUrl: '${openmrsSpaBase}/home/act-download-log',
       },
       careCascade: {
         report: '9c6751ae-65fc-5f25-9aa6-8c65cb1dff68',
         reportUrl: '${openmrsSpaBase}/reports',
         steps: [
-          { step: 'Active', label: 'Active' },
-          { step: 'Prescribed', label: 'Prescribed' },
-          { step: 'Prescribed Prophylaxis', label: 'Prescribed' },
-          { step: 'Initiated', label: 'Initiated' },
-          { step: 'Initiated BPG', label: 'Initiated' },
-          { step: 'Covered today', label: 'Covered today' },
-          { step: 'Adherent (80%+)', label: 'Adherent (80%+)' },
-          { step: 'Adherent', label: 'Adherent (80%+)' },
+          { step: 'Active', label: 'active' },
+          { step: 'Prescribed', label: 'prescribed' },
+          { step: 'Prescribed Prophylaxis', label: 'prescribed' },
+          { step: 'Initiated', label: 'initiated' },
+          { step: 'Initiated BPG', label: 'initiated' },
+          { step: 'Covered today', label: 'coveredToday' },
+          { step: 'Adherent (80%+)', label: 'adherentEightyPercent' },
+          { step: 'Adherent', label: 'adherentEightyPercent' },
         ],
       },
+      reportCatalogue: [
+        {
+          id: 'visits',
+          report: 'b2c3d4e5-f6a7-8901-abcd-234567890abc',
+          label: 'Visits',
+          description: 'Each RHD clinic visit in a period, with its encounters and the patient.',
+          clinicColumn: 'location',
+        },
+        {
+          id: 'encounters',
+          report: 'd4e5f6a7-b8c9-0123-def0-456789012cde',
+          label: 'Encounters',
+          description: 'Each RHD encounter in a period, with its type, location and provider.',
+          clinicColumn: 'location',
+        },
+        {
+          id: 'inr-monitoring',
+          report: 'd3a1f2b4-7c8e-4f90-b123-456789abcdef',
+          label: 'INR monitoring',
+          description: 'Each INR reading of the patients on warfarin in a period, with the target range.',
+          clinicColumn: 'location',
+        },
+      ],
       registry: {
         report: 'f1a2b3c4-d5e6-7890-abcd-ef1234567890',
         showBpgColumns: false,
       },
       dashboard: {
+        registrantsReport: '3b0a6c2e-8f41-5d7b-9e15-6a2c4d8f0b71',
+        waitlistReport: '9d4e2f7a-1c63-5b08-8a2d-4f6e1b9c3a52',
+        showScreening: true,
+        screeningReport: '0f4b7c2d-6a1e-5d93-8b47-2c9e1f5a3d68',
+        registrantPatientsReport: 'e8296d2d-def8-5f8e-ba2d-78c59859b9e3',
+        waitlistPatientsReport: 'bc987343-8b70-5f95-84a8-d017cffa14da',
+        cascadePatientsReport: '7c62fcfd-03b2-5d84-9cea-92a43b70ae76',
+        optimisationPatientsReport: '45c646b2-f223-585e-963a-3c74fe883ae4',
         medicalOptimisationReport: '733a512c-3243-4e91-a44a-06a8e5384606',
         screeningCascadeReport: '8b257a0c-7e96-5a01-9672-975cae3b0419',
         screeningDiagnosesReport: '6ddf6b36-2789-4733-8433-a877d54795cf',
@@ -204,33 +252,83 @@ describe('configSchema', () => {
         bpgForm: '0119d2e6-e2e1-391c-9b88-d59a10b0780d',
         oralForm: 'ba29e982-ce18-302a-9fc4-d4b2c3983465',
       },
+      prophylaxisUpdate: {
+        encounterType: '8a51f352-5f1b-4836-a669-536e276a21db',
+        concepts: {
+          prescription: '668e0221-8b41-5669-9ad8-78e193d42494',
+          dateStarted: '5bcc7d12-b279-5955-815c-090a1f392071',
+          dateStopped: 'd75edc42-3213-5a06-9228-4e5735b9594b',
+          reasonStopped: 'fa21e431-e64d-5493-b18c-9a1eaf7ee16a',
+          duration: '11117263-f71d-58e2-8363-d2e9b1dbddab',
+          consultationDate: 'c3edefd2-5777-5084-b01e-fd4ca0e40162',
+          none: '1107AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+        regimens: [
+          { uuid: '50be4b26-6c5b-5aaa-9254-3bfd313b4522', label: 'Q28 day BPG' },
+          { uuid: '2f3ee632-dd14-51b0-a4ec-de10e7958019', label: 'Q21 day BPG' },
+          { uuid: '91230c88-6a90-5d45-af50-fa6155fe5dd7', label: 'Q14 day BPG' },
+          { uuid: 'b9884219-358a-594b-94f5-f8a8863a25f3', label: 'Oral penicillin V' },
+          { uuid: 'f2e06eb2-5c25-5e53-9e01-246112d05976', label: 'Oral sulfadiazine' },
+          { uuid: 'fb8b6676-689b-5daa-83f7-1456210c587f', label: 'Oral erythromycin' },
+          { uuid: 'f6f25d63-bd1a-51cb-9596-e74a19759429', label: 'Oral clarithromycin' },
+          { uuid: '1af922b8-acee-56c8-b184-eaef4e58e23a', label: 'Oral azithromycin' },
+          { uuid: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Other non-coded' },
+        ],
+        durations: [
+          { uuid: '6f2c4ca8-a499-5851-975b-5bfb426143a9', label: '1 year and reassess' },
+          { uuid: 'a3f9bcd3-787f-58b3-ae36-c494725a67eb', label: '2 years and reassess' },
+          { uuid: '024cdfe6-c2eb-521c-8616-4729ac35439e', label: '5 years or until age 21, whichever is longer' },
+          { uuid: 'ecc08a4c-6494-5737-b142-f59d18c07db1', label: '10 years or until age 40, whichever is longer' },
+          { uuid: 'e13a5d80-2ba1-5927-b4e6-7369473222e1', label: 'Lifetime' },
+        ],
+        reasons: [
+          { uuid: '121689AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Allergy' },
+          { uuid: '148888AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Anaphylaxis' },
+          { uuid: 'eaf16fa9-03d7-5846-94c3-b02805889ed9', label: 'Provider stopped' },
+          { uuid: '39af49bd-5dd0-5acd-8ffb-260bc83dbfd7', label: 'Patient preference' },
+          { uuid: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Other non-coded' },
+        ],
+      },
+      patientStatus: {
+        programUuid: '7d73e143-a550-5a9d-aecd-dd771add098d',
+        deathConcept: '159AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
       actIdentifierType: '240f85fa-46e1-540e-9234-2796c623f7ea',
+      procedures: {
+        encounterType: 'c9b87090-8768-50be-987e-8ca0a8983429',
+        concepts: {
+          date: '6cbb5176-144a-576b-9b3d-c9e9d6bc5f5a',
+          surgeryType: '46f4af80-b783-59f4-beb1-81144ccf3084',
+          catheterizationType: 'bb4a77ee-836a-57e7-a262-632fa22288d2',
+        },
+      },
+      patientInformationForm: 'a6646c51-130d-3b59-a442-959bea93487d',
       singleRecordForms: ['a6646c51-130d-3b59-a442-959bea93487d', '7807da80-ee71-3900-bbce-a026e4a8d54d'],
       visitType: 'bf86d5a7-9511-5c11-acb1-8f8718775cd5',
       sessionTimeout: { idleMinutes: 30, warningMinutes: 3, keepAliveMinutes: 10 },
       urgencyBands: [
         {
-          label: '1: Emergent (24 hours)',
+          label: 'urgencyEmergent',
           shortLabel: '1: Emergent',
           concept: '1fe15210-4490-58b0-a38c-bb0386e98482',
           deadlineDays: 1,
         },
-        { label: '1 - within 1 week', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
-        { label: '2 - within 1 month', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
+        { label: 'urgencyWithinOneWeek', concept: '406285f2-be72-5594-8664-c8568ad9bc88', deadlineDays: 7 },
+        { label: 'urgencyWithinOneMonth', concept: '82c5209b-c183-5bc9-941c-890eba821a44', deadlineDays: 30 },
         {
-          label: '2: Urgent (60 days)',
+          label: 'urgencyUrgent',
           shortLabel: '2: Urgent',
           concept: '33bf504a-15f2-5504-9bdc-ddded0b5eb00',
           deadlineDays: 60,
         },
-        { label: '3 - within 3 months', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
+        { label: 'urgencyWithinThreeMonths', concept: '925610f9-1c3c-5396-880f-02a5fe309d53', deadlineDays: 90 },
         {
-          label: '3: Elective (180 days)',
+          label: 'urgencyElective',
           shortLabel: '3: Elective',
           concept: '2666bf97-7400-57c7-b535-7903e22ced34',
           deadlineDays: 180,
         },
-        { label: '4 - within 6 months', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
+        { label: 'urgencyWithinSixMonths', concept: '57e3873e-018e-5ed6-b7d4-5f73ef464cbd', deadlineDays: 180 },
       ],
     });
   });
@@ -272,5 +370,19 @@ describe('urgencyBands', () => {
     expect(messages.some((message) => message.includes('urgencyBands[0].deadlineDays'))).toBe(true);
     expect(messages.some((message) => message.includes('urgencyBands[1].deadline'))).toBe(true);
     consoleError.mockRestore();
+  });
+});
+
+describe('default labels', () => {
+  it('are each a key in en.json, as the app translates a label by it', () => {
+    const { careCascade, quickActions, urgencyBands } = getDefaultsFromConfigSchema(configSchema);
+    const labels = [
+      ...careCascade.steps.map((step) => step.label),
+      ...quickActions.prophylaxisForms.map((form) => form.label),
+      ...urgencyBands.map((band) => band.label),
+      ...Object.values(flagWorklists).map((worklist) => worklist.title),
+    ];
+
+    expect(labels.filter((label) => typeof en[label] !== 'string')).toEqual([]);
   });
 });

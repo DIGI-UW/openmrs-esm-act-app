@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText, Tag } from '@carbon/react';
 import {
@@ -10,13 +10,18 @@ import {
   Pills,
   Stethoscope,
   UserFollow,
+  UserMultiple,
 } from '@carbon/react/icons';
-import { CardHeader, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
+import { useSWRConfig } from 'swr';
+import { CardHeader, showSnackbar, useConfig, usePatient, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_SEND_REFERRAL } from '../constants';
 import { mayEnter } from '../access/may-enter-form';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { launchInClinicalFormsWindow } from '../visits/launch-in-clinical-forms-window';
-import { type NextStep, useNextSteps, usePublishedForms } from './next-steps.resource';
+import { restErrorMessage } from '../rest-error-message';
+import { sendReferral } from './send-referral';
+import { type NextStep, nextStepsKey, useNextSteps, usePublishedForms } from './next-steps.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './next-steps-card.scss';
 
@@ -28,6 +33,7 @@ const icons = {
   procedures: Hospital,
   inr: Chemistry,
   refer: UserFollow,
+  pregnancy: UserMultiple,
 };
 
 function useActionLabel() {
@@ -64,6 +70,11 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
   const { patient } = usePatient(patientUuid);
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
   const actionLabel = useActionLabel();
+  const { user, sessionLocation } = useSession();
+  const { mutate } = useSWRConfig();
+  const [sending, setSending] = useState(false);
+  const sendingNow = useRef(false);
+  const maySendReferral = Boolean(user) && userHasAccess([PRIVILEGE_ADD_ENCOUNTERS, PRIVILEGE_SEND_REFERRAL], user);
   const formCount = useFormCount(patientUuid, nextSteps.enabled);
   const previous = useRef<Array<NextStep>>(null);
 
@@ -87,6 +98,46 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
     return null;
   }
   const firstName = patient?.name?.[0]?.given?.[0] ?? '';
+
+  const send = async (referralType: string) => {
+    // State disables the button only after a render, so a second click in the same tick needs the ref.
+    if (sendingNow.current) {
+      return;
+    }
+    if (!sessionLocation?.uuid) {
+      showSnackbar({
+        kind: 'error',
+        title: t('referralNotSent', 'The referral could not be sent'),
+        subtitle: t('referralNeedsLocation', 'Choose a login location first'),
+      });
+      return;
+    }
+    sendingNow.current = true;
+    setSending(true);
+    try {
+      await sendReferral(patientUuid, referralType, sessionLocation.uuid);
+    } catch (e) {
+      showSnackbar({
+        kind: 'error',
+        title: t('referralNotSent', 'The referral could not be sent'),
+        subtitle: restErrorMessage(e),
+      });
+      sendingNow.current = false;
+      setSending(false);
+      return;
+    }
+    showSnackbar({
+      kind: 'success',
+      title: t('referralSent', 'Referral sent'),
+      subtitle: t('referralSentSubtitle', 'The cardiac clinic will see it on their worklist'),
+    });
+    try {
+      await mutate(nextStepsKey(patientUuid));
+    } finally {
+      sendingNow.current = false;
+      setSending(false);
+    }
+  };
 
   return (
     <div className={cardStyles.card}>
@@ -137,6 +188,13 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
                     <CheckmarkFilled size={16} aria-hidden />
                     {t('completed', 'Completed')}
                   </span>
+                ) : step.key === 'refer' ? (
+                  step.referralType &&
+                  maySendReferral && (
+                    <Button kind="ghost" size="sm" disabled={sending} onClick={() => send(step.referralType)}>
+                      {t('sendReferral', 'Send referral')}
+                    </Button>
+                  )
                 ) : (
                   step.form && (
                     <Button kind="ghost" size="sm" disabled={isOpening} onClick={() => open(step.form)}>

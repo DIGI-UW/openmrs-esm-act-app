@@ -20,10 +20,7 @@ describe('AdminNav', () => {
       'href',
       '/openmrs/spa/home/act-users',
     );
-    expect(screen.getByRole('link', { name: 'Clinics' })).toHaveAttribute(
-      'href',
-      '/openmrs/admin/locations/location.list',
-    );
+    expect(screen.getByRole('link', { name: 'Clinics' })).toHaveAttribute('href', '/openmrs/spa/home/act-clinics');
     expect(screen.getByRole('link', { name: 'Studies' })).toHaveAttribute('href', '/openmrs/spa/home/act-studies');
     expect(screen.getByRole('link', { name: 'Flags and adherence' })).toHaveAttribute(
       'href',
@@ -31,20 +28,13 @@ describe('AdminNav', () => {
     );
   });
 
-  it("leads User activity to the audit log app, Patients opened to the audit log module's read audit and Download log to ACT's", async () => {
-    await signInWith([homePrivilege, 'View Audit Logs', 'View Read Audit Logs']);
+  it("leads Logs to ACT's Logs page, one item in place of User activity, Patients opened and Download log", async () => {
+    await signInWith([homePrivilege, 'View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs']);
 
     render(<AdminNav />);
 
-    expect(screen.getByRole('link', { name: 'User activity' })).toHaveAttribute('href', '/openmrs/spa/audit-logs');
-    expect(screen.getByRole('link', { name: 'Patients opened' })).toHaveAttribute(
-      'href',
-      '/openmrs/module/auditlogweb/readauditlogs.form',
-    );
-    expect(screen.getByRole('link', { name: 'Download log' })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-download-log',
-    );
+    expect(screen.getByRole('link', { name: 'Logs' })).toHaveAttribute('href', '/openmrs/spa/home/act-logs');
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Logs']);
   });
 
   it.each([
@@ -66,39 +56,28 @@ describe('AdminNav', () => {
     },
     {
       privilege: 'View Audit Logs',
-      shown: ['User activity'],
-      hidden: ['Users and roles', 'Patients opened', 'Clinics', 'Studies', 'Flags and adherence'],
+      shown: ['Logs'],
+      hidden: ['Users and roles', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
     },
     {
       privilege: 'View Read Audit Logs',
-      shown: ['Patients opened', 'Download log'],
-      hidden: ['Users and roles', 'User activity', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
+      shown: ['Logs'],
+      hidden: ['Users and roles', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
+    },
+    {
+      privilege: 'View Security Audit Logs',
+      shown: ['Logs'],
+      hidden: ['Users and roles', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
     },
     {
       privilege: 'Task: act.downloadData',
       shown: ['Download data'],
-      hidden: [
-        'Users and roles',
-        'User activity',
-        'Patients opened',
-        'Download log',
-        'Clinics',
-        'Studies',
-        'Flags and adherence',
-      ],
+      hidden: ['Users and roles', 'Logs', 'Clinics', 'Studies', 'Flags and adherence'],
     },
     {
       privilege: 'Task: act.downloadResearchData',
       shown: ['Download data'],
-      hidden: [
-        'Users and roles',
-        'User activity',
-        'Patients opened',
-        'Download log',
-        'Clinics',
-        'Studies',
-        'Flags and adherence',
-      ],
+      hidden: ['Users and roles', 'Logs', 'Clinics', 'Studies', 'Flags and adherence'],
     },
   ])('offers only $shown to a user holding $privilege', async ({ privilege, shown, hidden }) => {
     await signInWith([homePrivilege, privilege]);

@@ -23,6 +23,7 @@ function DueList() {
     return (
       <InlineNotification
         kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
         lowContrast
         hideCloseButton
         title={t('couldNotLoadDueForProphylaxis', 'Could not load the patients due for prophylaxis')}

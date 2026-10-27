@@ -28,18 +28,23 @@
   white-space: nowrap;
 }
 
-// The 1px gaps show the background through as dividers, wherever the fields wrap.
+// Each field's outline fills the 1px gap beside it, so a row the fields do not fill ends in the card's colour.
 .fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1px;
-  background-color: $ui-03;
   border-top: 1px solid $ui-03;
 }
 
 .field {
   padding: layout.$spacing-05;
   background-color: $ui-02;
+  outline: 1px solid $ui-03;
+}
+
+// A field whose value runs long, such as a diagnosis, given two columns where the card has them.
+.wideField {
+  grid-column: span 2;
 }
 
 .label {
@@ -55,4 +60,19 @@
   &[data-overdue='true'] {
     color: $danger;
   }
+}
+
+// A ghost button under a field's value, flush with the value's text.
+.fieldAction {
+  display: flex;
+  margin-top: layout.$spacing-02;
+  margin-left: -(layout.$spacing-05);
+}
+
+// A second line under a field's value, such as the on-time count under adherence.
+.detail {
+  @include type.type-style('label-01');
+  display: block;
+  color: $text-02;
+  margin-top: layout.$spacing-02;
 }

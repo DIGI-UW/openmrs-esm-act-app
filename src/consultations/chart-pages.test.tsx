@@ -2,6 +2,7 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
@@ -15,6 +16,14 @@ import { InrPill } from '../patient-status/status-pills.component';
 import ConsultationCard from './consultation-card.component';
 import Consultations from './consultations.component';
 import { type ChartEncounter, toConsultation, warfarinOf } from './consultations.resource';
+import { diagnosisConcepts } from './patient-details.resource';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+
+// Opening a form in a visit is open-form-in-visit's own test; here it records which form was opened.
+const openForm = vi.fn();
+vi.mock('../visits/open-form-in-visit', () => ({
+  useOpenFormInVisit: vi.fn(() => ({ open: openForm, isOpening: false })),
+}));
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -69,14 +78,23 @@ const inrEncounter = (uuid: string, tested: string, value: number, next: string)
 function serve({
   consultations = [] as Array<ChartEncounter>,
   inr = [] as Array<ChartEncounter>,
+  patientInformation = [] as Array<ChartEncounter>,
   mayEnter = true,
-}: { consultations?: Array<ChartEncounter>; inr?: Array<ChartEncounter>; mayEnter?: boolean } = {}) {
+}: {
+  consultations?: Array<ChartEncounter>;
+  inr?: Array<ChartEncounter>;
+  patientInformation?: Array<ChartEncounter>;
+  mayEnter?: boolean;
+} = {}) {
   vi.mocked(openmrsFetch).mockImplementation((async (url: string) => {
     if (url.includes(`encounterType=${config.consultations.encounterType}`)) {
       return { data: { results: consultations, totalCount: consultations.length } };
     }
     if (url.includes(`encounterType=${config.inrReviews.encounterType}`)) {
       return { data: { results: inr, totalCount: inr.length } };
+    }
+    if (url.includes(`encounterType=${diagnosisConcepts.encounterType}`)) {
+      return { data: { results: patientInformation, totalCount: patientInformation.length } };
     }
     if (url.includes('encounterType=')) {
       return { data: { results: [], totalCount: 0 } };
@@ -189,6 +207,45 @@ describe('chart pages by role', () => {
     expect(await screen.findByTestId('consultation-cardiac-clinic')).toHaveTextContent('Gulu RRH');
     expect(screen.getByTestId('consultation-last')).toHaveTextContent(/Apr.*2026/);
     expect(screen.getByTestId('consultation-next')).toHaveAttribute('data-overdue', 'true');
+  });
+
+  it("shows the diagnosis with Update diagnosis, which opens the patient's Patient Information", async () => {
+    serve({
+      consultations: [consultation('new', '2026-04-01')],
+      patientInformation: [
+        {
+          uuid: 'pi',
+          encounterDatetime: '2026-03-01T09:00:00.000+0300',
+          obs: [
+            obs(diagnosisConcepts.group, null, [
+              obs(diagnosisConcepts.category, coded('rhd', 'Rheumatic Heart Disease/Rheumatic Fever')),
+              obs(diagnosisConcepts.details[0], coded('rhdb', 'RHD B')),
+            ]),
+          ],
+        } as ChartEncounter,
+      ],
+    });
+
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+
+    expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent(
+      'Rheumatic Heart Disease/Rheumatic Fever (RHD B)',
+    );
+    await userEvent.click(await screen.findByRole('button', { name: /Update diagnosis/ }));
+    expect(openForm).toHaveBeenCalledWith(config.patientInformationForm);
+    expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie');
+  });
+
+  it('offers Record diagnosis when there is none, and nothing to a user who may not record Patient Information', async () => {
+    serve({ consultations: [consultation('new', '2026-04-01')] });
+    const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
+    expect(await screen.findByRole('button', { name: /Record diagnosis/ })).toBeInTheDocument();
+    unmount();
+
+    serve({ consultations: [consultation('new', '2026-04-01')], mayEnter: false });
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+    await screen.findByTestId('consultation-diagnosis');
+    expect(screen.queryByRole('button', { name: /diagnosis/ })).not.toBeInTheDocument();
   });
 
   it('shows INR reviews, the INR card and the nav link only for a patient on warfarin', async () => {
