@@ -231,6 +231,13 @@ export const configSchema = {
         "The roles the Users page offers, as ACT 2.0's: the first entry whose administrator role the signed-in user holds wins; a super user gets the first. By default a global administrator gives any ACT role, an instance administrator the clinician roles and Site Administrator, and a site administrator the clinician roles, which is also all ACT Core lets it give (actcore.users.siteAdministratorRoles).",
     },
   },
+  helpMenu: {
+    contactUrl: link(
+      "Where the Help menu's Contact us leads, such as mailto:support@example.org; each site sets its own. Empty hides it.",
+      '',
+    ),
+    docsUrl: link("Where the Help menu's Docs leads, in a new tab. Empty hides it.", ''),
+  },
   adminLinks: {
     usersUrl: link(
       "Where the left nav's Users and roles leads, for a user holding Edit Users: ACT's Users page, which offers each administrator the roles and clinics they may give.",
@@ -950,6 +957,7 @@ export interface Config {
   };
   instanceAdminKpis: { report: string };
   users: { roleChoices: Array<{ administratorRole: string; roles: Array<string> }> };
+  helpMenu: { contactUrl: string; docsUrl: string };
   adminLinks: {
     usersUrl: string;
     clinicsUrl: string;
