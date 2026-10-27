@@ -190,13 +190,22 @@ describe('chart pages by role', () => {
     expect(await screen.findByRole('button', { name: /Start consultation/ })).toBeInTheDocument();
   });
 
+  it('reopens a consultation in its form from its Edit', async () => {
+    serve({ consultations: [consultation('old', '2025-09-02'), consultation('new', '2026-04-01')] });
+
+    renderIn(<Consultations patientUuid="winnie" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Edit consultation of .*2026/ }));
+    expect(openForm).toHaveBeenCalledWith(config.consultations.form, undefined, 'new');
+  });
+
   it('shows the consultations read-only to a user who may not record one', async () => {
     serve({ consultations: [consultation('new', '2026-04-01')], mayEnter: false });
 
     renderIn(<Consultations patientUuid="winnie" />);
 
     expect(await screen.findAllByTestId('consultation-row')).toHaveLength(1);
-    expect(screen.queryByRole('button', { name: /Start consultation/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Start consultation|^Edit/ })).not.toBeInTheDocument();
   });
 
   it('summarises the last consultation, the overdue review in red, and the cardiac clinic', async () => {
@@ -207,6 +216,20 @@ describe('chart pages by role', () => {
     expect(await screen.findByTestId('consultation-cardiac-clinic')).toHaveTextContent('Gulu RRH');
     expect(screen.getByTestId('consultation-last')).toHaveTextContent(/Apr.*2026/);
     expect(screen.getByTestId('consultation-next')).toHaveAttribute('data-overdue', 'true');
+  });
+
+  it('reopens the last consultation from Edit under it, and offers no Edit to a user who may not record one', async () => {
+    serve({ consultations: [consultation('old', '2025-09-02'), consultation('new', '2026-04-01')] });
+    const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit last consultation' }));
+    expect(openForm).toHaveBeenCalledWith(config.consultations.form, undefined, 'new');
+    unmount();
+
+    serve({ consultations: [consultation('new', '2026-04-01')], mayEnter: false });
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+    await screen.findByTestId('consultation-cardiac-clinic');
+    expect(screen.queryByRole('button', { name: 'Edit last consultation' })).not.toBeInTheDocument();
   });
 
   it("shows the diagnosis with Update diagnosis, which opens the patient's Patient Information", async () => {
@@ -269,6 +292,44 @@ describe('chart pages by role', () => {
       'href',
       '/openmrs/spa/patient/winnie/chart/act-inr-reviews',
     );
+  });
+
+  it("reopens an INR Monitoring from its row's Edit and from Edit under the card's last INR", async () => {
+    serve({
+      consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
+      inr: [inrEncounter('a', '2026-07-27', 1.6, '2026-08-24'), inrEncounter('b', '2026-08-24', 2.1, '2026-09-21')],
+    });
+
+    renderIn(
+      <>
+        <InrReviews patientUuid="winnie" />
+        <InrCard patientUuid="winnie" />
+      </>,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Edit INR of .*Jul/ }));
+    expect(openForm).toHaveBeenLastCalledWith(config.inrReviews.form, undefined, 'a');
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit last INR' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.inrReviews.form, undefined, 'b');
+  });
+
+  it('offers no INR Edit to a user who may not record one', async () => {
+    serve({
+      consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
+      inr: [inrEncounter('a', '2026-08-24', 2.1, '2026-09-21')],
+      mayEnter: false,
+    });
+
+    renderIn(
+      <>
+        <InrReviews patientUuid="winnie" />
+        <InrCard patientUuid="winnie" />
+      </>,
+    );
+
+    await screen.findByTestId('inr-row');
+    await screen.findByTestId('inr-last');
+    expect(screen.queryByRole('button', { name: /^Edit|Record INR/ })).not.toBeInTheDocument();
   });
 
   it('hides the INR card and nav link for a patient not on warfarin', async () => {

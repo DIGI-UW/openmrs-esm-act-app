@@ -2,7 +2,7 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText } from '@carbon/react';
-import { AddIcon, CardHeader, formatDate } from '@openmrs/esm-framework';
+import { AddIcon, CardHeader, EditIcon, formatDate } from '@openmrs/esm-framework';
 import { daysUntil } from '../patient-status/due-tone';
 import { useRecordInr } from './inr-reviews.component';
 import { useInrReviews } from './inr.resource';
@@ -12,7 +12,8 @@ const day = (date: Date) => formatDate(date, { time: false, noToday: true });
 
 /**
  * The patient summary's INR review card, for a patient on warfarin only, as the prototype's: the last INR and its
- * date, the target range, the next INR due (red once overdue) and the warfarin dose.
+ * date, the target range, the next INR due (red once overdue) and the warfarin dose. Edit under the last INR reopens
+ * the INR Monitoring that records it, for a user who may record one.
  */
 export default function InrCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -65,6 +66,19 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
                 data-overdue={String(Boolean(field.overdue))}
               >
                 {field.value}
+                {field.id === 'last' && last && record && (
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    className={styles.fieldAction}
+                    renderIcon={(props) => <EditIcon size={16} {...props} />}
+                    disabled={record.isOpening}
+                    aria-label={t('editLastInr', 'Edit last INR')}
+                    onClick={() => record.edit(last.encounterUuid)}
+                  >
+                    {t('edit', 'Edit')}
+                  </Button>
+                )}
               </dd>
             </div>
           ))}

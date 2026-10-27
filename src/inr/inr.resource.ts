@@ -13,6 +13,8 @@ export type InrResult = 'inRange' | 'below' | 'above' | 'unknown';
 
 export interface InrReview {
   key: string;
+  /** The RHD INR Monitoring that records it, which Edit reopens. */
+  encounterUuid: string;
   date: Date;
   inr: number | null;
   target: string;
@@ -55,6 +57,7 @@ export function toInrReviews(encounters: Array<ChartEncounter>, concepts: Config
         const inr = value ? Number(value.value) : null;
         return {
           key: `${encounter.uuid}-${index}`,
+          encounterUuid: encounter.uuid,
           date: parseDate(String(tested?.value ?? encounter.encounterDatetime)),
           inr,
           target,
