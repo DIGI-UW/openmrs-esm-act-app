@@ -8,6 +8,18 @@
   margin-bottom: layout.$spacing-05;
 }
 
+// On the patient summary the dashboard's grid gap spaces the cards, as it does upstream's.
+:global([data-extension-slot-name='patient-chart-summary-dashboard-slot']) {
+  .card {
+    margin-bottom: 0;
+  }
+
+  // A card that renders nothing, such as INR review for a patient not on warfarin, leaves no empty grid row.
+  > :global(:has([data-extension-id]:empty)) {
+    display: none;
+  }
+}
+
 .actions {
   display: flex;
   align-items: center;

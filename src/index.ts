@@ -108,7 +108,9 @@ export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/cl
 
 export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
 
-export const contactCard = getAsyncLifecycle(() => import('./contact/contact-card.component'), options);
+export const clinicsBanner = getAsyncLifecycle(() => import('./contact/clinics-banner.component'), options);
+
+export const medicationsCard = getAsyncLifecycle(() => import('./medications/medications-card.component'), options);
 
 export const cliniciansOnlyNote = getAsyncLifecycle(
   () => import('./chart-note/clinicians-only-note.component'),

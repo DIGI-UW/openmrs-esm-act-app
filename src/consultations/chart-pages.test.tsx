@@ -7,7 +7,7 @@ import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framewor
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import CliniciansOnlyNote from '../chart-note/clinicians-only-note.component';
-import ContactCard from '../contact/contact-card.component';
+import ClinicsBanner from '../contact/clinics-banner.component';
 import InrCard from '../inr/inr-card.component';
 import InrDashboardLink, { patientOfBasePath } from '../inr/inr-dashboard-link.component';
 import InrReviews from '../inr/inr-reviews.component';
@@ -276,26 +276,25 @@ describe('chart pages by role', () => {
 
     renderIn(
       <>
-        <ContactCard patientUuid="winnie" />
+        <ClinicsBanner patientUuid="winnie" />
         <InrCard patientUuid="winnie" />
         <InrDashboardLink basePath="/openmrs/spa/patient/winnie/chart" />
       </>,
     );
 
-    expect(await screen.findByTestId('contact-village')).toHaveTextContent('Laroo');
+    expect(await screen.findByTestId('banner-cardiac-clinic')).toHaveTextContent('Cardiac clinic: Gulu RRH');
     expect(screen.queryByTestId('inr-last')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /INR reviews/ })).not.toBeInTheDocument();
     expect(patientOfBasePath('/openmrs/spa/patient/abc-123/chart')).toBe('abc-123');
   });
 
-  it('shows the contact details registration records', async () => {
+  it('shows the clinics registration recorded on the banner, leaving out one not recorded', async () => {
     serve();
 
-    renderIn(<ContactCard patientUuid="winnie" />);
+    renderIn(<ClinicsBanner patientUuid="winnie" />);
 
-    expect(await screen.findByTestId('contact-phone')).toHaveTextContent('+256772000101');
-    expect(screen.getByTestId('contact-cardiac-clinic')).toHaveTextContent('Gulu RRH');
-    expect(screen.getByTestId('contact-phone-owner')).toHaveTextContent('--');
+    expect(await screen.findByTestId('banner-cardiac-clinic')).toHaveTextContent('Cardiac clinic: Gulu RRH');
+    expect(screen.queryByTestId('banner-primary-care-clinic')).not.toBeInTheDocument();
   });
 
   it('tells a user who is not a clinician that the clinical pages are for clinicians, and says nothing to a clinician', async () => {

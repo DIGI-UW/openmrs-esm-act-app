@@ -7,6 +7,7 @@ import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framewor
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
+import MedicationsCard from './medications-card.component';
 import Medications from './medications.component';
 import { toMedications } from './medications.resource';
 
@@ -323,6 +324,24 @@ describe('the Medications page', () => {
     expect(await screen.findByRole('table', { name: 'Active medications' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Add/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the active and past medicines on the patient summary's card", async () => {
+    serve({
+      consultations: [
+        consultation('new', '2026-04-01', [medication(aspirin), medication(warfarin, [[c.dateStopped, '2026-03-01']])]),
+      ],
+    });
+
+    render(
+      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+        <MedicationsCard patientUuid="winnie" />
+      </SWRConfig>,
+    );
+
+    const active = await screen.findByRole('table', { name: 'Active medications' });
+    expect(within(active).getByText('Aspirin')).toBeInTheDocument();
+    expect(within(screen.getByRole('table', { name: 'Past medications' })).getByText('Warfarin')).toBeInTheDocument();
   });
 
   it('says when there is nothing active or nothing past', async () => {

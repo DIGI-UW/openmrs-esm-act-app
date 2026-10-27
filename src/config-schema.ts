@@ -555,7 +555,7 @@ export const configSchema = {
         cardiacClinic: 'fe261119-2911-5b36-be40-8f9827826987',
       },
       _description:
-        "The person attribute types the Contact card shows: Primary Phone, Phone Owner Name, Primary Care Clinic and Assigned Cardiac Clinic. The village is the person's address.",
+        "The person attribute types of the patient's contact details: Primary Phone, Phone Owner Name, Primary Care Clinic and Assigned Cardiac Clinic. The patient banner shows the two clinics and the Consultation visits card the cardiac clinic; the banner's Show more lists the phone and phone owner from the patient banner app's contactAttributeTypes.",
     },
   },
   clinicianPrivilege: {
