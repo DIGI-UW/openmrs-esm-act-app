@@ -240,9 +240,9 @@ describe('routes.json privileges', () => {
     expect(evaluate(expression, session(['Get Patients']))).toBe(false);
   });
 
-  it('declares a privilege on every extension but Download data, Logs, Update patient status, the Admin nav and the session timeout, so none shows to every signed-in user', () => {
+  it('declares a privilege on every extension but Download data, Logs, Update patient status, the Admin nav, the session timeout and the Help menu items Contact us and Docs, so none shows to every signed-in user', () => {
     // They gate themselves: Download data and Update patient status on either of two privileges, Logs on either audit
-    // privilege, the Admin nav per link, the session timeout on being signed in.
+    // privilege, the Admin nav per link, the session timeout on being signed in, and the Help menu's items on being configured.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',
@@ -250,6 +250,8 @@ describe('routes.json privileges', () => {
       'act-logs-dashboard',
       'act-admin-nav',
       'act-session-timeout',
+      'act-help-contact',
+      'act-help-docs',
       'act-update-patient-status',
     ]);
   });

@@ -90,6 +90,7 @@ describe('configSchema', () => {
           },
         ],
       },
+      helpMenu: { contactUrl: '', docsUrl: '' },
       adminLinks: {
         usersUrl: '${openmrsSpaBase}/home/act-users',
         clinicsUrl: '${openmrsSpaBase}/home/act-clinics',
