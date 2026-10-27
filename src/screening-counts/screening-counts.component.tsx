@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -31,15 +31,13 @@ import {
   monthName,
   recentMonths,
   saveScreeningMonth,
+  screeningMonthsOffered,
   type Setting,
   settings,
   useScreeningLabels,
   useScreeningMonth,
 } from './screening-counts.resource';
 import styles from './screening-counts.scss';
-
-/** How many months back the month list goes. */
-const monthsOffered = 24;
 
 const notesLength = 1000;
 
@@ -62,31 +60,39 @@ const isCount = (value: string) => /^\d{1,9}$/.test(value.trim());
 export default function ScreeningCounts() {
   const { t } = useTranslation();
   const { clinicLocationTags } = useConfig<Config>();
-  const { user } = useSession();
+  const { user, sessionLocation } = useSession();
   const mayEnter = Boolean(user) && userHasAccess(PRIVILEGE_ENTER_SCREENING_COUNTS, user);
   const {
     clinics,
     isLoading: clinicsLoading,
     error: clinicsError,
   } = useClinicList([...clinicLocationTags.cardiac, ...clinicLocationTags.primaryCare]);
-  const months = useMemo(() => recentMonths(monthsOffered), []);
+  const months = useMemo(() => recentMonths(screeningMonthsOffered), []);
   const { settingLabel, metricLabel } = useScreeningLabels();
   const [chosenClinic, setChosenClinic] = useState('');
-  const clinic = clinics.some(({ uuid }) => uuid === chosenClinic) ? chosenClinic : (clinics[0]?.uuid ?? '');
+  const offered = (uuid?: string) => clinics.some((option) => option.uuid === uuid);
+  // The clinic the user is signed in at, where it is one of the clinics, so counts are not typed in for another.
+  const clinic = [chosenClinic, sessionLocation?.uuid].find(offered) ?? clinics[0]?.uuid ?? '';
+  const clinicName = clinics.find(({ uuid }) => uuid === clinic)?.display;
   // The month before this one, which a clinic enters once it has ended.
   const [month, setMonth] = useState(months[1]);
   const { month: saved, error, isLoading, mutate } = useScreeningMonth(clinic || null, month);
-  const [draft, setDraft] = useState<Draft>(draftOf(undefined));
-  const [notes, setNotes] = useState('');
+  // By clinic and month, so looking at another month and coming back keeps what was typed.
+  const [edits, setEdits] = useState<Record<string, { draft: Draft; notes: string }>>({});
+  const editKey = `${clinic}/${month}`;
+  const draft = edits[editKey]?.draft ?? draftOf(saved?.counts);
+  const notes = edits[editKey]?.notes ?? saved?.notes ?? '';
+  const edit = (change: Partial<{ draft: Draft; notes: string }>) =>
+    setEdits((current) => ({ ...current, [editKey]: { draft, notes, ...current[editKey], ...change } }));
+  const forget = (key: string) =>
+    setEdits((current) => Object.fromEntries(Object.entries(current).filter(([other]) => other !== key)));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const reset = () => {
-    setDraft(draftOf(saved?.counts));
-    setNotes(saved?.notes ?? '');
+    forget(editKey);
     setSaveError(null);
   };
-  useEffect(reset, [saved]);
 
   const rowErrors = Object.fromEntries(
     settings.map((setting) => {
@@ -125,9 +131,13 @@ export default function ScreeningCounts() {
       const counts = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, Number(value)]));
       const result = await saveScreeningMonth(clinic, month, counts, notes);
       await mutate(result, { revalidate: false });
+      forget(editKey);
       showSnackbar({
         kind: 'success',
-        title: t('screeningCountsSaved', 'Screening counts for {{month}} saved', { month: monthName(month) }),
+        title: t('screeningCountsSaved', 'Screening counts for {{clinic}}, {{month}} saved', {
+          clinic: clinicName,
+          month: monthName(month),
+        }),
       });
     } catch (e) {
       setSaveError(restErrorMessage(e));
@@ -157,14 +167,21 @@ export default function ScreeningCounts() {
     }
     if (error) {
       return (
-        <InlineNotification
-          kind="error"
-          statusIconDescription={t('errorIcon', 'error icon')}
-          lowContrast
-          hideCloseButton
-          title={t('couldNotLoadScreeningCounts', 'Could not load the screening counts')}
-          subtitle={restErrorMessage(error)}
-        />
+        <>
+          <InlineNotification
+            kind="error"
+            statusIconDescription={t('errorIcon', 'error icon')}
+            lowContrast
+            hideCloseButton
+            title={t('couldNotLoadScreeningCounts', 'Could not load the screening counts')}
+            subtitle={restErrorMessage(error)}
+          />
+          <div className={styles.actions}>
+            <Button size="md" onClick={() => void mutate()}>
+              {t('tryAgain', 'Try again')}
+            </Button>
+          </div>
+        </>
       );
     }
     if (isLoading) {
@@ -172,6 +189,14 @@ export default function ScreeningCounts() {
     }
     return (
       <>
+        {saved && !saved.saved && (
+          <p className={styles.notEntered} data-testid="screening-not-entered">
+            {t('screeningMonthNotEntered', 'Not entered yet: no counts for {{clinic}}, {{month}}', {
+              clinic: clinicName,
+              month: monthName(month),
+            })}
+          </p>
+        )}
         <Table size="md" useZebraStyles={false} className={styles.table}>
           <TableHead>
             <TableRow>
@@ -201,7 +226,7 @@ export default function ScreeningCounts() {
                           value={draft[key]}
                           invalid={Boolean(rowErrors[setting])}
                           aria-describedby={rowErrors[setting] ? `screening-${setting}-error` : undefined}
-                          onChange={(event) => setDraft((current) => ({ ...current, [key]: event.target.value }))}
+                          onChange={(event) => edit({ draft: { ...draft, [key]: event.target.value } })}
                         />
                       ) : (
                         <span data-testid={`screening-${key}`}>{draft[key]}</span>
@@ -243,7 +268,7 @@ export default function ScreeningCounts() {
             value={notes}
             maxCount={notesLength}
             enableCounter
-            onChange={(event) => setNotes(event.target.value)}
+            onChange={(event) => edit({ notes: event.target.value })}
           />
         ) : (
           notes && (
@@ -293,7 +318,10 @@ export default function ScreeningCounts() {
               id="screening-clinic"
               labelText={t('clinic', 'Clinic')}
               value={clinic}
-              onChange={(event) => setChosenClinic(event.target.value)}
+              onChange={(event) => {
+                setChosenClinic(event.target.value);
+                setSaveError(null);
+              }}
             >
               {clinics.map(({ uuid, display }) => (
                 <SelectItem key={uuid} value={uuid} text={display} />
@@ -303,7 +331,10 @@ export default function ScreeningCounts() {
               id="screening-month"
               labelText={t('month', 'Month')}
               value={month}
-              onChange={(event) => setMonth(event.target.value)}
+              onChange={(event) => {
+                setMonth(event.target.value);
+                setSaveError(null);
+              }}
             >
               {months.map((value) => (
                 <SelectItem key={value} value={value} text={monthName(value)} />

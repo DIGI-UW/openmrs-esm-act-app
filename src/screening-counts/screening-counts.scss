@@ -54,6 +54,11 @@
   }
 }
 
+.notEntered {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
 .rule {
   @include type.type-style('label-01');
   color: $support-02;

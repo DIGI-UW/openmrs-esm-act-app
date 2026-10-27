@@ -1309,6 +1309,15 @@ describe('Dashboard', () => {
       expect(await screen.findByText(new RegExp(`^Monthly counts, Lira RRH, `))).toBeInTheDocument();
     });
 
+    it('says a cardiac and a primary care clinic are added together, as ACT Core sums both', async () => {
+      await signIn();
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&primaryCareClinic=hq');
+      renderPage();
+
+      await vi.waitFor(() => expect(summaryUrls().at(-1)).toMatch(/\/summary\?clinic=lira&clinic=hq&startMonth=/));
+      expect(await screen.findByText(/^Monthly counts, Lira RRH, Head office added together, /)).toBeInTheDocument();
+    });
+
     it('says which clinic has no counts for the period, rather than drawing zeros', async () => {
       await signIn();
       renderPage();

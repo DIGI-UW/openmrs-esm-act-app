@@ -43,6 +43,7 @@ import { type Count, registrantCounts, share, shares, waitlistCounts, waitlistNa
 import {
   monthName,
   recentMonths,
+  screeningMonthsOffered,
   settings,
   useScreeningLabels,
   useScreeningSummary,
@@ -747,9 +748,6 @@ function ScreeningFromRegistrations({
   );
 }
 
-/** How many months back the RHD screening section's period can start. */
-const screeningMonthsOffered = 36;
-
 /** ACT 2.0's RHD screening section: the monthly counts the clinics enter on the Screening counts page, for a period. */
 function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: string | null; onShowAll: () => void }) {
   const { t } = useTranslation();
@@ -785,8 +783,10 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
     </Select>
   );
 
+  // ACT Core adds the two clinics' months together.
+  const together = t('clinicsAddedTogether', '{{clinics}} added together', { clinics: clinic });
   const counting =
-    clinic ??
+    (Object.keys(scope).length > 1 ? together : clinic) ??
     (limit.status === 'ready'
       ? limit.names.join(', ') || t('yourClinics', 'your clinics')
       : t('everyClinic', 'every clinic'));

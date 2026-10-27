@@ -103,6 +103,73 @@ describe('Screening counts', () => {
     expect(screen.getByText("Each row's age groups add up to its screened total.")).toBeInTheDocument();
   });
 
+  it('opens on the clinic the user is signed in at, and names it when the month is saved', async () => {
+    const session = vi.mocked(useSession)();
+    vi.mocked(useSession).mockReturnValue({
+      ...session,
+      sessionLocation: { uuid: 'gulu', display: 'Gulu RRH' },
+    } as never);
+    backendAnswers(async ({ counts, notes }) => ({ clinic: 'gulu', month: lastMonth, saved: true, counts, notes }));
+    renderPage();
+
+    await vi.waitFor(() => expect(screen.getByLabelText('Clinic')).toHaveValue('gulu'));
+    await screen.findAllByDisplayValue('0');
+    await userEvent.click(screen.getByRole('button', { name: /^Save / }));
+
+    expect(posted[0].url).toMatch(/clinic=gulu&/);
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: `Screening counts for Gulu RRH, ${dayjs(`${lastMonth}-01`).format('MMMM YYYY')} saved`,
+      }),
+    );
+  });
+
+  it('says a month nobody has entered is not entered yet, rather than showing its zeros as counts', async () => {
+    backendAnswers();
+    renderPage();
+    await screen.findByDisplayValue('412');
+    expect(screen.queryByTestId('screening-not-entered')).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Clinic'), 'gulu');
+
+    expect(await screen.findByTestId('screening-not-entered')).toHaveTextContent(
+      `Not entered yet: no counts for Gulu RRH, ${dayjs(`${lastMonth}-01`).format('MMMM YYYY')}`,
+    );
+  });
+
+  it('keeps what was typed while another month is looked at', async () => {
+    backendAnswers();
+    renderPage();
+    await screen.findByDisplayValue('412');
+
+    await userEvent.clear(cell('School', 'Screened'));
+    await userEvent.type(cell('School', 'Screened'), '9');
+    await userEvent.type(screen.getByLabelText('Notes'), ', and a market');
+    await userEvent.selectOptions(screen.getByLabelText('Month'), dayjs().subtract(2, 'month').format('YYYY-MM'));
+    expect(await screen.findAllByDisplayValue('0')).toHaveLength(18);
+    await userEvent.selectOptions(screen.getByLabelText('Month'), lastMonth);
+
+    expect(await screen.findByDisplayValue('9')).toBe(cell('School', 'Screened'));
+    expect(screen.getByLabelText('Notes')).toHaveValue('Two primary schools visited, and a market');
+  });
+
+  it('loads the month again on Try again', async () => {
+    backendAnswers();
+    const answer = mockOpenmrsFetch.getMockImplementation();
+    let failing = true;
+    mockOpenmrsFetch.mockImplementation(((url: string, init?: unknown) =>
+      failing && url.includes('/screeningcounts?')
+        ? Promise.reject(new Error('The server did not answer'))
+        : answer(url, init as never)) as never);
+    renderPage();
+
+    expect(await screen.findByText('Could not load the screening counts')).toBeInTheDocument();
+    failing = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByDisplayValue('412')).toBeInTheDocument();
+  });
+
   it('saves the month as typed, every count a number, and says so', async () => {
     backendAnswers(async ({ counts, notes }) => ({
       clinic: 'akunalaber',
@@ -115,7 +182,7 @@ describe('Screening counts', () => {
     await screen.findByDisplayValue('412');
 
     await userEvent.clear(cell('School', 'Screened'));
-    await userEvent.type(cell('School', 'Screened'), '413');
+    await userEvent.type(cell('School', 'Screened'), '0413');
     await userEvent.clear(cell('School', 'Adults 20\\+'));
     await userEvent.type(cell('School', 'Adults 20\\+'), '1');
     await userEvent.click(screen.getByRole('button', { name: `Save ${dayjs(`${lastMonth}-01`).format('MMMM')}` }));
@@ -127,6 +194,7 @@ describe('Screening counts', () => {
       notes: 'Two primary schools visited',
     });
     expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+    expect(cell('School', 'Screened')).toHaveValue('413');
   });
 
   it("says which row's age groups do not add up, or count more females or positives than screened, and will not save", async () => {
