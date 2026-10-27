@@ -21,9 +21,10 @@
   gap: layout.$spacing-05;
 }
 
+// Two across on a phone, four on a laptop.
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: layout.$spacing-05;
 }
 
@@ -152,7 +153,14 @@
 
 .registrationTiles {
   display: grid;
+  align-content: start;
   gap: layout.$spacing-05;
+}
+
+.registrationPair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: layout.$spacing-04;
 }
 
 .subheading {

@@ -72,8 +72,8 @@ export function measureLabel(t: TFunction, measure: string) {
     consultations: t('consultationsLastYear', 'Consultations in the last year'),
     echocardiogram: t('echoLast13Months', 'Echocardiogram in the last 13 months'),
     retainedInCare: t('retainedInCare', 'Retained in care (seen in the last 7 months)'),
-    interventionAssigned: t('interventionAssigned', 'Intervention assigned'),
-    interventions: t('interventionsCompleted', 'Interventions completed'),
+    interventionAssigned: t('interventionAssigned', 'Open procedural recommendation'),
+    interventions: t('interventionsCompleted', 'Recommended procedures done'),
     warfarin: t('inrLast90Days', 'On warfarin, with an INR in the last 90 days'),
   };
   return labels[measure] ?? measure;

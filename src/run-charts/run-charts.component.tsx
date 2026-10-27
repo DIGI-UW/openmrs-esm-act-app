@@ -298,15 +298,21 @@ export default function RunCharts() {
               invalidText={t('endBeforeStart', 'The end is before the start')}
               onChange={(date) => date && update({ to: isoDay(date) })}
             />
-            <ContentSwitcher
-              size="md"
-              selectedIndex={['day', 'week', 'month'].indexOf(period)}
-              onChange={({ name }) => update({ points: String(name) })}
-            >
-              <Switch name="day" text={t('day', 'Day')} />
-              <Switch name="week" text={t('week', 'Week')} />
-              <Switch name="month" text={t('month', 'Month')} />
-            </ContentSwitcher>
+            <div className={styles.points}>
+              <span id="run-chart-points" className="cds--label">
+                {t('points', 'Points')}
+              </span>
+              <ContentSwitcher
+                size="md"
+                aria-labelledby="run-chart-points"
+                selectedIndex={['day', 'week', 'month'].indexOf(period)}
+                onChange={({ name }) => update({ points: String(name) })}
+              >
+                <Switch name="day" text={t('day', 'Day')} />
+                <Switch name="week" text={t('week', 'Week')} />
+                <Switch name="month" text={t('month', 'Month')} />
+              </ContentSwitcher>
+            </div>
           </div>
           {body()}
         </section>
