@@ -412,6 +412,20 @@ describe('Dashboard', () => {
     ]);
   });
 
+  it('gives a status or diagnosis one colour on every donut, the active and RHD patients teal', async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-screening-category');
+
+    const scaleOf = (title: string) =>
+      (chartOptions(DonutChart, title) as unknown as { color: { scale: object } }).color.scale;
+    expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#8a3800' });
+    expect(scaleOf('Diagnoses after the echo')).toEqual({
+      'Rheumatic Heart Disease/Rheumatic Fever': '#009d9a',
+      Normal: '#42be65',
+    });
+  });
+
   it('evaluates the dated reports as of the date chosen', async () => {
     await signIn();
     renderPage();
@@ -1247,6 +1261,15 @@ describe('Dashboard', () => {
         'Not recorded1',
         'Teacher referral1',
       ]);
+      expect(
+        (chartOptions(DonutChart, 'Case detected by') as unknown as { color: { scale: object } }).color.scale,
+      ).toEqual({
+        School: '#0f62fe',
+        Community: '#33b1ff',
+        Other: '#b28600',
+        'Not recorded': '#c6c6c6',
+        'Teacher referral': '#9f1853',
+      });
       expect(t).toHaveBeenCalledWith('registeredCentre', 'registered');
       t.mockRestore();
     });

@@ -69,7 +69,10 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
       ) : (
         <dl className={styles.fields}>
           {fields.map((field) => (
-            <div key={field.id} className={styles.field}>
+            <div
+              key={field.id}
+              className={field.id === 'diagnosis' ? `${styles.field} ${styles.wideField}` : styles.field}
+            >
               <dt className={styles.label}>{field.label}</dt>
               <dd
                 className={styles.value}
