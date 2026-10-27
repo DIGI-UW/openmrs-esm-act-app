@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import useSWR from 'swr';
+import useSWR, { type ScopedMutator } from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 export const settings = ['school', 'community', 'facility'] as const;
@@ -82,14 +82,24 @@ export function useScreeningMonth(clinic: string | null, month: string | null) {
   return { month: data, error, isLoading, mutate };
 }
 
-/** Replaces the clinic's month; ACT Core answers with the month as saved, or a 400 saying what does not add up. */
-export async function saveScreeningMonth(clinic: string, month: string, counts: Counts, notes: string) {
-  const { data } = await openmrsFetch<ScreeningMonth>(monthUrl(clinic, month), {
+/**
+ * Replaces the clinic's month and caches ACT Core's answer as that month, or throws its 400 saying what does not add
+ * up. `mutate` is the caller's `useSWRConfig().mutate`, as `useSWR`'s is bound to whichever month is on screen.
+ */
+export async function saveScreeningMonth(
+  clinic: string,
+  month: string,
+  counts: Counts,
+  notes: string,
+  mutate: ScopedMutator,
+) {
+  const url = monthUrl(clinic, month);
+  const { data } = await openmrsFetch<ScreeningMonth>(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: { counts, notes },
   });
-  return data;
+  await mutate(url, data, { revalidate: false });
 }
 
 /** The sums of the clinics' months, or of every clinic with none given; nothing is fetched while params is null. */

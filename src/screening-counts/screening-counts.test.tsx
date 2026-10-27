@@ -197,6 +197,43 @@ describe('Screening counts', () => {
     expect(cell('School', 'Screened')).toHaveValue('413');
   });
 
+  it('keeps a month saved while another is looked at to the month it was saved for', async () => {
+    let answer: (month: ScreeningMonth) => void;
+    backendAnswers(() => new Promise((resolve) => (answer = resolve)));
+    renderPage();
+    await screen.findByDisplayValue('412');
+    const twoMonthsAgo = dayjs().subtract(2, 'month').format('YYYY-MM');
+
+    await userEvent.type(screen.getByLabelText('Notes'), ', and a market');
+    await userEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await userEvent.selectOptions(screen.getByLabelText('Month'), twoMonthsAgo);
+    await screen.findByTestId('screening-not-entered');
+    await userEvent.clear(cell('School', 'Children 0-9'));
+    await userEvent.type(cell('School', 'Children 0-9'), '7');
+    answer({ clinic: 'akunalaber', month: lastMonth, saved: true, counts: september, notes: 'Saved' });
+
+    await vi.waitFor(() => expect(showSnackbar).toHaveBeenCalled());
+    expect(screen.getByTestId('screening-not-entered')).toBeInTheDocument();
+    expect(cell('School', 'Screened')).toHaveValue('0');
+    expect(cell('School', 'Children 0-9')).toHaveValue('7');
+    await userEvent.selectOptions(screen.getByLabelText('Month'), lastMonth);
+    expect(await screen.findByDisplayValue('Saved')).toBe(screen.getByLabelText('Notes'));
+  });
+
+  it('keeps what was typed into the month while it was being saved', async () => {
+    let answer: (month: ScreeningMonth) => void;
+    backendAnswers(() => new Promise((resolve) => (answer = resolve)));
+    renderPage();
+    await screen.findByDisplayValue('412');
+
+    await userEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await userEvent.type(screen.getByLabelText('Notes'), ', and a market');
+    answer({ clinic: 'akunalaber', month: lastMonth, saved: true, counts: september, notes: 'Saved' });
+
+    await vi.waitFor(() => expect(showSnackbar).toHaveBeenCalled());
+    expect(screen.getByLabelText('Notes')).toHaveValue('Two primary schools visited, and a market');
+  });
+
   it("says which row's age groups do not add up, or count more females or positives than screened, and will not save", async () => {
     backendAnswers();
     renderPage();

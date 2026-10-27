@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import {
   Button,
   InlineNotification,
@@ -71,12 +72,13 @@ export default function ScreeningCounts() {
   const { settingLabel, metricLabel } = useScreeningLabels();
   const [chosenClinic, setChosenClinic] = useState('');
   const offered = (uuid?: string) => clinics.some((option) => option.uuid === uuid);
-  // The clinic the user is signed in at, where it is one of the clinics, so counts are not typed in for another.
+  // The clinic the user is signed in at, where offered, so counts are not typed in for another.
   const clinic = [chosenClinic, sessionLocation?.uuid].find(offered) ?? clinics[0]?.uuid ?? '';
   const clinicName = clinics.find(({ uuid }) => uuid === clinic)?.display;
   // The month before this one, which a clinic enters once it has ended.
   const [month, setMonth] = useState(months[1]);
   const { month: saved, error, isLoading, mutate } = useScreeningMonth(clinic || null, month);
+  const { mutate: mutateCache } = useSWRConfig();
   // By clinic and month, so looking at another month and coming back keeps what was typed.
   const [edits, setEdits] = useState<Record<string, { draft: Draft; notes: string }>>({});
   const editKey = `${clinic}/${month}`;
@@ -84,13 +86,13 @@ export default function ScreeningCounts() {
   const notes = edits[editKey]?.notes ?? saved?.notes ?? '';
   const edit = (change: Partial<{ draft: Draft; notes: string }>) =>
     setEdits((current) => ({ ...current, [editKey]: { draft, notes, ...current[editKey], ...change } }));
-  const forget = (key: string) =>
-    setEdits((current) => Object.fromEntries(Object.entries(current).filter(([other]) => other !== key)));
+  const without = (current: typeof edits, key: string) =>
+    Object.fromEntries(Object.entries(current).filter(([other]) => other !== key));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const reset = () => {
-    forget(editKey);
+    setEdits((current) => without(current, editKey));
     setSaveError(null);
   };
 
@@ -127,11 +129,12 @@ export default function ScreeningCounts() {
   const save = async () => {
     setSaving(true);
     setSaveError(null);
+    const sent = edits[editKey];
     try {
       const counts = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, Number(value)]));
-      const result = await saveScreeningMonth(clinic, month, counts, notes);
-      await mutate(result, { revalidate: false });
-      forget(editKey);
+      await saveScreeningMonth(clinic, month, counts, notes, mutateCache);
+      // Kept if typed into while saving, as that is not what was saved.
+      setEdits((current) => (current[editKey] === sent ? without(current, editKey) : current));
       showSnackbar({
         kind: 'success',
         title: t('screeningCountsSaved', 'Screening counts for {{clinic}}, {{month}} saved', {
