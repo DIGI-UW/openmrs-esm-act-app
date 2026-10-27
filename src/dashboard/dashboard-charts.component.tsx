@@ -22,7 +22,9 @@ const labelColours: Record<string, string> = {
   Normal: '#42be65',
   'Confirmatory echo normal': '#42be65',
   'CHD spontaneous resolution': '#6fdc8c',
+  RHD: teal,
   'Congenital heart disease': '#a56eff',
+  Congenital: '#a56eff',
   'Other heart disease': '#b28600',
   Other: '#b28600',
   School: '#0f62fe',
@@ -35,7 +37,9 @@ const labelColours: Record<string, string> = {
 const spareColours = ['#9f1853', '#002d9c', '#6929c4', '#005d5d', '#a2191f'];
 // 1: emergent, 2: urgent and 3: elective, by the number an urgency starts with.
 const urgencyColours = ['#da1e28', '#ff832b', '#f1c21b'];
-const doneColours = [teal, '#e0e0e0'];
+// A second urgency starting with the same number, as an old "2 - within 1 month" beside "2: urgent", in a darker shade.
+const urgencyColoursAgain = ['#750e13', '#8a3800', '#8e6a00'];
+const doneColours = [teal, '#d0e2ff'];
 const unnumberedColours = ['#8d8d8d', '#525252', notRecorded];
 
 const scaleOf = (labels: Array<string>, colours: Array<string>) =>
@@ -194,6 +198,7 @@ export function StackedBars({
   data,
   groups,
   horizontal,
+  asShares,
   colours,
   height,
 }: {
@@ -201,14 +206,28 @@ export function StackedBars({
   data: Array<{ group: string; key: string; value: number }>;
   groups: Array<string>;
   horizontal?: boolean;
+  asShares?: boolean;
   colours: 'urgency' | 'doneNotDone';
   height: string;
 }) {
   // Full names on a phone leave the bars no room; the list under the chart names each in full.
   const phone = useLayoutType() === 'phone';
   const keys = { mapsTo: 'key', scaleType: ScaleTypes.LABELS, ...(!phone && { truncation: whole }) };
-  const values = { mapsTo: 'value', stacked: true };
+  const values = { mapsTo: 'value', stacked: true, ...(asShares && { percentage: true }) };
   const numbered = (group: string) => urgencyColours[parseInt(group, 10) - 1];
+  // The form's own urgencies read "2: urgent", so another starting with 2 takes the darker shade.
+  const numberedColour = (group: string) => {
+    const number = parseInt(group, 10);
+    const shared = groups.some((other) => other !== group && parseInt(other, 10) === number);
+    return (shared && !/^\d+:/.test(group) ? urgencyColoursAgain : urgencyColours)[number - 1];
+  };
+  // Shares put every row on one length, so rows with different denominators compare at a glance.
+  const rows = asShares
+    ? data.map((entry) => {
+        const whole = data.filter((other) => other.key === entry.key).reduce((sum, other) => sum + other.value, 0);
+        return { ...entry, value: whole ? Math.round((entry.value / whole) * 1000) / 10 : 0 };
+      })
+    : data;
   const scale =
     colours === 'urgency'
       ? {
@@ -216,10 +235,10 @@ export function StackedBars({
             groups.filter((group) => !numbered(group)),
             unnumberedColours,
           ),
-          ...Object.fromEntries(groups.filter(numbered).map((group) => [group, numbered(group)])),
+          ...Object.fromEntries(groups.filter(numbered).map((group) => [group, numberedColour(group)])),
         }
       : scaleOf(groups, doneColours);
-  const stableData = useStable(data);
+  const stableData = useStable(rows);
   const options = useStable({
     ...base(name, height),
     color: { scale },

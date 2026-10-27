@@ -64,6 +64,7 @@ describe('RunChartCard', () => {
       endDate: dayjs().format('YYYY-MM-DD'),
       points: 'week',
     });
+    expect(screen.getByRole('heading', { name: 'Run charts', level: 2 })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Retained in care.*All clinics/ })).toBeInTheDocument();
     expect(LineChart).toHaveBeenCalled();
   });
