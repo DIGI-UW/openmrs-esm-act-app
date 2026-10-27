@@ -47,6 +47,12 @@
   min-width: 22rem;
 }
 
+// Carbon's switcher takes the row's whole width unless held to its three choices.
+.points {
+  flex: none;
+  width: 16rem;
+}
+
 .chart {
   min-width: 0;
 
@@ -146,6 +152,17 @@
 .cardMetric {
   @include type.type-style('heading-04');
   font-variant-numeric: tabular-nums;
+}
+
+.cardDescription {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin: -#{layout.$spacing-03} 0 layout.$spacing-05;
+}
+
+.cardHeading {
+  @include type.type-style('heading-compact-01');
+  margin-bottom: layout.$spacing-04;
 }
 
 .cardNote {

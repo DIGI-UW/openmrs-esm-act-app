@@ -12,6 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   Tile,
 } from '@carbon/react';
 import { OpenmrsDatePicker, ReportsPictogram, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
@@ -87,10 +88,12 @@ function Section({
   clinic,
   onShowAll,
   wide,
+  tag,
   controls,
   children,
 }: {
   title: string;
+  tag?: React.ReactNode;
   /** What its error calls it, where the title carries a count. */
   name?: string;
   description?: string;
@@ -105,7 +108,7 @@ function Section({
   const { t } = useTranslation();
   return (
     <div className={wide ? styles.wide : undefined}>
-      <ActHomeCard title={title}>
+      <ActHomeCard title={title} tag={tag}>
         {description && <p className={styles.description}>{description}</p>}
         {controls}
         {state.error ? (
@@ -207,10 +210,20 @@ const stateOf = (report: { isLoading: boolean; error?: Error; mutate: () => unkn
 
 const allZero = (counts: Array<Count>) => counts.every((count) => !count.value);
 
+/** An urgency's leading number, as a phone's narrow table heads it, unless another urgency starts with the same one. */
+const urgencyHeader = (urgency: string, urgencies: Array<string>) => {
+  const number = parseInt(urgency, 10);
+  return Number.isNaN(number) || urgencies.filter((other) => parseInt(other, 10) === number).length > 1
+    ? urgency
+    : String(number);
+};
+
 const adherentSteps = ['Adherent (80%+)', 'Adherent'];
 // The care cascade counts these from ACT Core's adherence as of its last run, whatever the end date.
 const stepsCountedToday = ['Covered today', ...adherentSteps];
 const earliestAsOf = '1900-01-01';
+// The design's order; a measure it does not name, such as consultations, comes last.
+const measureOrder = ['retainedInCare', 'echocardiogram', 'interventionAssigned', 'interventions', 'warfarin'];
 
 function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onShowAll: () => void }) {
   const { t } = useTranslation();
@@ -251,19 +264,41 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const screeningReport = useReportDataset(dashboard.showScreening ? dashboard.screeningCascadeReport : null, params);
   const diagnosesReport = useReportDataset(dashboard.showScreening ? dashboard.screeningDiagnosesReport : null, params);
 
-  const measures = optimisationReport.rows.map((row: ReportRow) => {
-    const done = Number(row.done ?? 0);
-    const notDone = row.not_done === null || row.not_done === undefined ? null : Number(row.not_done);
-    return { measure: String(row.measure), label: measureLabel(t, String(row.measure)), done, notDone };
-  });
+  const measures = optimisationReport.rows
+    .map((row: ReportRow) => {
+      const done = Number(row.done ?? 0);
+      const notDone = row.not_done === null || row.not_done === undefined ? null : Number(row.not_done);
+      return { measure: String(row.measure), label: measureLabel(t, String(row.measure)), done, notDone };
+    })
+    .sort((a, b) => (measureOrder.indexOf(a.measure) + 1 || 99) - (measureOrder.indexOf(b.measure) + 1 || 99));
 
-  const screening = screeningReport.rows.map((row) => ({ label: String(row.step), value: Number(row.patients ?? 0) }));
+  // The report's first step is active RHD, which is not part of screening; the rest are named as the design reads them.
+  const screeningStepNames: Record<string, string> = {
+    'Confirmatory Diagnosis': t('screenedPositive', 'Screened positive'),
+    Diagnosed: t('hadConfirmatoryEcho', 'Had a confirmatory echo'),
+    'Heart Disease': t('heartDisease', 'Heart disease'),
+  };
+  const screening = screeningReport.rows
+    .filter((row) => row.step !== 'Active')
+    .map((row) => ({
+      label: screeningStepNames[String(row.step)] ?? String(row.step),
+      value: Number(row.patients ?? 0),
+    }));
+  const diagnosisNames: Record<string, string> = {
+    'Rheumatic Heart Disease/Rheumatic Fever': t('rhd', 'RHD'),
+    'Congenital heart disease': t('congenital', 'Congenital'),
+    'Other heart disease': t('other', 'Other'),
+  };
   const byBreakdown = (breakdown: string, column: string) =>
     diagnosesReport.rows
       .filter((row) => row.breakdown === breakdown)
       .map((row) => ({ label: String(row[column] ?? t('none', 'None')), value: Number(row.patients ?? 0) }));
-  const diagnoses = byBreakdown('category', 'category');
+  const diagnoses = byBreakdown('category', 'category').map((count) => ({
+    ...count,
+    label: diagnosisNames[count.label] ?? count.label,
+  }));
   const rhdDetails = byBreakdown('rhdDetails', 'details');
+  const screenDetectedRhd = rhdDetails.reduce((sum, count) => sum + count.value, 0);
 
   // By the report's step names, not careCascade.steps, which sets what the cascade section draws.
   const stepCount = (...steps: Array<string>) => {
@@ -366,7 +401,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         <Section
           title={t('activeRegistrantsCount', 'Active registrants: {{count}}', { count: registrants.active })}
           name={t('activeRegistrants', 'Active registrants')}
-          description={t('activeRegistrantsDescription', 'Sex, age and disease of the active patients')}
+          description={t('activeRegistrantsDescription', 'Sex, age and disease of the patients active today')}
           state={stateOf(registrantsReport, !registrants.active)}
           wide
           {...section}
@@ -381,7 +416,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               <Bars counts={registrants.age} testId="dashboard-age" figureOf={registrantsBy('age')} />
             </div>
             <div>
-              <h4 className={styles.subheading}>{t('diseaseCategory', 'Disease category')}</h4>
+              <h4 className={styles.subheading}>{t('disease', 'Disease')}</h4>
               <Bars counts={registrants.category} testId="dashboard-category" figureOf={registrantsBy('disease')} />
             </div>
           </div>
@@ -405,7 +440,9 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   <TableRow>
                     <TableHeader>{t('procedure', 'Procedure')}</TableHeader>
                     {waitlist.urgencies.map((urgency) => (
-                      <TableHeader key={urgency}>{waitlistName(t, urgency)}</TableHeader>
+                      <TableHeader key={urgency}>
+                        {phone ? urgencyHeader(urgency, waitlist.urgencies) : waitlistName(t, urgency)}
+                      </TableHeader>
                     ))}
                   </TableRow>
                 </TableHead>
@@ -434,6 +471,12 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   ))}
                 </TableBody>
               </Table>
+              {phone &&
+                waitlist.urgencies.some((urgency) => urgencyHeader(urgency, waitlist.urgencies) !== urgency) && (
+                  <p className={styles.performed}>
+                    {waitlist.urgencies.map((urgency) => waitlistName(t, urgency)).join(', ')}
+                  </p>
+                )}
             </div>
           ) : (
             <>
@@ -495,6 +538,11 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         </Section>
         <Section
           title={t('medicalOptimisation', 'Medical optimisation')}
+          description={t(
+            'medicalOptimisationDescription',
+            'Of the {{count}} active registrants, unless a row says otherwise',
+            { count: registrants.active },
+          )}
           state={stateOf(
             optimisationReport,
             measures.every((measure) => !measure.done && !measure.notDone),
@@ -503,8 +551,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         >
           <StackedBars
             name={t('medicalOptimisation', 'Medical optimisation')}
+            // Carbon draws a horizontal chart's first key at the bottom, so the list's first row goes last.
             data={measures
               .filter((measure) => measure.notDone !== null)
+              .reverse()
               .flatMap((measure) => [
                 { group: t('done', 'Done'), key: measure.label, value: measure.done },
                 { group: t('notDone', 'Not done'), key: measure.label, value: measure.notDone },
@@ -513,6 +563,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             colours="doneNotDone"
             height="18rem"
             horizontal
+            asShares
           />
           <ul className={styles.totals}>
             {measures.map((measure) => (
@@ -548,15 +599,17 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             ))}
           </ul>
         </Section>
-        <div className={styles.wide}>
-          <RunChartCard scope={scope} />
-        </div>
         {dashboard.showScreening && (
           <Section
             title={t('screeningCascade', 'Screening cascade')}
+            tag={
+              <Tag type="cool-gray" size="sm">
+                {t('screeningProgrammeSites', 'Screening programme sites')}
+              </Tag>
+            }
             description={t(
               'screeningCascadeDescription',
-              'Registrants found by screening, and what their confirmatory echo showed',
+              'Registrants found by screening (Screen + Yes), and what their confirmatory echo showed',
             )}
             state={{
               isLoading: screeningReport.isLoading || diagnosesReport.isLoading,
@@ -593,13 +646,18 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                 />
               </div>
               <div>
-                <h4 className={styles.subheading}>{t('screenDetectedRhd', 'RHD details of the screen-detected')}</h4>
+                <h4 className={styles.subheading}>
+                  {t('screenDetectedRhd', 'RHD details of the {{count}}', { count: screenDetectedRhd })}
+                </h4>
                 <Bars counts={rhdDetails} testId="dashboard-screening-details" />
               </div>
             </div>
           </Section>
         )}
         {dashboard.showScreening && <ScreeningFromRegistrations scope={scope} asOf={asOf} {...section} />}
+        <div className={styles.wide}>
+          <RunChartCard scope={scope} />
+        </div>
       </div>
     </>
   );
@@ -693,14 +751,16 @@ function ScreeningFromRegistrations({
     >
       <div className={styles.columns}>
         <div className={styles.registrationTiles}>
-          <Tile className={styles.tile} data-testid="dashboard-registration-tile">
-            <span className={styles.tileLabel}>{t('registered', 'Registered')}</span>
-            <span className={styles.tileValue}>{registered}</span>
-          </Tile>
-          <Tile className={styles.tile} data-testid="dashboard-registration-tile">
-            <span className={styles.tileLabel}>{t('female', 'Female')}</span>
-            <span className={styles.tileValue}>{share(female, registered)}%</span>
-          </Tile>
+          <div className={styles.registrationPair}>
+            <Tile className={styles.tile} data-testid="dashboard-registration-tile">
+              <span className={styles.tileLabel}>{t('registered', 'Registered')}</span>
+              <span className={styles.tileValue}>{registered}</span>
+            </Tile>
+            <Tile className={styles.tile} data-testid="dashboard-registration-tile">
+              <span className={styles.tileLabel}>{t('female', 'Female')}</span>
+              <span className={styles.tileValue}>{share(female, registered)}%</span>
+            </Tile>
+          </div>
           <div>
             <h4 className={styles.subheading}>{t('screenPlus', 'Screen +')}</h4>
             <Bars counts={inOrder(rows, 'screen', screenOrder)} testId="dashboard-screen-positive" />

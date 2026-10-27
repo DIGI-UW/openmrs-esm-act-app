@@ -103,9 +103,15 @@ export function RunChartCard({ scope }: { scope: Record<string, string> }) {
 
   return (
     <ActHomeCard
-      title={t('runChartTitle', '{{metric}}, {{clinic}}', { metric: label, clinic: clinicName })}
+      title={t('runCharts', 'Run charts')}
       link={{ label: t('openRunCharts', 'Open run charts'), to: `\${openmrsSpaBase}/home/act-run-charts?${query}` }}
     >
+      <p className={styles.cardDescription}>
+        {t('runChartsCardDescription', "A clinic's figures over time, from a snapshot taken every night")}
+      </p>
+      <h3 className={styles.cardHeading}>
+        {t('runChartTitle', '{{metric}}, {{clinic}}', { metric: label, clinic: clinicName })}
+      </h3>
       {body}
     </ActHomeCard>
   );
