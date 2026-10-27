@@ -214,26 +214,28 @@ export default function ScreeningCounts() {
           </TableBody>
         </Table>
         {/* Polite, so a count still being typed is not announced as an error at each digit. */}
-        <div aria-live="polite">
-          {settings.some((setting) => rowErrors[setting]) ? (
-            settings
-              .filter((setting) => rowErrors[setting])
-              .map((setting) => (
-                <p
-                  key={setting}
-                  id={`screening-${setting}-error`}
-                  className={styles.rowError}
-                  data-testid="screening-row-error"
-                >
-                  {settingLabel[setting]}: {rowErrors[setting]}
-                </p>
-              ))
-          ) : (
-            <p className={styles.rule}>
-              {t('screeningAgesAddUp', "Each row's age groups add up to its screened total.")}
-            </p>
-          )}
-        </div>
+        {mayEnter && (
+          <div aria-live="polite">
+            {settings.some((setting) => rowErrors[setting]) ? (
+              settings
+                .filter((setting) => rowErrors[setting])
+                .map((setting) => (
+                  <p
+                    key={setting}
+                    id={`screening-${setting}-error`}
+                    className={styles.rowError}
+                    data-testid="screening-row-error"
+                  >
+                    {settingLabel[setting]}: {rowErrors[setting]}
+                  </p>
+                ))
+            ) : (
+              <p className={styles.rule}>
+                {t('screeningAgesAddUp', "Each row's age groups add up to its screened total.")}
+              </p>
+            )}
+          </div>
+        )}
         {mayEnter ? (
           <TextArea
             id="screening-notes"

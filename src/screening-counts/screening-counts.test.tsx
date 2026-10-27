@@ -230,6 +230,7 @@ describe('Screening counts', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Save / })).not.toBeInTheDocument();
     expect(screen.getByText('Two primary schools visited')).toBeInTheDocument();
+    expect(screen.queryByText("Each row's age groups add up to its screened total.")).not.toBeInTheDocument();
   });
 
   it('offers a site administrator only the clinics on their account', async () => {
