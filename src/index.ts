@@ -264,6 +264,16 @@ export const refreshFlagsDashboard = getAsyncLifecycle(
   options,
 );
 
+export const screeningCountsDashboardLink = getAsyncLifecycle(
+  () => import('./screening-counts/screening-counts-dashboard-link.component'),
+  options,
+);
+
+export const screeningCountsDashboard = getAsyncLifecycle(
+  () => import('./screening-counts/screening-counts.component'),
+  options,
+);
+
 export const downloadDashboardLink = getAsyncLifecycle(
   () => import('./download/download-dashboard-link.component'),
   options,

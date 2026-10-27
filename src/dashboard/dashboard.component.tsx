@@ -5,6 +5,8 @@ import {
   Button,
   InlineNotification,
   Layer,
+  Select,
+  SelectItem,
   SkeletonText,
   Table,
   TableBody,
@@ -20,6 +22,7 @@ import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
+import { useClinicLimit } from '../clinic-limit';
 import { useClinics } from '../programme-report/clinics.resource';
 import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
@@ -37,7 +40,15 @@ import {
 } from './dashboard-figure';
 import { RunChartCard } from '../run-charts/run-chart-card.component';
 import { DashboardFigure } from './dashboard-figure.component';
-import { type Count, registrantCounts, share, waitlistCounts, waitlistName } from './dashboard-counts';
+import { type Count, registrantCounts, share, shares, waitlistCounts, waitlistName } from './dashboard-counts';
+import {
+  monthName,
+  recentMonths,
+  screeningMonthsOffered,
+  settings,
+  useScreeningLabels,
+  useScreeningSummary,
+} from '../screening-counts/screening-counts.resource';
 import styles from './dashboard.scss';
 
 type Scope = Record<string, string>;
@@ -46,27 +57,35 @@ function Bars({
   counts,
   testId,
   figureOf,
+  withShares,
 }: {
   counts: Array<Count>;
   testId: string;
   figureOf?: (label: string) => Figure;
+  /** Prints each count's share of the group too, the shares rounded to add up to 100. */
+  withShares?: boolean;
 }) {
   const { t } = useTranslation();
   if (!counts.length) {
     return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
   }
   const largest = Math.max(0, ...counts.map((count) => count.value));
+  const percents = shares(counts.map((count) => count.value));
   return (
     <div className={styles.bars}>
-      {counts.map((count) => (
-        <div key={count.label} className={styles.bar} data-testid={testId}>
+      {counts.map((count, index) => (
+        <div key={count.label} className={withShares ? styles.shareBar : styles.bar} data-testid={testId}>
           <span>{count.label}</span>
           <span className={styles.track}>
             <span className={styles.fill} style={{ width: `${share(count.value, largest)}%` }} />
           </span>
           <span className={styles.count}>
-            <CountLink value={count.value} figure={figureOf?.(count.label)} />
+            <CountLink
+              value={withShares ? count.value.toLocaleString() : count.value}
+              figure={figureOf?.(count.label)}
+            />
           </span>
+          {withShares && <span className={styles.share}>{percents[index]}%</span>}
         </div>
       ))}
     </div>
@@ -90,6 +109,7 @@ function Section({
   wide,
   tag,
   controls,
+  emptyText,
   children,
 }: {
   title: string;
@@ -103,6 +123,8 @@ function Section({
   wide?: boolean;
   /** Shown whatever the state, so a period that counts nobody can still be changed. */
   controls?: React.ReactNode;
+  /** What an empty section says, where it counts something other than patients. */
+  emptyText?: string;
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
@@ -130,9 +152,10 @@ function Section({
         ) : state.isEmpty ? (
           <div className={styles.state}>
             <p className={styles.empty}>
-              {clinic
-                ? t('nobodyAtClinicToCount', 'Nobody at {{clinic}} to count', { clinic })
-                : t('noPatientsToCount', 'No patients to count')}
+              {emptyText ??
+                (clinic
+                  ? t('nobodyAtClinicToCount', 'Nobody at {{clinic}} to count', { clinic })
+                  : t('noPatientsToCount', 'No patients to count'))}
             </p>
             {clinic && (
               <Button kind="tertiary" size="md" onClick={onShowAll}>
@@ -654,6 +677,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             </div>
           </Section>
         )}
+        {dashboard.showScreening && <RhdScreening scope={scope} {...section} />}
         {dashboard.showScreening && <ScreeningFromRegistrations scope={scope} asOf={asOf} {...section} />}
         <div className={styles.wide}>
           <RunChartCard scope={scope} />
@@ -674,7 +698,7 @@ const inOrder = (rows: Array<ReportRow>, breakdown: string, order: Array<string>
     .map((row) => ({ label: String(row.label), value: Number(row.patients ?? 0) }))
     .sort((a, b) => (order.indexOf(a.label) + 1 || 99) - (order.indexOf(b.label) + 1 || 99));
 
-/** The screening figures the registry can give until screening counts are decided (#184), for a registration period. */
+/** The screening figures the registry can give from its registrations, for a registration period. */
 function ScreeningFromRegistrations({
   scope,
   asOf,
@@ -710,7 +734,7 @@ function ScreeningFromRegistrations({
       title={t('screeningFromRegistrations', 'Screening, from registrations')}
       description={t(
         'screeningFromRegistrationsDescription',
-        'Patients registered in the period: what the registry can say about screening until screening counts are decided',
+        'Patients registered in the period: what the registry itself can say about screening',
       )}
       state={{ ...stateOf(report, !registered), isLoading: report.isLoading || pending }}
       clinic={clinic}
@@ -780,6 +804,139 @@ function ScreeningFromRegistrations({
           />
         </div>
       </div>
+    </Section>
+  );
+}
+
+/** ACT 2.0's RHD screening section: the monthly counts the clinics enter on the Screening counts page, for a period. */
+function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: string | null; onShowAll: () => void }) {
+  const { t } = useTranslation();
+  const months = useMemo(() => recentMonths(screeningMonthsOffered), []);
+  const { settingLabel, metricLabel } = useScreeningLabels();
+  const [chosen, setChosen] = useState<{ start?: string; end?: string }>({});
+  // The twelve months to the last one ended, as a clinic enters a month once it has ended.
+  const end = chosen.end ?? months[1];
+  // Never before the months the From list offers, so the list shows the month counted from.
+  const yearToEnd = dayjs(`${end}-01`).subtract(11, 'month').format('YYYY-MM');
+  const oldest = months[months.length - 1];
+  const start = chosen.start && chosen.start <= end ? chosen.start : yearToEnd < oldest ? oldest : yearToEnd;
+  // ACT Core holds a site administrator to their clinics; with none, ask nothing.
+  const limit = useClinicLimit();
+  const counted = limit.status === 'none' || (limit.status === 'ready' && limit.uuids.length > 0);
+  const pending = limit.status === 'pending';
+  const params = useMemo(
+    () => (counted ? { clinics: Object.values(scope), startMonth: start, endMonth: end } : null),
+    [counted, scope, start, end],
+  );
+  const { summary, error, isLoading, mutate } = useScreeningSummary(params);
+  const screened = summary?.screened ?? 0;
+  const monthSelect = (id: string, label: string, value: string, key: 'start' | 'end', options: Array<string>) => (
+    <Select
+      id={id}
+      labelText={label}
+      value={value}
+      onChange={(event) => setChosen((current) => ({ ...current, [key]: event.target.value }))}
+    >
+      {options.map((option) => (
+        <SelectItem key={option} value={option} text={monthName(option)} />
+      ))}
+    </Select>
+  );
+
+  // ACT Core adds the two clinics' months together.
+  const together = t('clinicsAddedTogether', '{{clinics}} added together', { clinics: clinic });
+  const counting =
+    (Object.keys(scope).length > 1 ? together : clinic) ??
+    (limit.status === 'ready'
+      ? limit.names.join(', ') || t('yourClinics', 'your clinics')
+      : t('everyClinic', 'every clinic'));
+
+  return (
+    <Section
+      title={t('rhdScreening', 'RHD screening')}
+      description={t('rhdScreeningDescription', 'Monthly counts, {{clinic}}, {{start}} to {{end}}', {
+        clinic: counting,
+        start: monthName(start),
+        end: monthName(end),
+      })}
+      state={{
+        isLoading: isLoading || pending,
+        error,
+        retry: () => void mutate(),
+        isEmpty: !summary?.months,
+      }}
+      clinic={clinic}
+      onShowAll={onShowAll}
+      emptyText={
+        clinic
+          ? t('noScreeningCountsAt', 'No screening counts entered for {{clinic}} in the period', { clinic })
+          : t('noScreeningCounts', 'No screening counts entered in the period')
+      }
+      wide
+      controls={
+        <div className={styles.filters}>
+          {monthSelect(
+            'dashboard-screening-from',
+            t('fromMonth', 'From'),
+            start,
+            'start',
+            months.filter((month) => month <= end),
+          )}
+          {monthSelect('dashboard-screening-to', t('toMonth', 'To'), end, 'end', months)}
+        </div>
+      }
+    >
+      <div className={styles.screeningTiles}>
+        <Tile className={styles.tile} data-testid="dashboard-screening-tile">
+          <span className={styles.tileLabel}>{metricLabel.screened}</span>
+          <span className={styles.tileValue}>{screened.toLocaleString()}</span>
+        </Tile>
+        <Tile className={styles.tile} data-testid="dashboard-screening-tile">
+          <span className={styles.tileLabel}>{metricLabel.females}</span>
+          <span className={styles.tileValue}>{share(summary?.females ?? 0, screened)}%</span>
+        </Tile>
+        <Tile className={styles.tile} data-testid="dashboard-screening-tile">
+          <span className={styles.tileLabel}>{metricLabel.positive}</span>
+          <span className={styles.tileValue}>{(summary?.positive ?? 0).toLocaleString()}</span>
+        </Tile>
+      </div>
+      <div className={styles.columns}>
+        <div>
+          <h4 className={styles.subheading}>{t('result', 'Result')}</h4>
+          <Bars
+            withShares
+            counts={[
+              { label: t('negative', 'Negative'), value: summary?.negative ?? 0 },
+              { label: metricLabel.positive, value: summary?.positive ?? 0 },
+            ]}
+            testId="dashboard-screening-result"
+          />
+        </div>
+        <div>
+          <h4 className={styles.subheading}>{t('age', 'Age')}</h4>
+          <Bars
+            withShares
+            counts={[
+              { label: metricLabel.children, value: summary?.children ?? 0 },
+              { label: metricLabel.adolescents, value: summary?.adolescents ?? 0 },
+              { label: metricLabel.adults, value: summary?.adults ?? 0 },
+            ]}
+            testId="dashboard-screening-age"
+          />
+        </div>
+        <div>
+          <h4 className={styles.subheading}>{t('setting', 'Setting')}</h4>
+          <Bars
+            withShares
+            counts={settings.map((setting) => ({
+              label: settingLabel[setting],
+              value: summary?.settings?.[setting] ?? 0,
+            }))}
+            testId="dashboard-screening-setting"
+          />
+        </div>
+      </div>
+      <p className={styles.note}>{t('sharesAddUpTo100', 'Shares are rounded so each group adds up to 100%.')}</p>
     </Section>
   );
 }

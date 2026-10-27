@@ -130,6 +130,27 @@
   margin-bottom: layout.$spacing-06;
 }
 
+.screeningTiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+}
+
+.shareBar {
+  @include type.type-style('body-compact-01');
+  display: grid;
+  grid-template-columns: minmax(6rem, 10rem) minmax(0, 1fr) 3.5rem 2.5rem;
+  align-items: center;
+  gap: layout.$spacing-04;
+}
+
+.note {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-top: layout.$spacing-05;
+}
+
 .registrationTiles {
   display: grid;
   align-content: start;

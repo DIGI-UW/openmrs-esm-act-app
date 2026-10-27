@@ -255,6 +255,10 @@ export const configSchema = {
       "Where the left nav's Flags and adherence leads: the page that refreshes them now, for a user holding Task: act.refreshFlags.",
       '${openmrsSpaBase}/home/act-refresh-flags',
     ),
+    screeningCountsUrl: link(
+      "Where the left nav's Screening counts leads: the page where each clinic's monthly screening counts are entered, for a user holding App: act.screeningCounts.",
+      '${openmrsSpaBase}/home/act-screening-counts',
+    ),
     logsUrl: link(
       "Where the left nav's Logs leads: ACT's Logs page (Activity, Patients opened, Downloads and Sign-ins), for a user holding View Audit Logs, View Read Audit Logs or View Security Audit Logs.",
       '${openmrsSpaBase}/home/act-logs',
@@ -392,7 +396,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        "Show the Dashboard's screening sections, the screening cascade and the screening from registrations. Turn it off at a site without a screening programme.",
+        "Show the Dashboard's screening sections: the screening cascade, RHD screening from the monthly screening counts, and the screening from registrations. Turn it off at a site without a screening programme.",
     },
     screeningReport: {
       _type: Type.String,
@@ -963,6 +967,7 @@ export interface Config {
     clinicsUrl: string;
     studiesUrl: string;
     refreshFlagsUrl: string;
+    screeningCountsUrl: string;
     logsUrl: string;
     auditLogsUrl: string;
     readAuditUrl: string;

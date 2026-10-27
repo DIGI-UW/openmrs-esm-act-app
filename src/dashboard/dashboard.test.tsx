@@ -52,6 +52,21 @@ const screeningRows = [
   { breakdown: 'detected', label: 'Not recorded', patients: 1 },
 ];
 
+/** The design's twelve months at one clinic: 6,840 screened, whose settings ACT 2.0 would have truncated to 99%. */
+const screeningSummary = {
+  startMonth: '2025-10',
+  endMonth: '2026-09',
+  months: 12,
+  screened: 6840,
+  females: 3899,
+  positive: 291,
+  negative: 6549,
+  children: 1348,
+  adolescents: 3896,
+  adults: 1596,
+  settings: { school: 4624, community: 1537, facility: 679 },
+};
+
 const patientRow = (name: string, value: string, date: string | null = null) => ({
   patient_uuid: `uuid-${name}`,
   rhd_id: `rhd-${name}`,
@@ -203,20 +218,24 @@ async function signIn(
   } as never);
   vi.mocked(openmrsFetch).mockImplementation(((url: string) =>
     Promise.resolve({
-      data: url.includes('/location?tag=RHD%20Tertiary')
-        ? {
-            results: [
-              { uuid: 'gulu', display: 'Gulu RRH' },
-              { uuid: 'lira', display: 'Lira RRH' },
-              { uuid: 'mbarara', display: 'Mbarara RRH' },
-            ],
-            totalCount: 3,
-          }
-        : url.includes('/location?tag=')
-          ? { results: [], totalCount: 0 }
-          : url.includes('?v=custom:(display)')
-            ? { display: url.includes('/gulu') ? 'Gulu RRH' : 'Lira RRH' }
-            : { tags: sessionLocation.tags },
+      data: url.includes('/actcore/screeningcounts/summary')
+        ? /clinic=(mbarara|arua)/.test(url)
+          ? { ...screeningSummary, months: 0, screened: 0, females: 0, positive: 0, negative: 0 }
+          : screeningSummary
+        : url.includes('/location?tag=RHD%20Tertiary')
+          ? {
+              results: [
+                { uuid: 'gulu', display: 'Gulu RRH' },
+                { uuid: 'lira', display: 'Lira RRH' },
+                { uuid: 'mbarara', display: 'Mbarara RRH' },
+              ],
+              totalCount: 3,
+            }
+          : url.includes('/location?tag=')
+            ? { results: [], totalCount: 0 }
+            : url.includes('?v=custom:(display)')
+              ? { display: url.includes('/gulu') ? 'Gulu RRH' : 'Lira RRH' }
+              : { tags: sessionLocation.tags },
     })) as never);
   vi.mocked(useReportDataset).mockImplementation((report, params) => {
     const counts = {
@@ -233,6 +252,12 @@ async function signIn(
     };
   });
 }
+
+const summaryUrls = () =>
+  vi
+    .mocked(openmrsFetch)
+    .mock.calls.map(([url]) => String(url))
+    .filter((url) => url.includes('/actcore/screeningcounts/summary'));
 
 const texts = (testId: string) => screen.getAllByTestId(testId).map((element) => element.textContent);
 
@@ -726,8 +751,9 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByText('Nobody at Arua RRH to count')).toHaveLength(7);
+    expect(await screen.findByText('No screening counts entered for Arua RRH in the period')).toBeInTheDocument();
     expect(screen.queryByText(/arua to count/)).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(7);
+    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(8);
   });
 
   it('reads the prophylaxis tile from the step the older cascade report names Prescribed Prophylaxis', async () => {
@@ -1290,6 +1316,100 @@ describe('Dashboard', () => {
     });
   });
 
+  describe('RHD screening', () => {
+    const lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
+    const yearToLastMonth = dayjs().subtract(12, 'month').format('YYYY-MM');
+
+    it("sums every clinic's counts for the twelve months to the last one, with shares that add up to 100", async () => {
+      await signIn();
+      renderPage();
+
+      expect(await screen.findAllByTestId('dashboard-screening-tile')).toHaveLength(3);
+      expect(texts('dashboard-screening-tile')).toEqual(['Screened6,840', 'Female57%', 'Positive291']);
+      expect(texts('dashboard-screening-result')).toEqual(['Negative6,54996%', 'Positive2914%']);
+      expect(texts('dashboard-screening-age')).toEqual([
+        'Children 0-91,34820%',
+        'Adolescents 10-193,89657%',
+        'Adults 20+1,59623%',
+      ]);
+      // ACT 2.0 truncated these to 67, 22 and 9.
+      expect(texts('dashboard-screening-setting')).toEqual([
+        'School4,62468%',
+        'Community1,53722%',
+        'Health facility67910%',
+      ]);
+      expect(summaryUrls().at(-1)).toMatch(
+        new RegExp(`/summary\\?startMonth=${yearToLastMonth}&endMonth=${lastMonth}$`),
+      );
+    });
+
+    it('counts the clinics chosen and the months picked', async () => {
+      await signIn();
+      renderPage();
+      await screen.findAllByTestId('dashboard-screening-tile');
+
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+      const from = dayjs().subtract(3, 'month').format('YYYY-MM');
+      await userEvent.selectOptions(screen.getByLabelText('From'), from);
+
+      await vi.waitFor(() =>
+        expect(summaryUrls().at(-1)).toMatch(
+          new RegExp(`/summary\\?clinic=lira&startMonth=${from}&endMonth=${lastMonth}$`),
+        ),
+      );
+      expect(await screen.findByText(new RegExp(`^Monthly counts, Lira RRH, `))).toBeInTheDocument();
+    });
+
+    it('says a cardiac and a primary care clinic are added together, as ACT Core sums both', async () => {
+      await signIn();
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&primaryCareClinic=hq');
+      renderPage();
+
+      await vi.waitFor(() => expect(summaryUrls().at(-1)).toMatch(/\/summary\?clinic=lira&clinic=hq&startMonth=/));
+      expect(await screen.findByText(/^Monthly counts, Lira RRH, Head office added together, /)).toBeInTheDocument();
+    });
+
+    it('says which clinic has no counts for the period, rather than drawing zeros', async () => {
+      await signIn();
+      renderPage();
+
+      await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'mbarara');
+
+      expect(await screen.findByText('No screening counts entered for Mbarara RRH in the period')).toBeInTheDocument();
+      expect(screen.queryByTestId('dashboard-screening-tile')).not.toBeInTheDocument();
+    });
+
+    it('counts from the oldest month offered when the year to the month chosen starts before it', async () => {
+      await signIn();
+      renderPage();
+      await screen.findAllByTestId('dashboard-screening-tile');
+      const to = dayjs().subtract(30, 'month').format('YYYY-MM');
+      const oldest = dayjs().subtract(35, 'month').format('YYYY-MM');
+
+      await userEvent.selectOptions(screen.getByLabelText('To'), to);
+
+      await vi.waitFor(() => expect(summaryUrls().at(-1)).toMatch(new RegExp(`startMonth=${oldest}&endMonth=${to}$`)));
+      expect(screen.getByLabelText('From')).toHaveValue(oldest);
+    });
+
+    it("names a clinic-limited administrator's own clinics, which ACT Core holds the sums to", async () => {
+      await signIn(undefined, {}, undefined, 'gulu,lira');
+      renderPage();
+
+      expect(await screen.findByText(/^Monthly counts, Gulu RRH, Lira RRH, /)).toBeInTheDocument();
+    });
+
+    it('asks nothing for a clinic-limited administrator with no clinics, and shows nothing', async () => {
+      await signIn(undefined, {}, undefined, '');
+      renderPage();
+
+      expect(await screen.findByText('No screening counts entered in the period')).toBeInTheDocument();
+      expect(screen.getByText(/^Monthly counts, your clinics, /)).toBeInTheDocument();
+      expect(screen.queryByTestId('dashboard-screening-tile')).not.toBeInTheDocument();
+      expect(summaryUrls()).toEqual([]);
+    });
+  });
+
   describe('screening from registrations', () => {
     const yearBack = dayjs().subtract(364, 'day').format('YYYY-MM-DD');
 
@@ -1411,6 +1531,8 @@ describe('Dashboard', () => {
       await screen.findAllByTestId('dashboard-tile');
       expect(screen.queryByText('Screening cascade')).not.toBeInTheDocument();
       expect(screen.queryByText('Screening, from registrations')).not.toBeInTheDocument();
+      expect(screen.queryByText('RHD screening')).not.toBeInTheDocument();
+      expect(summaryUrls()).toEqual([]);
       const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
       [SCREENING, DIAGNOSES, SCREENING_REGISTRATIONS].forEach((report) => expect(evaluated).not.toContain(report));
     });
