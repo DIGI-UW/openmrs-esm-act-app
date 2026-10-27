@@ -477,6 +477,23 @@
       "privileges": "Task: act.refreshFlags"
     },
     {
+      "name": "act-screening-counts-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "screeningCountsDashboardLink",
+      "meta": {
+        "name": "act-screening-counts",
+        "slot": "act-screening-counts-dashboard-slot",
+        "title": "screeningCounts"
+      },
+      "privileges": "App: act.screeningCounts"
+    },
+    {
+      "name": "act-screening-counts-dashboard",
+      "slot": "act-screening-counts-dashboard-slot",
+      "component": "screeningCountsDashboard",
+      "privileges": "App: act.screeningCounts"
+    },
+    {
       "name": "act-download-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "downloadDashboardLink",

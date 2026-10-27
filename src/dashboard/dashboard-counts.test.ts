@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cascadeShares, registrantCounts, waitlistCounts } from './dashboard-counts';
+import { cascadeShares, registrantCounts, shares, waitlistCounts } from './dashboard-counts';
 
 describe('dashboard counts', () => {
   it('reads status, and the active registrants by sex, age band in order and disease, from the registrants report', () => {
@@ -84,5 +84,16 @@ describe('dashboard counts', () => {
 
     expect(cascadeShares(steps).map(({ share }) => share)).toEqual([null, 50, 80]);
     expect(cascadeShares(steps, { Adherent: 'Initiated' }).map(({ share }) => share)).toEqual([null, 50, 40]);
+  });
+
+  it('rounds shares by largest remainder so they add up to 100, where ACT 2.0 truncated them to 98', () => {
+    // The design's settings: 4,624 school, 1,537 community, 679 health facility of 6,840.
+    expect(shares([4624, 1537, 679])).toEqual([68, 22, 10]);
+    // Truncating gives 33, 33, 33; the earlier value takes the point left over.
+    expect(shares([1, 1, 1])).toEqual([34, 33, 33]);
+    expect(shares([2, 1, 1, 1, 1, 1, 1])).toEqual([25, 13, 13, 13, 12, 12, 12]);
+    expect(shares([2, 1, 1, 1, 1, 1, 1]).reduce((sum, share) => sum + share, 0)).toBe(100);
+    expect(shares([0, 0])).toEqual([0, 0]);
+    expect(shares([5, 0])).toEqual([100, 0]);
   });
 });

@@ -1,0 +1,75 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  max-width: 56rem;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+}
+
+.explanation {
+  @include type.type-style('body-01');
+  color: $text-02;
+}
+
+.pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+
+  > * {
+    min-width: 14rem;
+  }
+}
+
+// The grid scrolls sideways on a phone rather than squeezing its inputs.
+.table {
+  display: block;
+  overflow-x: auto;
+}
+
+.setting {
+  @include type.type-style('body-compact-01');
+  padding-inline: layout.$spacing-05;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.count {
+  min-width: 4rem;
+
+  input {
+    text-align: right;
+  }
+}
+
+.rule {
+  @include type.type-style('label-01');
+  color: $support-02;
+}
+
+.rowError {
+  @include type.type-style('label-01');
+  color: $danger;
+}
+
+.label {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.actions {
+  display: flex;
+  gap: layout.$spacing-05;
+}
