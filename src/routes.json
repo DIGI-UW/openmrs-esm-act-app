@@ -771,6 +771,32 @@
       ]
     },
     {
+      "name": "act-medications-dashboard-link",
+      "component": "medicationsDashboardLink",
+      "meta": {
+        "slot": "act-medications-dashboard-slot",
+        "path": "act-medications",
+        "title": "Medications",
+        "icon": "omrs-icon-medication"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-medications-dashboard",
+      "slot": "act-medications-dashboard-slot",
+      "component": "medicationsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-inr-reviews-dashboard-link",
       "component": "inrReviewsDashboardLink",
       "meta": {
@@ -817,11 +843,21 @@
       ]
     },
     {
-      "name": "act-contact-card",
-      "slot": "patient-chart-summary-dashboard-slot",
-      "component": "contactCard",
+      "name": "act-clinics-banner",
+      "slot": "patient-banner-bottom-slot",
+      "component": "clinicsBanner",
       "privileges": [
         "Get People"
+      ]
+    },
+    {
+      "name": "act-medications-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "medicationsCard",
+      "meta": { "fullWidth": true },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
       ]
     },
     {

@@ -1,6 +1,12 @@
 import useSWR from 'swr';
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { answersIn, answerText, useChartEncounters } from './consultations.resource';
+import {
+  answersIn,
+  answerText,
+  type ChartEncounter,
+  type GroupedObs,
+  useChartEncounters,
+} from './consultations.resource';
 
 interface PersonDetails {
   attributes?: Array<{ attributeType: { uuid: string }; value: unknown }>;
@@ -26,6 +32,9 @@ export const diagnosisConcepts = {
   encounterType: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
   group: '594b4495-36dc-52a6-9810-15a9e2e2dcb9',
   category: '1a5aa050-661d-5e89-95d7-c1eba476df22',
+  active: 'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
+  started: '62321320-695e-5319-a306-40dfd6ad94b7',
+  ended: 'e9f2fceb-05be-577f-bf76-dde0647f01db',
   details: [
     'cfe17bb5-4a76-5f3a-9e1c-7b1e9b84a8e3',
     'd3f6e1a2-9c5b-5e84-8f2d-1a6c7b9e0d4f',
@@ -52,4 +61,43 @@ export function useLatestDiagnosis(patientUuid: string | null) {
     .map((member) => answerText(member.value))
     .sort();
   return { diagnosis: details.length ? `${category} (${details.join(', ')})` : category, error, isLoading };
+}
+
+export interface DiagnosisRow {
+  key: string;
+  diagnosis: string;
+  active: string;
+  started: string | null;
+  ended: string | null;
+}
+
+/** One Diagnosis answer group as a table row: the category with its details, and its status and dates. */
+export function toDiagnosisRow(group: GroupedObs, key: string): DiagnosisRow {
+  const one = (concept: string) => answersIn(group.groupMembers, concept)[0]?.value;
+  const category = answerText(one(diagnosisConcepts.category));
+  const details = (group.groupMembers ?? [])
+    .filter((member) => diagnosisConcepts.details.includes(member.concept.uuid))
+    .map((member) => answerText(member.value))
+    .sort();
+  return {
+    key,
+    diagnosis: details.length ? `${category} (${details.join(', ')})` : category,
+    active: answerText(one(diagnosisConcepts.active)),
+    started: one(diagnosisConcepts.started) ? String(one(diagnosisConcepts.started)) : null,
+    ended: one(diagnosisConcepts.ended) ? String(one(diagnosisConcepts.ended)) : null,
+  };
+}
+
+/** Every Diagnosis with a Category in the patient's latest Patient Information that has one; earlier records are superseded. */
+export function useDiagnoses(patientUuid: string | null) {
+  const { encounters, error, isLoading } = useChartEncounters(patientUuid, diagnosisConcepts.encounterType);
+  const withCategory = (encounter: ChartEncounter) =>
+    answersIn(encounter.obs, diagnosisConcepts.group).filter(
+      (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
+    );
+  const latest = encounters.find((encounter) => withCategory(encounter).length);
+  const diagnoses = latest
+    ? withCategory(latest).map((group, index) => toDiagnosisRow(group, `${latest.uuid}-${index}`))
+    : [];
+  return { diagnoses, error, isLoading };
 }

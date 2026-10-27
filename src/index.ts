@@ -12,6 +12,7 @@ import worklistsDashboardLinkComponent from './worklists/worklists-dashboard-lin
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { consultationsDashboardMeta } from './consultations/consultations.meta';
+import { medicationsDashboardMeta } from './medications/medications.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import { researchPageDashboardMeta } from './research/research-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
@@ -87,9 +88,13 @@ export const researchPageDashboard = getAsyncLifecycle(() => import('./research/
 export const consultationsDashboardLink = getSyncLifecycle(createDashboard(consultationsDashboardMeta), options);
 
 export const consultationsDashboard = getAsyncLifecycle(
-  () => import('./consultations/consultations.component'),
+  () => import('./consultations/repeated-lists.component'),
   options,
 );
+
+export const medicationsDashboardLink = getSyncLifecycle(createDashboard(medicationsDashboardMeta), options);
+
+export const medicationsDashboard = getAsyncLifecycle(() => import('./medications/medications.component'), options);
 
 export const inrReviewsDashboardLink = getAsyncLifecycle(() => import('./inr/inr-dashboard-link.component'), options);
 
@@ -103,7 +108,9 @@ export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/cl
 
 export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
 
-export const contactCard = getAsyncLifecycle(() => import('./contact/contact-card.component'), options);
+export const clinicsBanner = getAsyncLifecycle(() => import('./contact/clinics-banner.component'), options);
+
+export const medicationsCard = getAsyncLifecycle(() => import('./medications/medications-card.component'), options);
 
 export const cliniciansOnlyNote = getAsyncLifecycle(
   () => import('./chart-note/clinicians-only-note.component'),

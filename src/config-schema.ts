@@ -486,11 +486,17 @@ export const configSchema = {
         nextPeriod: '1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         medication: '0734567e-4f0a-5090-9d74-b953921a30e6',
         medicationDose: '8879385e-d35e-50a3-a3d0-4333d95d4878',
+        medicationInterval: '04d77200-fa10-5c15-b58a-609bf8eadefb',
+        dateStarted: '5bcc7d12-b279-5955-815c-090a1f392071',
+        dateAdded: 'b8514967-2259-5a4d-9ac5-b9319144b8dc',
+        chronicCondition: 'd80478b2-4ed2-5d93-a604-6b5b50dab441',
+        allergy: 'cd73e118-64ee-5855-b276-f7cb44fdcf7e',
+        complication: 'a04d2268-a7de-589f-b4b6-92c47c13e342',
         recommendation: 'ce93d393-1df5-587f-bf11-c373eac2ccf4',
         completed: '1632f8dc-195d-5d67-a52e-6c7a057cb536',
       },
       _description:
-        "The consultation's questions: Date of Consultation Visit, NYHA Classification, Secondary Antibiotic Prophylaxis (the group and its regimen share the concept), Date Stopped, Next Consultation Time Amount and Period, Cardiac Medication (group and medicine share the concept) and its Dosing, and Interventional Recommendation(s) (group and procedure share the concept) with its Completed answer.",
+        "The consultation's questions: Date of Consultation Visit, NYHA Classification, Secondary Antibiotic Prophylaxis (the group and its regimen share the concept), Date Stopped, Next Consultation Time Amount and Period, Cardiac Medication (group and medicine share the concept) with its Dosing, Dosing Interval and Date Started, Date Added on the chronic condition, allergy and RHD complication lists (each group and its name share the concept), and Interventional Recommendation(s) (group and procedure share the concept) with its Completed answer.",
     },
     vitaminKAntagonists: {
       _type: Type.Array,
@@ -498,6 +504,20 @@ export const configSchema = {
       _default: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
       _description:
         'The Cardiac Medication answers that put a patient on warfarin, as the INR flags read them: warfarin and the other vitamin K antagonist. A patient whose latest consultation records one, not stopped, has the INR reviews page and card.',
+    },
+  },
+  medications: {
+    encounterType: {
+      _type: Type.UUID,
+      _default: 'e3f1b6a8-5c2d-4f7e-9a41-6d8b2c0e7f53',
+      _description:
+        "The RHD Medication Update encounter type. The Medications page reads its Cardiac Medication records with the consultations', the latest record of a medicine deciding whether it is active.",
+    },
+    form: {
+      _type: Type.UUID,
+      _default: '6fc2cd4c-3bd8-3888-88ae-53e6eb7debb3',
+      _description:
+        "The RHD Medication Update form, which the Medications page's Add opens. Who may record it is its encounter type's edit privilege.",
     },
   },
   inrReviews: {
@@ -535,7 +555,7 @@ export const configSchema = {
         cardiacClinic: 'fe261119-2911-5b36-be40-8f9827826987',
       },
       _description:
-        "The person attribute types the Contact card shows: Primary Phone, Phone Owner Name, Primary Care Clinic and Assigned Cardiac Clinic. The village is the person's address.",
+        "The person attribute types of the patient's contact details: Primary Phone, Phone Owner Name, Primary Care Clinic and Assigned Cardiac Clinic. The patient banner shows the two clinics and the Consultation visits card the cardiac clinic; the banner's Show more lists the phone and phone owner from the patient banner app's contactAttributeTypes.",
     },
   },
   clinicianPrivilege: {
@@ -1006,12 +1026,19 @@ export interface Config {
       | 'nextPeriod'
       | 'medication'
       | 'medicationDose'
+      | 'medicationInterval'
+      | 'dateStarted'
+      | 'dateAdded'
+      | 'chronicCondition'
+      | 'allergy'
+      | 'complication'
       | 'recommendation'
       | 'completed',
       string
     >;
     vitaminKAntagonists: Array<string>;
   };
+  medications: { encounterType: string; form: string };
   inrReviews: {
     encounterType: string;
     form: string;
