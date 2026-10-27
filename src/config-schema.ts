@@ -562,7 +562,7 @@ export const configSchema = {
     _type: Type.String,
     _default: 'Task: act.enterClinicalForms',
     _description:
-      'The privilege that marks a clinician for the chart: the Conditions card shows only to its holders, the Prophylaxis card offers its holders both Record BPG and Record oral whatever is prescribed, and its non-holders read "Clinical dashboards are only visible to clinicians" under the chart\'s pages.',
+      'The privilege that marks a clinician for the chart: the Prophylaxis card offers its holders both Record BPG and Record oral whatever is prescribed, and its non-holders read "Clinical dashboards are only visible to clinicians" under the chart\'s pages.',
   },
   waitingList: {
     report: {
