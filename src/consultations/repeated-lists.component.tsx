@@ -1,17 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTableSkeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
 import {
-  Button,
-  DataTableSkeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@carbon/react';
-import {
-  AddIcon,
   CardHeader,
   EmptyCard,
   ErrorState,
@@ -22,21 +12,21 @@ import {
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import Consultations, { useStartConsultation } from './consultations.component';
+import Consultations from './consultations.component';
 import { useConsultations } from './consultations.resource';
 import { useDiagnoses } from './patient-details.resource';
-import { type Medication, toListedItems, toMedications } from './repeated-lists.resource';
+import { toListedItems } from './repeated-lists.resource';
 import styles from '../cardiac-tests/cardiac-tests.scss';
 
-const day = (date: string | null) => (date ? formatDate(parseDate(date), { time: false, noToday: true }) : '--');
+export const day = (date: string | null) => (date ? formatDate(parseDate(date), { time: false, noToday: true }) : '--');
 
-interface Column<Row> {
+export interface Column<Row> {
   header: string;
-  text: (row: Row) => string;
+  text: (row: Row) => React.ReactNode;
 }
 
 /** A compact table of rows, or a skeleton while they load. */
-function CompactTable<Row extends { key: string }>({
+export function CompactTable<Row extends { key: string }>({
   title,
   columns,
   rows,
@@ -79,68 +69,6 @@ function CompactTable<Row extends { key: string }>({
           ))}
         </TableBody>
       </Table>
-    </div>
-  );
-}
-
-/**
- * Cardiac medications, as a table of what is active and what was used before, with when each started and stopped.
- * Add new opens the Consultation visit form, where the medication list is recorded, for a user who may record it.
- */
-export function CardiacMedications({ patientUuid }: { patientUuid: string }) {
-  const { t } = useTranslation();
-  const { consultations } = useConfig<Config>();
-  const { encounters, error, isLoading } = useConsultations(patientUuid);
-  const start = useStartConsultation(patientUuid);
-  const title = t('cardiacMedications', 'Cardiac medications');
-  const { active, past } = toMedications(encounters, consultations.concepts);
-  const columns: Array<Column<Medication>> = [
-    { header: t('medicine', 'Medicine'), text: (one) => one.name },
-    { header: t('dose', 'Dose'), text: (one) => one.dose || '--' },
-    { header: t('interval', 'Interval'), text: (one) => one.interval || '--' },
-    { header: t('started', 'Started'), text: (one) => day(one.started) },
-    { header: t('stopped', 'Stopped'), text: (one) => day(one.stopped) },
-  ];
-
-  if (error) {
-    return <ErrorState error={error} headerTitle={title} />;
-  }
-  if (!isLoading && !active.length && !past.length) {
-    return (
-      <EmptyCard
-        displayText={t('cardiacMedicationsLowercase', 'cardiac medications')}
-        headerTitle={title}
-        launchForm={start?.start}
-      />
-    );
-  }
-  return (
-    <div className={styles.card}>
-      <CardHeader title={title}>
-        {start && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            disabled={start.isOpening}
-            onClick={start.start}
-          >
-            {t('addNew', 'Add new')}
-          </Button>
-        )}
-      </CardHeader>
-      <h5 className={styles.findingLabel}>{t('activeMedications', 'Active')}</h5>
-      {!isLoading && !active.length ? (
-        <p>{t('noActiveMedications', 'No active medications.')}</p>
-      ) : (
-        <CompactTable title={t('activeMedications', 'Active')} columns={columns} rows={active} isLoading={isLoading} />
-      )}
-      <h5 className={styles.findingLabel}>{t('pastMedications', 'Past')}</h5>
-      {!isLoading && !past.length ? (
-        <p>{t('noPastMedications', 'No past medications.')}</p>
-      ) : (
-        <CompactTable title={t('pastMedications', 'Past')} columns={columns} rows={past} isLoading={isLoading} />
-      )}
     </div>
   );
 }
@@ -215,7 +143,6 @@ export default function ConsultationsPage({ patientUuid }: { patientUuid: string
   return (
     <div className={styles.cards}>
       <Consultations patientUuid={patientUuid} />
-      <CardiacMedications patientUuid={patientUuid} />
       <Diagnoses patientUuid={patientUuid} />
       <ListedItems
         patientUuid={patientUuid}

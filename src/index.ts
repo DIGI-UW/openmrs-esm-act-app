@@ -12,6 +12,7 @@ import worklistsDashboardLinkComponent from './worklists/worklists-dashboard-lin
 import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashboard-link.component';
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { consultationsDashboardMeta } from './consultations/consultations.meta';
+import { medicationsDashboardMeta } from './medications/medications.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import { researchPageDashboardMeta } from './research/research-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
@@ -90,6 +91,10 @@ export const consultationsDashboard = getAsyncLifecycle(
   () => import('./consultations/repeated-lists.component'),
   options,
 );
+
+export const medicationsDashboardLink = getSyncLifecycle(createDashboard(medicationsDashboardMeta), options);
+
+export const medicationsDashboard = getAsyncLifecycle(() => import('./medications/medications.component'), options);
 
 export const inrReviewsDashboardLink = getAsyncLifecycle(() => import('./inr/inr-dashboard-link.component'), options);
 

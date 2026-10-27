@@ -2,14 +2,13 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from './consultations.resource';
 import { diagnosisConcepts } from './patient-details.resource';
-import ConsultationsPage, { CardiacMedications, Diagnoses } from './repeated-lists.component';
-import { toListedItems, toMedications } from './repeated-lists.resource';
+import ConsultationsPage, { Diagnoses } from './repeated-lists.component';
+import { toListedItems } from './repeated-lists.resource';
 
 // Opening a form in a visit is open-form-in-visit's own test; here it records which form was opened.
 const openForm = vi.fn();
@@ -36,190 +35,6 @@ const medication = (medicine: object, extra: Array<[string, unknown]> = []) =>
 
 const consultation = (uuid: string, date: string, obsList: Array<unknown> = []): ChartEncounter =>
   ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, encounterProviders: [], obs: obsList }) as ChartEncounter;
-
-describe('toMedications', () => {
-  it('shows a medicine carried through several consultations once, started at the first that recorded it', () => {
-    const { active, past } = toMedications(
-      [
-        consultation('new', '2026-04-01', [medication(warfarin, [[c.medicationDose, '5 mg']])]),
-        consultation('old', '2025-10-01', [medication(warfarin, [[c.medicationDose, '3 mg']])]),
-      ],
-      c,
-    );
-
-    expect(past).toEqual([]);
-    expect(active).toHaveLength(1);
-    expect(active[0]).toMatchObject({ name: 'Warfarin', dose: '5 mg', stopped: null });
-    expect(active[0].started).toBe('2025-10-01T09:00:00.000+0300');
-  });
-
-  it('keeps the Date Started a consultation records over the consultation date', () => {
-    const { active } = toMedications(
-      [consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStarted, '2025-06-15']])])],
-      c,
-    );
-
-    expect(active[0].started).toBe('2025-06-15');
-  });
-
-  it('moves a medicine to Past only once a consultation records its Date Stopped', () => {
-    const { active, past } = toMedications(
-      [
-        consultation('new', '2026-04-01', [
-          medication(warfarin, [[c.dateStopped, '2026-03-01']]),
-          medication(aspirin, [[c.medicationInterval, coded('daily', 'Once a day')]]),
-        ]),
-        consultation('old', '2025-10-01', [medication(warfarin), medication(furosemide)]),
-      ],
-      c,
-    );
-
-    expect(past.map((one) => one.name)).toEqual(['Warfarin']);
-    expect(past[0].stopped).toBe('2026-03-01');
-    // Furosemide was left out of the later consultation without a stop date, so it is still active.
-    expect(active.map((one) => one.name).sort()).toEqual(['Aspirin', 'Furosemide']);
-    expect(active.find((one) => one.name === 'Aspirin')?.interval).toBe('Once a day');
-  });
-
-  it('closes a medicine when a later consultation stops it without a Date Started', () => {
-    const { active, past } = toMedications(
-      [
-        consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStopped, '2026-03-01']])]),
-        consultation('old', '2025-10-01', [medication(warfarin, [[c.dateStarted, '2025-06-15']])]),
-      ],
-      c,
-    );
-
-    expect(active).toEqual([]);
-    expect(past).toHaveLength(1);
-    expect(past[0]).toMatchObject({ started: '2025-06-15', stopped: '2026-03-01' });
-  });
-
-  it('shows a stop repeated in a later consultation as one Past row', () => {
-    const stop = [[c.dateStopped, '2026-01-10']] as Array<[string, unknown]>;
-    const { active, past } = toMedications(
-      [
-        consultation('new', '2026-04-01', [medication(warfarin, stop)]),
-        consultation('old', '2025-10-01', [medication(warfarin, stop)]),
-      ],
-      c,
-    );
-
-    expect(active).toEqual([]);
-    expect(past).toHaveLength(1);
-  });
-
-  it('makes a medicine Active again, with no stop, when it is recorded after a stop', () => {
-    const run = (restart: Array<[string, unknown]>) =>
-      toMedications(
-        [
-          consultation('restart', '2026-06-01', [medication(warfarin, restart)]),
-          consultation('stop', '2026-03-01', [medication(warfarin, [[c.dateStopped, '2026-02-01']])]),
-          consultation('first', '2025-10-01', [medication(warfarin)]),
-        ],
-        c,
-      );
-
-    for (const { active, past } of [run([]), run([[c.dateStarted, '2026-05-20']])]) {
-      expect(past).toEqual([]);
-      expect(active).toHaveLength(1);
-      expect(active[0].stopped).toBeNull();
-    }
-  });
-
-  it('updates the dose when a later consultation restates a medicine and keeps the earliest start', () => {
-    const { active } = toMedications(
-      [
-        consultation('new', '2026-04-01', [
-          medication(warfarin, [
-            [c.dateStarted, '2026-03-15'],
-            [c.medicationDose, '5 mg'],
-          ]),
-        ]),
-        consultation('old', '2025-10-01', [
-          medication(warfarin, [
-            [c.dateStarted, '2025-06-15'],
-            [c.medicationDose, '3 mg'],
-          ]),
-        ]),
-      ],
-      c,
-    );
-
-    expect(active).toHaveLength(1);
-    expect(active[0]).toMatchObject({ started: '2025-06-15', dose: '5 mg' });
-  });
-
-  it('puts a medicine in Past for any Date Stopped, even one still to come', () => {
-    const { active, past } = toMedications(
-      [consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStopped, '2099-01-01']])])],
-      c,
-    );
-
-    expect(active).toEqual([]);
-    expect(past.map((one) => one.stopped)).toEqual(['2099-01-01']);
-  });
-
-  it('starts a medicine at a later recorded Date Started rather than the consultation that first listed it', () => {
-    const { active } = toMedications(
-      [
-        consultation('new', '2026-04-01', [medication(aspirin, [[c.dateStarted, '2026-03-01']])]),
-        consultation('old', '2026-01-10', [medication(aspirin)]),
-      ],
-      c,
-    );
-
-    expect(active[0].started).toBe('2026-03-01');
-  });
-
-  it('keeps the previous dose and interval when the latest record leaves them blank', () => {
-    const { active } = toMedications(
-      [
-        consultation('new', '2026-04-01', [medication(aspirin)]),
-        consultation('old', '2026-01-10', [
-          medication(aspirin, [
-            [c.medicationDose, '75 mg'],
-            [c.medicationInterval, coded('daily', 'Once a day')],
-          ]),
-        ]),
-      ],
-      c,
-    );
-
-    expect(active[0]).toMatchObject({ dose: '75 mg', interval: 'Once a day' });
-  });
-
-  it('lets the later obs win when a consultation lists the same medicine twice', () => {
-    const { active, past } = toMedications(
-      [
-        consultation('only', '2026-04-01', [
-          medication(warfarin, [
-            [c.medicationDose, '3 mg'],
-            [c.dateStopped, '2026-03-01'],
-          ]),
-          medication(warfarin, [[c.medicationDose, '5 mg']]),
-        ]),
-      ],
-      c,
-    );
-
-    expect(past).toEqual([]);
-    expect(active).toHaveLength(1);
-    expect(active[0]).toMatchObject({ dose: '5 mg', stopped: null });
-  });
-
-  it('keeps a medicine active when a later consultation leaves it out', () => {
-    const { active } = toMedications(
-      [
-        consultation('new', '2026-04-01', [medication(aspirin)]),
-        consultation('old', '2025-10-01', [medication(warfarin)]),
-      ],
-      c,
-    );
-
-    expect(active.map((one) => one.name).sort()).toEqual(['Aspirin', 'Warfarin']);
-  });
-});
 
 describe('toListedItems', () => {
   it('lists each item once, newest first, dated by its Date Added or else the first consultation to record it', () => {
@@ -285,52 +100,6 @@ describe('the Consultation visits page tables', () => {
   beforeEach(async () => {
     openForm.mockClear();
     await signInWith(['Add Encounters', 'Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
-  });
-
-  it('shows cardiac medications as Active and Past tables, and Add new opens the consultation form', async () => {
-    serve({
-      consultations: [
-        consultation('new', '2026-04-01', [
-          medication(aspirin, [
-            [c.medicationDose, '75 mg'],
-            [c.medicationInterval, coded('daily', 'Once a day')],
-          ]),
-          medication(warfarin, [[c.dateStopped, '2026-03-01']]),
-        ]),
-      ],
-    });
-
-    renderIn(<CardiacMedications patientUuid="winnie" />);
-
-    const active = await screen.findByRole('table', { name: 'Active' });
-    expect(within(active).getByText('Aspirin')).toBeInTheDocument();
-    expect(within(active).getByText('75 mg')).toBeInTheDocument();
-    expect(within(active).getByText('Once a day')).toBeInTheDocument();
-    const past = screen.getByRole('table', { name: 'Past' });
-    expect(within(past).getByText('Warfarin')).toBeInTheDocument();
-    expect(within(past).getByText(/Mar.*2026/)).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    expect(openForm).toHaveBeenCalledWith(config.consultations.form);
-  });
-
-  it('shows the medications without Add new to a user who may not record the consultation', async () => {
-    serve({ consultations: [consultation('new', '2026-04-01', [medication(aspirin)])], mayEnter: false });
-
-    renderIn(<CardiacMedications patientUuid="winnie" />);
-
-    expect(await screen.findByRole('table', { name: 'Active' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Add new/ })).not.toBeInTheDocument();
-  });
-
-  it('says there are no active medications when every one has stopped', async () => {
-    serve({
-      consultations: [consultation('new', '2026-04-01', [medication(warfarin, [[c.dateStopped, '2026-03-01']])])],
-    });
-
-    renderIn(<CardiacMedications patientUuid="winnie" />);
-
-    expect(await screen.findByText('No active medications.')).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: 'Past' })).toBeInTheDocument();
   });
 
   it('shows every diagnosis with its status and dates', async () => {

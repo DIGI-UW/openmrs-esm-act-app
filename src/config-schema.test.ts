@@ -180,6 +180,10 @@ describe('configSchema', () => {
         },
         vitaminKAntagonists: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
       },
+      medications: {
+        encounterType: 'e3f1b6a8-5c2d-4f7e-9a41-6d8b2c0e7f53',
+        form: '6fc2cd4c-3bd8-3888-88ae-53e6eb7debb3',
+      },
       inrReviews: {
         encounterType: 'b4bb88a3-9a04-5142-85bd-bb63c270f632',
         form: 'fe4848b2-a0b4-329f-a6a3-6ffc298e09a9',

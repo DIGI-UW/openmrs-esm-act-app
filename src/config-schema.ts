@@ -506,6 +506,20 @@ export const configSchema = {
         'The Cardiac Medication answers that put a patient on warfarin, as the INR flags read them: warfarin and the other vitamin K antagonist. A patient whose latest consultation records one, not stopped, has the INR reviews page and card.',
     },
   },
+  medications: {
+    encounterType: {
+      _type: Type.UUID,
+      _default: 'e3f1b6a8-5c2d-4f7e-9a41-6d8b2c0e7f53',
+      _description:
+        "The RHD Medication Update encounter type. The Medications page reads its Cardiac Medication records with the consultations', the latest record of a medicine deciding whether it is active.",
+    },
+    form: {
+      _type: Type.UUID,
+      _default: '6fc2cd4c-3bd8-3888-88ae-53e6eb7debb3',
+      _description:
+        "The RHD Medication Update form, which the Medications page's Add opens. Who may record it is its encounter type's edit privilege.",
+    },
+  },
   inrReviews: {
     encounterType: {
       _type: Type.UUID,
@@ -1024,6 +1038,7 @@ export interface Config {
     >;
     vitaminKAntagonists: Array<string>;
   };
+  medications: { encounterType: string; form: string };
   inrReviews: {
     encounterType: string;
     form: string;
