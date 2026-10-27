@@ -322,14 +322,20 @@ describe('Dashboard', () => {
     ]);
   });
 
-  it('lists the sex, age and disease of the active registrants with the count on each row', async () => {
+  it('draws the sex of the active registrants as a donut, their ages as columns and their disease as bars, each with its counts', async () => {
     await signIn();
 
     renderPage();
 
     expect(await screen.findByText('Active registrants: 3')).toBeInTheDocument();
-    expect(texts('dashboard-sex')).toEqual(['Female2', 'Male1']);
-    expect(texts('dashboard-age')).toEqual(['10-192', '20-391']);
+    expect(texts('dashboard-sex')).toEqual(['Female267%', 'Male133%']);
+    expect((chartOptions(DonutChart, 'Sex') as unknown as { color: { scale: object } }).color.scale).toEqual({
+      Female: '#6929c4',
+      Male: '#1192e8',
+    });
+    // Each column reads its count, its share of the whole and its band.
+    expect(texts('dashboard-age')).toEqual(['267%10-19', '133%20-39']);
+    expect(screen.getByRole('list', { name: 'Age' })).toBeInTheDocument();
     expect(texts('dashboard-category')).toEqual(['RHD B2', 'RHD A1']);
   });
 
@@ -457,18 +463,29 @@ describe('Dashboard', () => {
     ]);
   });
 
-  it('gives a status or diagnosis one colour on every donut, the active and RHD patients teal', async () => {
+  it('gives a status or diagnosis one colour on every donut, active patients teal and RHD a darker teal', async () => {
     await signIn();
     renderPage();
     await screen.findAllByTestId('dashboard-screening-category');
 
     const scaleOf = (title: string) =>
       (chartOptions(DonutChart, title) as unknown as { color: { scale: object } }).color.scale;
-    expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#8a3800' });
+    expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#ba4e00' });
     expect(scaleOf('Diagnoses after the echo')).toEqual({
-      RHD: '#009d9a',
-      Normal: '#42be65',
+      RHD: '#007d79',
+      Normal: '#198038',
     });
+  });
+
+  it("fills each disease bar in its label's colour, as the charts draw it", async () => {
+    await signIn();
+    renderPage();
+
+    const rows = await screen.findAllByTestId('dashboard-category');
+    const fillOf = (label: string) =>
+      within(rows.find((row) => row.textContent.startsWith(label))).getByTestId('dashboard-bar-fill').style
+        .backgroundColor;
+    expect(fillOf('RHD B')).toBe('#007d79');
   });
 
   it('evaluates the dated reports as of the date chosen', async () => {
@@ -688,7 +705,7 @@ describe('Dashboard', () => {
       .mock.calls.map(([props]) => props)
       .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
       .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#ff832b' });
+    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#eb6200' });
   });
 
   it('colours two urgencies with one number apart, and heads a phone table by the numbers only when they differ', async () => {
@@ -707,7 +724,7 @@ describe('Dashboard', () => {
       .mock.calls.map(([props]) => props)
       .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
       .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#ff832b' });
+    expect(waitlist.options.color.scale).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#eb6200' });
     unmount();
 
     vi.mocked(useLayoutType).mockReturnValue('phone');
@@ -754,7 +771,42 @@ describe('Dashboard', () => {
     expect(await screen.findAllByText('Nobody at Arua RRH to count')).toHaveLength(7);
     expect(await screen.findByText('No screening counts entered for Arua RRH in the period')).toBeInTheDocument();
     expect(screen.queryByText(/arua to count/)).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(8);
+    // Two are in screening tabs not open yet.
+    expect(screen.getAllByRole('button', { name: 'Show all clinics', hidden: true })).toHaveLength(8);
+  });
+
+  it('collapses a section to its title, and opens it collapsed again next time in this browser', async () => {
+    window.localStorage.removeItem('act.dashboard.collapsed');
+    await signIn();
+    const { unmount } = renderPage();
+
+    expect((await screen.findAllByTestId('dashboard-status'))[0]).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse Registrant status' }));
+    expect(screen.getAllByTestId('dashboard-status')[0]).not.toBeVisible();
+    expect(screen.getAllByTestId('dashboard-cascade-step')[0]).toBeVisible();
+    unmount();
+
+    renderPage();
+    expect((await screen.findAllByTestId('dashboard-status'))[0]).not.toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Expand Registrant status' }));
+    expect(screen.getAllByTestId('dashboard-status')[0]).toBeVisible();
+    window.localStorage.removeItem('act.dashboard.collapsed');
+  });
+
+  it('holds the screening cascade, the monthly counts and the registrations in tabs of one Screening card', async () => {
+    await signIn();
+    renderPage();
+
+    const tabs = await screen.findAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Screening cascade',
+      'RHD screening',
+      'Screening, from registrations',
+    ]);
+    expect(screen.getAllByTestId('dashboard-screening-step')[0]).toBeVisible();
+    await userEvent.click(tabs[1]);
+    expect(await screen.findAllByTestId('dashboard-screening-tile')).not.toHaveLength(0);
+    expect(screen.getAllByTestId('dashboard-screening-tile')[0]).toBeVisible();
   });
 
   it('reads the prophylaxis tile from the step the older cascade report names Prescribed Prophylaxis', async () => {
@@ -794,7 +846,7 @@ describe('Dashboard', () => {
       .mock.calls.map(([props]) => props)
       .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
       .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#ff832b', 'Not given': '#8d8d8d' });
+    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#eb6200', 'Not given': '#8d8d8d' });
   });
 
   it('reads the registrants and the waitlist from their count reports, as of the date, never every registry row', async () => {
@@ -1530,9 +1582,9 @@ describe('Dashboard', () => {
       expect(
         (chartOptions(DonutChart, 'Case detected by') as unknown as { color: { scale: object } }).color.scale,
       ).toEqual({
-        School: '#0f62fe',
-        Community: '#33b1ff',
-        Other: '#b28600',
+        School: '#002d9c',
+        Community: '#0f62fe',
+        Other: '#d02670',
         'Not recorded': '#c6c6c6',
         'Teacher referral': '#9f1853',
       });

@@ -16,14 +16,20 @@
 }
 
 .filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 18rem));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: layout.$spacing-05;
+
+  > * {
+    flex: 0 1 16rem;
+  }
 }
 
-// Level with the bottom of the filters beside it.
+// At the end of the filter row, level with the bottom of the filters.
 .download {
-  align-self: end;
+  flex: 0 0 auto !important;
+  margin-left: auto;
 }
 
 // Two across on a phone, four on a laptop.
@@ -53,6 +59,7 @@
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: layout.$spacing-05;
 
   @media (min-width: 66rem) {
@@ -62,6 +69,11 @@
 
 .wide {
   grid-column: 1 / -1;
+}
+
+// A section in a tab, below the tab list.
+.embedded {
+  padding-top: layout.$spacing-05;
 }
 
 .description {
@@ -81,9 +93,54 @@
   min-width: 0;
 }
 
+// A chart and its numbers side by side where there is room for both, else one under the other.
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  align-items: center;
+  gap: layout.$spacing-06;
+}
+
+.columnChart {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: layout.$spacing-04;
+  height: 11rem;
+}
+
+.column {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: layout.$spacing-02;
+  height: 100%;
+}
+
+.columnTrack {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 3rem;
+  height: 100%;
+}
+
+.columnFill {
+  display: block;
+  width: 100%;
+  background-color: colors.$teal-50;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.columnLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
 .donut {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   align-items: center;
   gap: layout.$spacing-05;
 }
@@ -109,6 +166,12 @@
 .totals .legendRow,
 .step {
   grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+// A faint edge, so a light colour (not recorded, an early RHD stage) still shows on white.
+.swatch,
+.fill {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 .swatch {

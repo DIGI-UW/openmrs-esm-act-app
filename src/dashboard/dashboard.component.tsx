@@ -8,12 +8,17 @@ import {
   Select,
   SelectItem,
   SkeletonText,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Tag,
   Tile,
 } from '@carbon/react';
@@ -29,7 +34,7 @@ import { useProgrammeScope } from '../programme-report/programme-scope';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { urlWithFilters, useUrlFilters } from '../table-filters/url-filters';
-import { CascadeBars, CountLink, CountsDonut, StackedBars } from './dashboard-charts.component';
+import { CascadeBars, CountLink, CountsDonut, labelColour, StackedBars } from './dashboard-charts.component';
 import { type CountRow, CountsCsv, type CsvPart, countRows, csvParts, useCountsCsv } from './dashboard-csv';
 import {
   type Figure,
@@ -60,12 +65,15 @@ function Bars({
   testId,
   figureOf,
   withShares,
+  coloured,
 }: {
   counts: Array<Count>;
   testId: string;
   figureOf?: (label: string) => Figure;
   /** Prints each count's share of the group too, the shares rounded to add up to 100. */
   withShares?: boolean;
+  /** Fills each bar in its label's own colour, as the charts draw it, rather than all in teal. */
+  coloured?: boolean;
 }) {
   const { t } = useTranslation();
   if (!counts.length) {
@@ -79,7 +87,14 @@ function Bars({
         <div key={count.label} className={withShares ? styles.shareBar : styles.bar} data-testid={testId}>
           <span>{count.label}</span>
           <span className={styles.track}>
-            <span className={styles.fill} style={{ width: `${share(count.value, largest)}%` }} />
+            <span
+              className={styles.fill}
+              data-testid="dashboard-bar-fill"
+              style={{
+                width: `${share(count.value, largest)}%`,
+                ...(coloured && labelColour(count.label) && { backgroundColor: labelColour(count.label) }),
+              }}
+            />
           </span>
           <span className={styles.count}>
             <CountLink
@@ -92,6 +107,74 @@ function Bars({
       ))}
     </div>
   );
+}
+
+/**
+ * Counts in an order of their own, such as age bands, as columns: each with its count, a link to its patients, and its
+ * share of the whole above it, so the chart needs no list beside it.
+ */
+function Columns({
+  name,
+  counts,
+  testId,
+  figureOf,
+}: {
+  name: string;
+  counts: Array<Count>;
+  testId: string;
+  figureOf?: (label: string) => Figure;
+}) {
+  const { t } = useTranslation();
+  if (!counts.length) {
+    return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
+  }
+  const largest = Math.max(0, ...counts.map((count) => count.value));
+  const percents = shares(counts.map((count) => count.value));
+  return (
+    <ol className={styles.columnChart} aria-label={name}>
+      {counts.map((count, index) => (
+        <li key={count.label} className={styles.column} data-testid={testId}>
+          <span className={styles.count}>
+            <CountLink value={count.value} figure={figureOf?.(count.label)} />
+          </span>
+          <span className={styles.share}>{percents[index]}%</span>
+          <span className={styles.columnTrack} aria-hidden="true">
+            <span className={styles.columnFill} style={{ height: `${share(count.value, largest)}%` }} />
+          </span>
+          <span className={styles.columnLabel}>{count.label}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+const collapsedKey = 'act.dashboard.collapsed';
+
+/**
+ * Which sections a viewer has collapsed, kept in this browser so the Dashboard opens as they left it. A browser that
+ * keeps nothing opens every section.
+ */
+function useCollapsedSections() {
+  const [collapsed, setCollapsed] = useState<Array<string>>(() => {
+    try {
+      const kept = JSON.parse(window.localStorage.getItem(collapsedKey) ?? '[]');
+      return Array.isArray(kept) ? kept : [];
+    } catch {
+      return [];
+    }
+  });
+  const toggle = useCallback((id: string) => {
+    setCollapsed((current) => {
+      const next = current.includes(id) ? current.filter((one) => one !== id) : [...current, id];
+      try {
+        window.localStorage.setItem(collapsedKey, JSON.stringify(next));
+      } catch {
+        // Not kept, as in a private window; the section still collapses until the page is left.
+      }
+      return next;
+    });
+  }, []);
+  return (id: string) => ({ collapsed: collapsed.includes(id), onToggle: () => toggle(id) });
 }
 
 interface SectionState {
@@ -112,6 +195,8 @@ function Section({
   tag,
   controls,
   emptyText,
+  embedded,
+  collapse,
   children,
 }: {
   title: string;
@@ -127,47 +212,58 @@ function Section({
   controls?: React.ReactNode;
   /** What an empty section says, where it counts something other than patients. */
   emptyText?: string;
+  /** Drawn inside a tab of another card, which names it, so without its own card and title. */
+  embedded?: boolean;
+  /** Whether the section is collapsed to its title, and how it is toggled. */
+  collapse?: { collapsed: boolean; onToggle: () => void };
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
-  return (
-    <div className={wide ? styles.wide : undefined}>
-      <ActHomeCard title={title} tag={tag}>
-        {description && <p className={styles.description}>{description}</p>}
-        {controls}
-        {state.error ? (
-          <div className={styles.state}>
-            <InlineNotification
-              kind="error"
-              statusIconDescription={t('errorIcon', 'error icon')}
-              lowContrast
-              hideCloseButton
-              title={t('couldNotLoadSection', '{{section}} could not load', { section: name })}
-              subtitle={t('restOfDashboardUpToDate', 'The rest of the Dashboard is up to date.')}
-            />
-            <Button size="md" onClick={() => state.retry()}>
-              {t('tryAgain', 'Try again')}
+  const body = (
+    <>
+      {description && <p className={styles.description}>{description}</p>}
+      {controls}
+      {state.error ? (
+        <div className={styles.state}>
+          <InlineNotification
+            kind="error"
+            statusIconDescription={t('errorIcon', 'error icon')}
+            lowContrast
+            hideCloseButton
+            title={t('couldNotLoadSection', '{{section}} could not load', { section: name })}
+            subtitle={t('restOfDashboardUpToDate', 'The rest of the Dashboard is up to date.')}
+          />
+          <Button size="md" onClick={() => state.retry()}>
+            {t('tryAgain', 'Try again')}
+          </Button>
+        </div>
+      ) : state.isLoading ? (
+        <SkeletonText paragraph lineCount={5} />
+      ) : state.isEmpty ? (
+        <div className={styles.state}>
+          <p className={styles.empty}>
+            {emptyText ??
+              (clinic
+                ? t('nobodyAtClinicToCount', 'Nobody at {{clinic}} to count', { clinic })
+                : t('noPatientsToCount', 'No patients to count'))}
+          </p>
+          {clinic && (
+            <Button kind="tertiary" size="md" onClick={onShowAll}>
+              {t('showAllClinics', 'Show all clinics')}
             </Button>
-          </div>
-        ) : state.isLoading ? (
-          <SkeletonText paragraph lineCount={5} />
-        ) : state.isEmpty ? (
-          <div className={styles.state}>
-            <p className={styles.empty}>
-              {emptyText ??
-                (clinic
-                  ? t('nobodyAtClinicToCount', 'Nobody at {{clinic}} to count', { clinic })
-                  : t('noPatientsToCount', 'No patients to count'))}
-            </p>
-            {clinic && (
-              <Button kind="tertiary" size="md" onClick={onShowAll}>
-                {t('showAllClinics', 'Show all clinics')}
-              </Button>
-            )}
-          </div>
-        ) : (
-          children
-        )}
+          )}
+        </div>
+      ) : (
+        children
+      )}
+    </>
+  );
+  return embedded ? (
+    <div className={styles.embedded}>{body}</div>
+  ) : (
+    <div className={wide ? styles.wide : undefined}>
+      <ActHomeCard title={title} tag={tag} {...collapse}>
+        {body}
       </ActHomeCard>
     </div>
   );
@@ -258,6 +354,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const clinic = [clinics.cardiac, clinics.primaryCare].filter(Boolean).join(', ') || null;
 
   const { counted, countParams, pending } = useCountParams(params);
+  const collapsible = useCollapsedSections();
   const whileLimitRead = (report: ReturnType<typeof useReportDataset>) => ({
     ...report,
     isLoading: report.isLoading || pending,
@@ -497,6 +594,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             count: registrants.registered,
           })}
           state={stateOf(registrantsReport, !registrants.registered)}
+          collapse={collapsible('status')}
           {...section}
         >
           <CountsDonut
@@ -522,6 +620,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                 )
           }
           state={stateOf(cascadeReport, allZero(cascade))}
+          collapse={collapsible('cascade')}
           {...section}
         >
           <CascadeBars
@@ -538,20 +637,38 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           description={t('activeRegistrantsDescription', 'Sex, age and disease of the patients active today')}
           state={stateOf(registrantsReport, !registrants.active)}
           wide
+          collapse={collapsible('active')}
           {...section}
         >
           <div className={styles.columns}>
             <div>
               <h4 className={styles.subheading}>{t('sex', 'Sex')}</h4>
-              <Bars counts={registrants.sex} testId="dashboard-sex" figureOf={registrantsBy('sex')} />
+              <CountsDonut
+                name={t('sex', 'Sex')}
+                counts={registrants.sex}
+                centre={t('activeCentre', 'active')}
+                testId="dashboard-sex"
+                withShare
+                figureOf={registrantsBy('sex')}
+              />
             </div>
             <div>
               <h4 className={styles.subheading}>{t('age', 'Age')}</h4>
-              <Bars counts={registrants.age} testId="dashboard-age" figureOf={registrantsBy('age')} />
+              <Columns
+                name={t('age', 'Age')}
+                counts={registrants.age}
+                testId="dashboard-age"
+                figureOf={registrantsBy('age')}
+              />
             </div>
             <div>
               <h4 className={styles.subheading}>{t('disease', 'Disease')}</h4>
-              <Bars counts={registrants.category} testId="dashboard-category" figureOf={registrantsBy('disease')} />
+              <Bars
+                counts={registrants.category}
+                testId="dashboard-category"
+                figureOf={registrantsBy('disease')}
+                coloured
+              />
             </div>
           </div>
         </Section>
@@ -565,6 +682,8 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             "Open recommendations in each active patient's latest consultation, by urgency",
           )}
           state={stateOf(waitlistReport, !waitlist.total && !waitlist.performed.bmv && !waitlist.performed.surgery)}
+          wide
+          collapse={collapsible('waitlist')}
           {...section}
         >
           {waitlistAsTable ? (
@@ -613,7 +732,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                 )}
             </div>
           ) : (
-            <>
+            <div className={styles.split}>
               <StackedBars
                 name={t('proceduralWaitlist', 'Procedural waitlist')}
                 data={waitlist.urgencies.flatMap((urgency, index) =>
@@ -627,7 +746,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                 )}
                 groups={waitlist.urgencies.map((urgency) => waitlistName(t, urgency))}
                 colours="urgency"
-                height="18rem"
+                height="14rem"
               />
               <ul className={styles.totals}>
                 {waitlist.rows.map((row) => (
@@ -642,7 +761,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   </li>
                 ))}
               </ul>
-            </>
+            </div>
           )}
           <p className={styles.performed} data-testid="dashboard-performed">
             <Trans
@@ -681,115 +800,143 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             optimisationReport,
             measures.every((measure) => !measure.done && !measure.notDone),
           )}
+          wide
+          collapse={collapsible('optimisation')}
           {...section}
         >
-          <StackedBars
-            name={t('medicalOptimisation', 'Medical optimisation')}
-            // Carbon draws a horizontal chart's first key at the bottom, so the list's first row goes last.
-            data={measures
-              .filter((measure) => measure.notDone !== null)
-              .reverse()
-              .flatMap((measure) => [
-                { group: t('done', 'Done'), key: measure.label, value: measure.done },
-                { group: t('notDone', 'Not done'), key: measure.label, value: measure.notDone },
-              ])}
-            groups={[t('done', 'Done'), t('notDone', 'Not done')]}
-            colours="doneNotDone"
-            height="18rem"
-            horizontal
-            asShares
-          />
-          <ul className={styles.totals}>
-            {measures.map((measure) => (
-              <li key={measure.label} className={styles.legendRow} data-testid="dashboard-measure">
-                <span>{measure.label}</span>
-                <span className={styles.count}>
-                  {measure.notDone === null ? (
-                    <CountLink value={measure.done} figure={{ figure: 'optimisation', measure: measure.measure }} />
-                  ) : (
-                    <Trans
-                      t={t}
-                      i18nKey="doneNotDoneOf"
-                      defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
-                      values={{ done: measure.done, notDone: measure.notDone, total: measure.done + measure.notDone }}
-                      components={{
-                        done: (
-                          <CountLink
-                            value={measure.done}
-                            figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
-                          />
-                        ),
-                        notDone: (
-                          <CountLink
-                            value={measure.notDone}
-                            figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
-                          />
-                        ),
-                      }}
-                    />
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className={styles.split}>
+            <StackedBars
+              name={t('medicalOptimisation', 'Medical optimisation')}
+              // Carbon draws a horizontal chart's first key at the bottom, so the list's first row goes last.
+              data={measures
+                .filter((measure) => measure.notDone !== null)
+                .reverse()
+                .flatMap((measure) => [
+                  { group: t('done', 'Done'), key: measure.label, value: measure.done },
+                  { group: t('notDone', 'Not done'), key: measure.label, value: measure.notDone },
+                ])}
+              groups={[t('done', 'Done'), t('notDone', 'Not done')]}
+              colours="doneNotDone"
+              height="14rem"
+              horizontal
+              asShares
+            />
+            <ul className={styles.totals}>
+              {measures.map((measure) => (
+                <li key={measure.label} className={styles.legendRow} data-testid="dashboard-measure">
+                  <span>{measure.label}</span>
+                  <span className={styles.count}>
+                    {measure.notDone === null ? (
+                      <CountLink value={measure.done} figure={{ figure: 'optimisation', measure: measure.measure }} />
+                    ) : (
+                      <Trans
+                        t={t}
+                        i18nKey="doneNotDoneOf"
+                        defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
+                        values={{ done: measure.done, notDone: measure.notDone, total: measure.done + measure.notDone }}
+                        components={{
+                          done: (
+                            <CountLink
+                              value={measure.done}
+                              figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
+                            />
+                          ),
+                          notDone: (
+                            <CountLink
+                              value={measure.notDone}
+                              figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
+                            />
+                          ),
+                        }}
+                      />
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </Section>
         {dashboard.showScreening && (
-          <Section
-            title={t('screeningCascade', 'Screening cascade')}
-            tag={
-              <Tag type="cool-gray" size="sm">
-                {t('screeningProgrammeSites', 'Screening programme sites')}
-              </Tag>
-            }
-            description={t(
-              'screeningCascadeDescription',
-              'Registrants found by screening (Screen + Yes), and what their confirmatory echo showed',
-            )}
-            state={{
-              isLoading: screeningReport.isLoading || diagnosesReport.isLoading,
-              error: screeningReport.error ?? diagnosesReport.error,
-              retry: () => {
-                if (screeningReport.error) {
-                  void screeningReport.mutate();
-                }
-                if (diagnosesReport.error) {
-                  void diagnosesReport.mutate();
-                }
-              },
-              isEmpty: allZero(screening) && allZero(diagnoses),
-            }}
-            wide
-            {...section}
-          >
-            <div className={styles.columns}>
-              <div>
-                <h4 className={styles.subheading}>{t('cascade', 'Cascade')}</h4>
-                <CascadeBars
-                  name={t('screeningCascade', 'Screening cascade')}
-                  steps={screening}
-                  testId="dashboard-screening-step"
-                />
-              </div>
-              <div>
-                <h4 className={styles.subheading}>{t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}</h4>
-                <CountsDonut
-                  name={t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
-                  counts={diagnoses}
-                  centre={t('diagnosed', 'diagnosed')}
-                  testId="dashboard-screening-category"
-                />
-              </div>
-              <div>
-                <h4 className={styles.subheading}>
-                  {t('screenDetectedRhd', 'RHD details of the {{count}}', { count: screenDetectedRhd })}
-                </h4>
-                <Bars counts={rhdDetails} testId="dashboard-screening-details" />
-              </div>
-            </div>
-          </Section>
+          <div className={styles.wide}>
+            <ActHomeCard
+              {...collapsible('screening')}
+              title={t('screening', 'Screening')}
+              tag={
+                <Tag type="cool-gray" size="sm">
+                  {t('screeningProgrammeSites', 'Screening programme sites')}
+                </Tag>
+              }
+            >
+              <Tabs>
+                <TabList aria-label={t('screening', 'Screening')}>
+                  <Tab>{t('screeningCascade', 'Screening cascade')}</Tab>
+                  <Tab>{t('rhdScreening', 'RHD screening')}</Tab>
+                  <Tab>{t('screeningFromRegistrations', 'Screening, from registrations')}</Tab>
+                </TabList>
+                <TabPanels>
+                  <TabPanel>
+                    <Section
+                      title={t('screeningCascade', 'Screening cascade')}
+                      description={t(
+                        'screeningCascadeDescription',
+                        'Registrants found by screening (Screen + Yes), and what their confirmatory echo showed',
+                      )}
+                      state={{
+                        isLoading: screeningReport.isLoading || diagnosesReport.isLoading,
+                        error: screeningReport.error ?? diagnosesReport.error,
+                        retry: () => {
+                          if (screeningReport.error) {
+                            void screeningReport.mutate();
+                          }
+                          if (diagnosesReport.error) {
+                            void diagnosesReport.mutate();
+                          }
+                        },
+                        isEmpty: allZero(screening) && allZero(diagnoses),
+                      }}
+                      embedded
+                      {...section}
+                    >
+                      <div className={styles.columns}>
+                        <div>
+                          <h4 className={styles.subheading}>{t('cascade', 'Cascade')}</h4>
+                          <CascadeBars
+                            name={t('screeningCascade', 'Screening cascade')}
+                            steps={screening}
+                            testId="dashboard-screening-step"
+                          />
+                        </div>
+                        <div>
+                          <h4 className={styles.subheading}>
+                            {t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
+                          </h4>
+                          <CountsDonut
+                            name={t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
+                            counts={diagnoses}
+                            centre={t('diagnosed', 'diagnosed')}
+                            testId="dashboard-screening-category"
+                          />
+                        </div>
+                        <div>
+                          <h4 className={styles.subheading}>
+                            {t('screenDetectedRhd', 'RHD details of the {{count}}', { count: screenDetectedRhd })}
+                          </h4>
+                          <Bars counts={rhdDetails} testId="dashboard-screening-details" coloured />
+                        </div>
+                      </div>
+                    </Section>
+                  </TabPanel>
+                  <TabPanel>
+                    <RhdScreening scope={scope} {...section} />
+                  </TabPanel>
+                  <TabPanel>
+                    <ScreeningFromRegistrations scope={scope} asOf={asOf} {...section} />
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
+            </ActHomeCard>
+          </div>
         )}
-        {dashboard.showScreening && <RhdScreening scope={scope} {...section} />}
-        {dashboard.showScreening && <ScreeningFromRegistrations scope={scope} asOf={asOf} {...section} />}
         <div className={styles.wide}>
           <RunChartCard scope={scope} />
         </div>
@@ -882,7 +1029,7 @@ function ScreeningFromRegistrations({
       state={{ ...stateOf(report, !registered), isLoading: report.isLoading || pending }}
       clinic={clinic}
       onShowAll={onShowAll}
-      wide
+      embedded
       controls={
         <div className={styles.registrationControls}>
           <InlineNotification
@@ -1055,6 +1202,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
       }}
       clinic={clinic}
       onShowAll={onShowAll}
+      embedded
       emptyText={
         clinic
           ? t('noScreeningCountsAt', 'No screening counts entered for {{clinic}} in the period', { clinic })

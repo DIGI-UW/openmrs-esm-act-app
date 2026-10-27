@@ -11,39 +11,55 @@ import styles from './dashboard.scss';
 // Each chart is given its colours as a scale, so a printed legend's swatch can show the same colour.
 const teal = '#009d9a';
 const notRecorded = '#c6c6c6';
-// A colour means one thing on every chart, so a label the reports send keeps its colour wherever it is drawn.
+const rhd = '#007d79';
+/**
+ * A colour means one thing on every chart, so a label the reports send keeps its colour wherever it is drawn. Status
+ * reads in care in teal and the reasons a registration ended by how much they need action; an RHD stage is darker the
+ * later it is. Each colour but the light ones (not recorded, the earliest stages) has 3:1 contrast on white.
+ */
 const labelColours: Record<string, string> = {
   Active: teal,
-  'Rheumatic Heart Disease/Rheumatic Fever': teal,
-  'Lost to follow-up': '#ee538b',
-  Deceased: '#393939',
-  'Voluntary inactivity': '#8a3800',
-  'Physical relocation': '#5e2900',
-  Normal: '#42be65',
-  'Confirmatory echo normal': '#42be65',
-  'CHD spontaneous resolution': '#6fdc8c',
-  RHD: teal,
-  'Congenital heart disease': '#a56eff',
-  Congenital: '#a56eff',
-  'Other heart disease': '#b28600',
-  Other: '#b28600',
-  School: '#0f62fe',
-  Community: '#33b1ff',
-  'Health facility': '#82cfff',
+  'Lost to follow-up': '#da1e28',
+  'Voluntary inactivity': '#ba4e00',
+  'Physical relocation': '#6f6f6f',
+  Deceased: '#161616',
+  'Rheumatic Heart Disease/Rheumatic Fever': rhd,
+  RHD: rhd,
+  'Acute rheumatic fever': '#08bdba',
+  'RHD A': teal,
+  'RHD B': rhd,
+  'RHD C/RHD D': '#005d5d',
+  'RHD, details not recorded': '#9ef0f0',
+  'Congenital heart disease': '#8a3ffc',
+  Congenital: '#8a3ffc',
+  'Other heart disease': '#d02670',
+  Other: '#d02670',
+  Normal: '#198038',
+  'Confirmatory echo normal': '#198038',
+  'CHD spontaneous resolution': '#0e6027',
+  Female: '#6929c4',
+  Male: '#1192e8',
+  School: '#002d9c',
+  Community: '#0f62fe',
+  'Health facility': '#4589ff',
   'Not recorded': notRecorded,
   'No status recorded': notRecorded,
+  'No diagnosis yet': notRecorded,
 };
 // For a label not named above, in order: none of these is a named label's colour.
-const spareColours = ['#9f1853', '#002d9c', '#6929c4', '#005d5d', '#a2191f'];
-// 1: emergent, 2: urgent and 3: elective, by the number an urgency starts with.
-const urgencyColours = ['#da1e28', '#ff832b', '#f1c21b'];
+const spareColours = ['#9f1853', '#491d8b', '#003a6d', '#8e6a00', '#570408'];
+// 1: emergent, 2: urgent and 3: elective, by the number an urgency starts with: darker for sooner.
+const urgencyColours = ['#a2191f', '#eb6200', '#f1c21b'];
 // A second urgency starting with the same number, as an old "2 - within 1 month" beside "2: urgent", in a darker shade.
-const urgencyColoursAgain = ['#750e13', '#8a3800', '#8e6a00'];
+const urgencyColoursAgain = ['#520408', '#8a3800', '#8e6a00'];
 const doneColours = [teal, '#d0e2ff'];
 const unnumberedColours = ['#8d8d8d', '#525252', notRecorded];
 
 const scaleOf = (labels: Array<string>, colours: Array<string>) =>
   Object.fromEntries(labels.map((label, index) => [label, colours[index % colours.length]]));
+
+/** A label's own colour, where it has one, for a list of bars to colour as the charts do. */
+export const labelColour = (label: string): string | undefined => labelColours[label];
 
 const labelScaleOf = (labels: Array<string>) => {
   const unnamed = labels.filter((label) => !labelColours[label]);
@@ -113,7 +129,7 @@ export function CountsDonut({
   const total = counts.reduce((sum, { value }) => sum + value, 0);
   const data = useStable(counts.map(({ label, value }) => ({ group: label, value })));
   const options = useStable({
-    ...base(name, '14rem'),
+    ...base(name, '11rem'),
     color: { scale },
     legend: { enabled: false },
     donut: { center: { label: centre }, alignment: 'center' },
@@ -149,18 +165,20 @@ export function CascadeBars({
   testId,
   shareOf,
   figureOf,
+  height = '12rem',
 }: {
   name: string;
   steps: Array<Count>;
   testId: string;
   shareOf?: Record<string, string>;
   figureOf?: (label: string) => Figure;
+  height?: string;
 }) {
   const { t } = useTranslation();
   // Translate only what is shown: figureOf and shareOf match the label as configured or reported.
   const data = useStable(steps.map(({ label, value }) => ({ group: t(label), value })));
   const options = useStable({
-    ...base(name, '16rem'),
+    ...base(name, height),
     color: {
       scale: scaleOf(
         steps.map(({ label }) => t(label)),
@@ -174,7 +192,7 @@ export function CascadeBars({
     },
   });
   return (
-    <>
+    <div className={styles.split}>
       <div className={styles.chart}>
         <SimpleBarChart data={data} options={options} />
       </div>
@@ -189,7 +207,7 @@ export function CascadeBars({
           </li>
         ))}
       </ol>
-    </>
+    </div>
   );
 }
 
