@@ -21,6 +21,11 @@
   gap: layout.$spacing-05;
 }
 
+// Level with the bottom of the filters beside it.
+.download {
+  align-self: end;
+}
+
 // Two across on a phone, four on a laptop.
 .tiles {
   display: grid;

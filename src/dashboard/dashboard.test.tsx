@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
+import { downloadCsv } from '../table-filters/csv';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
@@ -1313,6 +1314,84 @@ describe('Dashboard', () => {
           }),
         ),
       );
+    });
+  });
+
+  describe("the Dashboard's counts CSV", () => {
+    const downloaded = () => vi.mocked(downloadCsv).mock.calls.at(-1);
+
+    it("gives every section's counts in one file, recorded in the download log without identifiers", async () => {
+      await signIn();
+      await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
+      vi.mocked(downloadCsv).mockClear();
+      renderPage();
+
+      await screen.findAllByTestId('dashboard-screening-tile');
+      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+      await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+      expect(vi.mocked(openmrsFetch)).toHaveBeenCalledWith(
+        '/ws/rest/v1/actcore/download/record',
+        expect.objectContaining({
+          body: expect.objectContaining({
+            list: 'dashboard:counts',
+            identifiers: false,
+            filters: expect.objectContaining({ endDate: today }),
+          }),
+        }),
+      );
+      const [name, headers, rows] = downloaded();
+      expect(name).toBe(`dashboard-counts-${today}.csv`);
+      expect(headers).toEqual(['Section', 'Group', 'Label', 'Count', 'Period', 'Clinics']);
+      expect(rows).toEqual(
+        expect.arrayContaining([
+          ['Key figures', '', 'Registered', '4', today, 'every clinic'],
+          ['Registrant status', '', 'Voluntary inactivity', '1', today, 'every clinic'],
+          [
+            'Procedural waitlist',
+            'Performed in the last 12 months',
+            'Surgery',
+            expect.any(String),
+            today,
+            'every clinic',
+          ],
+          [
+            'RHD screening',
+            '',
+            'Screened',
+            '6840',
+            `${dayjs().subtract(12, 'month').format('YYYY-MM')} to ${dayjs().subtract(1, 'month').format('YYYY-MM')}`,
+            'every clinic',
+          ],
+        ]),
+      );
+      // The sections in the order the page shows them, run charts aside.
+      expect([...new Set(rows.map(([section]) => section))].slice(0, 2)).toEqual(['Key figures', 'Registrant status']);
+      expect(rows.at(-1)[0]).toBe('Screening, from registrations');
+    });
+
+    it('leaves out a section that could not load, rather than giving its counts as zeros', async () => {
+      await signIn(REGISTRANTS);
+      await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
+      vi.mocked(downloadCsv).mockClear();
+      renderPage();
+
+      await screen.findAllByTestId('dashboard-screening-tile');
+      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+      await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+      const sections = new Set(downloaded()[2].map(([section]) => section));
+      expect(sections.has('Registrant status')).toBe(false);
+      expect(sections.has('Active registrants')).toBe(false);
+      expect(sections.has('Procedural waitlist')).toBe(true);
+    });
+
+    it('offers no Download CSV to a user who may not export lists', async () => {
+      await signIn();
+      renderPage();
+
+      await screen.findAllByTestId('dashboard-screening-tile');
+      expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
     });
   });
 

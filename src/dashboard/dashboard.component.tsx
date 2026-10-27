@@ -27,8 +27,10 @@ import { useClinics } from '../programme-report/clinics.resource';
 import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
+import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { urlWithFilters, useUrlFilters } from '../table-filters/url-filters';
 import { CascadeBars, CountLink, CountsDonut, StackedBars } from './dashboard-charts.component';
+import { type CountRow, CountsCsv, type CsvPart, countRows, csvParts, useCountsCsv } from './dashboard-csv';
 import {
   type Figure,
   FigureLinks,
@@ -338,6 +340,115 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const registrantsBy =
     (breakdown: string) =>
     (label: string): Figure => ({ figure: 'registrants', breakdown, label });
+
+  // A section that could not load gives no rows, so the file never shows its zeros as counts.
+  const keyFigures = t('keyFigures', 'Key figures');
+  const loaded = (report: { error?: Error }, rows: () => Array<CountRow>) => (report.error ? [] : rows());
+  const waitlistSection = t('proceduralWaitlist', 'Procedural waitlist');
+  const activeName = t('activeRegistrants', 'Active registrants');
+  const csvRows: Array<CountRow> = [
+    ...loaded(registrantsReport, () =>
+      countRows(
+        keyFigures,
+        '',
+        [
+          { label: t('registered', 'Registered'), value: registrants.registered },
+          { label: t('active', 'Active'), value: registrants.active },
+        ],
+        asOf,
+      ),
+    ),
+    ...loaded(cascadeReport, () =>
+      prescribed === null
+        ? []
+        : countRows(
+            keyFigures,
+            '',
+            [{ label: t('onSecondaryProphylaxis', 'On secondary prophylaxis'), value: prescribed }],
+            asOf,
+          ),
+    ),
+    ...loaded(waitlistReport, () =>
+      countRows(
+        keyFigures,
+        '',
+        [
+          { label: t('waitingForAProcedure', 'Waiting for a procedure'), value: waitlist.patients },
+          { label: t('openRecommendationsFigure', 'Open recommendations'), value: waitlist.total },
+        ],
+        asOf,
+      ),
+    ),
+    ...loaded(registrantsReport, () =>
+      countRows(t('registrantStatus', 'Registrant status'), '', registrants.status, asOf),
+    ),
+    ...loaded(cascadeReport, () =>
+      countRows(
+        t('rhdCareCascade', 'RHD care cascade'),
+        '',
+        cascade.map(({ label, value }) => ({ label: t(label), value })),
+        asOf,
+      ),
+    ),
+    ...loaded(registrantsReport, () => [
+      ...countRows(activeName, t('sex', 'Sex'), registrants.sex, asOf),
+      ...countRows(activeName, t('age', 'Age'), registrants.age, asOf),
+      ...countRows(activeName, t('disease', 'Disease'), registrants.category, asOf),
+    ]),
+    ...loaded(waitlistReport, () => [
+      ...waitlist.rows.flatMap((row) =>
+        countRows(
+          waitlistSection,
+          waitlistName(t, row.procedure),
+          row.counts.map((value, index) => ({ label: waitlistName(t, waitlist.urgencies[index]), value })),
+          asOf,
+        ),
+      ),
+      ...countRows(
+        waitlistSection,
+        t('performedLast12Months', 'Performed in the last 12 months'),
+        [
+          { label: t('mitralBalloonValvuloplasty', 'Mitral balloon valvuloplasty'), value: waitlist.performed.bmv },
+          { label: t('surgery', 'Surgery'), value: waitlist.performed.surgery },
+        ],
+        asOf,
+      ),
+    ]),
+    ...loaded(optimisationReport, () =>
+      measures.flatMap((measure) =>
+        countRows(
+          t('medicalOptimisation', 'Medical optimisation'),
+          measure.label,
+          measure.notDone === null
+            ? [{ label: '', value: measure.done }]
+            : [
+                { label: t('done', 'Done'), value: measure.done },
+                { label: t('notDone', 'Not done'), value: measure.notDone },
+              ],
+          asOf,
+        ),
+      ),
+    ),
+    ...(dashboard.showScreening && !screeningReport.error && !diagnosesReport.error
+      ? [
+          ...countRows(t('screeningCascade', 'Screening cascade'), t('cascade', 'Cascade'), screening, asOf),
+          ...countRows(
+            t('screeningCascade', 'Screening cascade'),
+            t('diagnosesAfterTheEcho', 'Diagnoses after the echo'),
+            diagnoses,
+            asOf,
+          ),
+          ...countRows(t('screeningCascade', 'Screening cascade'), t('rhdDetails', 'RHD details'), rhdDetails, asOf),
+        ]
+      : []),
+  ];
+  useCountsCsv(
+    'figures',
+    csvRows,
+    [registrantsReport, cascadeReport, waitlistReport, optimisationReport].some((report) => report.isLoading) ||
+      screeningReport.isLoading ||
+      diagnosesReport.isLoading,
+  );
 
   return (
     <>
@@ -728,6 +839,38 @@ function ScreeningFromRegistrations({
       setChosen((current) => ({ ...current, [key]: day }));
     }
   };
+  const section = t('screeningFromRegistrations', 'Screening, from registrations');
+  const period = t('periodRange', '{{start}} to {{end}}', { start, end });
+  useCountsCsv(
+    'registrations',
+    report.error
+      ? []
+      : [
+          ...countRows(
+            section,
+            '',
+            [
+              { label: t('registered', 'Registered'), value: registered },
+              { label: t('female', 'Female'), value: female },
+            ],
+            period,
+          ),
+          ...countRows(section, t('screenPlus', 'Screen +'), inOrder(rows, 'screen', screenOrder), period),
+          ...countRows(
+            section,
+            t('ageAtRegistration', 'Age at registration'),
+            inOrder(rows, 'age', registrationAgeOrder),
+            period,
+          ),
+          ...countRows(
+            section,
+            t('caseDetectedBy', 'Case detected by'),
+            inOrder(rows, 'detected', detectionOrder),
+            period,
+          ),
+        ],
+    report.isLoading || pending,
+  );
 
   return (
     <Section
@@ -850,6 +993,51 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
     (limit.status === 'ready'
       ? limit.names.join(', ') || t('yourClinics', 'your clinics')
       : t('everyClinic', 'every clinic'));
+  const section = t('rhdScreening', 'RHD screening');
+  const period = t('periodRange', '{{start}} to {{end}}', { start, end });
+  useCountsCsv(
+    'rhdScreening',
+    error || !summary
+      ? []
+      : [
+          ...countRows(
+            section,
+            '',
+            [
+              { label: metricLabel.screened, value: screened },
+              { label: metricLabel.females, value: summary.females ?? 0 },
+              { label: metricLabel.positive, value: summary.positive ?? 0 },
+            ],
+            period,
+          ),
+          ...countRows(
+            section,
+            t('result', 'Result'),
+            [
+              { label: t('negative', 'Negative'), value: summary.negative ?? 0 },
+              { label: metricLabel.positive, value: summary.positive ?? 0 },
+            ],
+            period,
+          ),
+          ...countRows(
+            section,
+            t('age', 'Age'),
+            [
+              { label: metricLabel.children, value: summary.children ?? 0 },
+              { label: metricLabel.adolescents, value: summary.adolescents ?? 0 },
+              { label: metricLabel.adults, value: summary.adults ?? 0 },
+            ],
+            period,
+          ),
+          ...countRows(
+            section,
+            t('setting', 'Setting'),
+            settings.map((setting) => ({ label: settingLabel[setting], value: summary.settings?.[setting] ?? 0 })),
+            period,
+          ),
+        ],
+    isLoading || pending,
+  );
 
   return (
     <Section
@@ -989,6 +1177,20 @@ export default function Dashboard() {
     open: (next: Figure) => go({ ...noFigure, ...next }),
   };
   const clinicNames = useClinicNames(scope ?? {});
+  const [csv, setCsv] = useState<Partial<Record<CsvPart, { rows: Array<CountRow>; isLoading: boolean }>>>({});
+  const putCsv = useCallback(
+    (part: CsvPart, rows: Array<CountRow>, isLoading: boolean) =>
+      setCsv((current) => ({ ...current, [part]: { rows, isLoading } })),
+    [],
+  );
+  const csvRows = csvParts.flatMap((part) => csv[part]?.rows ?? []);
+  // As RHD screening names what it counts: a site administrator's own clinics when no clinic is chosen.
+  const limit = useClinicLimit();
+  const clinicsCounted =
+    [clinicNames.cardiac, clinicNames.primaryCare].filter(Boolean).join(', ') ||
+    (limit.status === 'ready'
+      ? limit.names.join(', ') || t('yourClinics', 'your clinics')
+      : t('everyClinic', 'every clinic'));
 
   return (
     <div className={styles.page}>
@@ -1033,9 +1235,39 @@ export default function Dashboard() {
                   }
                 }}
               />
+              <div className={styles.download}>
+                <DownloadCsvButton
+                  name="dashboard-counts"
+                  list="dashboard:counts"
+                  identifiers={false}
+                  filters={{ endDate: asOf, ...scope }}
+                  headers={[
+                    t('csvSection', 'Section'),
+                    t('csvGroup', 'Group'),
+                    t('csvLabel', 'Label'),
+                    t('csvCount', 'Count'),
+                    t('period', 'Period'),
+                    t('csvClinics', 'Clinics'),
+                  ]}
+                  rows={() =>
+                    csvRows.map((row) => [
+                      row.section,
+                      row.group,
+                      row.label,
+                      String(row.count),
+                      row.period,
+                      clinicsCounted,
+                    ])
+                  }
+                  disabled={!csvRows.length || csvParts.some((part) => csv[part]?.isLoading)}
+                  size="md"
+                />
+              </div>
             </div>
             <FigureLinks.Provider value={figureLinks}>
-              <Figures scope={scope} asOf={asOf} onShowAll={() => setScope({})} />
+              <CountsCsv.Provider value={putCsv}>
+                <Figures scope={scope} asOf={asOf} onShowAll={() => setScope({})} />
+              </CountsCsv.Provider>
             </FigureLinks.Provider>
           </>
         )}
