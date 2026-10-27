@@ -14,6 +14,12 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+// The card has its own tests; here it only shows what the Dashboard hands it.
+vi.mock('../run-charts/run-chart-card.component', () => ({
+  RunChartCard: ({ scope }: { scope: Record<string, string> }) => (
+    <div data-testid="run-chart-card">{JSON.stringify(scope)}</div>
+  ),
+}));
 
 // Carbon charts draw into an SVG the test DOM cannot lay out, so each only records its props.
 vi.mock('@carbon/charts-react', async () => ({
@@ -412,6 +418,20 @@ describe('Dashboard', () => {
     ]);
   });
 
+  it('gives a status or diagnosis one colour on every donut, the active and RHD patients teal', async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-screening-category');
+
+    const scaleOf = (title: string) =>
+      (chartOptions(DonutChart, title) as unknown as { color: { scale: object } }).color.scale;
+    expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#8a3800' });
+    expect(scaleOf('Diagnoses after the echo')).toEqual({
+      'Rheumatic Heart Disease/Rheumatic Fever': '#009d9a',
+      Normal: '#42be65',
+    });
+  });
+
   it('evaluates the dated reports as of the date chosen', async () => {
     await signIn();
     renderPage();
@@ -514,6 +534,16 @@ describe('Dashboard', () => {
     [CARE_CASCADE, OPTIMISATION, SCREENING, DIAGNOSES, REGISTRANTS, DASHBOARD_WAITLIST].forEach((report) =>
       expect(paramsOf(report)).toEqual({ endDate: today, cardiacClinic: 'lira' }),
     );
+  });
+
+  it('gives the run charts card the clinic chosen, as the sections have it', async () => {
+    await signIn();
+    renderPage();
+
+    expect(await screen.findByTestId('run-chart-card')).toHaveTextContent(JSON.stringify({}));
+    await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'lira');
+
+    expect(JSON.parse(screen.getByTestId('run-chart-card').textContent as string)).toEqual({ cardiacClinic: 'lira' });
   });
 
   it('says which clinic has nobody to count, rather than drawing empty charts, and offers every clinic', async () => {
@@ -1247,6 +1277,15 @@ describe('Dashboard', () => {
         'Not recorded1',
         'Teacher referral1',
       ]);
+      expect(
+        (chartOptions(DonutChart, 'Case detected by') as unknown as { color: { scale: object } }).color.scale,
+      ).toEqual({
+        School: '#0f62fe',
+        Community: '#33b1ff',
+        Other: '#b28600',
+        'Not recorded': '#c6c6c6',
+        'Teacher referral': '#9f1853',
+      });
       expect(t).toHaveBeenCalledWith('registeredCentre', 'registered');
       t.mockRestore();
     });

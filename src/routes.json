@@ -266,6 +266,23 @@
       "privileges": "App: act.dashboard"
     },
     {
+      "name": "act-run-charts-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "runChartsDashboardLink",
+      "meta": {
+        "name": "act-run-charts",
+        "slot": "act-run-charts-dashboard-slot",
+        "title": "runCharts"
+      },
+      "privileges": "App: act.dashboard"
+    },
+    {
+      "name": "act-run-charts-dashboard",
+      "slot": "act-run-charts-dashboard-slot",
+      "component": "runChartsDashboard",
+      "privileges": "App: act.dashboard"
+    },
+    {
       "name": "act-reports-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "reportsDashboardLink",
@@ -756,6 +773,7 @@
       "name": "act-consultation-card",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "consultationCard",
+      "meta": { "fullWidth": true },
       "privileges": [
         "Get Encounters",
         "Get Observations"
@@ -765,6 +783,7 @@
       "name": "act-inr-card",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "inrCard",
+      "meta": { "fullWidth": true },
       "privileges": [
         "Get Encounters",
         "Get Observations"
