@@ -231,6 +231,13 @@ export const configSchema = {
         "The roles the Users page offers, as ACT 2.0's: the first entry whose administrator role the signed-in user holds wins; a super user gets the first. By default a global administrator gives any ACT role, an instance administrator the clinician roles and Site Administrator, and a site administrator the clinician roles, which is also all ACT Core lets it give (actcore.users.siteAdministratorRoles).",
     },
   },
+  helpMenu: {
+    contactUrl: link(
+      "Where the Help menu's Contact us leads, such as mailto:support@example.org; each site sets its own. Empty hides it.",
+      '',
+    ),
+    docsUrl: link("Where the Help menu's Docs leads, in a new tab. Empty hides it.", ''),
+  },
   adminLinks: {
     usersUrl: link(
       "Where the left nav's Users and roles leads, for a user holding Edit Users: ACT's Users page, which offers each administrator the roles and clinics they may give.",
@@ -247,6 +254,10 @@ export const configSchema = {
     refreshFlagsUrl: link(
       "Where the left nav's Flags and adherence leads: the page that refreshes them now, for a user holding Task: act.refreshFlags.",
       '${openmrsSpaBase}/home/act-refresh-flags',
+    ),
+    screeningCountsUrl: link(
+      "Where the left nav's Screening counts leads: the page where each clinic's monthly screening counts are entered, for a user holding App: act.screeningCounts.",
+      '${openmrsSpaBase}/home/act-screening-counts',
     ),
     logsUrl: link(
       "Where the left nav's Logs leads: ACT's Logs page (Activity, Patients opened, Downloads and Sign-ins), for a user holding View Audit Logs, View Read Audit Logs or View Security Audit Logs.",
@@ -385,7 +396,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        "Show the Dashboard's screening sections, the screening cascade and the screening from registrations. Turn it off at a site without a screening programme.",
+        "Show the Dashboard's screening sections: the screening cascade, RHD screening from the monthly screening counts, and the screening from registrations. Turn it off at a site without a screening programme.",
     },
     screeningReport: {
       _type: Type.String,
@@ -956,11 +967,13 @@ export interface Config {
   };
   instanceAdminKpis: { report: string };
   users: { roleChoices: Array<{ administratorRole: string; roles: Array<string> }> };
+  helpMenu: { contactUrl: string; docsUrl: string };
   adminLinks: {
     usersUrl: string;
     clinicsUrl: string;
     studiesUrl: string;
     refreshFlagsUrl: string;
+    screeningCountsUrl: string;
     logsUrl: string;
     auditLogsUrl: string;
     readAuditUrl: string;

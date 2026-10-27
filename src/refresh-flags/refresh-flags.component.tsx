@@ -4,6 +4,7 @@ import { Button, InlineLoading, InlineNotification, SkeletonText, Tile } from '@
 import { formatDatetime, PatientListsPictogram, showSnackbar } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { runRefresh, useRefreshStatus } from './refresh-flags.resource';
+import { RunChartSnapshotTile } from './run-chart-snapshot-tile.component';
 import styles from './refresh-flags.scss';
 
 /** Admin's Flags and adherence page: when ACT Core last refreshed them, and Refresh now. */
@@ -85,6 +86,7 @@ export default function RefreshFlags() {
             )}
           </Button>
         </Tile>
+        <RunChartSnapshotTile />
       </div>
     </>
   );

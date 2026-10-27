@@ -14,6 +14,12 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+// The card has its own tests; here it only shows what the Dashboard hands it.
+vi.mock('../run-charts/run-chart-card.component', () => ({
+  RunChartCard: ({ scope }: { scope: Record<string, string> }) => (
+    <div data-testid="run-chart-card">{JSON.stringify(scope)}</div>
+  ),
+}));
 
 // Carbon charts draw into an SVG the test DOM cannot lay out, so each only records its props.
 vi.mock('@carbon/charts-react', async () => ({
@@ -45,6 +51,21 @@ const screeningRows = [
   { breakdown: 'detected', label: 'Other', patients: 1 },
   { breakdown: 'detected', label: 'Not recorded', patients: 1 },
 ];
+
+/** The design's twelve months at one clinic: 6,840 screened, whose settings ACT 2.0 would have truncated to 99%. */
+const screeningSummary = {
+  startMonth: '2025-10',
+  endMonth: '2026-09',
+  months: 12,
+  screened: 6840,
+  females: 3899,
+  positive: 291,
+  negative: 6549,
+  children: 1348,
+  adolescents: 3896,
+  adults: 1596,
+  settings: { school: 4624, community: 1537, facility: 679 },
+};
 
 const patientRow = (name: string, value: string, date: string | null = null) => ({
   patient_uuid: `uuid-${name}`,
@@ -197,20 +218,24 @@ async function signIn(
   } as never);
   vi.mocked(openmrsFetch).mockImplementation(((url: string) =>
     Promise.resolve({
-      data: url.includes('/location?tag=RHD%20Tertiary')
-        ? {
-            results: [
-              { uuid: 'gulu', display: 'Gulu RRH' },
-              { uuid: 'lira', display: 'Lira RRH' },
-              { uuid: 'mbarara', display: 'Mbarara RRH' },
-            ],
-            totalCount: 3,
-          }
-        : url.includes('/location?tag=')
-          ? { results: [], totalCount: 0 }
-          : url.includes('?v=custom:(display)')
-            ? { display: url.includes('/gulu') ? 'Gulu RRH' : 'Lira RRH' }
-            : { tags: sessionLocation.tags },
+      data: url.includes('/actcore/screeningcounts/summary')
+        ? /clinic=(mbarara|arua)/.test(url)
+          ? { ...screeningSummary, months: 0, screened: 0, females: 0, positive: 0, negative: 0 }
+          : screeningSummary
+        : url.includes('/location?tag=RHD%20Tertiary')
+          ? {
+              results: [
+                { uuid: 'gulu', display: 'Gulu RRH' },
+                { uuid: 'lira', display: 'Lira RRH' },
+                { uuid: 'mbarara', display: 'Mbarara RRH' },
+              ],
+              totalCount: 3,
+            }
+          : url.includes('/location?tag=')
+            ? { results: [], totalCount: 0 }
+            : url.includes('?v=custom:(display)')
+              ? { display: url.includes('/gulu') ? 'Gulu RRH' : 'Lira RRH' }
+              : { tags: sessionLocation.tags },
     })) as never);
   vi.mocked(useReportDataset).mockImplementation((report, params) => {
     const counts = {
@@ -227,6 +252,12 @@ async function signIn(
     };
   });
 }
+
+const summaryUrls = () =>
+  vi
+    .mocked(openmrsFetch)
+    .mock.calls.map(([url]) => String(url))
+    .filter((url) => url.includes('/actcore/screeningcounts/summary'));
 
 const texts = (testId: string) => screen.getAllByTestId(testId).map((element) => element.textContent);
 
@@ -376,18 +407,29 @@ describe('Dashboard', () => {
 
     expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(6);
     expect(texts('dashboard-measure')).toEqual([
-      'Consultations in the last year12',
-      'Echocardiogram in the last 13 months3 done, 7 not done, of 10',
       'Retained in care (seen in the last 7 months)8 done, 2 not done, of 10',
-      'Intervention assigned2 done, 8 not done, of 10',
-      'Interventions completed1 done, 3 not done, of 4',
+      'Echocardiogram in the last 13 months3 done, 7 not done, of 10',
+      'Open procedural recommendation2 done, 8 not done, of 10',
+      'Recommended procedures done1 done, 3 not done, of 4',
       'On warfarin, with an INR in the last 90 days1 done, 1 not done, of 2',
+      'Consultations in the last year12',
     ]);
+    expect(screen.getByText(/^Of the \d+ active registrants, unless a row says otherwise$/)).toBeInTheDocument();
     expect(chartData(StackedBarChart, 'Medical optimisation')).toEqual(
       expect.arrayContaining([
-        { group: 'Done', key: 'Echocardiogram in the last 13 months', value: 3 },
-        { group: 'Not done', key: 'Echocardiogram in the last 13 months', value: 7 },
+        { group: 'Done', key: 'Echocardiogram in the last 13 months', value: 30 },
+        { group: 'Not done', key: 'Echocardiogram in the last 13 months', value: 70 },
+        { group: 'Done', key: 'Recommended procedures done', value: 25 },
+        { group: 'Not done', key: 'Recommended procedures done', value: 75 },
       ]),
+    );
+    // Drawn as shares, top to bottom in the list's order, which Carbon reads from the last key up.
+    const options = chartOptions(StackedBarChart, 'Medical optimisation') as unknown as {
+      axes: { bottom: { percentage?: boolean } };
+    };
+    expect(options.axes.bottom.percentage).toBe(true);
+    expect(chartData(StackedBarChart, 'Medical optimisation')[0].key).toBe(
+      'On warfarin, with an INR in the last 90 days',
     );
   });
 
@@ -396,18 +438,20 @@ describe('Dashboard', () => {
 
     renderPage();
 
-    expect(await screen.findAllByTestId('dashboard-screening-step')).toHaveLength(4);
+    // The report's Active step counts active RHD, not screening, so the cascade starts at Screen + Yes.
+    expect(await screen.findAllByTestId('dashboard-screening-step')).toHaveLength(3);
     expect(texts('dashboard-screening-step')).toEqual([
-      'Active9',
-      'Confirmatory Diagnosis444%',
-      'Diagnosed4100%',
-      'Heart Disease375%',
+      'Screened positive4',
+      'Had a confirmatory echo4100%',
+      'Heart disease375%',
     ]);
-    expect(texts('dashboard-screening-category')).toEqual(['Rheumatic Heart Disease/Rheumatic Fever3', 'Normal1']);
+    expect(screen.getByText('Screening programme sites')).toBeInTheDocument();
+    expect(texts('dashboard-screening-category')).toEqual(['RHD3', 'Normal1']);
+    expect(screen.getByRole('heading', { name: 'RHD details of the 2' })).toBeInTheDocument();
     expect(texts('dashboard-screening-details')).toEqual(['RHD A2']);
-    expect(chartData(SimpleBarChart, 'Screening cascade')).toHaveLength(4);
+    expect(chartData(SimpleBarChart, 'Screening cascade')).toHaveLength(3);
     expect(chartData(DonutChart, 'Diagnoses after the echo')).toEqual([
-      { group: 'Rheumatic Heart Disease/Rheumatic Fever', value: 3 },
+      { group: 'RHD', value: 3 },
       { group: 'Normal', value: 1 },
     ]);
   });
@@ -421,7 +465,7 @@ describe('Dashboard', () => {
       (chartOptions(DonutChart, title) as unknown as { color: { scale: object } }).color.scale;
     expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#8a3800' });
     expect(scaleOf('Diagnoses after the echo')).toEqual({
-      'Rheumatic Heart Disease/Rheumatic Fever': '#009d9a',
+      RHD: '#009d9a',
       Normal: '#42be65',
     });
   });
@@ -530,6 +574,16 @@ describe('Dashboard', () => {
     );
   });
 
+  it('gives the run charts card the clinic chosen, as the sections have it', async () => {
+    await signIn();
+    renderPage();
+
+    expect(await screen.findByTestId('run-chart-card')).toHaveTextContent(JSON.stringify({}));
+    await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'lira');
+
+    expect(JSON.parse(screen.getByTestId('run-chart-card').textContent as string)).toEqual({ cardiacClinic: 'lira' });
+  });
+
   it('says which clinic has nobody to count, rather than drawing empty charts, and offers every clinic', async () => {
     await signIn();
     renderPage();
@@ -588,7 +642,7 @@ describe('Dashboard', () => {
     });
     renderPage();
 
-    expect(await screen.findAllByTestId('dashboard-screening-step')).toHaveLength(4);
+    expect(await screen.findAllByTestId('dashboard-screening-step')).toHaveLength(3);
     expect(screen.getAllByText('No patients to count')).toHaveLength(1);
     expect(screen.queryByTestId('dashboard-screening-details')).not.toBeInTheDocument();
   });
@@ -636,6 +690,42 @@ describe('Dashboard', () => {
     expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#ff832b' });
   });
 
+  it('colours two urgencies with one number apart, and heads a phone table by the numbers only when they differ', async () => {
+    const waitlistOf = (...urgencies: Array<string>) => ({
+      [DASHBOARD_WAITLIST]: [
+        ...urgencies.map((urgency) => recommendations('Balloon valvuloplasty', urgency, 1)),
+        { breakdown: 'total', procedure: 'All', urgency: null, patients: 2, recommendations: 2 },
+      ],
+    });
+    await signIn(undefined, waitlistOf('2 - within 1 month', URGENT));
+    const { unmount } = renderPage();
+
+    await screen.findByText(/^Procedural waitlist: 2 patients/);
+    const waitlist = vi
+      .mocked(StackedBarChart)
+      .mock.calls.map(([props]) => props)
+      .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
+      .at(-1);
+    expect(waitlist.options.color.scale).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#ff832b' });
+    unmount();
+
+    vi.mocked(useLayoutType).mockReturnValue('phone');
+    const view = renderPage();
+    await screen.findAllByTestId('dashboard-waitlist-row');
+    expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+      'Procedure',
+      '2 - within 1 month',
+      URGENT,
+    ]);
+    view.unmount();
+
+    await signIn(undefined, waitlistOf('1: emergent (24 hours)', URGENT));
+    renderPage();
+    await screen.findAllByTestId('dashboard-waitlist-row');
+    expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual(['Procedure', '1', '2']);
+    expect(screen.getByText(`1: emergent (24 hours), ${URGENT}`)).toBeInTheDocument();
+  });
+
   it('keeps drawing a chart with the same data, rather than redrawing it, when another part of the page changes', async () => {
     await signIn();
     renderPage();
@@ -661,8 +751,9 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByText('Nobody at Arua RRH to count')).toHaveLength(7);
+    expect(await screen.findByText('No screening counts entered for Arua RRH in the period')).toBeInTheDocument();
     expect(screen.queryByText(/arua to count/)).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(7);
+    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(8);
   });
 
   it('reads the prophylaxis tile from the step the older cascade report names Prescribed Prophylaxis', async () => {
@@ -978,7 +1069,9 @@ describe('Dashboard', () => {
       await signIn(undefined, figureRows);
       renderPage();
 
-      const consultations = (await screen.findAllByTestId('dashboard-measure'))[0];
+      const consultations = (await screen.findAllByTestId('dashboard-measure')).find((row) =>
+        row.textContent?.startsWith('Consultations'),
+      ) as HTMLElement;
       await userEvent.click(within(consultations).getByRole('link'));
 
       expect(
@@ -1223,6 +1316,100 @@ describe('Dashboard', () => {
     });
   });
 
+  describe('RHD screening', () => {
+    const lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
+    const yearToLastMonth = dayjs().subtract(12, 'month').format('YYYY-MM');
+
+    it("sums every clinic's counts for the twelve months to the last one, with shares that add up to 100", async () => {
+      await signIn();
+      renderPage();
+
+      expect(await screen.findAllByTestId('dashboard-screening-tile')).toHaveLength(3);
+      expect(texts('dashboard-screening-tile')).toEqual(['Screened6,840', 'Female57%', 'Positive291']);
+      expect(texts('dashboard-screening-result')).toEqual(['Negative6,54996%', 'Positive2914%']);
+      expect(texts('dashboard-screening-age')).toEqual([
+        'Children 0-91,34820%',
+        'Adolescents 10-193,89657%',
+        'Adults 20+1,59623%',
+      ]);
+      // ACT 2.0 truncated these to 67, 22 and 9.
+      expect(texts('dashboard-screening-setting')).toEqual([
+        'School4,62468%',
+        'Community1,53722%',
+        'Health facility67910%',
+      ]);
+      expect(summaryUrls().at(-1)).toMatch(
+        new RegExp(`/summary\\?startMonth=${yearToLastMonth}&endMonth=${lastMonth}$`),
+      );
+    });
+
+    it('counts the clinics chosen and the months picked', async () => {
+      await signIn();
+      renderPage();
+      await screen.findAllByTestId('dashboard-screening-tile');
+
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+      const from = dayjs().subtract(3, 'month').format('YYYY-MM');
+      await userEvent.selectOptions(screen.getByLabelText('From'), from);
+
+      await vi.waitFor(() =>
+        expect(summaryUrls().at(-1)).toMatch(
+          new RegExp(`/summary\\?clinic=lira&startMonth=${from}&endMonth=${lastMonth}$`),
+        ),
+      );
+      expect(await screen.findByText(new RegExp(`^Monthly counts, Lira RRH, `))).toBeInTheDocument();
+    });
+
+    it('says a cardiac and a primary care clinic are added together, as ACT Core sums both', async () => {
+      await signIn();
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&primaryCareClinic=hq');
+      renderPage();
+
+      await vi.waitFor(() => expect(summaryUrls().at(-1)).toMatch(/\/summary\?clinic=lira&clinic=hq&startMonth=/));
+      expect(await screen.findByText(/^Monthly counts, Lira RRH, Head office added together, /)).toBeInTheDocument();
+    });
+
+    it('says which clinic has no counts for the period, rather than drawing zeros', async () => {
+      await signIn();
+      renderPage();
+
+      await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'mbarara');
+
+      expect(await screen.findByText('No screening counts entered for Mbarara RRH in the period')).toBeInTheDocument();
+      expect(screen.queryByTestId('dashboard-screening-tile')).not.toBeInTheDocument();
+    });
+
+    it('counts from the oldest month offered when the year to the month chosen starts before it', async () => {
+      await signIn();
+      renderPage();
+      await screen.findAllByTestId('dashboard-screening-tile');
+      const to = dayjs().subtract(30, 'month').format('YYYY-MM');
+      const oldest = dayjs().subtract(35, 'month').format('YYYY-MM');
+
+      await userEvent.selectOptions(screen.getByLabelText('To'), to);
+
+      await vi.waitFor(() => expect(summaryUrls().at(-1)).toMatch(new RegExp(`startMonth=${oldest}&endMonth=${to}$`)));
+      expect(screen.getByLabelText('From')).toHaveValue(oldest);
+    });
+
+    it("names a clinic-limited administrator's own clinics, which ACT Core holds the sums to", async () => {
+      await signIn(undefined, {}, undefined, 'gulu,lira');
+      renderPage();
+
+      expect(await screen.findByText(/^Monthly counts, Gulu RRH, Lira RRH, /)).toBeInTheDocument();
+    });
+
+    it('asks nothing for a clinic-limited administrator with no clinics, and shows nothing', async () => {
+      await signIn(undefined, {}, undefined, '');
+      renderPage();
+
+      expect(await screen.findByText('No screening counts entered in the period')).toBeInTheDocument();
+      expect(screen.getByText(/^Monthly counts, your clinics, /)).toBeInTheDocument();
+      expect(screen.queryByTestId('dashboard-screening-tile')).not.toBeInTheDocument();
+      expect(summaryUrls()).toEqual([]);
+    });
+  });
+
   describe('screening from registrations', () => {
     const yearBack = dayjs().subtract(364, 'day').format('YYYY-MM-DD');
 
@@ -1344,6 +1531,8 @@ describe('Dashboard', () => {
       await screen.findAllByTestId('dashboard-tile');
       expect(screen.queryByText('Screening cascade')).not.toBeInTheDocument();
       expect(screen.queryByText('Screening, from registrations')).not.toBeInTheDocument();
+      expect(screen.queryByText('RHD screening')).not.toBeInTheDocument();
+      expect(summaryUrls()).toEqual([]);
       const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
       [SCREENING, DIAGNOSES, SCREENING_REGISTRATIONS].forEach((report) => expect(evaluated).not.toContain(report));
     });

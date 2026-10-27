@@ -72,6 +72,22 @@ export function waitlistCounts(rows: Array<ReportRow>) {
 
 export const share = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : 0);
 
+/** Each value's whole-number percent of their sum, rounded by largest remainder so they add up to 100; zeros for none. */
+export function shares(values: Array<number>): Array<number> {
+  const whole = values.reduce((sum, value) => sum + value, 0);
+  if (!whole) {
+    return values.map(() => 0);
+  }
+  const exact = values.map((value) => (value / whole) * 100);
+  const floors = exact.map(Math.floor);
+  const left = 100 - floors.reduce((sum, floor) => sum + floor, 0);
+  // Ties go to the earlier value, so the rounding is the same each time.
+  const byRemainder = exact.map((value, index) => ({ index, remainder: value - floors[index] }));
+  byRemainder.sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  byRemainder.slice(0, left).forEach(({ index }) => (floors[index] += 1));
+  return floors;
+}
+
 /** Each step's share of the step before, or of the step `shareOf` names for it. */
 export const cascadeShares = (steps: Array<Count>, shareOf: Record<string, string> = {}) =>
   steps.map((step, index) => {

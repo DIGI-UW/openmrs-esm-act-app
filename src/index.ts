@@ -20,6 +20,7 @@ import patientsOnProphylaxisDashboardLinkComponent from './enter-prophylaxis/pat
 import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
 import reportViewDashboardLinkComponent from './report-view/report-view-dashboard-link.component';
+import runChartsDashboardLinkComponent from './run-charts/run-charts-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
 import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
 import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
@@ -48,6 +49,9 @@ export function startupApp() {
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);
 
 export const sessionTimeout = getAsyncLifecycle(() => import('./session-timeout/session-timeout.component'), options);
+
+export const actHelpContact = getAsyncLifecycle(() => import('./help-menu/act-contact.component'), options);
+export const actHelpDocs = getAsyncLifecycle(() => import('./help-menu/act-docs.component'), options);
 
 export const nextStepsCard = getAsyncLifecycle(() => import('./next-steps/next-steps-card.component'), options);
 export const prophylaxisCard = getAsyncLifecycle(() => import('./prophylaxis/prophylaxis-card.component'), options);
@@ -239,6 +243,10 @@ export const dashboardLink = getAsyncLifecycle(() => import('./dashboard/dashboa
 
 export const dashboard = getAsyncLifecycle(() => import('./dashboard/dashboard.component'), options);
 
+export const runChartsDashboardLink = getSyncLifecycle(runChartsDashboardLinkComponent, options);
+
+export const runChartsDashboard = getAsyncLifecycle(() => import('./run-charts/run-charts.component'), options);
+
 export const studiesDashboardLink = getAsyncLifecycle(
   () => import('./studies/studies-dashboard-link.component'),
   options,
@@ -253,6 +261,16 @@ export const refreshFlagsDashboardLink = getAsyncLifecycle(
 
 export const refreshFlagsDashboard = getAsyncLifecycle(
   () => import('./refresh-flags/refresh-flags.component'),
+  options,
+);
+
+export const screeningCountsDashboardLink = getAsyncLifecycle(
+  () => import('./screening-counts/screening-counts-dashboard-link.component'),
+  options,
+);
+
+export const screeningCountsDashboard = getAsyncLifecycle(
+  () => import('./screening-counts/screening-counts.component'),
   options,
 );
 

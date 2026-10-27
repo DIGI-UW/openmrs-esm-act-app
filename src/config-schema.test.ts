@@ -90,11 +90,13 @@ describe('configSchema', () => {
           },
         ],
       },
+      helpMenu: { contactUrl: '', docsUrl: '' },
       adminLinks: {
         usersUrl: '${openmrsSpaBase}/home/act-users',
         clinicsUrl: '${openmrsSpaBase}/home/act-clinics',
         studiesUrl: '${openmrsSpaBase}/home/act-studies',
         refreshFlagsUrl: '${openmrsSpaBase}/home/act-refresh-flags',
+        screeningCountsUrl: '${openmrsSpaBase}/home/act-screening-counts',
         logsUrl: '${openmrsSpaBase}/home/act-logs',
         auditLogsUrl: '${openmrsBase}/module/auditlogweb/auditlogs.form',
         readAuditUrl: '${openmrsBase}/module/auditlogweb/readauditlogs.form',

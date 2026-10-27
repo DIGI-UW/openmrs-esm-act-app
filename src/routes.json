@@ -266,6 +266,23 @@
       "privileges": "App: act.dashboard"
     },
     {
+      "name": "act-run-charts-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "runChartsDashboardLink",
+      "meta": {
+        "name": "act-run-charts",
+        "slot": "act-run-charts-dashboard-slot",
+        "title": "runCharts"
+      },
+      "privileges": "App: act.dashboard"
+    },
+    {
+      "name": "act-run-charts-dashboard",
+      "slot": "act-run-charts-dashboard-slot",
+      "component": "runChartsDashboard",
+      "privileges": "App: act.dashboard"
+    },
+    {
       "name": "act-reports-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "reportsDashboardLink",
@@ -460,6 +477,23 @@
       "privileges": "Task: act.refreshFlags"
     },
     {
+      "name": "act-screening-counts-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "screeningCountsDashboardLink",
+      "meta": {
+        "name": "act-screening-counts",
+        "slot": "act-screening-counts-dashboard-slot",
+        "title": "screeningCounts"
+      },
+      "privileges": "App: act.screeningCounts"
+    },
+    {
+      "name": "act-screening-counts-dashboard",
+      "slot": "act-screening-counts-dashboard-slot",
+      "component": "screeningCountsDashboard",
+      "privileges": "App: act.screeningCounts"
+    },
+    {
       "name": "act-download-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "downloadDashboardLink",
@@ -607,6 +641,16 @@
       "slot": "top-nav-actions-slot",
       "component": "sessionTimeout",
       "order": 99
+    },
+    {
+      "name": "act-help-contact",
+      "slot": "help-menu-slot",
+      "component": "actHelpContact"
+    },
+    {
+      "name": "act-help-docs",
+      "slot": "help-menu-slot",
+      "component": "actHelpDocs"
     },
     {
       "name": "act-scan-patient-card-dashboard-link",

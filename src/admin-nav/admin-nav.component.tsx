@@ -8,6 +8,7 @@ import {
   PRIVILEGE_EDIT_USERS,
   PRIVILEGE_MANAGE_LOCATIONS,
   PRIVILEGE_REFRESH_FLAGS,
+  PRIVILEGE_SCREENING_COUNTS,
   PRIVILEGE_STUDIES,
   PRIVILEGE_VIEW_AUDIT_LOGS,
   PRIVILEGE_VIEW_READ_AUDIT_LOGS,
@@ -31,6 +32,11 @@ export default function AdminNav() {
     },
     { privilege: PRIVILEGE_MANAGE_LOCATIONS, to: adminLinks.clinicsUrl, label: t('clinics', 'Clinics') },
     { privilege: PRIVILEGE_STUDIES, to: adminLinks.studiesUrl, label: t('studies', 'Studies') },
+    {
+      privilege: PRIVILEGE_SCREENING_COUNTS,
+      to: adminLinks.screeningCountsUrl,
+      label: t('screeningCounts', 'Screening counts'),
+    },
     {
       privilege: PRIVILEGE_REFRESH_FLAGS,
       to: adminLinks.refreshFlagsUrl,
