@@ -50,6 +50,7 @@ export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-
 
 export const sessionTimeout = getAsyncLifecycle(() => import('./session-timeout/session-timeout.component'), options);
 
+export const actHelpContact = getAsyncLifecycle(() => import('./help-menu/act-contact.component'), options);
 export const actHelpDocs = getAsyncLifecycle(() => import('./help-menu/act-docs.component'), options);
 
 export const nextStepsCard = getAsyncLifecycle(() => import('./next-steps/next-steps-card.component'), options);

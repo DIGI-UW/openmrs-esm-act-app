@@ -626,6 +626,11 @@
       "order": 99
     },
     {
+      "name": "act-help-contact",
+      "slot": "help-menu-slot",
+      "component": "actHelpContact"
+    },
+    {
       "name": "act-help-docs",
       "slot": "help-menu-slot",
       "component": "actHelpDocs"
