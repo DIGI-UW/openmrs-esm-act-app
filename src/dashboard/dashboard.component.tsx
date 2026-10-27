@@ -34,6 +34,7 @@ import {
   sections,
   useCountParams,
 } from './dashboard-figure';
+import { RunChartCard } from '../run-charts/run-chart-card.component';
 import { DashboardFigure } from './dashboard-figure.component';
 import { type Count, registrantCounts, share, waitlistCounts, waitlistName } from './dashboard-counts';
 import styles from './dashboard.scss';
@@ -547,6 +548,9 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             ))}
           </ul>
         </Section>
+        <div className={styles.wide}>
+          <RunChartCard scope={scope} />
+        </div>
         {dashboard.showScreening && (
           <Section
             title={t('screeningCascade', 'Screening cascade')}

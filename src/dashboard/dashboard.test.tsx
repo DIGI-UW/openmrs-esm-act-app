@@ -14,6 +14,12 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+// The card has its own tests; here it only shows what the Dashboard hands it.
+vi.mock('../run-charts/run-chart-card.component', () => ({
+  RunChartCard: ({ scope }: { scope: Record<string, string> }) => (
+    <div data-testid="run-chart-card">{JSON.stringify(scope)}</div>
+  ),
+}));
 
 // Carbon charts draw into an SVG the test DOM cannot lay out, so each only records its props.
 vi.mock('@carbon/charts-react', async () => ({
@@ -528,6 +534,16 @@ describe('Dashboard', () => {
     [CARE_CASCADE, OPTIMISATION, SCREENING, DIAGNOSES, REGISTRANTS, DASHBOARD_WAITLIST].forEach((report) =>
       expect(paramsOf(report)).toEqual({ endDate: today, cardiacClinic: 'lira' }),
     );
+  });
+
+  it('gives the run charts card the clinic chosen, as the sections have it', async () => {
+    await signIn();
+    renderPage();
+
+    expect(await screen.findByTestId('run-chart-card')).toHaveTextContent(JSON.stringify({}));
+    await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'lira');
+
+    expect(JSON.parse(screen.getByTestId('run-chart-card').textContent as string)).toEqual({ cardiacClinic: 'lira' });
   });
 
   it('says which clinic has nobody to count, rather than drawing empty charts, and offers every clinic', async () => {

@@ -20,6 +20,7 @@ import patientsOnProphylaxisDashboardLinkComponent from './enter-prophylaxis/pat
 import communityHomeDashboardLinkComponent from './community-home/community-home-dashboard-link.component';
 import reportsDashboardLinkComponent from './programme-report/reports-dashboard-link.component';
 import reportViewDashboardLinkComponent from './report-view/report-view-dashboard-link.component';
+import runChartsDashboardLinkComponent from './run-charts/run-charts-dashboard-link.component';
 import facilityReportsDashboardLinkComponent from './programme-report/facility-reports-dashboard-link.component';
 import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
 import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
@@ -238,6 +239,10 @@ export const rolePermissionsDashboard = getAsyncLifecycle(
 export const dashboardLink = getAsyncLifecycle(() => import('./dashboard/dashboard-link.component'), options);
 
 export const dashboard = getAsyncLifecycle(() => import('./dashboard/dashboard.component'), options);
+
+export const runChartsDashboardLink = getSyncLifecycle(runChartsDashboardLinkComponent, options);
+
+export const runChartsDashboard = getAsyncLifecycle(() => import('./run-charts/run-charts.component'), options);
 
 export const studiesDashboardLink = getAsyncLifecycle(
   () => import('./studies/studies-dashboard-link.component'),
