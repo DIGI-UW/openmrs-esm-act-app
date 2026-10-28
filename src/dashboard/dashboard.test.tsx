@@ -302,10 +302,10 @@ describe('Dashboard', () => {
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
     expect(texts('dashboard-tile')).toEqual([
-      'Registered4every status',
-      'Active3enrolled and alive',
-      'On secondary prophylaxis375% of active RHD',
-      'Waiting for a procedure23 open recommendations',
+      '4Registeredevery status',
+      '3Activeenrolled and alive',
+      '3On secondary prophylaxis75% of active RHD',
+      '2Waiting for a procedure3 open recommendations',
     ]);
   });
 
@@ -642,8 +642,8 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('Active registrants could not load')).toBeInTheDocument();
     expect(screen.getByText('Registrant status could not load')).toBeInTheDocument();
-    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['Registered–could not load', 'Active–could not load']);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis375% of active RHD');
+    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['–Registeredcould not load', '–Activecould not load']);
+    expect(texts('dashboard-tile')[2]).toBe('3On secondary prophylaxis75% of active RHD');
   });
 
   it('names the waitlist rather than its count when the waitlist counts fail', async () => {
@@ -651,7 +651,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findByText('Procedural waitlist could not load')).toBeInTheDocument();
-    expect(texts('dashboard-tile')[3]).toBe('Waiting for a procedure–could not load');
+    expect(texts('dashboard-tile')[3]).toBe('–Waiting for a procedurecould not load');
   });
 
   it('says a chart within a section has nobody to count, rather than drawing it empty', async () => {
@@ -687,7 +687,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis–not reported');
+    expect(texts('dashboard-tile')[2]).toBe('–On secondary prophylaxisnot reported');
   });
 
   it('colours each urgency by its number, whichever urgencies the clinic has', async () => {
@@ -819,7 +819,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis375% of active RHD');
+    expect(texts('dashboard-tile')[2]).toBe('3On secondary prophylaxis75% of active RHD');
   });
 
   it('gives no share on the prophylaxis tile when the cascade does not report its active RHD', async () => {
@@ -827,7 +827,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis3active RHD not reported');
+    expect(texts('dashboard-tile')[2]).toBe('3On secondary prophylaxisactive RHD not reported');
   });
 
   it('colours an urgency with no number apart from the numbered ones', async () => {
@@ -887,7 +887,7 @@ describe('Dashboard', () => {
     const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
     expect(evaluated).not.toContain(REGISTRANTS);
     expect(evaluated).not.toContain(DASHBOARD_WAITLIST);
-    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['Registered0every status', 'Active0enrolled and alive']);
+    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['0Registeredevery status', '0Activeenrolled and alive']);
   });
 
   it("evaluates no registrant or waitlist count while a clinic-limited administrator's clinics are read", async () => {

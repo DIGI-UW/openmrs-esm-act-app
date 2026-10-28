@@ -286,23 +286,25 @@ function FigureTile({
 }) {
   const { t } = useTranslation();
   return (
-    <Layer>
-      <Tile className={styles.tile} data-testid="dashboard-tile">
-        <span className={styles.tileLabel}>{label}</span>
+    <div className={styles.figureTile} data-testid="dashboard-tile">
+      <span className={styles.figureValue}>
         {isLoading ? (
-          <SkeletonText heading width="4rem" />
+          <SkeletonText heading width="3rem" />
+        ) : error || value === null ? (
+          '–'
         ) : (
-          <>
-            <span className={styles.tileValue}>
-              {error || value === null ? '–' : <CountLink value={value} figure={figure} />}
-            </span>
-            <span className={styles.tileNote}>
-              {error ? t('couldNotLoad', 'could not load') : value === null ? t('notReported', 'not reported') : note}
-            </span>
-          </>
+          <CountLink value={value} figure={figure} />
         )}
-      </Tile>
-    </Layer>
+      </span>
+      <span className={styles.figureText}>
+        <span className={styles.figureLabel}>{label}</span>
+        {!isLoading && (
+          <span className={styles.tileNote}>
+            {error ? t('couldNotLoad', 'could not load') : value === null ? t('notReported', 'not reported') : note}
+          </span>
+        )}
+      </span>
+    </div>
   );
 }
 
@@ -549,7 +551,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
 
   return (
     <>
-      <div className={styles.tiles}>
+      <div className={styles.figures}>
         <FigureTile
           label={t('registered', 'Registered')}
           value={registrants.registered}
