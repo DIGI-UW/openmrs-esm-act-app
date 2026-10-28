@@ -1369,7 +1369,7 @@ export default function Dashboard() {
           />
         ) : (
           <>
-            <div className={styles.filters}>
+            <div className={`${styles.filters} ${styles.toolbar}`}>
               <ClinicFilters scope={scope} onChange={setScope} idPrefix="dashboard" />
               <OpenmrsDatePicker
                 id="dashboard-as-of"

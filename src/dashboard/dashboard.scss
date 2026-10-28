@@ -3,9 +3,12 @@
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
+// O3's grey behind white cards, so each card's edge shows.
 .page {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  min-height: 100%;
+  background-color: $ui-01;
 }
 
 .content {
@@ -24,6 +27,12 @@
   > * {
     flex: 0 1 16rem;
   }
+}
+
+.toolbar {
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
 }
 
 // At the end of the filter row, level with the bottom of the filters.
