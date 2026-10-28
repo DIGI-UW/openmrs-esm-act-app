@@ -162,16 +162,17 @@ describe('ProphylaxisPage', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date', 'Given', 'Facility', 'Notes']);
+    ).toEqual(['Date', 'Given', 'Facility', 'Notes', '']);
     expect(rows(table)).toEqual([
-      ['31-Aug-2026', '--', 'Kiswa HC III (ACT 2.0)', 'On time'],
+      ['31-Aug-2026', '--', 'Kiswa HC III (ACT 2.0)', 'On time', 'Edit'],
       [
         '03-Aug-2026',
         '1.2 MU (1,200,000 units)',
         'Akunalaber HCIII',
         'Late · Could not arrange transportation, Forgot to come',
+        'Edit',
       ],
-      ['02-Jul-2026', '--', 'Kiswa HC III', ''],
+      ['02-Jul-2026', '--', 'Kiswa HC III', '', 'Edit'],
     ]);
   });
 
@@ -230,10 +231,10 @@ describe('ProphylaxisPage', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date', 'Adherence', 'Based on', 'Reason if below 80%', 'New prescription']);
+    ).toEqual(['Date', 'Adherence', 'Based on', 'Reason if below 80%', 'New prescription', '']);
     expect(rows(table)).toEqual([
-      ['10-Aug-2026', '65%', '--', 'Could not afford medication', '1 month'],
-      ['10-May-2026', '85%', 'Calendar, Pill count', '--', '3 months'],
+      ['10-Aug-2026', '65%', '--', 'Could not afford medication', '1 month', 'Edit'],
+      ['10-May-2026', '85%', 'Calendar, Pill count', '--', '3 months', 'Edit'],
     ]);
     expect(within(table).getByTestId('low-adherence')).toHaveTextContent('65%');
   });
@@ -302,6 +303,27 @@ describe('ProphylaxisPage', () => {
 
     expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie');
     expect(openForm).toHaveBeenCalledWith(form);
+  });
+
+  it("reopens a BPG injection or an oral report in its form from the dose's Edit", async () => {
+    serve({ oralEntries: oral });
+    const { bpgForm, oralForm } = getDefaultsFromConfigSchema<Config>(configSchema).prophylaxisCard;
+
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit BPG injection of 03-Aug-2026' }));
+    expect(openForm).toHaveBeenLastCalledWith(bpgForm, undefined, 'aug');
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit oral adherence report of 10-May-2026' }));
+    expect(openForm).toHaveBeenLastCalledWith(oralForm, undefined, 'oral-1');
+  });
+
+  it('offers no dose Edit to a user who may not record the forms', async () => {
+    await signInWith([]);
+
+    renderPage();
+
+    await screen.findByRole('table', { name: 'BPG injections' });
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
   });
 
   it('shows an injection saved in the chart once the forms app revalidates the patient encounters', async () => {
