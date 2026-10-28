@@ -4,7 +4,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
+import { DonutChart, SimpleBarChart } from '@carbon/charts-react';
 import {
   getDefaultsFromConfigSchema,
   launchWorkspace2,
@@ -38,7 +38,6 @@ vi.mock('@carbon/charts-react', async () => ({
   ...(await vi.importActual<object>('@carbon/charts-react')),
   DonutChart: vi.fn(() => null),
   SimpleBarChart: vi.fn(() => null),
-  StackedBarChart: vi.fn(() => null),
 }));
 
 const REGISTRY = 'f1a2b3c4-d5e6-7890-abcd-ef1234567890';
@@ -278,6 +277,26 @@ function chartData(chart: unknown, title: string) {
   return calls.filter((props) => props.options?.accessibility?.svgAriaLabel === title).at(-1)?.data;
 }
 
+/** Each segment of each row with the test id, by the name and count it shows on hover. */
+const segmentsOf = (testId: string) =>
+  screen.getAllByTestId(testId).map((row) =>
+    within(row)
+      .queryAllByTestId('dashboard-segment')
+      .map((segment) => segment.getAttribute('title')),
+  );
+
+/** The colour the key above a segmented chart gives each of its segments. */
+const keyColours = (name: string) =>
+  Object.fromEntries(
+    within(screen.getByRole('list', { name }))
+      .getAllByRole('listitem')
+      .map((item) => [
+        item.textContent,
+        // eslint-disable-next-line testing-library/no-node-access
+        (within(item).getByRole('button').firstElementChild as HTMLElement).style.backgroundColor,
+      ]),
+  );
+
 function chartOptions(chart: unknown, title: string) {
   const calls = vi.mocked(chart as typeof DonutChart).mock.calls.map(([props]) => props);
   const options = calls.filter((props) => props.options?.accessibility?.svgAriaLabel === title).at(-1)?.options;
@@ -388,6 +407,77 @@ describe('Dashboard', () => {
     ]);
   });
 
+  it('draws a status alone when its colour is clicked, adds another, and draws them all again from the only one left', async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-status');
+    const legend = (label: string) =>
+      within(screen.getAllByTestId('dashboard-status').find((row) => row.textContent.startsWith(label))).getByRole(
+        'button',
+      );
+    const drawn = () => chartData(DonutChart, 'Registrant status').map(({ group }) => group);
+
+    expect(drawn()).toEqual(['Active', 'Voluntary inactivity']);
+    expect(legend('Active')).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(legend('Voluntary inactivity'));
+    expect(drawn()).toEqual(['Voluntary inactivity']);
+    expect(legend('Active')).toHaveAttribute('aria-pressed', 'false');
+    // The counts and shares stay those of every status.
+    expect(texts('dashboard-status')).toEqual(['Active375%', 'Voluntary inactivity125%']);
+
+    await userEvent.click(legend('Active'));
+    expect(drawn()).toEqual(['Active', 'Voluntary inactivity']);
+    await userEvent.click(legend('Active'));
+    expect(drawn()).toEqual(['Voluntary inactivity']);
+    await userEvent.click(legend('Voluntary inactivity'));
+    expect(drawn()).toEqual(['Active', 'Voluntary inactivity']);
+  });
+
+  it("draws or leaves out a cascade step, an age band, a disease and a waitlist urgency from its chart's legend", async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-cascade-step');
+    const fills = () => screen.getAllByTestId('dashboard-bar-fill').map((fill) => fill.style.width);
+
+    await userEvent.click(within(screen.getAllByTestId('dashboard-cascade-step')[1]).getByRole('button'));
+    expect(chartData(SimpleBarChart, 'RHD care cascade')).toEqual([{ group: 'prescribed', value: 3 }]);
+
+    const ages = screen.getByRole('list', { name: 'Age' });
+    await userEvent.click(within(ages).getByRole('button', { name: '20-39' }));
+    expect(
+      within(ages)
+        .getAllByTestId('dashboard-column-fill')
+        .map((fill) => fill.style.height),
+    ).toEqual(['0%', '100%']);
+
+    const diseases = screen.getAllByTestId('dashboard-category');
+    expect(fills().slice(0, 2)).toEqual(['100%', '50%']);
+    await userEvent.click(within(diseases[1]).getByRole('button', { name: 'RHD A' }));
+    // The one disease left drawn fills the width.
+    expect(fills().slice(0, 2)).toEqual(['0%', '100%']);
+
+    await userEvent.click(within(screen.getByRole('list', { name: 'Urgency' })).getByRole('button', { name: URGENT }));
+    expect(segmentsOf('dashboard-waitlist-total')).toEqual([[], [`${URGENT}: 1`]]);
+  });
+
+  it("keeps a measure's not done to its share of the measure when done is left out", async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-measure');
+
+    await userEvent.click(
+      within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'Not done' }),
+    );
+    const echo = screen.getAllByTestId('dashboard-measure')[1];
+    expect(
+      within(echo)
+        .getAllByTestId('dashboard-segment')
+        .map((segment) => segment.title),
+    ).toEqual(['Not done: 7']);
+    expect(within(echo).getByTestId('dashboard-segment-fill')).toHaveStyle({ width: '70%' });
+  });
+
   it('stacks the waitlist by urgency with a total on each procedure, and shows it as a table on request', async () => {
     await signIn();
 
@@ -395,11 +485,7 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('Procedural waitlist: 2 patients')).toBeInTheDocument();
     expect(texts('dashboard-waitlist-total')).toEqual(['Balloon valvuloplasty1', 'Mitral valve repair/replacement2']);
-    expect(chartData(StackedBarChart, 'Procedural waitlist')).toEqual([
-      { group: EMERGENT, key: 'Balloon valvuloplasty', value: 1 },
-      { group: EMERGENT, key: 'Mitral valve repair/replacement', value: 1 },
-      { group: URGENT, key: 'Mitral valve repair/replacement', value: 1 },
-    ]);
+    expect(segmentsOf('dashboard-waitlist-total')).toEqual([[`${EMERGENT}: 1`], [`${EMERGENT}: 1`, `${URGENT}: 1`]]);
     expect(screen.queryByTestId('dashboard-waitlist-row')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Show as a table' }));
@@ -439,32 +525,18 @@ describe('Dashboard', () => {
 
     renderPage();
 
-    expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(6);
+    expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(5);
     expect(texts('dashboard-measure')).toEqual([
-      'Retained in care (seen in the last 7 months)8 done, 2 not done, of 10',
-      'Echocardiogram in the last 13 months3 done, 7 not done, of 10',
-      'Open procedural recommendation2 done, 8 not done, of 10',
-      'Recommended procedures done1 done, 3 not done, of 4',
-      'On warfarin, with an INR in the last 90 days1 done, 1 not done, of 2',
-      'Consultations in the last year12',
+      'Retained in care (seen in the last 7 months)80%8 done, 2 not done, of 10',
+      'Echocardiogram in the last 13 months30%3 done, 7 not done, of 10',
+      'Open procedural recommendation20%2 done, 8 not done, of 10',
+      'Recommended procedures done25%1 done, 3 not done, of 4',
+      'On warfarin, with an INR in the last 90 days50%1 done, 1 not done, of 2',
     ]);
+    expect(texts('dashboard-measure-count')).toEqual(['Consultations in the last year12']);
     expect(screen.getByText(/^Of the \d+ active registrants, unless a row says otherwise$/)).toBeInTheDocument();
-    expect(chartData(StackedBarChart, 'Medical optimisation')).toEqual(
-      expect.arrayContaining([
-        { group: 'Done', key: 'Echocardiogram in the last 13 months', value: 30 },
-        { group: 'Not done', key: 'Echocardiogram in the last 13 months', value: 70 },
-        { group: 'Done', key: 'Recommended procedures done', value: 25 },
-        { group: 'Not done', key: 'Recommended procedures done', value: 75 },
-      ]),
-    );
-    // Drawn as shares, top to bottom in the list's order, which Carbon reads from the last key up.
-    const options = chartOptions(StackedBarChart, 'Medical optimisation') as unknown as {
-      axes: { bottom: { percentage?: boolean } };
-    };
-    expect(options.axes.bottom.percentage).toBe(true);
-    expect(chartData(StackedBarChart, 'Medical optimisation')[0].key).toBe(
-      'On warfarin, with an INR in the last 90 days',
-    );
+    expect(segmentsOf('dashboard-measure')[1]).toEqual(['Done: 3', 'Not done: 7']);
+    expect(keyColours('Outcome')).toEqual({ Done: '#009d9a', 'Not done': '#d0e2ff' });
   });
 
   it('draws the screening cascade as bars and the diagnoses as a donut, each printing its counts', async () => {
@@ -544,38 +616,14 @@ describe('Dashboard', () => {
     expect(screen.getByText(/ACT Core keeps them only for today/)).toBeInTheDocument();
   });
 
-  it('writes out every procedure, measure and step name on the chart axes and legends, rather than cutting it short', async () => {
+  it("writes out every step name on the cascade's axis, rather than cutting it short", async () => {
     await signIn();
     renderPage();
     await screen.findAllByTestId('dashboard-cascade-step');
 
-    const whole = { type: 'none' };
-    const waitlist = chartOptions(StackedBarChart, 'Procedural waitlist');
-    expect(waitlist.axes.bottom).toMatchObject({ mapsTo: 'key', truncation: whole });
-    expect(waitlist.legend).toMatchObject({ truncation: whole });
-    const optimisation = chartOptions(StackedBarChart, 'Medical optimisation');
-    expect(optimisation.axes.left).toMatchObject({ mapsTo: 'key', truncation: whole });
-    expect(optimisation.legend).toMatchObject({ truncation: whole });
     expect(chartOptions(SimpleBarChart, 'RHD care cascade').axes.bottom).toMatchObject({
       mapsTo: 'group',
-      truncation: whole,
-    });
-  });
-
-  it('lets the chart cut procedure and measure names short on a phone, so the bars keep the card width', async () => {
-    await signIn();
-    vi.mocked(useLayoutType).mockReturnValue('phone');
-    renderPage();
-    await screen.findAllByTestId('dashboard-waitlist-row');
-    fireEvent.click(screen.getByRole('button', { name: 'Show as a chart' }));
-
-    expect(chartOptions(StackedBarChart, 'Procedural waitlist').axes.bottom).toEqual({
-      mapsTo: 'key',
-      scaleType: 'labels',
-    });
-    expect(chartOptions(StackedBarChart, 'Medical optimisation').axes.left).toEqual({
-      mapsTo: 'key',
-      scaleType: 'labels',
+      truncation: { type: 'none' },
     });
   });
 
@@ -727,12 +775,7 @@ describe('Dashboard', () => {
     renderPage();
 
     await screen.findByText(/^Procedural waitlist: 1 patient/);
-    const waitlist = vi
-      .mocked(StackedBarChart)
-      .mock.calls.map(([props]) => props)
-      .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
-      .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#eb6200' });
+    expect(keyColours('Urgency')).toEqual({ [URGENT]: '#eb6200' });
   });
 
   it('colours two urgencies with one number apart, and heads a phone table by the numbers only when they differ', async () => {
@@ -746,12 +789,7 @@ describe('Dashboard', () => {
     const { unmount } = renderPage();
 
     await screen.findByText(/^Procedural waitlist: 2 patients/);
-    const waitlist = vi
-      .mocked(StackedBarChart)
-      .mock.calls.map(([props]) => props)
-      .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
-      .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#eb6200' });
+    expect(keyColours('Urgency')).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#eb6200' });
     unmount();
 
     vi.mocked(useLayoutType).mockReturnValue('phone');
@@ -868,12 +906,7 @@ describe('Dashboard', () => {
     renderPage();
 
     await screen.findByText(/^Procedural waitlist: 2 patient/);
-    const waitlist = vi
-      .mocked(StackedBarChart)
-      .mock.calls.map(([props]) => props)
-      .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
-      .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#eb6200', 'Not given': '#8d8d8d' });
+    expect(keyColours('Urgency')).toEqual({ [URGENT]: '#eb6200', 'Not given': '#8d8d8d' });
   });
 
   it('reads the registrants and the waitlist from their count reports, as of the date, never every registry row', async () => {
@@ -1030,10 +1063,7 @@ describe('Dashboard', () => {
 
       expect(await screen.findAllByTestId('dashboard-waitlist-total')).toHaveLength(2);
       expect(texts('dashboard-waitlist-total')).toEqual(['Not given1', 'Surgery1']);
-      expect(chartData(StackedBarChart, 'Procedural waitlist')).toEqual([
-        { group: URGENT, key: 'Surgery', value: 1 },
-        { group: 'Not given', key: 'Not given', value: 1 },
-      ]);
+      expect(segmentsOf('dashboard-waitlist-total')).toEqual([['Not given: 1'], [`${URGENT}: 1`]]);
       await userEvent.click(screen.getAllByRole('button', { name: 'Show as a table' })[0]);
       expect(screen.getByRole('columnheader', { name: 'Not given' })).toBeInTheDocument();
       expect(screen.getByRole('cell', { name: 'Not given' })).toBeInTheDocument();
@@ -1149,9 +1179,7 @@ describe('Dashboard', () => {
       await signIn(undefined, figureRows);
       renderPage();
 
-      const consultations = (await screen.findAllByTestId('dashboard-measure')).find((row) =>
-        row.textContent?.startsWith('Consultations'),
-      ) as HTMLElement;
+      const [consultations] = await screen.findAllByTestId('dashboard-measure-count');
       await userEvent.click(within(consultations).getByRole('link'));
 
       expect(
@@ -1323,7 +1351,8 @@ describe('Dashboard', () => {
       renderPage();
 
       const total = (await screen.findAllByTestId('dashboard-waitlist-total'))[1];
-      await userEvent.click(within(total).getByRole('link'));
+      // The row's total, not one of its urgency segments.
+      await userEvent.click(within(total).getByRole('link', { name: /^\d+$/ }));
       expect(
         await screen.findByText(/Procedural waitlist, Mitral valve repair\/replacement, 1 recommendation/),
       ).toBeInTheDocument();
