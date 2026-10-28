@@ -13,6 +13,8 @@ export interface ListedItem {
   key: string;
   name: string;
   added: string;
+  /** The latest consultation that records the item, which Edit reopens. */
+  encounterUuid: string;
 }
 
 /**
@@ -20,7 +22,7 @@ export interface ListedItem {
  * An item's date is the earliest Date Added recorded, else the first consultation that recorded it.
  */
 export function toListedItems(encounters: Array<ChartEncounter>, concepts: Concepts, list: string): Array<ListedItem> {
-  const byKey = new Map<string, { name: string; recorded: string; consulted: string }>();
+  const byKey = new Map<string, { name: string; recorded: string; consulted: string; latest: ChartEncounter }>();
   for (const encounter of encounters) {
     for (const group of answersIn(encounter.obs, list)) {
       const [name] = answersIn(group.groupMembers, list);
@@ -34,6 +36,7 @@ export function toListedItems(encounters: Array<ChartEncounter>, concepts: Conce
         name: answerText(name.value),
         recorded: '',
         consulted: encounter.encounterDatetime,
+        latest: encounter,
       };
       if (added && (!seen.recorded || time(added) < time(seen.recorded))) {
         seen.recorded = added;
@@ -41,10 +44,18 @@ export function toListedItems(encounters: Array<ChartEncounter>, concepts: Conce
       if (time(encounter.encounterDatetime) < time(seen.consulted)) {
         seen.consulted = encounter.encounterDatetime;
       }
+      if (time(encounter.encounterDatetime) > time(seen.latest.encounterDatetime)) {
+        seen.latest = encounter;
+      }
       byKey.set(key, seen);
     }
   }
   return [...byKey.entries()]
-    .map(([key, one]) => ({ key, name: one.name, added: one.recorded || one.consulted }))
+    .map(([key, one]) => ({
+      key,
+      name: one.name,
+      added: one.recorded || one.consulted,
+      encounterUuid: one.latest.uuid,
+    }))
     .sort((a, b) => time(b.added) - time(a.added));
 }

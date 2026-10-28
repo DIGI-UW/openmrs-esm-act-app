@@ -65,6 +65,8 @@ export function useLatestDiagnosis(patientUuid: string | null) {
 
 export interface DiagnosisRow {
   key: string;
+  /** The Patient Information that records it, which Edit reopens. */
+  encounterUuid: string;
   diagnosis: string;
   active: string;
   started: string | null;
@@ -72,7 +74,7 @@ export interface DiagnosisRow {
 }
 
 /** One Diagnosis answer group as a table row: the category with its details, and its status and dates. */
-export function toDiagnosisRow(group: GroupedObs, key: string): DiagnosisRow {
+export function toDiagnosisRow(group: GroupedObs, key: string, encounterUuid: string): DiagnosisRow {
   const one = (concept: string) => answersIn(group.groupMembers, concept)[0]?.value;
   const category = answerText(one(diagnosisConcepts.category));
   const details = (group.groupMembers ?? [])
@@ -81,6 +83,7 @@ export function toDiagnosisRow(group: GroupedObs, key: string): DiagnosisRow {
     .sort();
   return {
     key,
+    encounterUuid,
     diagnosis: details.length ? `${category} (${details.join(', ')})` : category,
     active: answerText(one(diagnosisConcepts.active)),
     started: one(diagnosisConcepts.started) ? String(one(diagnosisConcepts.started)) : null,
@@ -97,7 +100,7 @@ export function useDiagnoses(patientUuid: string | null) {
     );
   const latest = encounters.find((encounter) => withCategory(encounter).length);
   const diagnoses = latest
-    ? withCategory(latest).map((group, index) => toDiagnosisRow(group, `${latest.uuid}-${index}`))
+    ? withCategory(latest).map((group, index) => toDiagnosisRow(group, `${latest.uuid}-${index}`, latest.uuid))
     : [];
   return { diagnoses, error, isLoading };
 }

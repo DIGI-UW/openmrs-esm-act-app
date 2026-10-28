@@ -2,6 +2,7 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
@@ -51,6 +52,18 @@ describe('toListedItems', () => {
 
     expect(items.map((one) => one.name)).toEqual(['Asthma', 'HIV']);
     expect(items[1].added).toBe('2025-10-01T09:00:00.000+0300');
+    // Edit reopens the latest consultation that records the item, whatever order they come in
+    expect(items[1].encounterUuid).toBe('new');
+    expect(
+      toListedItems(
+        [
+          consultation('old', '2025-10-01', [condition(coded('hiv', 'HIV'))]),
+          consultation('new', '2026-04-01', [condition(coded('hiv', 'HIV'))]),
+        ],
+        c,
+        c.chronicCondition,
+      )[0].encounterUuid,
+    ).toBe('new');
   });
 
   it('prefers a recorded Date Added to any consultation date, taking the earliest recorded', () => {
@@ -167,5 +180,52 @@ describe('the Consultation visits page tables', () => {
     expect(
       within(screen.getByRole('table', { name: 'RHD complications' })).getByText('Atrial fibrillation'),
     ).toBeInTheDocument();
+  });
+
+  it("reopens a diagnosis's Patient Information, and an item's latest consultation, from its Edit", async () => {
+    const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
+    serve({
+      consultations: [
+        consultation('new', '2026-04-01', [item(c.allergy, 'Penicillin')]),
+        consultation('old', '2025-10-01', [item(c.allergy, 'Penicillin'), item(c.complication, 'Stroke')]),
+      ],
+      patientInformation: [
+        {
+          uuid: 'pi',
+          encounterDatetime: '2026-03-01T09:00:00.000+0300',
+          obs: [obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded('rhd', 'RHD'))])],
+        } as ChartEncounter,
+      ],
+    });
+
+    renderIn(<ConsultationsPage patientUuid="winnie" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit RHD' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.patientInformationForm, undefined, 'pi');
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Penicillin' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Stroke' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'old');
+  });
+
+  it('shows the tables without Edit to a user who may not record the forms', async () => {
+    const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
+    serve({
+      consultations: [consultation('new', '2026-04-01', [item(c.allergy, 'Penicillin')])],
+      patientInformation: [
+        {
+          uuid: 'pi',
+          encounterDatetime: '2026-03-01T09:00:00.000+0300',
+          obs: [obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded('rhd', 'RHD'))])],
+        } as ChartEncounter,
+      ],
+      mayEnter: false,
+    });
+
+    renderIn(<ConsultationsPage patientUuid="winnie" />);
+
+    await within(await screen.findByRole('table', { name: 'Allergies' })).findByText('Penicillin');
+    await screen.findByText('RHD');
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
   });
 });
