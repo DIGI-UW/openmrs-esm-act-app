@@ -46,6 +46,7 @@
     "@carbon/react": "^1.83.0",
     "@zxing/browser": "0.2.1",
     "@zxing/library": "0.23.0",
+    "html-to-image": "1.11.11",
     "lodash-es": "^4.17.21"
   },
   "peerDependencies": {

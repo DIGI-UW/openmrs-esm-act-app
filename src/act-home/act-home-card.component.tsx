@@ -56,7 +56,9 @@ export function ActHomeCard({
           )}
         </div>
       </div>
-      <div hidden={collapsed}>{children}</div>
+      <div hidden={collapsed} data-collapsible-body="">
+        {children}
+      </div>
     </Tile>
   );
 }
