@@ -202,9 +202,11 @@ describe('the Consultation visits page tables', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit RHD' }));
     expect(openForm).toHaveBeenLastCalledWith(config.patientInformationForm, undefined, 'pi');
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit Penicillin' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: /^Edit Penicillin in the consultation of .*Apr.*2026$/ }),
+    );
     expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
-    await userEvent.click(screen.getByRole('button', { name: 'Edit Stroke' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Edit Stroke in the consultation of .*Oct.*2025$/ }));
     expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'old');
   });
 

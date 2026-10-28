@@ -15,6 +15,8 @@ export interface ListedItem {
   added: string;
   /** The latest consultation that records the item, which Edit reopens. */
   encounterUuid: string;
+  /** That consultation's date, which Edit names, as only that consultation changes. */
+  encounterDate: string;
 }
 
 /**
@@ -56,6 +58,7 @@ export function toListedItems(encounters: Array<ChartEncounter>, concepts: Conce
       name: one.name,
       added: one.recorded || one.consulted,
       encounterUuid: one.latest.uuid,
+      encounterDate: one.latest.encounterDatetime,
     }))
     .sort((a, b) => time(b.added) - time(a.added));
 }

@@ -287,7 +287,7 @@
   "editInr": "Edit INR of {{date}}",
   "editLastConsultation": "Edit last consultation",
   "editLastInr": "Edit last INR",
-  "editListedItem": "Edit {{item}}",
+  "editListedItem": "Edit {{item}} in the consultation of {{date}}",
   "editMedicine": "Edit {{medicine}}",
   "editParticipation": "Edit participation",
   "editUser": "Edit user",

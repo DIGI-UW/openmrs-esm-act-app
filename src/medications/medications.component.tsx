@@ -114,7 +114,10 @@ export default function Medications({ patientUuid }: { patientUuid: string }) {
             kind="ghost"
             size="sm"
             disabled={forms.isOpening}
-            aria-label={t('editMedicine', 'Edit {{medicine}}', { medicine: one.name })}
+            aria-label={t('editMedicine', 'Edit {{medicine}}', {
+              medicine: one.name,
+              interpolation: { escapeValue: false },
+            })}
             onClick={open}
           >
             {t('edit', 'Edit')}

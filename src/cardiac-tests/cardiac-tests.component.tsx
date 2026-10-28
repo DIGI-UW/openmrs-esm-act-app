@@ -36,11 +36,11 @@ import styles from './cardiac-tests.scss';
 
 const coded = (value: unknown) => (value as { display?: string } | undefined)?.display ?? '--';
 
-/** A row's Edit, which reopens the record the row shows in its form, named for the row. */
+/** A row's Edit, which reopens the record the row shows in its form, named for the row, also on hover. */
 export function EditButton({ label, disabled, onClick }: { label: string; disabled: boolean; onClick: () => void }) {
   const { t } = useTranslation();
   return (
-    <Button kind="ghost" size="sm" disabled={disabled} aria-label={label} onClick={onClick}>
+    <Button kind="ghost" size="sm" disabled={disabled} aria-label={label} title={label} onClick={onClick}>
       {t('edit', 'Edit')}
     </Button>
   );

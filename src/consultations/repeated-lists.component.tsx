@@ -99,7 +99,10 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
             header: '',
             text: (one: Row) => (
               <EditButton
-                label={t('editDiagnosis', 'Edit {{diagnosis}}', { diagnosis: one.diagnosis })}
+                label={t('editDiagnosis', 'Edit {{diagnosis}}', {
+                  diagnosis: one.diagnosis,
+                  interpolation: { escapeValue: false },
+                })}
                 disabled={isOpening}
                 onClick={() => open(patientInformationForm, undefined, one.encounterUuid)}
               />
@@ -124,7 +127,8 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
 
 /**
  * One of the consultation's repeated lists as a name and date added table, with Edit, which reopens the latest
- * consultation that records the item, for a user who may record one.
+ * consultation that records the item, for a user who may record one. Edit names that consultation's date: the list
+ * merges every consultation, so an item an older one also records stays listed after it is removed from this one.
  */
 function ListedItems({
   patientUuid,
@@ -162,7 +166,11 @@ function ListedItems({
                   header: '',
                   text: (one: (typeof items)[number]) => (
                     <EditButton
-                      label={t('editListedItem', 'Edit {{item}}', { item: one.name })}
+                      label={t('editListedItem', 'Edit {{item}} in the consultation of {{date}}', {
+                        item: one.name,
+                        date: day(one.encounterDate),
+                        interpolation: { escapeValue: false },
+                      })}
                       disabled={start.isOpening}
                       onClick={() => start.edit(one.encounterUuid)}
                     />
