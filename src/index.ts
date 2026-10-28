@@ -146,6 +146,11 @@ export const userFormWorkspace = getAsyncLifecycle(() => import('./users/user-fo
 
 export const resetPasswordWorkspace = getAsyncLifecycle(() => import('./users/reset-password.workspace'), options);
 
+export const dashboardExportWorkspace = getAsyncLifecycle(
+  () => import('./dashboard/dashboard-export.workspace'),
+  options,
+);
+
 export const actHomeDashboardLink = getSyncLifecycle(actHomeDashboardLinkComponent, options);
 
 export const actHomeDashboard = getAsyncLifecycle(() => import('./act-home/act-home-dashboard.component'), options);

@@ -3,9 +3,12 @@
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
+// O3's grey behind white cards, so each card's edge shows.
 .page {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  min-height: 100%;
+  background-color: $ui-01;
 }
 
 .content {
@@ -16,14 +19,57 @@
 }
 
 .filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 18rem));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: layout.$spacing-05;
+
+  > * {
+    flex: 0 1 16rem;
+  }
 }
 
-// Level with the bottom of the filters beside it.
+.toolbar {
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+
+  // Narrower than the filters elsewhere, so the filters, Jump to and Export share one row on a laptop.
+  > :not(.download) {
+    flex-basis: 11rem;
+    max-width: 12rem;
+  }
+
+  // The cardiac clinic's names are the longest.
+  > :first-child {
+    flex-basis: 14rem;
+    max-width: 16rem;
+  }
+
+  :global(#dashboard-jump-to) {
+    width: 11rem;
+  }
+
+  // The date picker's field has a fixed width of its own, wider than the toolbar gives it.
+  :global(.cds--date-picker),
+  :global(.cds--date-picker-container) {
+    width: 100%;
+  }
+
+  :global(.cds--date-picker-input__wrapper) {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// At the end of the filter row, level with the bottom of the filters.
 .download {
-  align-self: end;
+  flex: 0 0 auto !important;
+  display: flex;
+  align-items: flex-end;
+  gap: layout.$spacing-04;
+  margin-left: auto;
 }
 
 // Two across on a phone, four on a laptop.
@@ -31,6 +77,46 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: layout.$spacing-05;
+}
+
+// Four across where they fit, two on a phone.
+.figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: layout.$spacing-04;
+
+  @media (min-width: 42rem) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.figureTile {
+  display: flex;
+  align-items: baseline;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+}
+
+.figureValue {
+  @include type.type-style('heading-04');
+  flex: none;
+}
+
+// Carbon's link sets its own small type, which would shrink the figure.
+.figureValue :global(.cds--link) {
+  font: inherit;
+}
+
+.figureText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.figureLabel {
+  @include type.type-style('heading-compact-01');
 }
 
 .tile {
@@ -53,6 +139,7 @@
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: layout.$spacing-05;
 
   @media (min-width: 66rem) {
@@ -62,6 +149,196 @@
 
 .wide {
   grid-column: 1 / -1;
+}
+
+// What the print shows above the sections, in place of the page header and filters.
+.printHeader {
+  display: none;
+
+  h1 {
+    @include type.type-style('heading-04');
+  }
+
+  p {
+    @include type.type-style('body-compact-01');
+    color: $text-02;
+  }
+}
+
+.exportChoices {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+}
+
+.exportSummary {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.exportFieldset {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.exportLegend {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.exportAll {
+  display: flex;
+  gap: layout.$spacing-03;
+}
+
+// Exporting: a chosen section shows even in a closed tab or a collapsed card, without its buttons; the rest of the
+// page stays as it is.
+:global(body.act-dashboard-exporting),
+:global(body.act-dashboard-printing) {
+  // The page and grid holding a chosen section are marked too, so these reach only into a chosen card.
+  :global([role='tabpanel'][data-export-chosen]),
+  :global([data-export-section][data-export-chosen] [data-collapsible-body]),
+  :global([data-export-card][data-export-chosen] [data-collapsible-body]) {
+    display: block !important;
+  }
+
+  // A legend's names are buttons too, and stay.
+  :global([data-export-section][data-export-chosen]) button:not(.legendToggle),
+  :global([data-export-card][data-export-chosen]) button:not(.legendToggle) {
+    display: none !important;
+  }
+}
+
+// A tab's name, which print hides with the tab list, over the section it names; drawn by CSS, so the page shows it once.
+:global(body.act-dashboard-printing) .embedded[data-print-title]::before {
+  @include type.type-style('heading-compact-01');
+  content: attr(data-print-title);
+  display: block;
+  margin-bottom: layout.$spacing-04;
+}
+
+// Below the page's end, the paper stays white rather than the app's grey.
+:global(html:has(> body.act-dashboard-printing)) {
+  background: #ffffff !important;
+}
+
+// Printing: the page at the paper's width with only the chosen sections, set on screen first so charts draw at it.
+:global(body.act-dashboard-printing) {
+  .page {
+    width: 186mm;
+    background: #ffffff;
+  }
+
+  .printHeader {
+    display: block;
+    padding: 0 0 layout.$spacing-05;
+    border-bottom: 2px solid colors.$teal-70;
+    margin-bottom: layout.$spacing-05;
+  }
+
+  background: #ffffff !important;
+  // The legend swatches and bars are backgrounds, which a browser leaves off paper unless told otherwise.
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  .noPrint,
+  .keepTogether:not(:global([data-export-chosen])),
+  // A wrapper with nothing chosen in it would still take a line, and can start an empty page.
+  .content > :not(:global([data-export-chosen])):not(:has(:global([data-export-chosen]))),
+  .grid > :not(:global([data-export-chosen])):not(:has(:global([data-export-chosen]))),
+  :global([data-print-path] > :not([data-print-path]):not([data-print-page])),
+  :global([data-export-section]:not([data-export-chosen])),
+  :global([role='tabpanel']:not([data-export-chosen])),
+  :global([role='tablist']),
+  .page button:not(.legendToggle) {
+    display: none !important;
+  }
+
+  :global([data-print-path]:not(body)) {
+    position: static !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    background: #ffffff !important;
+  }
+
+  .content,
+  :global([role='tabpanel']) {
+    padding: 0;
+  }
+
+  // Plain blocks, which a browser moves whole to the next page; it can push or split a grid's items instead.
+  .page,
+  .content,
+  .grid {
+    display: block;
+  }
+
+  .content > *,
+  .grid > * {
+    margin-bottom: layout.$spacing-05;
+  }
+
+  .figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    break-inside: avoid;
+  }
+
+  // On paper a chart is narrower than on screen: in portrait it takes the width, its numbers under it, so its labels
+  // stay level rather than turned and crowding the bars.
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :global([data-export-section]),
+  .keepTogether {
+    break-inside: avoid;
+  }
+
+  .page a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+:global(body.act-dashboard-printing[data-print-orientation='landscape']) {
+  .page {
+    width: 273mm;
+  }
+
+  .figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  // Two to a line, each half with its own gutter, so a pair goes to the next page together.
+  .grid {
+    margin-inline: -#{layout.$spacing-03};
+  }
+
+  .grid > * {
+    display: inline-block;
+    vertical-align: top;
+    box-sizing: border-box;
+    width: 50%;
+    padding-inline: layout.$spacing-03;
+  }
+
+  .grid > .wide {
+    display: block;
+    width: auto;
+  }
+}
+
+
+// A section in a tab, below the tab list.
+.embedded {
+  padding-top: layout.$spacing-05;
 }
 
 .description {
@@ -81,15 +358,68 @@
   min-width: 0;
 }
 
-.donut {
+// A chart and its numbers side by side where there is room for both, else one under the other.
+.split {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  align-items: center;
+  gap: layout.$spacing-06;
+}
+
+.columnChart {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: layout.$spacing-04;
+  height: 11rem;
+}
+
+.column {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: layout.$spacing-02;
+  height: 100%;
+}
+
+.columnTrack {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 3rem;
+  height: 100%;
+}
+
+.columnFill {
+  display: block;
+  width: 100%;
+  background-color: colors.$teal-50;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.columnLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.donut {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: layout.$spacing-05;
+
+  > .chart {
+    flex: 1 1 9rem;
+  }
+
+  // The legend asks for its names unbroken, so in a narrow card the donut goes above it.
+  > .legend {
+    flex: 1 1 auto;
+  }
 }
 
 .legend,
-.totals,
 .steps {
   display: flex;
   flex-direction: column;
@@ -101,19 +431,146 @@
 .step {
   @include type.type-style('body-compact-01');
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: layout.$spacing-03;
 }
 
-.totals .legendRow,
-.step {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+// A faint edge, so a light colour (not recorded, an early RHD stage) still shows on white.
+.swatch,
+.fill,
+.segment {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 .swatch {
+  flex: none;
   width: layout.$spacing-04;
   height: layout.$spacing-04;
+}
+
+// A legend's colour and name, as Carbon's legend draws them: a click draws or leaves out its group on the chart.
+.legendToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  // A name wider than the whole card breaks within a word, rather than running into its count.
+  > span:last-child {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  &:hover > span:last-child {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $interactive-01;
+    outline-offset: 2px;
+  }
+}
+
+// Left out of its chart: an empty box, and the name greyed.
+.leftOut {
+  color: $text-03;
+
+  .swatch {
+    box-shadow: inset 0 0 0 1px $ui-04;
+  }
+}
+
+.segmented {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.key {
+  @include type.type-style('label-01');
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03 layout.$spacing-05;
+  color: $text-02;
+}
+
+// One grid for every row, so labels, bars and numbers line up; on a narrow card a label goes above its bar.
+.segmentRows {
+  @include type.type-style('body-compact-01');
+  display: grid;
+  grid-template-columns: fit-content(18rem) minmax(6rem, 1fr) max-content;
+  align-items: center;
+  gap: layout.$spacing-04 layout.$spacing-05;
+
+  @media (max-width: 42rem) {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    row-gap: layout.$spacing-02;
+
+    .segmentLabel {
+      grid-column: 1 / -1;
+      margin-top: layout.$spacing-03;
+    }
+  }
+}
+
+// Each row takes the list's columns, and stays a list item to a screen reader.
+.segmentRow {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.segmentTrack {
+  height: layout.$spacing-05;
+  background-color: $ui-01;
+}
+
+.segmentFill {
+  display: flex;
+  height: 100%;
+}
+
+.segment {
+  flex: 0 0 0;
+  min-width: 2px;
+}
+
+.segmentEnd {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: layout.$spacing-04;
+  text-align: right;
+}
+
+.doneNotDone {
+  @include type.type-style('body-compact-01');
+  white-space: nowrap;
+}
+
+// Under a section's chart: a note on one side, a count or a control on the other.
+.sectionFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03 layout.$spacing-05;
+  margin-top: layout.$spacing-05;
+  padding-top: layout.$spacing-04;
+  border-top: 1px solid $ui-03;
+
+  .performed {
+    margin: 0;
+  }
 }
 
 .share {
@@ -205,7 +662,8 @@
 
 // Carbon draws a link inline-flex, which breaks a sentence at each figure it holds.
 .count :global(.cds--link),
-.performed :global(.cds--link) {
+.performed :global(.cds--link),
+.doneNotDone :global(.cds--link) {
   display: inline;
 }
 

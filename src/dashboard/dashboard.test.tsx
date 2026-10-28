@@ -2,17 +2,28 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts-react';
-import { getDefaultsFromConfigSchema, openmrsFetch, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { DonutChart, SimpleBarChart } from '@carbon/charts-react';
+import {
+  getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  openmrsFetch,
+  showSnackbar,
+  useLayoutType,
+  useSession,
+} from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 import { downloadCsv } from '../table-filters/csv';
+vi.mock('./dashboard-images', () => ({ sectionPng: vi.fn(async () => new Uint8Array([1, 2, 3])) }));
+import { sectionPng } from './dashboard-images';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
+import { exportSections } from './dashboard-export';
+import DashboardExportWorkspace, { type DashboardExportWorkspaceProps } from './dashboard-export.workspace';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 // The card has its own tests; here it only shows what the Dashboard hands it.
@@ -27,7 +38,6 @@ vi.mock('@carbon/charts-react', async () => ({
   ...(await vi.importActual<object>('@carbon/charts-react')),
   DonutChart: vi.fn(() => null),
   SimpleBarChart: vi.fn(() => null),
-  StackedBarChart: vi.fn(() => null),
 }));
 
 const REGISTRY = 'f1a2b3c4-d5e6-7890-abcd-ef1234567890';
@@ -267,6 +277,26 @@ function chartData(chart: unknown, title: string) {
   return calls.filter((props) => props.options?.accessibility?.svgAriaLabel === title).at(-1)?.data;
 }
 
+/** Each segment of each row with the test id, by the name and count it shows on hover. */
+const segmentsOf = (testId: string) =>
+  screen.getAllByTestId(testId).map((row) =>
+    within(row)
+      .queryAllByTestId('dashboard-segment')
+      .map((segment) => segment.getAttribute('title')),
+  );
+
+/** The colour the key above a segmented chart gives each of its segments. */
+const keyColours = (name: string) =>
+  Object.fromEntries(
+    within(screen.getByRole('list', { name }))
+      .getAllByRole('listitem')
+      .map((item) => [
+        item.textContent,
+        // eslint-disable-next-line testing-library/no-node-access
+        (within(item).getByRole('button').firstElementChild as HTMLElement).style.backgroundColor,
+      ]),
+  );
+
 function chartOptions(chart: unknown, title: string) {
   const calls = vi.mocked(chart as typeof DonutChart).mock.calls.map(([props]) => props);
   const options = calls.filter((props) => props.options?.accessibility?.svgAriaLabel === title).at(-1)?.options;
@@ -302,11 +332,27 @@ describe('Dashboard', () => {
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
     expect(texts('dashboard-tile')).toEqual([
-      'Registered4every status',
-      'Active3enrolled and alive',
-      'On secondary prophylaxis375% of active RHD',
-      'Waiting for a procedure23 open recommendations',
+      '4Registeredevery status',
+      '3Activeenrolled and alive',
+      '3On secondary prophylaxis75% of active RHD',
+      '2Waiting for a procedure3 open recommendations',
     ]);
+  });
+
+  it('keeps the page header and jumps to the section chosen in the toolbar', async () => {
+    const scrolled: Array<string> = [];
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element) {
+      scrolled.push(this.getAttribute('data-export-section') ?? this.getAttribute('data-jump'));
+    });
+    await signIn();
+
+    renderPage();
+    await screen.findAllByTestId('dashboard-tile');
+
+    expect(screen.getByTestId('act-page-header')).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Jump to'), 'Procedural waitlist');
+    await userEvent.selectOptions(screen.getByLabelText('Jump to'), 'Overview');
+    expect(scrolled).toEqual(['waitlist', 'keyFigures']);
   });
 
   it('draws registrant status as a donut, printing the count and share of each status', async () => {
@@ -322,14 +368,20 @@ describe('Dashboard', () => {
     ]);
   });
 
-  it('lists the sex, age and disease of the active registrants with the count on each row', async () => {
+  it('draws the sex of the active registrants as a donut, their ages as columns and their disease as bars, each with its counts', async () => {
     await signIn();
 
     renderPage();
 
     expect(await screen.findByText('Active registrants: 3')).toBeInTheDocument();
-    expect(texts('dashboard-sex')).toEqual(['Female2', 'Male1']);
-    expect(texts('dashboard-age')).toEqual(['10-192', '20-391']);
+    expect(texts('dashboard-sex')).toEqual(['Female267%', 'Male133%']);
+    expect((chartOptions(DonutChart, 'Sex') as unknown as { color: { scale: object } }).color.scale).toEqual({
+      Female: '#6929c4',
+      Male: '#1192e8',
+    });
+    // Each column reads its count, its share of the whole and its band.
+    expect(texts('dashboard-age')).toEqual(['267%10-19', '133%20-39']);
+    expect(screen.getByRole('list', { name: 'Age' })).toBeInTheDocument();
     expect(texts('dashboard-category')).toEqual(['RHD B2', 'RHD A1']);
   });
 
@@ -355,6 +407,77 @@ describe('Dashboard', () => {
     ]);
   });
 
+  it('draws a status alone when its colour is clicked, adds another, and draws them all again from the only one left', async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-status');
+    const legend = (label: string) =>
+      within(screen.getAllByTestId('dashboard-status').find((row) => row.textContent.startsWith(label))).getByRole(
+        'button',
+      );
+    const drawn = () => chartData(DonutChart, 'Registrant status').map(({ group }) => group);
+
+    expect(drawn()).toEqual(['Active', 'Voluntary inactivity']);
+    expect(legend('Active')).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(legend('Voluntary inactivity'));
+    expect(drawn()).toEqual(['Voluntary inactivity']);
+    expect(legend('Active')).toHaveAttribute('aria-pressed', 'false');
+    // The counts and shares stay those of every status.
+    expect(texts('dashboard-status')).toEqual(['Active375%', 'Voluntary inactivity125%']);
+
+    await userEvent.click(legend('Active'));
+    expect(drawn()).toEqual(['Active', 'Voluntary inactivity']);
+    await userEvent.click(legend('Active'));
+    expect(drawn()).toEqual(['Voluntary inactivity']);
+    await userEvent.click(legend('Voluntary inactivity'));
+    expect(drawn()).toEqual(['Active', 'Voluntary inactivity']);
+  });
+
+  it("draws or leaves out a cascade step, an age band, a disease and a waitlist urgency from its chart's legend", async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-cascade-step');
+    const fills = () => screen.getAllByTestId('dashboard-bar-fill').map((fill) => fill.style.width);
+
+    await userEvent.click(within(screen.getAllByTestId('dashboard-cascade-step')[1]).getByRole('button'));
+    expect(chartData(SimpleBarChart, 'RHD care cascade')).toEqual([{ group: 'prescribed', value: 3 }]);
+
+    const ages = screen.getByRole('list', { name: 'Age' });
+    await userEvent.click(within(ages).getByRole('button', { name: '20-39' }));
+    expect(
+      within(ages)
+        .getAllByTestId('dashboard-column-fill')
+        .map((fill) => fill.style.height),
+    ).toEqual(['0%', '100%']);
+
+    const diseases = screen.getAllByTestId('dashboard-category');
+    expect(fills().slice(0, 2)).toEqual(['100%', '50%']);
+    await userEvent.click(within(diseases[1]).getByRole('button', { name: 'RHD A' }));
+    // The one disease left drawn fills the width.
+    expect(fills().slice(0, 2)).toEqual(['0%', '100%']);
+
+    await userEvent.click(within(screen.getByRole('list', { name: 'Urgency' })).getByRole('button', { name: URGENT }));
+    expect(segmentsOf('dashboard-waitlist-total')).toEqual([[], [`${URGENT}: 1`]]);
+  });
+
+  it("keeps a measure's not done to its share of the measure when done is left out", async () => {
+    await signIn();
+    renderPage();
+    await screen.findAllByTestId('dashboard-measure');
+
+    await userEvent.click(
+      within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'Not done' }),
+    );
+    const echo = screen.getAllByTestId('dashboard-measure')[1];
+    expect(
+      within(echo)
+        .getAllByTestId('dashboard-segment')
+        .map((segment) => segment.title),
+    ).toEqual(['Not done: 7']);
+    expect(within(echo).getByTestId('dashboard-segment-fill')).toHaveStyle({ width: '70%' });
+  });
+
   it('stacks the waitlist by urgency with a total on each procedure, and shows it as a table on request', async () => {
     await signIn();
 
@@ -362,11 +485,7 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('Procedural waitlist: 2 patients')).toBeInTheDocument();
     expect(texts('dashboard-waitlist-total')).toEqual(['Balloon valvuloplasty1', 'Mitral valve repair/replacement2']);
-    expect(chartData(StackedBarChart, 'Procedural waitlist')).toEqual([
-      { group: EMERGENT, key: 'Balloon valvuloplasty', value: 1 },
-      { group: EMERGENT, key: 'Mitral valve repair/replacement', value: 1 },
-      { group: URGENT, key: 'Mitral valve repair/replacement', value: 1 },
-    ]);
+    expect(segmentsOf('dashboard-waitlist-total')).toEqual([[`${EMERGENT}: 1`], [`${EMERGENT}: 1`, `${URGENT}: 1`]]);
     expect(screen.queryByTestId('dashboard-waitlist-row')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Show as a table' }));
@@ -406,32 +525,18 @@ describe('Dashboard', () => {
 
     renderPage();
 
-    expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(6);
+    expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(5);
     expect(texts('dashboard-measure')).toEqual([
-      'Retained in care (seen in the last 7 months)8 done, 2 not done, of 10',
-      'Echocardiogram in the last 13 months3 done, 7 not done, of 10',
-      'Open procedural recommendation2 done, 8 not done, of 10',
-      'Recommended procedures done1 done, 3 not done, of 4',
-      'On warfarin, with an INR in the last 90 days1 done, 1 not done, of 2',
-      'Consultations in the last year12',
+      'Retained in care (seen in the last 7 months)80%8 done, 2 not done, of 10',
+      'Echocardiogram in the last 13 months30%3 done, 7 not done, of 10',
+      'Open procedural recommendation20%2 done, 8 not done, of 10',
+      'Recommended procedures done25%1 done, 3 not done, of 4',
+      'On warfarin, with an INR in the last 90 days50%1 done, 1 not done, of 2',
     ]);
+    expect(texts('dashboard-measure-count')).toEqual(['Consultations in the last year12']);
     expect(screen.getByText(/^Of the \d+ active registrants, unless a row says otherwise$/)).toBeInTheDocument();
-    expect(chartData(StackedBarChart, 'Medical optimisation')).toEqual(
-      expect.arrayContaining([
-        { group: 'Done', key: 'Echocardiogram in the last 13 months', value: 30 },
-        { group: 'Not done', key: 'Echocardiogram in the last 13 months', value: 70 },
-        { group: 'Done', key: 'Recommended procedures done', value: 25 },
-        { group: 'Not done', key: 'Recommended procedures done', value: 75 },
-      ]),
-    );
-    // Drawn as shares, top to bottom in the list's order, which Carbon reads from the last key up.
-    const options = chartOptions(StackedBarChart, 'Medical optimisation') as unknown as {
-      axes: { bottom: { percentage?: boolean } };
-    };
-    expect(options.axes.bottom.percentage).toBe(true);
-    expect(chartData(StackedBarChart, 'Medical optimisation')[0].key).toBe(
-      'On warfarin, with an INR in the last 90 days',
-    );
+    expect(segmentsOf('dashboard-measure')[1]).toEqual(['Done: 3', 'Not done: 7']);
+    expect(keyColours('Outcome')).toEqual({ Done: '#009d9a', 'Not done': '#d0e2ff' });
   });
 
   it('draws the screening cascade as bars and the diagnoses as a donut, each printing its counts', async () => {
@@ -457,18 +562,29 @@ describe('Dashboard', () => {
     ]);
   });
 
-  it('gives a status or diagnosis one colour on every donut, the active and RHD patients teal', async () => {
+  it('gives a status or diagnosis one colour on every donut, active patients teal and RHD a darker teal', async () => {
     await signIn();
     renderPage();
     await screen.findAllByTestId('dashboard-screening-category');
 
     const scaleOf = (title: string) =>
       (chartOptions(DonutChart, title) as unknown as { color: { scale: object } }).color.scale;
-    expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#8a3800' });
+    expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#ba4e00' });
     expect(scaleOf('Diagnoses after the echo')).toEqual({
-      RHD: '#009d9a',
-      Normal: '#42be65',
+      RHD: '#007d79',
+      Normal: '#198038',
     });
+  });
+
+  it("fills each disease bar in its label's colour, as the charts draw it", async () => {
+    await signIn();
+    renderPage();
+
+    const rows = await screen.findAllByTestId('dashboard-category');
+    const fillOf = (label: string) =>
+      within(rows.find((row) => row.textContent.startsWith(label))).getByTestId('dashboard-bar-fill').style
+        .backgroundColor;
+    expect(fillOf('RHD B')).toBe('#007d79');
   });
 
   it('evaluates the dated reports as of the date chosen', async () => {
@@ -500,38 +616,14 @@ describe('Dashboard', () => {
     expect(screen.getByText(/ACT Core keeps them only for today/)).toBeInTheDocument();
   });
 
-  it('writes out every procedure, measure and step name on the chart axes and legends, rather than cutting it short', async () => {
+  it("writes out every step name on the cascade's axis, rather than cutting it short", async () => {
     await signIn();
     renderPage();
     await screen.findAllByTestId('dashboard-cascade-step');
 
-    const whole = { type: 'none' };
-    const waitlist = chartOptions(StackedBarChart, 'Procedural waitlist');
-    expect(waitlist.axes.bottom).toMatchObject({ mapsTo: 'key', truncation: whole });
-    expect(waitlist.legend).toMatchObject({ truncation: whole });
-    const optimisation = chartOptions(StackedBarChart, 'Medical optimisation');
-    expect(optimisation.axes.left).toMatchObject({ mapsTo: 'key', truncation: whole });
-    expect(optimisation.legend).toMatchObject({ truncation: whole });
     expect(chartOptions(SimpleBarChart, 'RHD care cascade').axes.bottom).toMatchObject({
       mapsTo: 'group',
-      truncation: whole,
-    });
-  });
-
-  it('lets the chart cut procedure and measure names short on a phone, so the bars keep the card width', async () => {
-    await signIn();
-    vi.mocked(useLayoutType).mockReturnValue('phone');
-    renderPage();
-    await screen.findAllByTestId('dashboard-waitlist-row');
-    fireEvent.click(screen.getByRole('button', { name: 'Show as a chart' }));
-
-    expect(chartOptions(StackedBarChart, 'Procedural waitlist').axes.bottom).toEqual({
-      mapsTo: 'key',
-      scaleType: 'labels',
-    });
-    expect(chartOptions(StackedBarChart, 'Medical optimisation').axes.left).toEqual({
-      mapsTo: 'key',
-      scaleType: 'labels',
+      truncation: { type: 'none' },
     });
   });
 
@@ -625,8 +717,8 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('Active registrants could not load')).toBeInTheDocument();
     expect(screen.getByText('Registrant status could not load')).toBeInTheDocument();
-    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['Registered–could not load', 'Active–could not load']);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis375% of active RHD');
+    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['–Registeredcould not load', '–Activecould not load']);
+    expect(texts('dashboard-tile')[2]).toBe('3On secondary prophylaxis75% of active RHD');
   });
 
   it('names the waitlist rather than its count when the waitlist counts fail', async () => {
@@ -634,7 +726,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findByText('Procedural waitlist could not load')).toBeInTheDocument();
-    expect(texts('dashboard-tile')[3]).toBe('Waiting for a procedure–could not load');
+    expect(texts('dashboard-tile')[3]).toBe('–Waiting for a procedurecould not load');
   });
 
   it('says a chart within a section has nobody to count, rather than drawing it empty', async () => {
@@ -670,7 +762,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis–not reported');
+    expect(texts('dashboard-tile')[2]).toBe('–On secondary prophylaxisnot reported');
   });
 
   it('colours each urgency by its number, whichever urgencies the clinic has', async () => {
@@ -683,12 +775,7 @@ describe('Dashboard', () => {
     renderPage();
 
     await screen.findByText(/^Procedural waitlist: 1 patient/);
-    const waitlist = vi
-      .mocked(StackedBarChart)
-      .mock.calls.map(([props]) => props)
-      .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
-      .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#ff832b' });
+    expect(keyColours('Urgency')).toEqual({ [URGENT]: '#eb6200' });
   });
 
   it('colours two urgencies with one number apart, and heads a phone table by the numbers only when they differ', async () => {
@@ -702,12 +789,7 @@ describe('Dashboard', () => {
     const { unmount } = renderPage();
 
     await screen.findByText(/^Procedural waitlist: 2 patients/);
-    const waitlist = vi
-      .mocked(StackedBarChart)
-      .mock.calls.map(([props]) => props)
-      .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
-      .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#ff832b' });
+    expect(keyColours('Urgency')).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#eb6200' });
     unmount();
 
     vi.mocked(useLayoutType).mockReturnValue('phone');
@@ -754,7 +836,42 @@ describe('Dashboard', () => {
     expect(await screen.findAllByText('Nobody at Arua RRH to count')).toHaveLength(7);
     expect(await screen.findByText('No screening counts entered for Arua RRH in the period')).toBeInTheDocument();
     expect(screen.queryByText(/arua to count/)).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Show all clinics' })).toHaveLength(8);
+    // Two are in screening tabs not open yet.
+    expect(screen.getAllByRole('button', { name: 'Show all clinics', hidden: true })).toHaveLength(8);
+  });
+
+  it('collapses a section to its title, and opens it collapsed again next time in this browser', async () => {
+    window.localStorage.removeItem('act.dashboard.collapsed');
+    await signIn();
+    const { unmount } = renderPage();
+
+    expect((await screen.findAllByTestId('dashboard-status'))[0]).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse Registrant status' }));
+    expect(screen.getAllByTestId('dashboard-status')[0]).not.toBeVisible();
+    expect(screen.getAllByTestId('dashboard-cascade-step')[0]).toBeVisible();
+    unmount();
+
+    renderPage();
+    expect((await screen.findAllByTestId('dashboard-status'))[0]).not.toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Expand Registrant status' }));
+    expect(screen.getAllByTestId('dashboard-status')[0]).toBeVisible();
+    window.localStorage.removeItem('act.dashboard.collapsed');
+  });
+
+  it('holds the screening cascade, the monthly counts and the registrations in tabs of one Screening card', async () => {
+    await signIn();
+    renderPage();
+
+    const tabs = await screen.findAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Screening cascade',
+      'RHD screening',
+      'Screening, from registrations',
+    ]);
+    expect(screen.getAllByTestId('dashboard-screening-step')[0]).toBeVisible();
+    await userEvent.click(tabs[1]);
+    expect(await screen.findAllByTestId('dashboard-screening-tile')).not.toHaveLength(0);
+    expect(screen.getAllByTestId('dashboard-screening-tile')[0]).toBeVisible();
   });
 
   it('reads the prophylaxis tile from the step the older cascade report names Prescribed Prophylaxis', async () => {
@@ -767,7 +884,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis375% of active RHD');
+    expect(texts('dashboard-tile')[2]).toBe('3On secondary prophylaxis75% of active RHD');
   });
 
   it('gives no share on the prophylaxis tile when the cascade does not report its active RHD', async () => {
@@ -775,7 +892,7 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-tile')).toHaveLength(4);
-    expect(texts('dashboard-tile')[2]).toBe('On secondary prophylaxis3active RHD not reported');
+    expect(texts('dashboard-tile')[2]).toBe('3On secondary prophylaxisactive RHD not reported');
   });
 
   it('colours an urgency with no number apart from the numbered ones', async () => {
@@ -789,12 +906,7 @@ describe('Dashboard', () => {
     renderPage();
 
     await screen.findByText(/^Procedural waitlist: 2 patient/);
-    const waitlist = vi
-      .mocked(StackedBarChart)
-      .mock.calls.map(([props]) => props)
-      .filter((props) => props.options?.accessibility?.svgAriaLabel === 'Procedural waitlist')
-      .at(-1);
-    expect(waitlist.options.color.scale).toEqual({ [URGENT]: '#ff832b', 'Not given': '#8d8d8d' });
+    expect(keyColours('Urgency')).toEqual({ [URGENT]: '#eb6200', 'Not given': '#8d8d8d' });
   });
 
   it('reads the registrants and the waitlist from their count reports, as of the date, never every registry row', async () => {
@@ -835,7 +947,7 @@ describe('Dashboard', () => {
     const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
     expect(evaluated).not.toContain(REGISTRANTS);
     expect(evaluated).not.toContain(DASHBOARD_WAITLIST);
-    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['Registered0every status', 'Active0enrolled and alive']);
+    expect(texts('dashboard-tile').slice(0, 2)).toEqual(['0Registeredevery status', '0Activeenrolled and alive']);
   });
 
   it("evaluates no registrant or waitlist count while a clinic-limited administrator's clinics are read", async () => {
@@ -951,10 +1063,7 @@ describe('Dashboard', () => {
 
       expect(await screen.findAllByTestId('dashboard-waitlist-total')).toHaveLength(2);
       expect(texts('dashboard-waitlist-total')).toEqual(['Not given1', 'Surgery1']);
-      expect(chartData(StackedBarChart, 'Procedural waitlist')).toEqual([
-        { group: URGENT, key: 'Surgery', value: 1 },
-        { group: 'Not given', key: 'Not given', value: 1 },
-      ]);
+      expect(segmentsOf('dashboard-waitlist-total')).toEqual([['Not given: 1'], [`${URGENT}: 1`]]);
       await userEvent.click(screen.getAllByRole('button', { name: 'Show as a table' })[0]);
       expect(screen.getByRole('columnheader', { name: 'Not given' })).toBeInTheDocument();
       expect(screen.getByRole('cell', { name: 'Not given' })).toBeInTheDocument();
@@ -1070,9 +1179,7 @@ describe('Dashboard', () => {
       await signIn(undefined, figureRows);
       renderPage();
 
-      const consultations = (await screen.findAllByTestId('dashboard-measure')).find((row) =>
-        row.textContent?.startsWith('Consultations'),
-      ) as HTMLElement;
+      const [consultations] = await screen.findAllByTestId('dashboard-measure-count');
       await userEvent.click(within(consultations).getByRole('link'));
 
       expect(
@@ -1244,7 +1351,8 @@ describe('Dashboard', () => {
       renderPage();
 
       const total = (await screen.findAllByTestId('dashboard-waitlist-total'))[1];
-      await userEvent.click(within(total).getByRole('link'));
+      // The row's total, not one of its urgency segments.
+      await userEvent.click(within(total).getByRole('link', { name: /^\d+$/ }));
       expect(
         await screen.findByText(/Procedural waitlist, Mitral valve repair\/replacement, 1 recommendation/),
       ).toBeInTheDocument();
@@ -1317,27 +1425,47 @@ describe('Dashboard', () => {
     });
   });
 
-  describe("the Dashboard's counts CSV", () => {
+  describe("the Dashboard's Export", () => {
     const downloaded = () => vi.mocked(downloadCsv).mock.calls.at(-1);
+    const recorded = () =>
+      vi
+        .mocked(openmrsFetch)
+        .mock.calls.filter(([url]) => String(url).endsWith('/actcore/download/record'))
+        .map(([, init]) => (init as { body: Record<string, unknown> }).body);
+    const allButRunCharts = exportSections.filter((section) => section !== 'runCharts');
+    const close = vi.fn();
 
-    it("gives every section's counts in one file, recorded in the download log without identifiers", async () => {
-      await signIn();
+    /** Opens the export workspace from the Dashboard, and gives what it was opened with. */
+    async function openExport(failing?: string) {
+      await signIn(failing);
       await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
       vi.mocked(downloadCsv).mockClear();
+      vi.mocked(launchWorkspace2).mockClear();
+      close.mockClear();
       renderPage();
-
       await screen.findAllByTestId('dashboard-screening-tile');
-      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Export' }));
+      expect(launchWorkspace2).toHaveBeenCalledWith('act-dashboard-export-workspace', expect.anything());
+      return vi.mocked(launchWorkspace2).mock.lastCall[1] as DashboardExportWorkspaceProps;
+    }
 
-      await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
-      expect(vi.mocked(openmrsFetch)).toHaveBeenCalledWith(
-        '/ws/rest/v1/actcore/download/record',
+    it('opens the export workspace beside the page, saying what the Dashboard counts', async () => {
+      const opened = await openExport();
+      expect(opened.summary).toMatch(/^every clinic · figures as of /);
+      expect(opened.showScreening).toBe(true);
+    });
+
+    it("gives every section's counts in one file, recorded in the download log without identifiers", async () => {
+      const opened = await openExport();
+      await act(() => opened.run({ format: 'csv', sections: allButRunCharts, orientation: 'portrait' }, close));
+
+      expect(downloadCsv).toHaveBeenCalled();
+      expect(close).toHaveBeenCalled();
+      expect(recorded().at(-1)).toEqual(
         expect.objectContaining({
-          body: expect.objectContaining({
-            list: 'dashboard:counts',
-            identifiers: false,
-            filters: expect.objectContaining({ endDate: today }),
-          }),
+          list: 'dashboard:counts',
+          identifiers: false,
+          filters: expect.objectContaining({ endDate: today }),
         }),
       );
       const [name, headers, rows] = downloaded();
@@ -1365,33 +1493,184 @@ describe('Dashboard', () => {
           ],
         ]),
       );
-      // The sections in the order the page shows them, run charts aside.
+      // The sections in the order the page shows them.
       expect([...new Set(rows.map(([section]) => section))].slice(0, 2)).toEqual(['Key figures', 'Registrant status']);
       expect(rows.at(-1)[0]).toBe('Screening, from registrations');
     });
 
-    it('leaves out a section that could not load, rather than giving its counts as zeros', async () => {
-      await signIn(REGISTRANTS);
-      await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
-      vi.mocked(downloadCsv).mockClear();
-      renderPage();
+    it('gives only the sections chosen, and leaves out one that could not load rather than giving zeros', async () => {
+      const opened = await openExport(REGISTRANTS);
+      const sections = allButRunCharts.filter((section) => section !== 'optimisation');
+      await act(() => opened.run({ format: 'csv', sections, orientation: 'portrait' }, close));
 
-      await screen.findAllByTestId('dashboard-screening-tile');
-      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
-
-      await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
-      const sections = new Set(downloaded()[2].map(([section]) => section));
-      expect(sections.has('Registrant status')).toBe(false);
-      expect(sections.has('Active registrants')).toBe(false);
-      expect(sections.has('Procedural waitlist')).toBe(true);
+      const written = new Set(downloaded()[2].map(([section]) => section));
+      expect(written.has('Registrant status')).toBe(false);
+      expect(written.has('Active registrants')).toBe(false);
+      expect(written.has('Medical optimisation')).toBe(false);
+      expect(written.has('Procedural waitlist')).toBe(true);
     });
 
-    it('offers no Download CSV to a user who may not export lists', async () => {
+    it("records and makes nothing once a figure's patients are open in the Dashboard's place", async () => {
+      vi.mocked(sectionPng).mockClear();
+      const opened = await openExport();
+      const before = recorded().length;
+      await userEvent.click(within(screen.getAllByTestId('dashboard-status')[0]).getByRole('link'));
+      await screen.findByText(/^Opened from the Dashboard/);
+
+      await act(() => opened.run({ format: 'images', sections: ['status'], orientation: 'portrait' }, close));
+
+      expect(recorded()).toHaveLength(before);
+      expect(sectionPng).not.toHaveBeenCalled();
+      expect(close).not.toHaveBeenCalled();
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Go back to the Dashboard to export it' }),
+      );
+    });
+
+    it('records and makes no picture of a section while its counts are still loading', async () => {
+      vi.mocked(sectionPng).mockClear();
+      const opened = await openExport();
+      const before = recorded().length;
+      const loaded = vi.mocked(useReportDataset).getMockImplementation();
+      vi.mocked(useReportDataset).mockImplementation((report, params) => ({
+        ...loaded(report, params),
+        isLoading: true,
+      }));
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+
+      await act(() => opened.run({ format: 'images', sections: ['status'], orientation: 'portrait' }, close));
+
+      expect(recorded()).toHaveLength(before);
+      expect(sectionPng).not.toHaveBeenCalled();
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'The counts are still loading; export again in a moment' }),
+      );
+    });
+
+    it('prints only the sections chosen, at the paper width, after recording the export and closing the workspace', async () => {
+      const print = vi.fn();
+      window.print = print;
+      const opened = await openExport();
+      await act(() =>
+        opened.run({ format: 'pdf', sections: ['status', 'rhdScreening'], orientation: 'landscape' }, close),
+      );
+
+      expect(print).toHaveBeenCalled();
+      expect(close).toHaveBeenCalled();
+      expect(recorded().at(-1)).toEqual(
+        expect.objectContaining({
+          list: 'dashboard:pdf',
+          columns: ['Registrant status', 'RHD screening'],
+          identifiers: false,
+          // RHD screening's months are logged with it, and the registration dates of a section not exported are not.
+          filters: {
+            endDate: today,
+            screeningFromMonth: dayjs().subtract(12, 'month').format('YYYY-MM'),
+            screeningToMonth: dayjs().subtract(1, 'month').format('YYYY-MM'),
+          },
+        }),
+      );
+      expect(document.body).toHaveClass('act-dashboard-printing');
+      expect(document.body.dataset.printOrientation).toBe('landscape');
+      // The sections are marked by attributes, which no query by role reads.
+      // eslint-disable-next-line testing-library/no-node-access
+      const chosen = Array.from(document.querySelectorAll('[data-export-section][data-export-chosen]')).map((element) =>
+        element.getAttribute('data-export-section'),
+      );
+      expect(chosen).toEqual(['status', 'rhdScreening']);
+      // The closed tab holding RHD screening is marked to print too.
+      expect(screen.getAllByRole('tabpanel', { hidden: true })[1]).toHaveAttribute('data-export-chosen');
+
+      window.dispatchEvent(new Event('afterprint'));
+      expect(document.body).not.toHaveClass('act-dashboard-printing');
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(document.querySelectorAll('[data-export-chosen], [data-print-path], [data-print-page]')).toHaveLength(0);
+    });
+
+    it('leaves the print layout at the first touch after printing when the browser never says printing ended', async () => {
+      window.print = vi.fn();
+      const opened = await openExport();
+      await act(() => opened.run({ format: 'pdf', sections: ['status'], orientation: 'portrait' }, close));
+      expect(document.body).toHaveClass('act-dashboard-printing');
+
+      fireEvent.pointerDown(document.body);
+      expect(document.body).not.toHaveClass('act-dashboard-printing');
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(document.querySelectorAll('[data-export-chosen], [data-print-path], [data-print-page]')).toHaveLength(0);
+    });
+
+    it('keeps the open workspace saying what the Dashboard counts as its clinic changes', async () => {
+      const opened = await openExport();
+      const { container: workspace } = render(
+        <DashboardExportWorkspace
+          workspaceProps={opened}
+          windowProps={null}
+          groupProps={null}
+          launchChildWorkspace={vi.fn()}
+          closeWorkspace={vi.fn()}
+          workspaceName="act-dashboard-export-workspace"
+          windowName="act-dashboard-export"
+          isRootWorkspace
+          showActionMenu={false}
+        />,
+      );
+      const summary = () => within(workspace).getByText(/ · figures as of /).textContent;
+      expect(summary()).toMatch(/^every clinic · /);
+
+      await userEvent.selectOptions(screen.getAllByLabelText('Cardiac clinic')[0], 'lira');
+      expect(summary()).toMatch(/^Lira RRH · /);
+    });
+
+    it('zips a PNG of each section chosen, in page order, each named for its section', async () => {
+      vi.mocked(sectionPng).mockClear();
+      const saved: Array<string> = [];
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+        this: HTMLAnchorElement,
+      ) {
+        saved.push(this.download);
+      });
+      URL.createObjectURL = vi.fn(() => 'blob:dashboard');
+      URL.revokeObjectURL = vi.fn();
+      const opened = await openExport();
+      await act(() =>
+        opened.run({ format: 'images', sections: ['keyFigures', 'waitlist'], orientation: 'portrait' }, close),
+      );
+
+      expect(saved).toEqual([`dashboard-images-${today}.zip`]);
+      // The tiles have no title, so the band names them; the waitlist's card has its own, so its band does not.
+      expect(vi.mocked(sectionPng).mock.calls.map(([, title, subtitle]) => [title, subtitle])).toEqual([
+        ['Key figures', expect.stringMatching(/^every clinic · figures as of /)],
+        ['', expect.stringMatching(/^every clinic · figures as of /)],
+      ]);
+      expect(recorded().at(-1)).toEqual(expect.objectContaining({ list: 'dashboard:images', rows: 2 }));
+      expect(document.body).not.toHaveClass('act-dashboard-exporting');
+      click.mockRestore();
+    });
+
+    it('makes no file, and leaves the workspace open, when the export cannot be recorded', async () => {
+      const print = vi.fn();
+      window.print = print;
+      const opened = await openExport();
+      const served = vi.mocked(openmrsFetch).getMockImplementation();
+      vi.mocked(openmrsFetch).mockImplementation(((url: string, init: unknown) =>
+        url.endsWith('/actcore/download/record')
+          ? Promise.reject(new Error('down'))
+          : served(url, init as never)) as never);
+      await act(() => opened.run({ format: 'pdf', sections: ['status'], orientation: 'portrait' }, close));
+
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Could not record the download, so no file was made' }),
+      );
+      expect(print).not.toHaveBeenCalled();
+      expect(close).not.toHaveBeenCalled();
+    });
+
+    it('offers no Export to a user who may not export lists', async () => {
       await signIn();
       renderPage();
 
       await screen.findAllByTestId('dashboard-screening-tile');
-      expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Export' })).not.toBeInTheDocument();
     });
   });
 
@@ -1530,9 +1809,9 @@ describe('Dashboard', () => {
       expect(
         (chartOptions(DonutChart, 'Case detected by') as unknown as { color: { scale: object } }).color.scale,
       ).toEqual({
-        School: '#0f62fe',
-        Community: '#33b1ff',
-        Other: '#b28600',
+        School: '#002d9c',
+        Community: '#0f62fe',
+        Other: '#d02670',
         'Not recorded': '#c6c6c6',
         'Teacher referral': '#9f1853',
       });
