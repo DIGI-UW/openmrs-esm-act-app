@@ -232,9 +232,15 @@
   }
 
   background: #ffffff !important;
+  // The legend swatches and bars are backgrounds, which a browser leaves off paper unless told otherwise.
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 
   .noPrint,
   .keepTogether:not(:global([data-export-chosen])),
+  // A wrapper with nothing chosen in it would still take a line, and can start an empty page.
+  .content > :not(:global([data-export-chosen])):not(:has(:global([data-export-chosen]))),
+  .grid > :not(:global([data-export-chosen])):not(:has(:global([data-export-chosen]))),
   :global([data-print-path] > :not([data-print-path]):not([data-print-page])),
   :global([data-export-section]:not([data-export-chosen])),
   :global([role='tabpanel']:not([data-export-chosen])),
@@ -261,8 +267,21 @@
     padding: 0;
   }
 
+  // Plain blocks, which a browser moves whole to the next page; it can push or split a grid's items instead.
+  .page,
+  .content,
   .grid {
-    grid-template-columns: minmax(0, 1fr);
+    display: block;
+  }
+
+  .content > *,
+  .grid > * {
+    margin-bottom: layout.$spacing-05;
+  }
+
+  .figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    break-inside: avoid;
   }
 
   // On paper a chart is narrower than on screen: in portrait it takes the width, its numbers under it, so its labels
@@ -287,12 +306,35 @@
     width: 273mm;
   }
 
+  .figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  // Two to a line, each half with its own gutter, so a pair goes to the next page together.
   .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-inline: -#{layout.$spacing-03};
+  }
+
+  .grid > * {
+    display: inline-block;
+    vertical-align: top;
+    box-sizing: border-box;
+    width: 50%;
+    padding-inline: layout.$spacing-03;
+  }
+
+  .grid > .wide {
+    display: block;
+    width: auto;
   }
 
   .wide .split {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  // A chart in one of several columns has no room for its numbers beside it.
+  .columns .split {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
