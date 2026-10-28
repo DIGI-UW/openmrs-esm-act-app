@@ -262,7 +262,7 @@ function Section({
     </>
   );
   return embedded ? (
-    <div className={styles.embedded} {...{ [sectionAttribute]: exportId }}>
+    <div className={styles.embedded} data-print-title={title} {...{ [sectionAttribute]: exportId }}>
       {body}
     </div>
   ) : (
@@ -900,7 +900,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           </div>
         </Section>
         {dashboard.showScreening && (
-          <div className={`${styles.wide} ${styles.keepTogether}`} data-jump="screening">
+          <div className={`${styles.wide} ${styles.keepTogether}`} data-jump="screening" data-export-card="">
             <ActHomeCard
               {...collapsible('screening')}
               title={t('screening', 'Screening')}

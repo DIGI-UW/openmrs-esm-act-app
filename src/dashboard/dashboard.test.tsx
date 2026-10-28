@@ -1482,6 +1482,43 @@ describe('Dashboard', () => {
       expect(written.has('Procedural waitlist')).toBe(true);
     });
 
+    it("records and makes nothing once a figure's patients are open in the Dashboard's place", async () => {
+      vi.mocked(sectionPng).mockClear();
+      const opened = await openExport();
+      const before = recorded().length;
+      await userEvent.click(within(screen.getAllByTestId('dashboard-status')[0]).getByRole('link'));
+      await screen.findByText(/^Opened from the Dashboard/);
+
+      await act(() => opened.run({ format: 'images', sections: ['status'], orientation: 'portrait' }, close));
+
+      expect(recorded()).toHaveLength(before);
+      expect(sectionPng).not.toHaveBeenCalled();
+      expect(close).not.toHaveBeenCalled();
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Go back to the Dashboard to export it' }),
+      );
+    });
+
+    it('records and makes no picture of a section while its counts are still loading', async () => {
+      vi.mocked(sectionPng).mockClear();
+      const opened = await openExport();
+      const before = recorded().length;
+      const loaded = vi.mocked(useReportDataset).getMockImplementation();
+      vi.mocked(useReportDataset).mockImplementation((report, params) => ({
+        ...loaded(report, params),
+        isLoading: true,
+      }));
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+
+      await act(() => opened.run({ format: 'images', sections: ['status'], orientation: 'portrait' }, close));
+
+      expect(recorded()).toHaveLength(before);
+      expect(sectionPng).not.toHaveBeenCalled();
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'The counts are still loading; export again in a moment' }),
+      );
+    });
+
     it('prints only the sections chosen, at the paper width, after recording the export and closing the workspace', async () => {
       const print = vi.fn();
       window.print = print;

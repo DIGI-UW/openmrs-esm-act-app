@@ -202,14 +202,25 @@
 // page stays as it is.
 :global(body.act-dashboard-exporting),
 :global(body.act-dashboard-printing) {
+  // The page and grid holding a chosen section are marked too, so these reach only into a chosen card.
   :global([role='tabpanel'][data-export-chosen]),
-  :global([data-export-chosen] [data-collapsible-body]) {
+  :global([data-export-section][data-export-chosen] [data-collapsible-body]),
+  :global([data-export-card][data-export-chosen] [data-collapsible-body]) {
     display: block !important;
   }
 
-  :global([data-export-chosen] button) {
+  :global([data-export-section][data-export-chosen] button),
+  :global([data-export-card][data-export-chosen] button) {
     display: none !important;
   }
+}
+
+// A tab's name, which print hides with the tab list, over the section it names; drawn by CSS, so the page shows it once.
+:global(body.act-dashboard-printing) .embedded[data-print-title]::before {
+  @include type.type-style('heading-compact-01');
+  content: attr(data-print-title);
+  display: block;
+  margin-bottom: layout.$spacing-04;
 }
 
 // Below the page's end, the paper stays white rather than the app's grey.

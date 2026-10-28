@@ -85,11 +85,13 @@ export function DashboardExportButton({
       await settle();
       const files: Array<{ name: string; data: Uint8Array }> = [];
       for (const [index, element] of elements.entries()) {
-        const name = names[element.getAttribute(sectionAttribute) as ExportSection];
+        const section = element.getAttribute(sectionAttribute) as ExportSection;
+        const name = names[section];
         // A card names itself, with its count; a section in a tab or the tiles are named in the band.
         const titled = Boolean(element.querySelector('h2'));
         files.push({
-          name: `${String(index + 1).padStart(2, '0')}-${slug(name)}.png`,
+          // A name in a script with no Latin letters slugs to nothing, so the section's own key names the file.
+          name: `${String(index + 1).padStart(2, '0')}-${slug(name) || section}.png`,
           data: await sectionPng(element, titled ? '' : name, summary),
         });
       }
@@ -105,7 +107,15 @@ export function DashboardExportButton({
 
   const run = async ({ format, sections, orientation }: ExportChoice, close: () => void) => {
     const sectionNames = sections.map((section) => names[section]);
-    if (format === 'csv' && csvLoading) {
+    // With a figure's patients open in its place, the Dashboard has no sections to capture, so nothing is recorded.
+    if (!container.current?.querySelector(`[${sectionAttribute}]`)) {
+      showSnackbar({
+        kind: 'info',
+        title: t('backToDashboardToExport', 'Go back to the Dashboard to export it'),
+      });
+      return;
+    }
+    if (csvLoading) {
       showSnackbar({
         kind: 'info',
         title: t('countsStillLoading', 'The counts are still loading; export again in a moment'),
