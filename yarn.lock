@@ -33,6 +33,7 @@ __metadata:
     dotenv: "npm:^16.0.3"
     eslint: "npm:^9.39.0"
     happy-dom: "npm:^20.14.5"
+    html-to-image: "npm:1.11.11"
     husky: "npm:^8.0.3"
     i18next: "npm:^25.0.0"
     i18next-parser: "npm:^9.3.0"

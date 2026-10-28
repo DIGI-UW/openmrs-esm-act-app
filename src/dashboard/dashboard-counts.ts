@@ -2,8 +2,11 @@ import { type TFunction } from 'i18next';
 import { type ReportRow } from '../reports/report-dataset.resource';
 
 export interface Count {
+  /** The report's own value, which keys the count's colour and patients in every language. */
   label: string;
   value: number;
+  /** What the chart shows for it, where that is not the label's usual name. */
+  name?: string;
 }
 
 const ageBandOrder = ['0-9', '10-19', '20-39', '40+', 'Age unknown'];
