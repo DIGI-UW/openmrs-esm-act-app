@@ -5,6 +5,7 @@ import { CardHeader, ErrorState, formatDate, isDesktop, parseDate, useLayoutType
 import { useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { RecordProphylaxisButtons } from '../prophylaxis/record-prophylaxis-buttons.component';
+import UpdateProphylaxis from '../prophylaxis/update-prophylaxis.component';
 import { type BpgInjection, useBpgInjections, useOralEntries } from './prophylaxis-page.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './prophylaxis-page.scss';
@@ -34,9 +35,19 @@ function useTimingTag(patientUuid: string) {
   };
 }
 
+/** The leading section's actions, as the Prophylaxis card's: Update prophylaxis, then Record. */
+function Actions({ patientUuid }: { patientUuid: string }) {
+  return (
+    <div className={cardStyles.actions}>
+      <UpdateProphylaxis patientUuid={patientUuid} />
+      <RecordProphylaxisButtons patientUuid={patientUuid} />
+    </div>
+  );
+}
+
 interface SectionProps {
   patientUuid: string;
-  /** Whether the section leads the page, carrying the Record actions and saying when it is empty. */
+  /** Whether the section leads the page, carrying the actions and saying when it is empty. */
   leads: boolean;
 }
 
@@ -88,7 +99,7 @@ function BpgInjections({ patientUuid, leads }: SectionProps) {
 
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title}>{leads && <RecordProphylaxisButtons patientUuid={patientUuid} />}</CardHeader>
+      <CardHeader title={title}>{leads && <Actions patientUuid={patientUuid} />}</CardHeader>
       {body}
     </div>
   );
@@ -161,13 +172,13 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
 
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title}>{leads && <RecordProphylaxisButtons patientUuid={patientUuid} />}</CardHeader>
+      <CardHeader title={title}>{leads && <Actions patientUuid={patientUuid} />}</CardHeader>
       {body}
     </div>
   );
 }
 
-/** The prescribed type's history leads, with the Record actions; the other shows only when it has entries. */
+/** The prescribed type's history leads, with Update prophylaxis and the Record actions; the other shows only when it has entries. */
 export default function ProphylaxisPage({ patientUuid }: { patientUuid: string }) {
   const oral = useProphylaxisSummary(patientUuid).summary?.type === 'Oral';
   return oral ? (
