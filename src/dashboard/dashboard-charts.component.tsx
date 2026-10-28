@@ -23,14 +23,12 @@ const labelColours: Record<string, string> = {
   'Physical relocation': '#6f6f6f',
   Deceased: '#161616',
   'Rheumatic Heart Disease/Rheumatic Fever': rhd,
-  RHD: rhd,
   'Acute rheumatic fever': '#08bdba',
   'RHD A': teal,
   'RHD B': rhd,
   'RHD C/RHD D': '#005d5d',
   'RHD, details not recorded': '#9ef0f0',
   'Congenital heart disease': '#8a3ffc',
-  Congenital: '#8a3ffc',
   'Other heart disease': '#d02670',
   Other: '#d02670',
   Normal: '#198038',
@@ -61,12 +59,49 @@ const scaleOf = (labels: Array<string>, colours: Array<string>) =>
 /** A label's own colour, where it has one, for a list of bars to colour as the charts do. */
 export const labelColour = (label: string): string | undefined => labelColours[label];
 
-const labelScaleOf = (labels: Array<string>) => {
-  const unnamed = labels.filter((label) => !labelColours[label]);
+/** Each count's colour by its label, keyed by the name shown, as Carbon matches a colour to the group it draws. */
+export const labelScaleOf = (counts: Array<Count>, nameOf: (count: Count) => string) => {
+  const unnamed = counts.filter(({ label }) => !labelColours[label]);
   return Object.fromEntries(
-    labels.map((label) => [label, labelColours[label] ?? spareColours[unnamed.indexOf(label) % spareColours.length]]),
+    counts.map((count) => [
+      nameOf(count),
+      labelColours[count.label] ?? spareColours[unnamed.indexOf(count) % spareColours.length],
+    ]),
   );
 };
+
+/**
+ * What a count reads as in the viewer's language. The reports send their values in English, so a value the Dashboard
+ * names is translated, and any other, such as a concept's name, is shown as it is.
+ */
+export function useCountName() {
+  const { t } = useTranslation();
+  const names: Record<string, string> = {
+    Active: t('active', 'Active'),
+    'Lost to follow-up': t('lostToFollowUp', 'Lost to follow-up'),
+    'Voluntary inactivity': t('voluntaryInactivity', 'Voluntary inactivity'),
+    'Physical relocation': t('physicalRelocation', 'Physical relocation'),
+    Deceased: t('deceased', 'Deceased'),
+    'No status recorded': t('noStatusRecorded', 'No status recorded'),
+    'No diagnosis yet': t('noDiagnosisYet', 'No diagnosis yet'),
+    'RHD, details not recorded': t('rhdDetailsNotRecorded', 'RHD, details not recorded'),
+    'Acute rheumatic fever': t('acuteRheumaticFever', 'Acute rheumatic fever'),
+    'Congenital heart disease': t('congenitalHeartDisease', 'Congenital heart disease'),
+    'Other heart disease': t('otherHeartDisease', 'Other heart disease'),
+    Normal: t('normal', 'Normal'),
+    Female: t('female', 'Female'),
+    Male: t('male', 'Male'),
+    Other: t('other', 'Other'),
+    'Not recorded': t('notRecorded', 'Not recorded'),
+    'Age unknown': t('ageUnknown', 'Age unknown'),
+    School: t('school', 'School'),
+    Community: t('community', 'Community'),
+    'Health facility': t('healthFacility', 'Health facility'),
+    Yes: t('yes', 'Yes'),
+    No: t('no', 'No'),
+  };
+  return (count: Count) => count.name ?? names[count.label] ?? count.label;
+}
 
 /**
  * Each urgency's colour: 1: emergent, 2: urgent and 3: elective by the number it starts with, darker for sooner, and an
@@ -193,11 +228,12 @@ export function CountsDonut({
   figureOf?: (label: string) => Figure;
 }) {
   const { t } = useTranslation();
+  const nameOf = useCountName();
   const { isShown, toggle } = useShownGroups(counts.map(({ label }) => label));
-  const scale = labelScaleOf(counts.map(({ label }) => label));
+  const scale = labelScaleOf(counts, nameOf);
   const total = counts.reduce((sum, { value }) => sum + value, 0);
   const data = useStable(
-    counts.filter(({ label }) => isShown(label)).map(({ label, value }) => ({ group: label, value })),
+    counts.filter(({ label }) => isShown(label)).map((count) => ({ group: nameOf(count), value: count.value })),
   );
   const options = useStable({
     ...base(name, '11rem'),
@@ -215,13 +251,18 @@ export function CountsDonut({
         <DonutChart data={data} options={options} />
       </div>
       <ul className={styles.legend}>
-        {counts.map(({ label, value }) => (
-          <li key={label} className={styles.legendRow} data-testid={testId}>
-            <LegendToggle label={label} colour={scale[label]} shown={isShown(label)} onToggle={() => toggle(label)} />
+        {counts.map((count) => (
+          <li key={count.label} className={styles.legendRow} data-testid={testId}>
+            <LegendToggle
+              label={nameOf(count)}
+              colour={scale[nameOf(count)]}
+              shown={isShown(count.label)}
+              onToggle={() => toggle(count.label)}
+            />
             <span className={styles.count}>
-              <CountLink value={value} figure={figureOf?.(label)} />
+              <CountLink value={count.value} figure={figureOf?.(count.label)} />
             </span>
-            {withShare && <span className={styles.share}>{share(value, total)}%</span>}
+            {withShare && <span className={styles.share}>{share(count.value, total)}%</span>}
           </li>
         ))}
       </ul>

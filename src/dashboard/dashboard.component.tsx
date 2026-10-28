@@ -50,9 +50,18 @@ import {
   SegmentedBars,
   teal,
   urgencyScale,
+  useCountName,
   useShownGroups,
 } from './dashboard-charts.component';
-import { type CountRow, CountsCsv, type CsvPart, countRows, csvParts, useCountsCsv } from './dashboard-csv';
+import {
+  type CountRow,
+  CountsCsv,
+  type CsvPart,
+  countRows,
+  csvParts,
+  type PartFilters,
+  useCountsCsv,
+} from './dashboard-csv';
 import { type ExportSection, sectionAttribute } from './dashboard-export';
 import { DashboardExportButton, useSectionNames } from './dashboard-export.component';
 import {
@@ -95,6 +104,7 @@ function Bars({
   coloured?: boolean;
 }) {
   const { t } = useTranslation();
+  const nameOf = useCountName();
   const { isShown, toggle } = useShownGroups(counts.map((count) => count.label));
   if (!counts.length) {
     return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
@@ -109,7 +119,7 @@ function Bars({
         return (
           <div key={count.label} className={withShares ? styles.shareBar : styles.bar} data-testid={testId}>
             <LegendToggle
-              label={count.label}
+              label={nameOf(count)}
               colour={colour}
               shown={isShown(count.label)}
               onToggle={() => toggle(count.label)}
@@ -154,6 +164,7 @@ function Columns({
   figureOf?: (label: string) => Figure;
 }) {
   const { t } = useTranslation();
+  const nameOf = useCountName();
   const { isShown, toggle } = useShownGroups(counts.map((count) => count.label));
   if (!counts.length) {
     return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
@@ -176,7 +187,7 @@ function Columns({
             />
           </span>
           <LegendToggle
-            label={count.label}
+            label={nameOf(count)}
             colour={teal}
             shown={isShown(count.label)}
             onToggle={() => toggle(count.label)}
@@ -496,7 +507,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       .map((row) => ({ label: String(row[column] ?? t('none', 'None')), value: Number(row.patients ?? 0) }));
   const diagnoses = byBreakdown('category', 'category').map((count) => ({
     ...count,
-    label: diagnosisNames[count.label] ?? count.label,
+    name: diagnosisNames[count.label],
   }));
   const rhdDetails = byBreakdown('rhdDetails', 'details');
   const screenDetectedRhd = rhdDetails.reduce((sum, count) => sum + count.value, 0);
@@ -1099,6 +1110,7 @@ function ScreeningFromRegistrations({
           ),
         ],
     report.isLoading || pending,
+    { registeredFrom: start, registeredTo: end },
   );
 
   return (
@@ -1267,6 +1279,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
           ),
         ],
     isLoading || pending,
+    { screeningFromMonth: start, screeningToMonth: end },
   );
 
   return (
@@ -1409,10 +1422,12 @@ export default function Dashboard() {
     open: (next: Figure) => go({ ...noFigure, ...next }),
   };
   const clinicNames = useClinicNames(scope ?? {});
-  const [csv, setCsv] = useState<Partial<Record<CsvPart, { rows: Array<CountRow>; isLoading: boolean }>>>({});
+  const [csv, setCsv] = useState<
+    Partial<Record<CsvPart, { rows: Array<CountRow>; isLoading: boolean; filters: PartFilters }>>
+  >({});
   const putCsv = useCallback(
-    (part: CsvPart, rows: Array<CountRow>, isLoading: boolean) =>
-      setCsv((current) => ({ ...current, [part]: { rows, isLoading } })),
+    (part: CsvPart, rows: Array<CountRow>, isLoading: boolean, filters: PartFilters) =>
+      setCsv((current) => ({ ...current, [part]: { rows, isLoading, filters } })),
     [],
   );
   const csvRows = csvParts.flatMap((part) => csv[part]?.rows ?? []);
@@ -1497,6 +1512,10 @@ export default function Dashboard() {
                   csvRows={csvRows}
                   csvLoading={csvParts.some((part) => csv[part]?.isLoading)}
                   filters={{ endDate: asOf, ...scope }}
+                  sectionFilters={{
+                    rhdScreening: csv.rhdScreening?.filters,
+                    registrations: csv.registrations?.filters,
+                  }}
                   clinics={clinicsCounted}
                   asOf={asOf}
                   showScreening={showScreening}

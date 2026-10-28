@@ -8,13 +8,14 @@ import {
   type ExportSection,
   exportSections,
   screeningSections,
+  useExportSummary,
 } from './dashboard-export';
 import { useSectionNames } from './dashboard-export.component';
 import formStyles from '../styles/form-workspace.scss';
 import styles from './dashboard.scss';
 
 export interface DashboardExportWorkspaceProps {
-  /** What the Dashboard counts: its clinics and date. */
+  /** What the Dashboard counted when the workspace opened: its clinics and date. */
   summary: string;
   showScreening: boolean;
   /** Makes the export from the page; it closes the workspace once the export is recorded. */
@@ -28,6 +29,7 @@ const DashboardExportWorkspace: React.FC<Workspace2DefinitionProps<DashboardExpo
 }) => {
   const { t } = useTranslation();
   const names = useSectionNames();
+  const summary = useExportSummary(workspaceProps.summary);
   const available = exportSections.filter(
     (section) => workspaceProps.showScreening || !screeningSections.includes(section),
   );
@@ -57,7 +59,7 @@ const DashboardExportWorkspace: React.FC<Workspace2DefinitionProps<DashboardExpo
     <Workspace2 title={t('exportDashboard', 'Export the Dashboard')}>
       <Form className={formStyles.form} onSubmit={(event) => event.preventDefault()}>
         <div className={`${formStyles.fields} ${styles.exportChoices}`}>
-          <p className={styles.exportSummary}>{workspaceProps.summary}</p>
+          <p className={styles.exportSummary}>{summary}</p>
           <fieldset className={styles.exportFieldset}>
             <legend className={styles.exportLegend}>{t('sections', 'Sections')}</legend>
             <div className={styles.exportAll}>
