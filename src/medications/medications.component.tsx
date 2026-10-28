@@ -91,8 +91,8 @@ function MedicationsCard({
 
 /**
  * The patient chart's Medications page, as OpenMRS's: the cardiac medicines taken now and those stopped, from
- * consultations and Medication Update. Add opens Medication Update, which records a medicine or stops one, and Edit
- * reopens the record a row comes from, where a Date Stopped moves it to Past.
+ * consultations and Medication Update. Add, on either card, opens Medication Update, which records a medicine or stops
+ * one, and Edit reopens the record a row comes from, where a Date Stopped moves it to Past.
  */
 export default function Medications({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -103,6 +103,7 @@ export default function Medications({ patientUuid }: { patientUuid: string }) {
     header: t('details', 'Details'),
     text: (one) => <Details medication={one} />,
   };
+  const endDate: Column<Row> = { header: t('endDate', 'End date'), text: (one) => day(one.stopped) };
   const edit: Column<Row> = {
     header: '',
     text: (one) => {
@@ -127,7 +128,7 @@ export default function Medications({ patientUuid }: { patientUuid: string }) {
       <MedicationsCard
         title={t('activeMedications', 'Active medications')}
         lowercase={t('activeMedicationsLowercase', 'active medications')}
-        columns={[startDate, details, edit]}
+        columns={[startDate, details, endDate, edit]}
         rows={active}
         isLoading={isLoading}
         error={error}
@@ -136,10 +137,11 @@ export default function Medications({ patientUuid }: { patientUuid: string }) {
       <MedicationsCard
         title={t('pastMedications', 'Past medications')}
         lowercase={t('pastMedicationsLowercase', 'past medications')}
-        columns={[startDate, details, { header: t('endDate', 'End date'), text: (one) => day(one.stopped) }, edit]}
+        columns={[startDate, details, endDate, edit]}
         rows={past}
         isLoading={isLoading}
         error={error}
+        add={forms.add}
       />
     </div>
   );
