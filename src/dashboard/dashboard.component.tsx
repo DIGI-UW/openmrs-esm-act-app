@@ -22,17 +22,9 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import {
-  formatDate,
-  OpenmrsDatePicker,
-  ReportsPictogram,
-  useConfig,
-  useLayoutType,
-  useSession,
-} from '@openmrs/esm-framework';
+import { formatDate, OpenmrsDatePicker, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
-import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useClinicLimit } from '../clinic-limit';
 import { useClinics } from '../programme-report/clinics.resource';
@@ -43,7 +35,7 @@ import { urlWithFilters, useUrlFilters } from '../table-filters/url-filters';
 import { CascadeBars, CountLink, CountsDonut, labelColour, StackedBars } from './dashboard-charts.component';
 import { type CountRow, CountsCsv, type CsvPart, countRows, csvParts, useCountsCsv } from './dashboard-csv';
 import { type ExportSection, sectionAttribute } from './dashboard-export';
-import { DashboardExportButton } from './dashboard-export.component';
+import { DashboardExportButton, useSectionNames } from './dashboard-export.component';
 import {
   type Figure,
   FigureLinks,
@@ -318,6 +310,37 @@ function FigureTile({
         )}
       </span>
     </div>
+  );
+}
+
+// Screening's three sections share one card, so it is reached by the card's own marker.
+function JumpTo({ container, showScreening }: { container: React.RefObject<HTMLElement>; showScreening: boolean }) {
+  const { t } = useTranslation();
+  const names = useSectionNames();
+  const targets: Array<[string, string]> = [
+    ['keyFigures', t('overview', 'Overview')],
+    ['active', names.active],
+    ['waitlist', names.waitlist],
+    ['optimisation', names.optimisation],
+    ...(showScreening ? [['screening', t('screening', 'Screening')] as [string, string]] : []),
+    ['runCharts', names.runCharts],
+  ];
+  return (
+    <Select
+      id="dashboard-jump-to"
+      labelText={t('jumpTo', 'Jump to')}
+      value=""
+      onChange={(event) =>
+        container.current
+          ?.querySelector(`[${sectionAttribute}="${event.target.value}"], [data-jump="${event.target.value}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    >
+      <SelectItem value="" text={t('chooseSection', 'Choose a section')} disabled hidden />
+      {targets.map(([id, name]) => (
+        <SelectItem key={id} value={id} text={name} />
+      ))}
+    </Select>
   );
 }
 
@@ -877,7 +900,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           </div>
         </Section>
         {dashboard.showScreening && (
-          <div className={`${styles.wide} ${styles.keepTogether}`}>
+          <div className={`${styles.wide} ${styles.keepTogether}`} data-jump="screening">
             <ActHomeCard
               {...collapsible('screening')}
               title={t('screening', 'Screening')}
@@ -1371,9 +1394,6 @@ export default function Dashboard() {
 
   return (
     <div className={styles.page} ref={pageRef}>
-      <div className={styles.noPrint}>
-        <ActPageHeader title={t('dashboard', 'Dashboard')} illustration={<ReportsPictogram />} />
-      </div>
       <header className={styles.printHeader}>
         <h1>{t('dashboard', 'Dashboard')}</h1>
         <p>
@@ -1403,19 +1423,23 @@ export default function Dashboard() {
         ) : !scope ? (
           <SkeletonText paragraph lineCount={6} />
         ) : figure ? (
-          <DashboardFigure
-            figure={figure}
-            scope={scope}
-            asOf={asOf}
-            clinicNames={clinicNames}
-            onFigure={(next) => setUrl({ ...noFigure, ...next })}
-            onScope={setScope}
-            onAsOf={setAsOf}
-            onBack={() => go(noFigure)}
-          />
+          <>
+            <h1 className={styles.pageTitle}>{t('dashboard', 'Dashboard')}</h1>
+            <DashboardFigure
+              figure={figure}
+              scope={scope}
+              asOf={asOf}
+              clinicNames={clinicNames}
+              onFigure={(next) => setUrl({ ...noFigure, ...next })}
+              onScope={setScope}
+              onAsOf={setAsOf}
+              onBack={() => go(noFigure)}
+            />
+          </>
         ) : (
           <>
             <div className={`${styles.filters} ${styles.toolbar} ${styles.noPrint}`}>
+              <h1 className={styles.pageTitle}>{t('dashboard', 'Dashboard')}</h1>
               <ClinicFilters scope={scope} onChange={setScope} idPrefix="dashboard" />
               <OpenmrsDatePicker
                 id="dashboard-as-of"
@@ -1432,6 +1456,7 @@ export default function Dashboard() {
                 }}
               />
               <div className={styles.download}>
+                <JumpTo container={pageRef} showScreening={showScreening} />
                 <DashboardExportButton
                   container={pageRef}
                   csvRows={csvRows}

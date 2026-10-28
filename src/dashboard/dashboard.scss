@@ -33,12 +33,49 @@
   padding: layout.$spacing-04 layout.$spacing-05;
   background-color: $ui-02;
   border: 1px solid $ui-03;
+
+  // Narrower than the filters elsewhere, so the title, filters, Jump to and Export share one row on a laptop.
+  > :not(.download) {
+    flex-basis: 11rem;
+    max-width: 12rem;
+  }
+
+  // The cardiac clinic's names are the longest.
+  > :nth-child(2) {
+    flex-basis: 14rem;
+    max-width: 16rem;
+  }
+
+  :global(#dashboard-jump-to) {
+    width: 11rem;
+  }
+
+  // The date picker's field has a fixed width of its own, wider than the toolbar gives it.
+  :global(.cds--date-picker),
+  :global(.cds--date-picker-container) {
+    width: 100%;
+  }
+
+  :global(.cds--date-picker-input__wrapper) {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 // At the end of the filter row, level with the bottom of the filters.
 .download {
   flex: 0 0 auto !important;
+  display: flex;
+  align-items: flex-end;
+  gap: layout.$spacing-04;
   margin-left: auto;
+}
+
+.pageTitle {
+  @include type.type-style('heading-03');
+  flex: none !important;
+  margin-right: layout.$spacing-04;
 }
 
 // Two across on a phone, four on a laptop.

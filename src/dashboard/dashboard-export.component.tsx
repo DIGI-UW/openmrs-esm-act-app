@@ -161,7 +161,7 @@ export function DashboardExportButton({
   return (
     <UserHasAccess privilege={PRIVILEGE_EXPORT_LISTS}>
       <Button
-        kind="tertiary"
+        kind="primary"
         size="md"
         renderIcon={Download}
         disabled={busy}

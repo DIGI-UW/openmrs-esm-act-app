@@ -320,6 +320,23 @@ describe('Dashboard', () => {
     ]);
   });
 
+  it('titles the page in its toolbar and jumps to the section chosen there', async () => {
+    const scrolled: Array<string> = [];
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element) {
+      scrolled.push(this.getAttribute('data-export-section') ?? this.getAttribute('data-jump'));
+    });
+    await signIn();
+
+    renderPage();
+    await screen.findAllByTestId('dashboard-tile');
+
+    // The toolbar's title, and the print header's, which only print shows.
+    expect(screen.getAllByRole('heading', { level: 1, name: 'Dashboard' })).toHaveLength(2);
+    await userEvent.selectOptions(screen.getByLabelText('Jump to'), 'Procedural waitlist');
+    await userEvent.selectOptions(screen.getByLabelText('Jump to'), 'Overview');
+    expect(scrolled).toEqual(['waitlist', 'keyFigures']);
+  });
+
   it('draws registrant status as a donut, printing the count and share of each status', async () => {
     await signIn();
 
