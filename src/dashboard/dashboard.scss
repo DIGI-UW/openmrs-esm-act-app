@@ -203,8 +203,9 @@
     display: block !important;
   }
 
-  :global([data-export-section][data-export-chosen] button),
-  :global([data-export-card][data-export-chosen] button) {
+  // A legend's names are buttons too, and stay.
+  :global([data-export-section][data-export-chosen]) button:not(.legendToggle),
+  :global([data-export-card][data-export-chosen]) button:not(.legendToggle) {
     display: none !important;
   }
 }
@@ -250,7 +251,7 @@
   :global([data-export-section]:not([data-export-chosen])),
   :global([role='tabpanel']:not([data-export-chosen])),
   :global([role='tablist']),
-  .page button {
+  .page button:not(.legendToggle) {
     display: none !important;
   }
 
