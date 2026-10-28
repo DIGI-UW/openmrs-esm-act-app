@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
@@ -17,6 +17,7 @@ import {
   markChosen,
   printSections,
   sectionAttribute,
+  setExportSummary,
   settle,
   slug,
   zip,
@@ -51,6 +52,7 @@ export function DashboardExportButton({
   csvRows,
   csvLoading,
   filters,
+  sectionFilters,
   clinics,
   asOf,
   showScreening,
@@ -59,6 +61,8 @@ export function DashboardExportButton({
   csvRows: Array<CountRow>;
   csvLoading: boolean;
   filters: Record<string, string>;
+  /** What a section counts beyond the filters, as the months or dates it is set to, logged when it is exported. */
+  sectionFilters: Partial<Record<ExportSection, Record<string, string>>>;
   clinics: string;
   asOf: string;
   showScreening: boolean;
@@ -76,8 +80,14 @@ export function DashboardExportButton({
     t('period', 'Period'),
     t('csvClinics', 'Clinics'),
   ];
-  const record = (list: string, columns: Array<string>, rows: number) =>
-    recordDownload({ list, columns, rows, identifiers: false, filters });
+  const record = (list: string, columns: Array<string>, rows: number, sections: Array<ExportSection>) =>
+    recordDownload({
+      list,
+      columns,
+      rows,
+      identifiers: false,
+      filters: Object.assign({}, filters, ...sections.map((section) => sectionFilters[section] ?? {})),
+    });
 
   const images = async (sections: Array<ExportSection>) => {
     const { elements, undo } = markChosen(container.current, sections, exportingClass);
@@ -128,12 +138,12 @@ export function DashboardExportButton({
         const rows = csvRows
           .filter((row) => sectionNames.includes(row.section))
           .map((row) => [row.section, row.group, row.label, String(row.count), row.period, clinics]);
-        await record('dashboard:counts', csvHeaders, rows.length);
+        await record('dashboard:counts', csvHeaders, rows.length, sections);
         downloadCsv(`dashboard-counts-${today}.csv`, csvHeaders, rows);
         close();
         return;
       }
-      await record(format === 'pdf' ? 'dashboard:pdf' : 'dashboard:images', sectionNames, sections.length);
+      await record(format === 'pdf' ? 'dashboard:pdf' : 'dashboard:images', sectionNames, sections.length, sections);
     } catch (e) {
       showSnackbar({
         kind: 'error',
@@ -167,6 +177,7 @@ export function DashboardExportButton({
   // The workspace keeps the props it opened with, so it calls the page's latest run through this.
   const latest = useRef(run);
   latest.current = run;
+  useEffect(() => setExportSummary(summary), [summary]);
 
   return (
     <UserHasAccess privilege={PRIVILEGE_EXPORT_LISTS}>

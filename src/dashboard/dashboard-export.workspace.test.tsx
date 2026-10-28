@@ -1,8 +1,8 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type ExportChoice } from './dashboard-export';
+import { type ExportChoice, setExportSummary } from './dashboard-export';
 import DashboardExportWorkspace from './dashboard-export.workspace';
 
 const run = vi.fn(async (_choice: ExportChoice, close: () => void) => close());
@@ -26,6 +26,14 @@ function renderWorkspace(showScreening = true) {
 
 describe('Dashboard export workspace', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('says what the Dashboard counts now, not only what it counted when the workspace opened', () => {
+    renderWorkspace();
+
+    act(() => setExportSummary('Lira RRH · figures as of 28-Oct-2026'));
+    expect(screen.getByText('Lira RRH · figures as of 28-Oct-2026')).toBeInTheDocument();
+    act(() => setExportSummary(''));
+  });
 
   it('says what the Dashboard counts, and exports every section as a PDF unless told otherwise', async () => {
     renderWorkspace();

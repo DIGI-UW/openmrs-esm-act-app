@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+
 /** The parts of the Dashboard an export can choose, in the order the page shows them. */
 export const exportSections = [
   'keyFigures',
@@ -88,17 +90,53 @@ export async function printSections(
     path.push(node);
   }
   container.setAttribute(pageAttribute, '');
+  let restored = false;
   const done = () => {
+    if (restored) {
+      return;
+    }
+    restored = true;
     path.forEach((node) => node.removeAttribute(pathAttribute));
     container.removeAttribute(pageAttribute);
     undo();
     page.remove();
     delete document.body.dataset.printOrientation;
     window.removeEventListener('afterprint', done);
+    document.removeEventListener('pointerdown', done, true);
+    document.removeEventListener('keydown', done, true);
   };
   window.addEventListener('afterprint', done);
   await settle();
   window.print();
+  // A browser that never fires afterprint leaves the page in print; nothing on it can be touched while the print
+  // dialog is open, so the first touch or key after restores it, where a timer could restore it mid-print.
+  if (!restored) {
+    document.addEventListener('pointerdown', done, true);
+    document.addEventListener('keydown', done, true);
+  }
+}
+
+let summary = '';
+const summaryListeners = new Set<() => void>();
+
+/** Tells an open export workspace what the Dashboard now counts, as its props stay as they were when it opened. */
+export function setExportSummary(next: string) {
+  if (next !== summary) {
+    summary = next;
+    summaryListeners.forEach((listener) => listener());
+  }
+}
+
+/** What the Dashboard counts, as it changes, or what the workspace opened with before the Dashboard has said. */
+export function useExportSummary(opened: string) {
+  const current = useSyncExternalStore(
+    (listener) => {
+      summaryListeners.add(listener);
+      return () => summaryListeners.delete(listener);
+    },
+    () => summary,
+  );
+  return current || opened;
 }
 
 const crcTable = Array.from({ length: 256 }, (_, n) => {

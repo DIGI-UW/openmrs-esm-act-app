@@ -40,8 +40,28 @@ import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
 import { urlWithFilters, useUrlFilters } from '../table-filters/url-filters';
-import { CascadeBars, CountLink, CountsDonut, labelColour, StackedBars } from './dashboard-charts.component';
-import { type CountRow, CountsCsv, type CsvPart, countRows, csvParts, useCountsCsv } from './dashboard-csv';
+import {
+  CascadeBars,
+  CountLink,
+  CountsDonut,
+  doneColours,
+  labelColour,
+  LegendToggle,
+  SegmentedBars,
+  teal,
+  urgencyScale,
+  useCountName,
+  useShownGroups,
+} from './dashboard-charts.component';
+import {
+  type CountRow,
+  CountsCsv,
+  type CsvPart,
+  countRows,
+  csvParts,
+  type PartFilters,
+  useCountsCsv,
+} from './dashboard-csv';
 import { type ExportSection, sectionAttribute } from './dashboard-export';
 import { DashboardExportButton, useSectionNames } from './dashboard-export.component';
 import {
@@ -84,35 +104,46 @@ function Bars({
   coloured?: boolean;
 }) {
   const { t } = useTranslation();
+  const nameOf = useCountName();
+  const { isShown, toggle } = useShownGroups(counts.map((count) => count.label));
   if (!counts.length) {
     return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
   }
-  const largest = Math.max(0, ...counts.map((count) => count.value));
+  // The bars left drawn fill the width, as Carbon's do when its legend leaves some out.
+  const largest = Math.max(0, ...counts.filter((count) => isShown(count.label)).map((count) => count.value));
   const percents = shares(counts.map((count) => count.value));
   return (
     <div className={styles.bars}>
-      {counts.map((count, index) => (
-        <div key={count.label} className={withShares ? styles.shareBar : styles.bar} data-testid={testId}>
-          <span>{count.label}</span>
-          <span className={styles.track}>
-            <span
-              className={styles.fill}
-              data-testid="dashboard-bar-fill"
-              style={{
-                width: `${share(count.value, largest)}%`,
-                ...(coloured && labelColour(count.label) && { backgroundColor: labelColour(count.label) }),
-              }}
+      {counts.map((count, index) => {
+        const colour = (coloured && labelColour(count.label)) || teal;
+        return (
+          <div key={count.label} className={withShares ? styles.shareBar : styles.bar} data-testid={testId}>
+            <LegendToggle
+              label={nameOf(count)}
+              colour={colour}
+              shown={isShown(count.label)}
+              onToggle={() => toggle(count.label)}
             />
-          </span>
-          <span className={styles.count}>
-            <CountLink
-              value={withShares ? count.value.toLocaleString() : count.value}
-              figure={figureOf?.(count.label)}
-            />
-          </span>
-          {withShares && <span className={styles.share}>{percents[index]}%</span>}
-        </div>
-      ))}
+            <span className={styles.track}>
+              <span
+                className={styles.fill}
+                data-testid="dashboard-bar-fill"
+                style={{
+                  width: `${isShown(count.label) ? share(count.value, largest) : 0}%`,
+                  backgroundColor: colour,
+                }}
+              />
+            </span>
+            <span className={styles.count}>
+              <CountLink
+                value={withShares ? count.value.toLocaleString() : count.value}
+                figure={figureOf?.(count.label)}
+              />
+            </span>
+            {withShares && <span className={styles.share}>{percents[index]}%</span>}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -133,10 +164,12 @@ function Columns({
   figureOf?: (label: string) => Figure;
 }) {
   const { t } = useTranslation();
+  const nameOf = useCountName();
+  const { isShown, toggle } = useShownGroups(counts.map((count) => count.label));
   if (!counts.length) {
     return <p className={styles.empty}>{t('noPatientsToCount', 'No patients to count')}</p>;
   }
-  const largest = Math.max(0, ...counts.map((count) => count.value));
+  const largest = Math.max(0, ...counts.filter((count) => isShown(count.label)).map((count) => count.value));
   const percents = shares(counts.map((count) => count.value));
   return (
     <ol className={styles.columnChart} aria-label={name}>
@@ -147,9 +180,19 @@ function Columns({
           </span>
           <span className={styles.share}>{percents[index]}%</span>
           <span className={styles.columnTrack} aria-hidden="true">
-            <span className={styles.columnFill} style={{ height: `${share(count.value, largest)}%` }} />
+            <span
+              className={styles.columnFill}
+              data-testid="dashboard-column-fill"
+              style={{ height: `${isShown(count.label) ? share(count.value, largest) : 0}%` }}
+            />
           </span>
-          <span className={styles.columnLabel}>{count.label}</span>
+          <LegendToggle
+            label={nameOf(count)}
+            colour={teal}
+            shown={isShown(count.label)}
+            onToggle={() => toggle(count.label)}
+            className={styles.columnLabel}
+          />
         </li>
       ))}
     </ol>
@@ -423,6 +466,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
 
   const waitlistReport = whileLimitRead(useReportDataset(counted ? dashboard.waitlistReport : null, countParams));
   const waitlist = useMemo(() => waitlistCounts(waitlistReport.rows), [waitlistReport.rows]);
+  const urgencyColours = urgencyScale(waitlist.urgencies);
   const phone = useLayoutType() === 'phone';
   const [waitlistAsTable, setWaitlistAsTable] = useState(phone);
 
@@ -463,7 +507,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       .map((row) => ({ label: String(row[column] ?? t('none', 'None')), value: Number(row.patients ?? 0) }));
   const diagnoses = byBreakdown('category', 'category').map((count) => ({
     ...count,
-    label: diagnosisNames[count.label] ?? count.label,
+    name: diagnosisNames[count.label],
   }));
   const rhdDetails = byBreakdown('rhdDetails', 'details');
   const screenDetectedRhd = rhdDetails.reduce((sum, count) => sum + count.value, 0);
@@ -782,62 +826,55 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                 )}
             </div>
           ) : (
-            <div className={styles.split}>
-              <StackedBars
-                name={t('proceduralWaitlist', 'Procedural waitlist')}
-                data={waitlist.urgencies.flatMap((urgency, index) =>
-                  waitlist.rows
-                    .filter((row) => row.counts[index])
-                    .map((row) => ({
-                      group: waitlistName(t, urgency),
-                      key: waitlistName(t, row.procedure),
-                      value: row.counts[index],
-                    })),
-                )}
-                groups={waitlist.urgencies.map((urgency) => waitlistName(t, urgency))}
-                colours="urgency"
-                height="14rem"
-              />
-              <ul className={styles.totals}>
-                {waitlist.rows.map((row) => (
-                  <li key={row.procedure} className={styles.legendRow} data-testid="dashboard-waitlist-total">
-                    <span>{waitlistName(t, row.procedure)}</span>
-                    <span className={styles.count}>
-                      <CountLink
-                        value={row.counts.reduce((sum, count) => sum + count, 0)}
-                        figure={{ figure: 'waitlist', breakdown: 'open', procedure: row.procedure }}
-                      />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <p className={styles.performed} data-testid="dashboard-performed">
-            <Trans
-              t={t}
-              i18nKey="performedInYear"
-              defaults="Performed in the 12 months to the date shown: mitral balloon valvuloplasty <bmv>{{bmv}}</bmv>, surgery <surgery>{{surgery}}</surgery>"
-              values={waitlist.performed}
-              components={{
-                bmv: (
-                  <CountLink
-                    value={waitlist.performed.bmv}
-                    figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Mitral balloon valvuloplasty' }}
-                  />
+            <SegmentedBars
+              name={t('urgency', 'Urgency')}
+              segments={waitlist.urgencies.map((urgency) => ({
+                label: waitlistName(t, urgency),
+                colour: urgencyColours[urgency],
+              }))}
+              rows={waitlist.rows.map((row) => ({
+                key: row.procedure,
+                label: waitlistName(t, row.procedure),
+                values: row.counts,
+                end: (
+                  <span className={styles.count}>
+                    <CountLink
+                      value={row.counts.reduce((sum, count) => sum + count, 0)}
+                      figure={{ figure: 'waitlist', breakdown: 'open', procedure: row.procedure }}
+                    />
+                  </span>
                 ),
-                surgery: (
-                  <CountLink
-                    value={waitlist.performed.surgery}
-                    figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' }}
-                  />
-                ),
-              }}
+              }))}
+              testId="dashboard-waitlist-total"
             />
-          </p>
-          <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
-            {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
-          </Button>
+          )}
+          <div className={styles.sectionFooter}>
+            <p className={styles.performed} data-testid="dashboard-performed">
+              <Trans
+                t={t}
+                i18nKey="performedInYear"
+                defaults="Performed in the 12 months to the date shown: mitral balloon valvuloplasty <bmv>{{bmv}}</bmv>, surgery <surgery>{{surgery}}</surgery>"
+                values={waitlist.performed}
+                components={{
+                  bmv: (
+                    <CountLink
+                      value={waitlist.performed.bmv}
+                      figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Mitral balloon valvuloplasty' }}
+                    />
+                  ),
+                  surgery: (
+                    <CountLink
+                      value={waitlist.performed.surgery}
+                      figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' }}
+                    />
+                  ),
+                }}
+              />
+            </p>
+            <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
+              {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
+            </Button>
+          </div>
         </Section>
         <Section
           title={t('medicalOptimisation', 'Medical optimisation')}
@@ -855,31 +892,22 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           exportId="optimisation"
           {...section}
         >
-          <div className={styles.split}>
-            <StackedBars
-              name={t('medicalOptimisation', 'Medical optimisation')}
-              // Carbon draws a horizontal chart's first key at the bottom, so the list's first row goes last.
-              data={measures
-                .filter((measure) => measure.notDone !== null)
-                .reverse()
-                .flatMap((measure) => [
-                  { group: t('done', 'Done'), key: measure.label, value: measure.done },
-                  { group: t('notDone', 'Not done'), key: measure.label, value: measure.notDone },
-                ])}
-              groups={[t('done', 'Done'), t('notDone', 'Not done')]}
-              colours="doneNotDone"
-              height="14rem"
-              horizontal
-              asShares
-            />
-            <ul className={styles.totals}>
-              {measures.map((measure) => (
-                <li key={measure.label} className={styles.legendRow} data-testid="dashboard-measure">
-                  <span>{measure.label}</span>
-                  <span className={styles.count}>
-                    {measure.notDone === null ? (
-                      <CountLink value={measure.done} figure={{ figure: 'optimisation', measure: measure.measure }} />
-                    ) : (
+          <SegmentedBars
+            name={t('outcome', 'Outcome')}
+            segments={[
+              { label: t('done', 'Done'), colour: doneColours[0] },
+              { label: t('notDone', 'Not done'), colour: doneColours[1] },
+            ]}
+            rows={measures
+              .filter((measure): measure is (typeof measures)[number] & { notDone: number } => measure.notDone !== null)
+              .map((measure) => ({
+                key: measure.measure,
+                label: measure.label,
+                values: [measure.done, measure.notDone],
+                end: (
+                  <>
+                    <span className={styles.share}>{share(measure.done, measure.done + measure.notDone)}%</span>
+                    <span className={styles.doneNotDone}>
                       <Trans
                         t={t}
                         i18nKey="doneNotDoneOf"
@@ -900,12 +928,23 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                           ),
                         }}
                       />
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                    </span>
+                  </>
+                ),
+              }))}
+            whole
+            testId="dashboard-measure"
+          />
+          {measures
+            .filter((measure) => measure.notDone === null)
+            .map((measure) => (
+              <p key={measure.measure} className={styles.sectionFooter} data-testid="dashboard-measure-count">
+                <span className={styles.performed}>{measure.label}</span>
+                <span className={styles.count}>
+                  <CountLink value={measure.done} figure={{ figure: 'optimisation', measure: measure.measure }} />
+                </span>
+              </p>
+            ))}
         </Section>
         {dashboard.showScreening && (
           <div className={`${styles.wide} ${styles.keepTogether}`} data-jump="screening" data-export-card="">
@@ -1071,6 +1110,7 @@ function ScreeningFromRegistrations({
           ),
         ],
     report.isLoading || pending,
+    { registeredFrom: start, registeredTo: end },
   );
 
   return (
@@ -1239,6 +1279,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
           ),
         ],
     isLoading || pending,
+    { screeningFromMonth: start, screeningToMonth: end },
   );
 
   return (
@@ -1381,10 +1422,12 @@ export default function Dashboard() {
     open: (next: Figure) => go({ ...noFigure, ...next }),
   };
   const clinicNames = useClinicNames(scope ?? {});
-  const [csv, setCsv] = useState<Partial<Record<CsvPart, { rows: Array<CountRow>; isLoading: boolean }>>>({});
+  const [csv, setCsv] = useState<
+    Partial<Record<CsvPart, { rows: Array<CountRow>; isLoading: boolean; filters: PartFilters }>>
+  >({});
   const putCsv = useCallback(
-    (part: CsvPart, rows: Array<CountRow>, isLoading: boolean) =>
-      setCsv((current) => ({ ...current, [part]: { rows, isLoading } })),
+    (part: CsvPart, rows: Array<CountRow>, isLoading: boolean, filters: PartFilters) =>
+      setCsv((current) => ({ ...current, [part]: { rows, isLoading, filters } })),
     [],
   );
   const csvRows = csvParts.flatMap((part) => csv[part]?.rows ?? []);
@@ -1469,6 +1512,10 @@ export default function Dashboard() {
                   csvRows={csvRows}
                   csvLoading={csvParts.some((part) => csv[part]?.isLoading)}
                   filters={{ endDate: asOf, ...scope }}
+                  sectionFilters={{
+                    rhdScreening: csv.rhdScreening?.filters,
+                    registrations: csv.registrations?.filters,
+                  }}
                   clinics={clinicsCounted}
                   asOf={asOf}
                   showScreening={showScreening}

@@ -1,15 +1,14 @@
-import React, { useContext, useRef } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { Link } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { useLayoutType } from '@openmrs/esm-framework';
-import { DonutChart, ScaleTypes, SimpleBarChart, StackedBarChart, TruncationTypes } from '@carbon/charts-react';
+import { DonutChart, ScaleTypes, SimpleBarChart, TruncationTypes } from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
 import { type Count, cascadeShares, share } from './dashboard-counts';
 import { type Figure, FigureLinks } from './dashboard-figure';
 import styles from './dashboard.scss';
 
 // Each chart is given its colours as a scale, so a printed legend's swatch can show the same colour.
-const teal = '#009d9a';
+export const teal = '#009d9a';
 const notRecorded = '#c6c6c6';
 const rhd = '#007d79';
 /**
@@ -24,14 +23,12 @@ const labelColours: Record<string, string> = {
   'Physical relocation': '#6f6f6f',
   Deceased: '#161616',
   'Rheumatic Heart Disease/Rheumatic Fever': rhd,
-  RHD: rhd,
   'Acute rheumatic fever': '#08bdba',
   'RHD A': teal,
   'RHD B': rhd,
   'RHD C/RHD D': '#005d5d',
   'RHD, details not recorded': '#9ef0f0',
   'Congenital heart disease': '#8a3ffc',
-  Congenital: '#8a3ffc',
   'Other heart disease': '#d02670',
   Other: '#d02670',
   Normal: '#198038',
@@ -52,7 +49,8 @@ const spareColours = ['#9f1853', '#491d8b', '#003a6d', '#8e6a00', '#570408'];
 const urgencyColours = ['#a2191f', '#eb6200', '#f1c21b'];
 // A second urgency starting with the same number, as an old "2 - within 1 month" beside "2: urgent", in a darker shade.
 const urgencyColoursAgain = ['#520408', '#8a3800', '#8e6a00'];
-const doneColours = [teal, '#d0e2ff'];
+/** Done, then not done: the light one still shows on white. */
+export const doneColours = [teal, '#d0e2ff'];
 const unnumberedColours = ['#8d8d8d', '#525252', notRecorded];
 
 const scaleOf = (labels: Array<string>, colours: Array<string>) =>
@@ -61,12 +59,70 @@ const scaleOf = (labels: Array<string>, colours: Array<string>) =>
 /** A label's own colour, where it has one, for a list of bars to colour as the charts do. */
 export const labelColour = (label: string): string | undefined => labelColours[label];
 
-const labelScaleOf = (labels: Array<string>) => {
-  const unnamed = labels.filter((label) => !labelColours[label]);
+/** Each count's colour by its label, keyed by the name shown, as Carbon matches a colour to the group it draws. */
+export const labelScaleOf = (counts: Array<Count>, nameOf: (count: Count) => string) => {
+  const unnamed = counts.filter(({ label }) => !labelColours[label]);
   return Object.fromEntries(
-    labels.map((label) => [label, labelColours[label] ?? spareColours[unnamed.indexOf(label) % spareColours.length]]),
+    counts.map((count) => [
+      nameOf(count),
+      labelColours[count.label] ?? spareColours[unnamed.indexOf(count) % spareColours.length],
+    ]),
   );
 };
+
+/**
+ * What a count reads as in the viewer's language. The reports send their values in English, so a value the Dashboard
+ * names is translated, and any other, such as a concept's name, is shown as it is.
+ */
+export function useCountName() {
+  const { t } = useTranslation();
+  const names: Record<string, string> = {
+    Active: t('active', 'Active'),
+    'Lost to follow-up': t('lostToFollowUp', 'Lost to follow-up'),
+    'Voluntary inactivity': t('voluntaryInactivity', 'Voluntary inactivity'),
+    'Physical relocation': t('physicalRelocation', 'Physical relocation'),
+    Deceased: t('deceased', 'Deceased'),
+    'No status recorded': t('noStatusRecorded', 'No status recorded'),
+    'No diagnosis yet': t('noDiagnosisYet', 'No diagnosis yet'),
+    'RHD, details not recorded': t('rhdDetailsNotRecorded', 'RHD, details not recorded'),
+    'Acute rheumatic fever': t('acuteRheumaticFever', 'Acute rheumatic fever'),
+    'Congenital heart disease': t('congenitalHeartDisease', 'Congenital heart disease'),
+    'Other heart disease': t('otherHeartDisease', 'Other heart disease'),
+    Normal: t('normal', 'Normal'),
+    Female: t('female', 'Female'),
+    Male: t('male', 'Male'),
+    Other: t('other', 'Other'),
+    'Not recorded': t('notRecorded', 'Not recorded'),
+    'Age unknown': t('ageUnknown', 'Age unknown'),
+    School: t('school', 'School'),
+    Community: t('community', 'Community'),
+    'Health facility': t('healthFacility', 'Health facility'),
+    Yes: t('yes', 'Yes'),
+    No: t('no', 'No'),
+  };
+  return (count: Count) => count.name ?? names[count.label] ?? count.label;
+}
+
+/**
+ * Each urgency's colour: 1: emergent, 2: urgent and 3: elective by the number it starts with, darker for sooner, and an
+ * urgency with no number in greys.
+ */
+export function urgencyScale(urgencies: Array<string>): Record<string, string> {
+  const numbered = (urgency: string) => urgencyColours[parseInt(urgency, 10) - 1];
+  // The form's own urgencies read "2: urgent", so another starting with 2 takes the darker shade.
+  const numberedColour = (urgency: string) => {
+    const number = parseInt(urgency, 10);
+    const shared = urgencies.some((other) => other !== urgency && parseInt(other, 10) === number);
+    return (shared && !/^\d+:/.test(urgency) ? urgencyColoursAgain : urgencyColours)[number - 1];
+  };
+  return {
+    ...scaleOf(
+      urgencies.filter((urgency) => !numbered(urgency)),
+      unnumberedColours,
+    ),
+    ...Object.fromEntries(urgencies.filter(numbered).map((urgency) => [urgency, numberedColour(urgency)])),
+  };
+}
 
 // Carbon redraws a chart whenever its data or options is a new object.
 function useStable<T>(value: T): T {
@@ -80,7 +136,6 @@ function useStable<T>(value: T): T {
 // Carbon cuts a long label short by default, and names sharing a prefix then read the same.
 const whole = { type: TruncationTypes.NONE };
 
-/** A count that opens the patients behind it, when it names them; a modified click is left to the browser. */
 export function CountLink({ value, figure }: { value: number | string; figure?: Figure }) {
   const links = useContext(FigureLinks);
   if (!figure || !links) {
@@ -99,6 +154,54 @@ export function CountLink({ value, figure }: { value: number | string; figure?: 
     >
       {value}
     </Link>
+  );
+}
+
+/**
+ * Which of a chart's groups it draws, as Carbon's own legend chooses: a click on a group draws it alone, a click on
+ * another adds or removes that one, and a click on the only one drawn draws them all again.
+ */
+export function useShownGroups(groups: Array<string>) {
+  const [chosen, setChosen] = useState<Array<string>>([]);
+  // A group the counts no longer have, after a clinic or a date changes, is no longer chosen.
+  const present = chosen.filter((group) => groups.includes(group));
+  const isShown = (group: string) => !present.length || present.includes(group);
+  const toggle = (group: string) => {
+    if (!present.length) {
+      setChosen([group]);
+    } else if (present.length === 1 && present[0] === group) {
+      setChosen([]);
+    } else {
+      setChosen(present.includes(group) ? present.filter((other) => other !== group) : [...present, group]);
+    }
+  };
+  return { isShown, toggle };
+}
+
+/** A group's colour and name in a legend, drawing or leaving out the group on its chart when clicked. */
+export function LegendToggle({
+  label,
+  colour,
+  shown,
+  onToggle,
+  className,
+}: {
+  label: React.ReactNode;
+  colour: string;
+  shown: boolean;
+  onToggle: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`${styles.legendToggle} ${shown ? '' : styles.leftOut} ${className ?? ''}`}
+      aria-pressed={shown}
+      onClick={onToggle}
+    >
+      <span className={styles.swatch} style={shown ? { backgroundColor: colour } : undefined} aria-hidden="true" />
+      <span>{label}</span>
+    </button>
   );
 }
 
@@ -125,9 +228,13 @@ export function CountsDonut({
   figureOf?: (label: string) => Figure;
 }) {
   const { t } = useTranslation();
-  const scale = labelScaleOf(counts.map(({ label }) => label));
+  const nameOf = useCountName();
+  const { isShown, toggle } = useShownGroups(counts.map(({ label }) => label));
+  const scale = labelScaleOf(counts, nameOf);
   const total = counts.reduce((sum, { value }) => sum + value, 0);
-  const data = useStable(counts.map(({ label, value }) => ({ group: label, value })));
+  const data = useStable(
+    counts.filter(({ label }) => isShown(label)).map((count) => ({ group: nameOf(count), value: count.value })),
+  );
   const options = useStable({
     ...base(name, '11rem'),
     color: { scale },
@@ -144,14 +251,18 @@ export function CountsDonut({
         <DonutChart data={data} options={options} />
       </div>
       <ul className={styles.legend}>
-        {counts.map(({ label, value }) => (
-          <li key={label} className={styles.legendRow} data-testid={testId}>
-            <span className={styles.swatch} style={{ backgroundColor: scale[label] }} aria-hidden="true" />
-            <span>{label}</span>
+        {counts.map((count) => (
+          <li key={count.label} className={styles.legendRow} data-testid={testId}>
+            <LegendToggle
+              label={nameOf(count)}
+              colour={scale[nameOf(count)]}
+              shown={isShown(count.label)}
+              onToggle={() => toggle(count.label)}
+            />
             <span className={styles.count}>
-              <CountLink value={value} figure={figureOf?.(label)} />
+              <CountLink value={count.value} figure={figureOf?.(count.label)} />
             </span>
-            {withShare && <span className={styles.share}>{share(value, total)}%</span>}
+            {withShare && <span className={styles.share}>{share(count.value, total)}%</span>}
           </li>
         ))}
       </ul>
@@ -175,8 +286,11 @@ export function CascadeBars({
   height?: string;
 }) {
   const { t } = useTranslation();
+  const { isShown, toggle } = useShownGroups(steps.map(({ label }) => label));
   // Translate only what is shown: figureOf and shareOf match the label as configured or reported.
-  const data = useStable(steps.map(({ label, value }) => ({ group: t(label), value })));
+  const data = useStable(
+    steps.filter(({ label }) => isShown(label)).map(({ label, value }) => ({ group: t(label), value })),
+  );
   const options = useStable({
     ...base(name, height),
     color: {
@@ -199,7 +313,12 @@ export function CascadeBars({
       <ol className={styles.steps}>
         {cascadeShares(steps, shareOf).map((step) => (
           <li key={step.label} className={styles.step} data-testid={testId}>
-            <span>{t(step.label)}</span>
+            <LegendToggle
+              label={t(step.label)}
+              colour={teal}
+              shown={isShown(step.label)}
+              onToggle={() => toggle(step.label)}
+            />
             <span className={styles.count}>
               <CountLink value={step.value} figure={figureOf?.(step.label)} />
             </span>
@@ -211,61 +330,80 @@ export function CascadeBars({
   );
 }
 
-export function StackedBars({
+export interface SegmentedRow {
+  key: string;
+  label: string;
+  /** One value per segment, in the segments' order. */
+  values: Array<number>;
+  /** The row's numbers, after its bar. */
+  end: React.ReactNode;
+}
+
+/**
+ * Rows of bars split into coloured segments, under a key to the colours whose items draw or leave out a segment. A
+ * whole row's segments are shares of the full length, drawn or not; otherwise a row's length is its share of the largest.
+ */
+export function SegmentedBars({
   name,
-  data,
-  groups,
-  horizontal,
-  asShares,
-  colours,
-  height,
+  segments,
+  rows,
+  whole,
+  testId,
 }: {
   name: string;
-  data: Array<{ group: string; key: string; value: number }>;
-  groups: Array<string>;
-  horizontal?: boolean;
-  asShares?: boolean;
-  colours: 'urgency' | 'doneNotDone';
-  height: string;
+  segments: Array<{ label: string; colour: string }>;
+  rows: Array<SegmentedRow>;
+  whole?: boolean;
+  testId: string;
 }) {
-  // Full names on a phone leave the bars no room; the list under the chart names each in full.
-  const phone = useLayoutType() === 'phone';
-  const keys = { mapsTo: 'key', scaleType: ScaleTypes.LABELS, ...(!phone && { truncation: whole }) };
-  const values = { mapsTo: 'value', stacked: true, ...(asShares && { percentage: true }) };
-  const numbered = (group: string) => urgencyColours[parseInt(group, 10) - 1];
-  // The form's own urgencies read "2: urgent", so another starting with 2 takes the darker shade.
-  const numberedColour = (group: string) => {
-    const number = parseInt(group, 10);
-    const shared = groups.some((other) => other !== group && parseInt(other, 10) === number);
-    return (shared && !/^\d+:/.test(group) ? urgencyColoursAgain : urgencyColours)[number - 1];
-  };
-  // Shares put every row on one length, so rows with different denominators compare at a glance.
-  const rows = asShares
-    ? data.map((entry) => {
-        const whole = data.filter((other) => other.key === entry.key).reduce((sum, other) => sum + other.value, 0);
-        return { ...entry, value: whole ? Math.round((entry.value / whole) * 1000) / 10 : 0 };
-      })
-    : data;
-  const scale =
-    colours === 'urgency'
-      ? {
-          ...scaleOf(
-            groups.filter((group) => !numbered(group)),
-            unnumberedColours,
-          ),
-          ...Object.fromEntries(groups.filter(numbered).map((group) => [group, numberedColour(group)])),
-        }
-      : scaleOf(groups, doneColours);
-  const stableData = useStable(rows);
-  const options = useStable({
-    ...base(name, height),
-    color: { scale },
-    legend: { truncation: whole },
-    axes: horizontal ? { left: keys, bottom: values } : { left: values, bottom: keys },
-  });
+  const { isShown, toggle } = useShownGroups(segments.map(({ label }) => label));
+  const wholes = rows.map((row) => row.values.reduce((sum, value) => sum + value, 0));
+  const totals = rows.map((row) =>
+    row.values.reduce((sum, value, index) => sum + (isShown(segments[index].label) ? value : 0), 0),
+  );
+  const largest = Math.max(0, ...totals);
   return (
-    <div className={styles.chart}>
-      <StackedBarChart data={stableData} options={options} />
+    <div className={styles.segmented}>
+      <ul className={styles.key} aria-label={name}>
+        {segments.map((segment) => (
+          <li key={segment.label}>
+            <LegendToggle
+              label={segment.label}
+              colour={segment.colour}
+              shown={isShown(segment.label)}
+              onToggle={() => toggle(segment.label)}
+            />
+          </li>
+        ))}
+      </ul>
+      <ul className={styles.segmentRows}>
+        {rows.map((row, rowIndex) => (
+          <li key={row.key} className={styles.segmentRow} data-testid={testId}>
+            <span className={styles.segmentLabel}>{row.label}</span>
+            <span className={styles.segmentTrack}>
+              <span
+                className={styles.segmentFill}
+                data-testid="dashboard-segment-fill"
+                style={{ width: `${share(totals[rowIndex], whole ? wholes[rowIndex] : largest)}%` }}
+              >
+                {row.values.map((value, index) =>
+                  value && isShown(segments[index].label) ? (
+                    <span
+                      key={segments[index].label}
+                      className={styles.segment}
+                      title={`${segments[index].label}: ${value}`}
+                      data-testid="dashboard-segment"
+                      style={{ flexGrow: value, backgroundColor: segments[index].colour }}
+                      aria-hidden="true"
+                    />
+                  ) : null,
+                )}
+              </span>
+            </span>
+            <span className={styles.segmentEnd}>{row.end}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
