@@ -22,9 +22,17 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { formatDate, OpenmrsDatePicker, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  OpenmrsDatePicker,
+  ReportsPictogram,
+  useConfig,
+  useLayoutType,
+  useSession,
+} from '@openmrs/esm-framework';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
+import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useClinicLimit } from '../clinic-limit';
 import { useClinics } from '../programme-report/clinics.resource';
@@ -1394,6 +1402,9 @@ export default function Dashboard() {
 
   return (
     <div className={styles.page} ref={pageRef}>
+      <div className={styles.noPrint}>
+        <ActPageHeader title={t('dashboard', 'Dashboard')} illustration={<ReportsPictogram />} />
+      </div>
       <header className={styles.printHeader}>
         <h1>{t('dashboard', 'Dashboard')}</h1>
         <p>
@@ -1423,23 +1434,19 @@ export default function Dashboard() {
         ) : !scope ? (
           <SkeletonText paragraph lineCount={6} />
         ) : figure ? (
-          <>
-            <h1 className={styles.pageTitle}>{t('dashboard', 'Dashboard')}</h1>
-            <DashboardFigure
-              figure={figure}
-              scope={scope}
-              asOf={asOf}
-              clinicNames={clinicNames}
-              onFigure={(next) => setUrl({ ...noFigure, ...next })}
-              onScope={setScope}
-              onAsOf={setAsOf}
-              onBack={() => go(noFigure)}
-            />
-          </>
+          <DashboardFigure
+            figure={figure}
+            scope={scope}
+            asOf={asOf}
+            clinicNames={clinicNames}
+            onFigure={(next) => setUrl({ ...noFigure, ...next })}
+            onScope={setScope}
+            onAsOf={setAsOf}
+            onBack={() => go(noFigure)}
+          />
         ) : (
           <>
             <div className={`${styles.filters} ${styles.toolbar} ${styles.noPrint}`}>
-              <h1 className={styles.pageTitle}>{t('dashboard', 'Dashboard')}</h1>
               <ClinicFilters scope={scope} onChange={setScope} idPrefix="dashboard" />
               <OpenmrsDatePicker
                 id="dashboard-as-of"

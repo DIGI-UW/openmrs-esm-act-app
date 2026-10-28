@@ -34,14 +34,14 @@
   background-color: $ui-02;
   border: 1px solid $ui-03;
 
-  // Narrower than the filters elsewhere, so the title, filters, Jump to and Export share one row on a laptop.
+  // Narrower than the filters elsewhere, so the filters, Jump to and Export share one row on a laptop.
   > :not(.download) {
     flex-basis: 11rem;
     max-width: 12rem;
   }
 
   // The cardiac clinic's names are the longest.
-  > :nth-child(2) {
+  > :first-child {
     flex-basis: 14rem;
     max-width: 16rem;
   }
@@ -70,12 +70,6 @@
   align-items: flex-end;
   gap: layout.$spacing-04;
   margin-left: auto;
-}
-
-.pageTitle {
-  @include type.type-style('heading-03');
-  flex: none !important;
-  margin-right: layout.$spacing-04;
 }
 
 // Two across on a phone, four on a laptop.
