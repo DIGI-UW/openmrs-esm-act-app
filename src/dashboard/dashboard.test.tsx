@@ -23,7 +23,7 @@ import { sectionPng } from './dashboard-images';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import Dashboard from './dashboard.component';
 import { exportSections } from './dashboard-export';
-import { type DashboardExportWorkspaceProps } from './dashboard-export.workspace';
+import DashboardExportWorkspace, { type DashboardExportWorkspaceProps } from './dashboard-export.workspace';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 // The card has its own tests; here it only shows what the Dashboard hands it.
@@ -1562,6 +1562,12 @@ describe('Dashboard', () => {
           list: 'dashboard:pdf',
           columns: ['Registrant status', 'RHD screening'],
           identifiers: false,
+          // RHD screening's months are logged with it, and the registration dates of a section not exported are not.
+          filters: {
+            endDate: today,
+            screeningFromMonth: dayjs().subtract(12, 'month').format('YYYY-MM'),
+            screeningToMonth: dayjs().subtract(1, 'month').format('YYYY-MM'),
+          },
         }),
       );
       expect(document.body).toHaveClass('act-dashboard-printing');
@@ -1579,6 +1585,40 @@ describe('Dashboard', () => {
       expect(document.body).not.toHaveClass('act-dashboard-printing');
       // eslint-disable-next-line testing-library/no-node-access
       expect(document.querySelectorAll('[data-export-chosen], [data-print-path], [data-print-page]')).toHaveLength(0);
+    });
+
+    it('leaves the print layout at the first touch after printing when the browser never says printing ended', async () => {
+      window.print = vi.fn();
+      const opened = await openExport();
+      await act(() => opened.run({ format: 'pdf', sections: ['status'], orientation: 'portrait' }, close));
+      expect(document.body).toHaveClass('act-dashboard-printing');
+
+      fireEvent.pointerDown(document.body);
+      expect(document.body).not.toHaveClass('act-dashboard-printing');
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(document.querySelectorAll('[data-export-chosen], [data-print-path], [data-print-page]')).toHaveLength(0);
+    });
+
+    it('keeps the open workspace saying what the Dashboard counts as its clinic changes', async () => {
+      const opened = await openExport();
+      const { container: workspace } = render(
+        <DashboardExportWorkspace
+          workspaceProps={opened}
+          windowProps={null}
+          groupProps={null}
+          launchChildWorkspace={vi.fn()}
+          closeWorkspace={vi.fn()}
+          workspaceName="act-dashboard-export-workspace"
+          windowName="act-dashboard-export"
+          isRootWorkspace
+          showActionMenu={false}
+        />,
+      );
+      const summary = () => within(workspace).getByText(/ · figures as of /).textContent;
+      expect(summary()).toMatch(/^every clinic · /);
+
+      await userEvent.selectOptions(screen.getAllByLabelText('Cardiac clinic')[0], 'lira');
+      expect(summary()).toMatch(/^Lira RRH · /);
     });
 
     it('zips a PNG of each section chosen, in page order, each named for its section', async () => {
