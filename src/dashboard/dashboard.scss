@@ -403,10 +403,19 @@
 }
 
 .donut {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: layout.$spacing-05;
+
+  > .chart {
+    flex: 1 1 9rem;
+  }
+
+  // The legend asks for its names unbroken, so in a narrow card the donut goes above it.
+  > .legend {
+    flex: 1 1 auto;
+  }
 }
 
 .legend,
@@ -452,6 +461,12 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+
+  // A name wider than the whole card breaks within a word, rather than running into its count.
+  > span:last-child {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
 
   &:hover > span:last-child {
     text-decoration: underline;
