@@ -36,6 +36,16 @@ import styles from './cardiac-tests.scss';
 
 const coded = (value: unknown) => (value as { display?: string } | undefined)?.display ?? '--';
 
+/** A row's Edit, which reopens the record the row shows in its form, named for the row, also on hover. */
+export function EditButton({ label, disabled, onClick }: { label: string; disabled: boolean; onClick: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Button kind="ghost" size="sm" disabled={disabled} aria-label={label} title={label} onClick={onClick}>
+      {t('edit', 'Edit')}
+    </Button>
+  );
+}
+
 function Echocardiograms({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { cardiacTests } = useConfig<Config>();
@@ -55,7 +65,8 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
   ];
 
   const add = () => openForm(cardiacTests.echoForm);
-  const mayAdd = useMayEnterForm(cardiacTests.echoForm);
+  const mayRecord = useMayEnterForm(cardiacTests.echoForm);
+  const edit = (echo: Echocardiogram) => openForm(cardiacTests.echoForm, undefined, echo.uuid);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (error) {
@@ -66,14 +77,14 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
       <EmptyCard
         displayText={t('echocardiogramsLowercase', 'echocardiograms')}
         headerTitle={t('echocardiograms', 'Echocardiograms')}
-        launchForm={mayAdd ? add : undefined}
+        launchForm={mayRecord ? add : undefined}
       />
     );
   }
   return (
     <div className={styles.card}>
       <CardHeader title={t('echocardiograms', 'Echocardiograms')}>
-        {mayAdd && (
+        {mayRecord && (
           <Button
             kind="ghost"
             size="sm"
@@ -102,6 +113,7 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
                 {columns.map((column) => (
                   <TableHeader key={column.header}>{column.header}</TableHeader>
                 ))}
+                {mayRecord && <TableHeader aria-label={t('edit', 'Edit')} />}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -115,9 +127,20 @@ function Echocardiograms({ patientUuid }: { patientUuid: string }) {
                     {columns.map((column) => (
                       <TableCell key={column.header}>{column.text(echo)}</TableCell>
                     ))}
+                    {mayRecord && (
+                      <TableCell>
+                        <EditButton
+                          label={t('editEchocardiogram', 'Edit echocardiogram of {{date}}', {
+                            date: formatDate(echo.date, { time: false }),
+                          })}
+                          disabled={isOpening}
+                          onClick={() => edit(echo)}
+                        />
+                      </TableCell>
+                    )}
                   </TableExpandRow>
                   {expanded === echo.uuid && (
-                    <TableExpandedRow colSpan={columns.length + 1}>
+                    <TableExpandedRow colSpan={columns.length + (mayRecord ? 2 : 1)}>
                       {echo.otherFindings.length ? (
                         <dl className={styles.findings} data-testid="other-findings">
                           {echo.otherFindings.map((finding) => (
@@ -155,7 +178,8 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
     { header: t('otherFinding', 'Other finding'), text: (ecg) => ecg.otherFinding ?? '--' },
   ];
   const add = () => openForm(cardiacTests.ecgForm);
-  const mayAdd = useMayEnterForm(cardiacTests.ecgForm);
+  const mayRecord = useMayEnterForm(cardiacTests.ecgForm);
+  const edit = (ecg: Electrocardiogram) => openForm(cardiacTests.ecgForm, undefined, ecg.uuid);
 
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
@@ -165,14 +189,14 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
       <EmptyCard
         displayText={t('electrocardiogramsLowercase', 'electrocardiograms')}
         headerTitle={title}
-        launchForm={mayAdd ? add : undefined}
+        launchForm={mayRecord ? add : undefined}
       />
     );
   }
   return (
     <div className={styles.card}>
       <CardHeader title={title}>
-        {mayAdd && (
+        {mayRecord && (
           <Button
             kind="ghost"
             size="sm"
@@ -200,6 +224,7 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
                 {columns.map((column) => (
                   <TableHeader key={column.header}>{column.header}</TableHeader>
                 ))}
+                {mayRecord && <TableHeader aria-label={t('edit', 'Edit')} />}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -208,6 +233,17 @@ function Electrocardiograms({ patientUuid }: { patientUuid: string }) {
                   {columns.map((column) => (
                     <TableCell key={column.header}>{column.text(ecg)}</TableCell>
                   ))}
+                  {mayRecord && (
+                    <TableCell>
+                      <EditButton
+                        label={t('editElectrocardiogram', 'Edit electrocardiogram of {{date}}', {
+                          date: formatDate(ecg.date, { time: false }),
+                        })}
+                        disabled={isOpening}
+                        onClick={() => edit(ecg)}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

@@ -125,10 +125,11 @@ describe('CardiacTests', () => {
       'Aortic regurgitation',
       'Aortic stenosis',
       'Left ventricular ejection fraction',
+      '',
     ]);
     expect(shownRows()).toEqual([
-      ['', '27-Feb-2026', 'Moderate', '--', '--', '--', '48%'],
-      ['', '02-Sept-2025', 'None', 'Mild', 'Mild', 'Mild', '55%'],
+      ['', '27-Feb-2026', 'Moderate', '--', '--', '--', '48%', 'Edit'],
+      ['', '02-Sept-2025', 'None', 'Mild', 'Mild', 'Mild', '55%', 'Edit'],
     ]);
   });
 
@@ -175,6 +176,30 @@ describe('CardiacTests', () => {
 
     expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie');
     expect(openForm).toHaveBeenCalledWith('88e54fb0-1243-3f7a-b925-f64648ca6635');
+  });
+
+  it('reopens an echocardiogram in its form from its Edit, the newest first', async () => {
+    renderPage();
+    await screen.findByText('55%');
+
+    const edits = screen.getAllByRole('button', { name: /^Edit echocardiogram/ });
+    expect(edits.map((button) => button.getAttribute('aria-label'))).toEqual([
+      'Edit echocardiogram of 27-Feb-2026',
+      'Edit echocardiogram of 02-Sept-2025',
+    ]);
+    await userEvent.click(edits[0]);
+
+    expect(openForm).toHaveBeenCalledWith('88e54fb0-1243-3f7a-b925-f64648ca6635', undefined, 'newer');
+  });
+
+  it('lists the echocardiograms without Add or Edit to a user who may not record one', async () => {
+    await signInWith(['Get Encounters']);
+
+    renderPage();
+    await screen.findByText('55%');
+
+    expect(screen.queryByRole('button', { name: /^Add|^Edit/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('columnheader')).toHaveLength(7);
   });
 
   it.each(layouts)('shows a table skeleton sized for a $layout while they load', async ({ layout, compact }) => {
@@ -285,9 +310,12 @@ describe('CardiacTests', () => {
             .map((cell) => cell.textContent),
         ),
     ).toEqual([
-      ['10-May-2026', 'Atrial fibrillation, LVH', 'Long QT'],
-      ['09-Jan-2025', 'Normal', '--'],
+      ['10-May-2026', 'Atrial fibrillation, LVH', 'Long QT', 'Edit'],
+      ['09-Jan-2025', 'Normal', '--', 'Edit'],
     ]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit electrocardiogram of 10-May-2026' }));
+    expect(openForm).toHaveBeenCalledWith('3776bb8d-4741-3741-aeef-d5b760443569', undefined, 'ecg-new');
   });
 
   it('opens the electrocardiogram form from its empty card', async () => {

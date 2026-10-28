@@ -4,7 +4,14 @@ import { signInWith } from '../access/sign-in.test-helper';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
-import { ErrorState, getDefaultsFromConfigSchema, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  ErrorState,
+  getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  openmrsFetch,
+  restBaseUrl,
+  useConfig,
+} from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
@@ -94,8 +101,12 @@ function serve({
   failEncounters = false,
   failOral = false,
   summary = { type: 'BPG', injections: timing } as object | Error,
+  editPrivilege = 'Add Encounters',
 } = {}) {
   mockOpenmrsFetch.mockImplementation(((url: string) => {
+    if (url.includes('/encountertype/')) {
+      return Promise.resolve({ data: { editPrivilege: { display: editPrivilege } } });
+    }
     if (url.includes('/actcore/prophylaxis')) {
       return summary instanceof Error ? Promise.reject(summary) : Promise.resolve({ data: summary });
     }
@@ -151,16 +162,17 @@ describe('ProphylaxisPage', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date', 'Given', 'Facility', 'Notes']);
+    ).toEqual(['Date', 'Given', 'Facility', 'Notes', '']);
     expect(rows(table)).toEqual([
-      ['31-Aug-2026', '--', 'Kiswa HC III (ACT 2.0)', 'On time'],
+      ['31-Aug-2026', '--', 'Kiswa HC III (ACT 2.0)', 'On time', 'Edit'],
       [
         '03-Aug-2026',
         '1.2 MU (1,200,000 units)',
         'Akunalaber HCIII',
         'Late · Could not arrange transportation, Forgot to come',
+        'Edit',
       ],
-      ['02-Jul-2026', '--', 'Kiswa HC III', ''],
+      ['02-Jul-2026', '--', 'Kiswa HC III', '', 'Edit'],
     ]);
   });
 
@@ -219,10 +231,10 @@ describe('ProphylaxisPage', () => {
       within(table)
         .getAllByRole('columnheader')
         .map((header) => header.textContent),
-    ).toEqual(['Date', 'Adherence', 'Based on', 'Reason if below 80%', 'New prescription']);
+    ).toEqual(['Date', 'Adherence', 'Based on', 'Reason if below 80%', 'New prescription', '']);
     expect(rows(table)).toEqual([
-      ['10-Aug-2026', '65%', '--', 'Could not afford medication', '1 month'],
-      ['10-May-2026', '85%', 'Calendar, Pill count', '--', '3 months'],
+      ['10-Aug-2026', '65%', '--', 'Could not afford medication', '1 month', 'Edit'],
+      ['10-May-2026', '85%', 'Calendar, Pill count', '--', '3 months', 'Edit'],
     ]);
     expect(within(table).getByTestId('low-adherence')).toHaveTextContent('65%');
   });
@@ -234,8 +246,9 @@ describe('ProphylaxisPage', () => {
       renderPage();
 
       await screen.findByRole('table', { name: 'Oral adherence' });
-      await waitFor(() => expect(screen.getAllByRole('button')).toHaveLength(1));
+      await waitFor(() => expect(screen.getAllByRole('button', { name: /^Record/ })).toHaveLength(1));
       expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Update prophylaxis/ })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'BPG injections' })).not.toBeInTheDocument();
     });
 
@@ -292,6 +305,27 @@ describe('ProphylaxisPage', () => {
     expect(openForm).toHaveBeenCalledWith(form);
   });
 
+  it("reopens a BPG injection or an oral report in its form from the dose's Edit", async () => {
+    serve({ oralEntries: oral });
+    const { bpgForm, oralForm } = getDefaultsFromConfigSchema<Config>(configSchema).prophylaxisCard;
+
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit BPG injection of 03-Aug-2026' }));
+    expect(openForm).toHaveBeenLastCalledWith(bpgForm, undefined, 'aug');
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit oral adherence report of 10-May-2026' }));
+    expect(openForm).toHaveBeenLastCalledWith(oralForm, undefined, 'oral-1');
+  });
+
+  it('offers no dose Edit to a user who may not record the forms', async () => {
+    await signInWith([]);
+
+    renderPage();
+
+    await screen.findByRole('table', { name: 'BPG injections' });
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
+  });
+
   it('shows an injection saved in the chart once the forms app revalidates the patient encounters', async () => {
     renderPage();
     const table = await screen.findByRole('table', { name: 'BPG injections' });
@@ -332,6 +366,22 @@ describe('ProphylaxisPage', () => {
     await screen.findByRole('table', { name: 'BPG injections' });
     await waitFor(() => expect(screen.queryByRole('button', { name: /^Record oral/ })).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: /^Record BPG/ })).toBeInTheDocument();
+  });
+
+  it('offers Update prophylaxis beside Record, as the Prophylaxis card does, and it opens the update workspace', async () => {
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Update prophylaxis/ }));
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-update-prophylaxis-workspace');
+  });
+
+  it('offers Update prophylaxis to nobody who lacks the update encounter type edit privilege', async () => {
+    serve({ editPrivilege: 'Task: act.enterClinicalForms' });
+
+    renderPage();
+
+    await screen.findByRole('button', { name: /^Record BPG/ });
+    expect(screen.queryByRole('button', { name: /^Update prophylaxis/ })).not.toBeInTheDocument();
   });
 
   it('says so when a patient with no prescription has no BPG injection, saying Needs prescription', async () => {

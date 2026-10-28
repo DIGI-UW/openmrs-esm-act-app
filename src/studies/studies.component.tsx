@@ -28,6 +28,7 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { PRIVILEGE_MANAGE_STUDIES } from '../constants';
 import { patientChartUrl } from '../patient-chart-url';
+import { researchPageDashboardMeta } from '../research/research-page.meta';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { distinctValues, matchesColumns } from '../table-filters/distinct-values';
@@ -170,7 +171,10 @@ function ParticipantsTable({
     {
       header: t('patient', 'Patient'),
       render: (row) => (
-        <ConfigurableLink to={patientChartUrl(row.patient_uuid)} className={styles.name}>
+        <ConfigurableLink
+          to={`${patientChartUrl(row.patient_uuid)}/${researchPageDashboardMeta.path}`}
+          className={styles.name}
+        >
           {text('full_name')(row)}
         </ConfigurableLink>
       ),

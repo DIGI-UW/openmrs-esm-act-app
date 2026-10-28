@@ -14,7 +14,8 @@ import styles from '../styles/summary-card.scss';
 
 /**
  * The patient summary's Consultation visits card, as the prototype's: the last consultation, the next cardiology
- * review (red once overdue), the diagnosis and the cardiac clinic, with Start consultation for the clinician.
+ * review (red once overdue), the diagnosis and the cardiac clinic, with Start consultation for the clinician and Edit
+ * under the last consultation, which reopens it.
  */
 export default function ConsultationCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -80,6 +81,19 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
                 data-overdue={String(Boolean(field.overdue))}
               >
                 {field.value}
+                {field.id === 'last' && last && start && (
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    className={styles.fieldAction}
+                    renderIcon={(props) => <EditIcon size={16} {...props} />}
+                    disabled={start.isOpening}
+                    aria-label={t('editLastConsultation', 'Edit last consultation')}
+                    onClick={() => start.edit(last.uuid)}
+                  >
+                    {t('edit', 'Edit')}
+                  </Button>
+                )}
                 {field.id === 'diagnosis' && mayUpdateDiagnosis && (
                   <Button
                     kind="ghost"

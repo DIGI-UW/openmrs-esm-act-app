@@ -11,8 +11,11 @@ import {
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { useMayEnterForm } from '../access/may-enter-form';
+import { EditButton } from '../cardiac-tests/cardiac-tests.component';
 import { type Config } from '../config-schema';
-import Consultations from './consultations.component';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+import Consultations, { useStartConsultation } from './consultations.component';
 import { useConsultations } from './consultations.resource';
 import { useDiagnoses } from './patient-details.resource';
 import { toListedItems } from './repeated-lists.resource';
@@ -73,10 +76,16 @@ export function CompactTable<Row extends { key: string }>({
   );
 }
 
-/** Every diagnosis the patient's Patient Information records, as a table. Read only. */
+/**
+ * Every diagnosis the patient's Patient Information records, as a table, with Edit, which reopens that Patient
+ * Information, for a user who may record it.
+ */
 export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
+  const { patientInformationForm } = useConfig<Config>();
   const { diagnoses, error, isLoading } = useDiagnoses(patientUuid);
+  const mayEdit = useMayEnterForm(patientInformationForm);
+  const { open, isOpening } = useOpenFormInVisit(patientUuid);
   const title = t('diagnoses', 'Diagnoses');
   type Row = (typeof diagnoses)[number];
   const columns: Array<Column<Row>> = [
@@ -84,6 +93,23 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
     { header: t('active', 'Active'), text: (one) => one.active || '--' },
     { header: t('started', 'Started'), text: (one) => day(one.started) },
     { header: t('ended', 'Ended'), text: (one) => day(one.ended) },
+    ...(mayEdit
+      ? [
+          {
+            header: '',
+            text: (one: Row) => (
+              <EditButton
+                label={t('editDiagnosis', 'Edit {{diagnosis}}', {
+                  diagnosis: one.diagnosis,
+                  interpolation: { escapeValue: false },
+                })}
+                disabled={isOpening}
+                onClick={() => open(patientInformationForm, undefined, one.encounterUuid)}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
@@ -99,7 +125,11 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   );
 }
 
-/** One of the consultation's repeated lists as a name and date added table. */
+/**
+ * One of the consultation's repeated lists as a name and date added table, with Edit, which reopens the latest
+ * consultation that records the item, for a user who may record one. Edit names that consultation's date: the list
+ * merges every consultation, so an item an older one also records stays listed after it is removed from this one.
+ */
 function ListedItems({
   patientUuid,
   list,
@@ -115,6 +145,7 @@ function ListedItems({
   const { consultations } = useConfig<Config>();
   const { encounters, error, isLoading } = useConsultations(patientUuid);
   const items = toListedItems(encounters, consultations.concepts, consultations.concepts[list]);
+  const start = useStartConsultation(patientUuid);
   if (error) {
     return <ErrorState error={error} headerTitle={title} />;
   }
@@ -129,6 +160,24 @@ function ListedItems({
         columns={[
           { header: t('name', 'Name'), text: (one) => one.name },
           { header: t('dateAdded', 'Date added'), text: (one) => day(one.added) },
+          ...(start
+            ? [
+                {
+                  header: '',
+                  text: (one: (typeof items)[number]) => (
+                    <EditButton
+                      label={t('editListedItem', 'Edit {{item}} in the consultation of {{date}}', {
+                        item: one.name,
+                        date: day(one.encounterDate),
+                        interpolation: { escapeValue: false },
+                      })}
+                      disabled={start.isOpening}
+                      onClick={() => start.edit(one.encounterUuid)}
+                    />
+                  ),
+                },
+              ]
+            : []),
         ]}
         rows={items}
         isLoading={isLoading}

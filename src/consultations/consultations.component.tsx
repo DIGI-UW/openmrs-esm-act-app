@@ -21,6 +21,7 @@ import {
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { useMayEnterForm } from '../access/may-enter-form';
+import { EditButton } from '../cardiac-tests/cardiac-tests.component';
 import { type Config } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type Consultation, useConsultations } from './consultations.resource';
@@ -28,17 +29,27 @@ import styles from '../cardiac-tests/cardiac-tests.scss';
 
 const day = (date: Date | null) => (date ? formatDate(date, { time: false, noToday: true }) : '--');
 
-/** Start consultation, for a user who may record the consultation form; nothing for anyone else. */
+/**
+ * Start consultation, and Edit, which reopens a consultation in the form, for a user who may record the consultation
+ * form; nothing for anyone else.
+ */
 export function useStartConsultation(patientUuid: string) {
   const { consultations } = useConfig<Config>();
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
   const may = useMayEnterForm(consultations.form);
-  return may ? { start: () => open(consultations.form), isOpening } : null;
+  return may
+    ? {
+        start: () => open(consultations.form),
+        edit: (encounterUuid: string) => open(consultations.form, undefined, encounterUuid),
+        isOpening,
+      }
+    : null;
 }
 
 /**
  * The Consultation visits page, as the prototype's: each RHD Consultation Visit, newest first, with who saw the
- * patient, the NYHA class, the prophylaxis plan and the next review. Read-only for a user who may not record one.
+ * patient, the NYHA class, the prophylaxis plan and the next review, with Edit on each. Read-only for a user who may
+ * not record one.
  */
 export default function Consultations({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -97,6 +108,7 @@ export default function Consultations({ patientUuid }: { patientUuid: string }) 
                 {columns.map((column) => (
                   <TableHeader key={column.header}>{column.header}</TableHeader>
                 ))}
+                {start && <TableHeader aria-label={t('edit', 'Edit')} />}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -105,6 +117,15 @@ export default function Consultations({ patientUuid }: { patientUuid: string }) 
                   {columns.map((column) => (
                     <TableCell key={column.header}>{column.text(visit)}</TableCell>
                   ))}
+                  {start && (
+                    <TableCell>
+                      <EditButton
+                        label={t('editConsultation', 'Edit consultation of {{date}}', { date: day(visit.date) })}
+                        disabled={start.isOpening}
+                        onClick={() => start.edit(visit.uuid)}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

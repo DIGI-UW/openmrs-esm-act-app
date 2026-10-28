@@ -255,7 +255,7 @@ describe('the Medications page', () => {
     await signInWith(['Add Encounters', 'Get Encounters', 'Get Observations', 'Task: act.enterMedications']);
   });
 
-  it('lists active and past medicines with their dose and interval, and Add opens Medication Update', async () => {
+  it('lists active and past medicines with their dose and interval, and Add on either card opens Medication Update', async () => {
     serve({
       consultations: [
         consultation('new', '2026-04-01', [
@@ -274,9 +274,15 @@ describe('the Medications page', () => {
     expect(within(active).getAllByRole('row')[1]).toHaveTextContent(/Apr.*2026.*Aspirin · DOSE 75 mg · Once a day/);
     const past = screen.getByRole('table', { name: 'Past medications' });
     expect(within(past).getAllByRole('row')[1]).toHaveTextContent(/Warfarin.*Mar.*2026/);
+    expect(within(active).getByRole('columnheader', { name: 'End date' })).toBeInTheDocument();
     expect(within(past).getByRole('columnheader', { name: 'End date' })).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: /^Add/ }));
-    expect(openForm).toHaveBeenCalledWith(config.medications.form);
+    const adds = await screen.findAllByRole('button', { name: /^Add/ });
+    expect(adds).toHaveLength(2);
+    for (const add of adds) {
+      await userEvent.click(add);
+    }
+    expect(openForm).toHaveBeenCalledTimes(2);
+    expect(openForm).toHaveBeenNthCalledWith(2, config.medications.form);
   });
 
   it('reads Medication Update with the consultations, so one that stops a medicine moves it to Past', async () => {

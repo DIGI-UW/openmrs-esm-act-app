@@ -220,6 +220,10 @@ describe('Studies', () => {
     const filtered = screen.getByRole('table', { name: 'Study participants' });
     expect(within(filtered).getAllByRole('row')).toHaveLength(2);
     expect(within(filtered).getByText('Herman Muhereza')).toBeInTheDocument();
+    expect(within(filtered).getByRole('link', { name: 'Herman Muhereza' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/patient\/patient-1\/chart\/act-research$/),
+    );
     expect(screen.getByRole('button', { name: 'Download CSV' })).toBeEnabled();
   });
 

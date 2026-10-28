@@ -1,10 +1,23 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
-import { CardHeader, ErrorState, formatDate, isDesktop, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import {
+  CardHeader,
+  ErrorState,
+  formatDate,
+  isDesktop,
+  parseDate,
+  useConfig,
+  useLayoutType,
+} from '@openmrs/esm-framework';
+import { useMayEnterForm } from '../access/may-enter-form';
+import { EditButton } from '../cardiac-tests/cardiac-tests.component';
+import { type Config } from '../config-schema';
 import { useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { RecordProphylaxisButtons } from '../prophylaxis/record-prophylaxis-buttons.component';
+import UpdateProphylaxis from '../prophylaxis/update-prophylaxis.component';
 import { type BpgInjection, useBpgInjections, useOralEntries } from './prophylaxis-page.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './prophylaxis-page.scss';
@@ -34,9 +47,28 @@ function useTimingTag(patientUuid: string) {
   };
 }
 
+/** The leading section's actions, as the Prophylaxis card's: Update prophylaxis, then Record. */
+function Actions({ patientUuid }: { patientUuid: string }) {
+  return (
+    <div className={cardStyles.actions}>
+      <UpdateProphylaxis patientUuid={patientUuid} />
+      <RecordProphylaxisButtons patientUuid={patientUuid} />
+    </div>
+  );
+}
+
+/** A dose's Edit, which reopens its encounter in the form that recorded it, for a user who may record that form. */
+function useEditDose(patientUuid: string, form: string) {
+  const mayEdit = useMayEnterForm(form);
+  const { open, isOpening } = useOpenFormInVisit(patientUuid);
+  return mayEdit ? { edit: (encounterUuid: string) => open(form, undefined, encounterUuid), isOpening } : null;
+}
+
+const day = (date: string) => formatDate(parseDate(date), { time: false, noToday: true });
+
 interface SectionProps {
   patientUuid: string;
-  /** Whether the section leads the page, carrying the Record actions and saying when it is empty. */
+  /** Whether the section leads the page, carrying the actions and saying when it is empty. */
   leads: boolean;
 }
 
@@ -45,6 +77,7 @@ function BpgInjections({ patientUuid, leads }: SectionProps) {
   const desktop = isDesktop(useLayoutType());
   const { injections, error, isLoading } = useBpgInjections(patientUuid);
   const timingTag = useTimingTag(patientUuid);
+  const editDose = useEditDose(patientUuid, useConfig<Config>().prophylaxisCard.bpgForm);
   const title = t('bpgInjections', 'BPG injections');
   const headers = [t('date', 'Date'), t('given', 'Given'), t('facility', 'Facility'), t('notes', 'Notes')];
 
@@ -57,7 +90,7 @@ function BpgInjections({ patientUuid, leads }: SectionProps) {
   const body = isLoading ? (
     <DataTableSkeleton
       role="progressbar"
-      columnCount={headers.length}
+      columnCount={headers.length + Number(Boolean(editDose))}
       compact={desktop}
       showHeader={false}
       showToolbar={false}
@@ -71,15 +104,28 @@ function BpgInjections({ patientUuid, leads }: SectionProps) {
           {headers.map((header) => (
             <TableHeader key={header}>{header}</TableHeader>
           ))}
+          {editDose && <TableHeader aria-label={t('edit', 'Edit')} />}
         </TableRow>
       </TableHead>
       <TableBody>
         {injections.map((injection) => (
           <TableRow key={injection.uuid}>
-            <TableCell>{formatDate(parseDate(injection.day), { time: false, noToday: true })}</TableCell>
+            <TableCell>{day(injection.day)}</TableCell>
             <TableCell>{injection.dose ?? '--'}</TableCell>
             <TableCell>{injection.facility ?? injection.location ?? '--'}</TableCell>
             <TableCell>{timingTag(injection)}</TableCell>
+            {editDose && (
+              <TableCell>
+                <EditButton
+                  label={t('editBpgInjection', 'Edit BPG injection of {{date}}', {
+                    date: day(injection.day),
+                    interpolation: { escapeValue: false },
+                  })}
+                  disabled={editDose.isOpening}
+                  onClick={() => editDose.edit(injection.uuid)}
+                />
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>
@@ -88,7 +134,7 @@ function BpgInjections({ patientUuid, leads }: SectionProps) {
 
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title}>{leads && <RecordProphylaxisButtons patientUuid={patientUuid} />}</CardHeader>
+      <CardHeader title={title}>{leads && <Actions patientUuid={patientUuid} />}</CardHeader>
       {body}
     </div>
   );
@@ -101,6 +147,7 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
   const { entries, error, isLoading } = useOralEntries(patientUuid);
+  const editDose = useEditDose(patientUuid, useConfig<Config>().prophylaxisCard.oralForm);
   const title = t('oralAdherence', 'Oral adherence');
   const headers = [
     t('date', 'Date'),
@@ -119,7 +166,7 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
   const body = isLoading ? (
     <DataTableSkeleton
       role="progressbar"
-      columnCount={headers.length}
+      columnCount={headers.length + Number(Boolean(editDose))}
       compact={desktop}
       showHeader={false}
       showToolbar={false}
@@ -133,12 +180,13 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
           {headers.map((header) => (
             <TableHeader key={header}>{header}</TableHeader>
           ))}
+          {editDose && <TableHeader aria-label={t('edit', 'Edit')} />}
         </TableRow>
       </TableHead>
       <TableBody>
         {entries.map((entry) => (
           <TableRow key={entry.uuid}>
-            <TableCell>{formatDate(parseDate(entry.date), { time: false, noToday: true })}</TableCell>
+            <TableCell>{day(entry.date)}</TableCell>
             <TableCell>
               {entry.adherence == null ? (
                 '--'
@@ -153,6 +201,18 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
             <TableCell>{entry.basedOn.length ? entry.basedOn.join(', ') : '--'}</TableCell>
             <TableCell>{entry.lowAdherenceReason ?? '--'}</TableCell>
             <TableCell>{entry.newPrescription ?? '--'}</TableCell>
+            {editDose && (
+              <TableCell>
+                <EditButton
+                  label={t('editOralReport', 'Edit oral adherence report of {{date}}', {
+                    date: day(entry.date),
+                    interpolation: { escapeValue: false },
+                  })}
+                  disabled={editDose.isOpening}
+                  onClick={() => editDose.edit(entry.uuid)}
+                />
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>
@@ -161,13 +221,13 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
 
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title}>{leads && <RecordProphylaxisButtons patientUuid={patientUuid} />}</CardHeader>
+      <CardHeader title={title}>{leads && <Actions patientUuid={patientUuid} />}</CardHeader>
       {body}
     </div>
   );
 }
 
-/** The prescribed type's history leads, with the Record actions; the other shows only when it has entries. */
+/** The prescribed type's history leads, with Update prophylaxis and the Record actions; the other shows only when it has entries. */
 export default function ProphylaxisPage({ patientUuid }: { patientUuid: string }) {
   const oral = useProphylaxisSummary(patientUuid).summary?.type === 'Oral';
   return oral ? (
