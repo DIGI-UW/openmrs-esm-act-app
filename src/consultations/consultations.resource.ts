@@ -34,12 +34,17 @@ const answerUuid = (value: unknown) =>
 export const answersIn = (obs: Array<GroupedObs> | null | undefined, concept: string) =>
   (obs ?? []).filter((one) => one.concept.uuid === concept);
 
+// Under the patient's /encounter, which common-lib revalidates after a form is saved.
+const encountersUrl = (patientUuid: string, encounterType: string) =>
+  `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=${representation}`;
+
+/** Every encounter of one type for a patient, with each answer group's members, outside a component. */
+export const fetchChartEncounters = (patientUuid: string, encounterType: string) =>
+  fetchAll<ChartEncounter>(encountersUrl(patientUuid, encounterType));
+
 /** A patient's encounters of one type, newest first, with each answer group's members. */
 export function useChartEncounters(patientUuid: string | null, encounterType: string) {
-  // Under the patient's /encounter, which common-lib revalidates after a form is saved.
-  const url = patientUuid
-    ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=${representation}`
-    : null;
+  const url = patientUuid ? encountersUrl(patientUuid, encounterType) : null;
   const { data, error, isLoading } = useSWR<Array<ChartEncounter>, Error>(url, () => fetchAll<ChartEncounter>(url));
   const encounters = [...(data ?? [])].sort(
     (a, b) => parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),

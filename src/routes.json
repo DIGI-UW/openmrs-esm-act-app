@@ -690,6 +690,15 @@
       ]
     },
     {
+      "name": "act-allergies-pill",
+      "slot": "patient-banner-tags-slot",
+      "component": "allergiesPill",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-clinical-flags",
       "slot": "patient-banner-tags-slot",
       "component": "clinicalFlags",

@@ -177,6 +177,7 @@ describe('configSchema', () => {
           completed: '1632f8dc-195d-5d67-a52e-6c7a057cb536',
         },
         vitaminKAntagonists: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
+        penicillinAllergyAnswers: ['149071AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'b4e6c064-ab4f-5ee4-9837-094731ee23d4'],
       },
       medications: {
         encounterType: 'e3f1b6a8-5c2d-4f7e-9a41-6d8b2c0e7f53',

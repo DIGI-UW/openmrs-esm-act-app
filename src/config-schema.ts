@@ -503,6 +503,13 @@ export const configSchema = {
       _description:
         'The Cardiac Medication answers that put a patient on warfarin, as the INR flags read them: warfarin and the other vitamin K antagonist. A patient whose latest consultation records one, not stopped, has the INR reviews page and card.',
     },
+    penicillinAllergyAnswers: {
+      _type: Type.Array,
+      _elements: { _type: Type.UUID },
+      _default: ['149071AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'b4e6c064-ab4f-5ee4-9837-094731ee23d4'],
+      _description:
+        "The consultation's Allergy answers that are an allergy to penicillin, which the patient banner and the consultation form mark: Penicillin (allergy) and Penicillin (anaphylaxis), as the patients report counts them. An answer named penicillin is marked whatever its uuid.",
+    },
   },
   medications: {
     encounterType: {
@@ -1035,6 +1042,7 @@ export interface Config {
       string
     >;
     vitaminKAntagonists: Array<string>;
+    penicillinAllergyAnswers: Array<string>;
   };
   medications: { encounterType: string; form: string };
   inrReviews: {

@@ -1,23 +1,10 @@
 import dayjs from 'dayjs';
-import { getGlobalStore, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { registerExpressionHelper } from '../forms-engine-registry';
 import { type ProphylaxisSummary } from './prophylaxis.resource';
 
 /** The name BPG Delivery's Next injection due calls in its calculate expression. */
 export const nextInjectionDueHelper = 'actNextInjectionDue';
-
-// The form engine's registry (`FormsStore` in @openmrs/esm-form-engine-lib). Whichever module asks for the store
-// first creates it, so this starts it with the engine's own empty registry rather than only the helpers.
-const formsEngineStore = 'forms-engine-store';
-
-interface FormsEngineRegistry {
-  controls: Array<unknown>;
-  postSubmissionActions: Array<unknown>;
-  expressionHelpers: Record<string, Function>;
-  fieldValidators: Array<unknown>;
-  fieldValueAdapters: Array<unknown>;
-  dataSources: Array<unknown>;
-  formSchemaTransformers: Array<unknown>;
-}
 
 /**
  * The Date of Injection plus the interval ACT Core reads from the patient's prescription, which is the next due date
@@ -41,14 +28,4 @@ export async function nextInjectionDue(patientUuid: string, injectionDate: Date 
 }
 
 /** Lets a form's calculate expression call actNextInjectionDue(patient.id, date_of_service). */
-export function registerNextInjectionDue() {
-  getGlobalStore<FormsEngineRegistry>(formsEngineStore, {
-    controls: [],
-    postSubmissionActions: [],
-    expressionHelpers: {},
-    fieldValidators: [],
-    fieldValueAdapters: [],
-    dataSources: [],
-    formSchemaTransformers: [],
-  }).getState().expressionHelpers[nextInjectionDueHelper] = nextInjectionDue;
-}
+export const registerNextInjectionDue = () => registerExpressionHelper(nextInjectionDueHelper, nextInjectionDue);
