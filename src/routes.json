@@ -699,6 +699,15 @@
       ]
     },
     {
+      "name": "act-consultation-inr-trend",
+      "slot": "act-consultation-inr-slot",
+      "component": "inrTrend",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-clinical-flags",
       "slot": "patient-banner-tags-slot",
       "component": "clinicalFlags",

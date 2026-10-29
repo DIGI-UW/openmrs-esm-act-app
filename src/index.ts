@@ -27,6 +27,7 @@ import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin
 import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
 import { registerAllergies } from './allergies/allergies.resource';
+import { registerControl } from './forms-engine-registry';
 import { registerNextInjectionDue } from './prophylaxis/next-injection-due';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
@@ -47,6 +48,11 @@ export function startupApp() {
   trackActReturn();
   registerNextInjectionDue();
   registerAllergies();
+  registerControl({
+    name: 'act-inr-chart',
+    type: 'control',
+    load: () => import('./inr/inr-chart-control.component'),
+  });
 }
 
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);
@@ -106,6 +112,7 @@ export const consultationCard = getAsyncLifecycle(() => import('./consultations/
 
 export const inrStatusFlag = getAsyncLifecycle(() => import('./inr/inr-status-flag.component'), options);
 export const allergiesPill = getAsyncLifecycle(() => import('./allergies/allergies-pill.component'), options);
+export const inrTrend = getAsyncLifecycle(() => import('./inr/inr-trend.component'), options);
 
 export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/clinical-flags.component'), options);
 

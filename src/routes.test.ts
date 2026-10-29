@@ -100,6 +100,7 @@ describe('routes.json privileges', () => {
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
     ['act-patient-status-flags', [PRIVILEGE_STATUS_FLAGS, 'Get Encounters', 'Get Observations']],
     ['act-allergies-pill', ['Get Encounters', 'Get Observations']],
+    ['act-consultation-inr-trend', ['Get Encounters', 'Get Observations']],
     // The roles that record BPG Delivery, whose form a scanned patient card opens.
     ['act-scan-patient-card-dashboard-link', PRIVILEGE_ENTER_PROPHYLAXIS],
     ['act-scan-patient-card-dashboard', PRIVILEGE_ENTER_PROPHYLAXIS],
