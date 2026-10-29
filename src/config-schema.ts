@@ -162,16 +162,16 @@ export const configSchema = {
   },
   instanceAdminQuickActions: {
     formsAndSitesUrl: link(
-      "Where the Forms & sites quick action on the Instance dashboard leads: OpenMRS's forms list, for a user holding App: act.instanceAdmin.",
-      '${openmrsBase}/admin/forms/form.list',
+      "Where the Forms & sites quick action on the Instance dashboard leads: OpenMRS 3's form builder, for a user holding App: act.instanceAdmin.",
+      '${openmrsSpaBase}/form-builder',
     ),
     rolePermissionsUrl: link(
       "Where the Role permissions quick action on the Instance dashboard leads: ACT's Role permissions page, which sets the capabilities each ACT role has.",
       '${openmrsSpaBase}/home/act-role-permissions',
     ),
     researchParticipationUrl: link(
-      "Where the Research participation quick action on the Instance dashboard leads: OpenMRS's module configuration, for a user holding App: act.instanceAdmin.",
-      '${openmrsBase}/admin/maintenance/settings.list',
+      "Where the Research participation quick action on the Instance dashboard leads: ACT's Studies page, where the research studies and their participants are, for a user holding App: act.instanceAdmin.",
+      '${openmrsSpaBase}/home/act-studies',
     ),
   },
   instanceAdminKpis: {

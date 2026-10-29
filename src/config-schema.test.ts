@@ -53,9 +53,9 @@ describe('configSchema', () => {
         facilityReportUrl: '${openmrsSpaBase}/home/act-facility-reports',
       },
       instanceAdminQuickActions: {
-        formsAndSitesUrl: '${openmrsBase}/admin/forms/form.list',
+        formsAndSitesUrl: '${openmrsSpaBase}/form-builder',
         rolePermissionsUrl: '${openmrsSpaBase}/home/act-role-permissions',
-        researchParticipationUrl: '${openmrsBase}/admin/maintenance/settings.list',
+        researchParticipationUrl: '${openmrsSpaBase}/home/act-studies',
       },
       instanceAdminKpis: { report: '6494be01-b4ae-46af-8d7f-058a2f95c115' },
       users: {
