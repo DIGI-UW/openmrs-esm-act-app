@@ -27,23 +27,24 @@ export interface RunChart {
   metrics: Record<string, RunChartSeries>;
 }
 
+/** The request for a range: the metric is left out, as ACT Core answers every metric at once. */
+function urlOf(params: RunChartParams) {
+  const query = new URLSearchParams({ startDate: params.startDate, endDate: params.endDate, points: params.points });
+  if (params.clinic) {
+    query.set('clinic', params.clinic);
+  }
+  return `${restBaseUrl}/actcore/runchart?${query}`;
+}
+
 /**
  * A metric over a range in points of the period, for the clinic; null params ask for nothing. ACT Core calculates every
  * metric in one pass, so one request serves every metric asked for over the same range, and the metric is read from it.
  */
 export function useRunChart(params: RunChartParams | null) {
   const { data, error, isLoading, mutate } = useSWR(
-    params ? ['act-run-chart', params.clinic, params.startDate, params.endDate, params.points] : null,
-    async () => {
-      const query = new URLSearchParams({
-        startDate: params.startDate,
-        endDate: params.endDate,
-        points: params.points,
-      });
-      if (params.clinic) {
-        query.set('clinic', params.clinic);
-      }
-      const { data } = await openmrsFetch<RunChart>(`${restBaseUrl}/actcore/runchart?${query}`);
+    params ? urlOf(params) : null,
+    async (url: string) => {
+      const { data } = await openmrsFetch<RunChart>(url);
       return data;
     },
     { shouldRetryOnError: false },

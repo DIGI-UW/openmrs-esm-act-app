@@ -28,7 +28,7 @@ export function HistoryNotice({
         lowContrast
         hideCloseButton
         title={t('runChartNothingToChart', 'Nothing to chart for {{clinic}} in this range', { clinic })}
-        subtitle={t('runChartNothingToChartDetail', 'Points appear once the clinic has registrants in the range.')}
+        subtitle={t('runChartNothingToChartDetail', 'Points appear once there is somebody to count in the range.')}
       />
     );
   }

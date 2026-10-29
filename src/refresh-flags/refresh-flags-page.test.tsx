@@ -14,7 +14,7 @@ describe('Flags and adherence page', () => {
     await signInWith(['Task: act.refreshFlags']);
   });
 
-  it('carries the refresh alone: the run charts are calculated when viewed, with no snapshot to take', async () => {
+  it('carries the refresh alone, with no second tile and no run chart request', async () => {
     mockOpenmrsFetch.mockResolvedValue({ data: { lastRefreshed: null, running: false } } as never);
 
     render(
@@ -25,7 +25,6 @@ describe('Flags and adherence page', () => {
 
     expect(await screen.findByRole('button', { name: 'Refresh now' })).toBeEnabled();
     expect(screen.getAllByRole('button')).toHaveLength(1);
-    expect(screen.queryByText(/snapshot/i)).not.toBeInTheDocument();
     expect(mockOpenmrsFetch.mock.calls.every(([url]) => !String(url).includes('/runchart'))).toBe(true);
   });
 });

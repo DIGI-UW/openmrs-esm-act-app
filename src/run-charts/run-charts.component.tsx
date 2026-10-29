@@ -19,10 +19,15 @@ import {
   type RunChartPeriod,
   runChartMetrics,
 } from './run-chart-metrics';
-import { changeOf, localDay, MIN_POINTS_FOR_CHART, MIN_POINTS_FOR_MEDIAN, shifts, withValue } from './run-chart-stats';
-
-/** ACT Core charts a day per point only over a range this long or shorter. */
-export const MOST_DAILY_DAYS = 92;
+import {
+  changeOf,
+  localDay,
+  MIN_POINTS_FOR_CHART,
+  MIN_POINTS_FOR_MEDIAN,
+  MOST_DAILY_DAYS,
+  shifts,
+  withValue,
+} from './run-chart-stats';
 import { pointDetail } from './run-chart-tooltip';
 import { useClinicName } from './run-chart-clinic-name';
 import { HistoryNotice } from './run-chart-history-notice.component';

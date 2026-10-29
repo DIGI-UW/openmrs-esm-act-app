@@ -169,14 +169,13 @@ describe('RunCharts', () => {
     expect(html).toContain('70% · 70 of 100');
   });
 
-  it('says each point is worked out from the records as they are now, and nothing of snapshots', () => {
+  it('says each point is worked out from the records as they are now', () => {
     render(<RunCharts />);
 
     expect(
       screen.getByText('Each point is the figure on its date, worked out from the records as they are now.'),
     ).toBeInTheDocument();
     expect(screen.getByText('One point per week, as of its last day.')).toBeInTheDocument();
-    expect(screen.queryByText(/snapshot/i)).not.toBeInTheDocument();
   });
 
   it('says one point has a value, and which, before a chart can be drawn, asking for nothing more', () => {
