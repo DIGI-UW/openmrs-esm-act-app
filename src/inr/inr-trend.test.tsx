@@ -100,6 +100,27 @@ describe('inrChartData', () => {
     expect([none[0].low, none[0].high]).toEqual(standardTarget);
   });
 
+  it('gives an INR before the first recorded target that first target, not the standard range', () => {
+    const data = inrChartData(
+      reviews([inrEncounter('2026-10-05', 2.6, '3.0 - 4.0'), inrEncounter('2026-08-01', 1.8, '')]),
+      'INR',
+    );
+
+    expect(data.map((point) => [point.low, point.high])).toEqual([
+      [3, 4],
+      [3, 4],
+    ]);
+  });
+
+  it('skips an INR that is not a number', () => {
+    const data = inrChartData(
+      reviews([inrEncounter('2026-10-05', 2.6), inrEncounter('2026-08-01', 'high' as unknown as number)]),
+      'INR',
+    );
+
+    expect(data.map((point) => point.value)).toEqual([2.6]);
+  });
+
   it('skips an encounter with no INR value', () => {
     const noValue = { ...inrEncounter('2026-09-01', 2), obs: [obs(i.target, coded('target', '2.0 - 3.0'))] };
 
@@ -126,6 +147,35 @@ describe('the consultation form INR trend', () => {
     expect(data.map((point) => point.value)).toEqual([1.8, 2.6]);
     expect(options.bounds).toEqual({ upperBoundMapsTo: 'high', lowerBoundMapsTo: 'low' });
     expect(options.axes.left.domain).toEqual([0, 5]);
+  });
+
+  it.each([
+    ['an INR above 5', '2.0 - 3.0', 5.4, [0, 6]],
+    ['a target above 5', '5.0 - 5.5', 2.6, [0, 6]],
+  ])('raises the top of the axis for %s', async (_, target, value, domain) => {
+    serve({ inr: [inrEncounter('2026-10-05', value, target)] });
+
+    renderTrend();
+
+    await screen.findByTestId('area-chart');
+    expect(lastChart().options.axes.left.domain).toEqual(domain);
+  });
+
+  it('hands the chart the same data and options when it renders again with the same INRs', async () => {
+    serve({ inr: [inrEncounter('2026-10-05', 2.6)] });
+
+    const { rerender } = renderTrend();
+    await screen.findByTestId('area-chart');
+    const first = lastChart();
+    rerender(
+      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+        <InrTrend patientUuid="grace" />
+      </SWRConfig>,
+    );
+
+    expect(vi.mocked(AreaChart).mock.calls.length).toBeGreaterThan(1);
+    expect(lastChart().data).toBe(first.data);
+    expect(lastChart().options).toBe(first.options);
   });
 
   it('draws it for a patient with INR results who is not on warfarin', async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { evaluate } from '@openmrs/esm-expression-evaluator';
 import routeFile from './routes.json';
+import { inrTrendSlot } from './inr/inr-chart-control.component';
 import {
   PRIVILEGE_ACT_HOME,
   PRIVILEGE_DASHBOARD,
@@ -109,6 +110,7 @@ describe('routes.json privileges', () => {
   });
 
   it.each([
+    [inrTrendSlot, ['act-consultation-inr-trend']],
     ['act-community-home-widgets-slot', ['act-community-home-quick-actions', 'act-due-for-prophylaxis-widget']],
     [
       'act-community-home-quick-actions-slot',
