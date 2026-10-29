@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
+import { day } from '../consultations/repeated-lists.component';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
@@ -50,6 +51,7 @@ describe('the patient banner allergies pill', () => {
     const pill = await screen.findByTestId('allergies-pill');
     expect(pill).toHaveTextContent('Allergies: Penicillin (allergy), Other');
     expect(pill).toHaveAttribute('data-tone', 'penicillin');
+    expect(within(pill).getByText(/^Allergies:/, { selector: '.cds--tag--red .cds--tag__label' })).toBeInTheDocument();
   });
 
   it('is not marked for an allergy that is not to penicillin', async () => {
@@ -60,6 +62,7 @@ describe('the patient banner allergies pill', () => {
     const pill = await screen.findByTestId('allergies-pill');
     expect(pill).toHaveTextContent('Allergies: Latex');
     expect(pill).toHaveAttribute('data-tone', 'other');
+    expect(within(pill).getByText(/^Allergies:/, { selector: '.cds--tag--gray .cds--tag__label' })).toBeInTheDocument();
   });
 
   it('keeps the banner short for several allergies and lists them all, with their dates, on a click', async () => {
@@ -81,6 +84,9 @@ describe('the patient banner allergies pill', () => {
     expect(within(list).getAllByRole('listitem')).toHaveLength(4);
     expect(list).toHaveTextContent('Peanuts');
     expect(list).toHaveTextContent('Dust');
+    expect(list).toHaveTextContent(`Latex (added ${day('2026-03-01')})`);
+    expect(list).toHaveTextContent(`Dust (added ${day('2026-01-01')})`);
+    expect(day('2026-03-01')).not.toBe(day('2026-01-01'));
     expect(screen.getByRole('link', { name: 'Review in Consultation visits' })).toHaveAttribute(
       'href',
       '/openmrs/spa/patient/abebe/chart/act-consultations',

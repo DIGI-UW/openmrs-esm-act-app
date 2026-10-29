@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Tag, Toggletip, ToggletipButton, ToggletipContent } from '@carbon/react';
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { day } from '../consultations/repeated-lists.component';
 import { useConsultations } from '../consultations/consultations.resource';
 import { pillsClassName } from '../patient-status/status-pill.component';
 import { allergiesOf } from './allergies.resource';
 
 const shown = 2;
-const day = (date: string) => (date ? new Date(date).toLocaleDateString() : '');
 
 /**
  * The patient banner's allergies, which the consultations record: the first two named, the rest behind a click with
