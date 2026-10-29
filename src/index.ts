@@ -26,6 +26,7 @@ import facilityReportsDashboardLinkComponent from './programme-report/facility-r
 import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
 import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
+import { registerAllergies } from './allergies/allergies.resource';
 import { registerNextInjectionDue } from './prophylaxis/next-injection-due';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
@@ -45,6 +46,7 @@ export function startupApp() {
   );
   trackActReturn();
   registerNextInjectionDue();
+  registerAllergies();
 }
 
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);
@@ -103,6 +105,7 @@ export const inrReviewsDashboard = getAsyncLifecycle(() => import('./inr/inr-rev
 export const consultationCard = getAsyncLifecycle(() => import('./consultations/consultation-card.component'), options);
 
 export const inrStatusFlag = getAsyncLifecycle(() => import('./inr/inr-status-flag.component'), options);
+export const allergiesPill = getAsyncLifecycle(() => import('./allergies/allergies-pill.component'), options);
 
 export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/clinical-flags.component'), options);
 
