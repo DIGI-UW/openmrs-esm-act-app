@@ -2,8 +2,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AreaChart, ScaleTypes } from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
-import { InlineNotification, SkeletonText } from '@carbon/react';
+import { Button, InlineNotification, SkeletonText } from '@carbon/react';
 import { useStable } from '../run-charts/run-chart-line.component';
+import { useRecordInr } from './inr-reviews.component';
 import { targetRange, useInrReviews, type InrReview } from './inr.resource';
 
 /** The therapeutic range for a patient none of whose INRs records a target: ACT 2.0's green band. */
@@ -24,12 +25,13 @@ export function inrChartData(reviews: Array<InrReview>, label: string) {
 }
 
 /**
- * The consultation form's INR over time, with the target range as its band: for a patient on warfarin or with an INR
- * on record, and nothing for any other.
+ * The consultation form's INR over time with the target range as its band, for a patient on warfarin or with an INR.
+ * Under it, as ACT 2.0's, a button that opens INR Monitoring to edit the latest record or record the first.
  */
 export default function InrTrend({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { reviews, onWarfarin, isLoading, error } = useInrReviews(patientUuid);
+  const record = useRecordInr(patientUuid);
   const label = t('inrChartValue', 'INR');
   const data = useStable(inrChartData(reviews, label));
   const top = Math.max(5, Math.ceil(Math.max(...data.map((point) => Math.max(point.value, point.high)))));
@@ -62,11 +64,30 @@ export default function InrTrend({ patientUuid }: { patientUuid: string }) {
     );
   }
   if (!data.length) {
-    return onWarfarin ? <p>{t('inrChartEmpty', 'No INR recorded')}</p> : null;
+    return onWarfarin ? (
+      <div>
+        <p>{t('inrChartEmpty', 'No INR recorded')}</p>
+        {record && (
+          <Button kind="tertiary" size="sm" disabled={record.isOpening} onClick={record.record}>
+            {t('recordInrMonitoring', 'Record INR monitoring')}
+          </Button>
+        )}
+      </div>
+    ) : null;
   }
   return (
     <div data-testid="inr-chart">
       <AreaChart data={data} options={options} />
+      {record && (
+        <Button
+          kind="tertiary"
+          size="sm"
+          disabled={record.isOpening}
+          onClick={() => record.edit(reviews[0].encounterUuid)}
+        >
+          {t('editInrMonitoring', 'Edit INR monitoring')}
+        </Button>
+      )}
     </div>
   );
 }

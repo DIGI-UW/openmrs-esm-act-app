@@ -2,6 +2,7 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AreaChart } from '@carbon/charts-react';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
@@ -9,6 +10,12 @@ import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
 import InrTrend, { inrChartData, standardTarget } from './inr-trend.component';
 import { toInrReviews } from './inr.resource';
+
+// Opening a form in a visit is open-form-in-visit's own test; here it records which form was opened.
+const openForm = vi.fn();
+vi.mock('../visits/open-form-in-visit', () => ({
+  useOpenFormInVisit: vi.fn(() => ({ open: openForm, isOpening: false })),
+}));
 
 vi.mock('@carbon/charts-react', async () => ({
   ...(await vi.importActual<object>('@carbon/charts-react')),
@@ -47,8 +54,18 @@ const inrEncounter = (tested: string, value: number, target = '2.0 - 3.0'): Char
     ],
   }) as ChartEncounter;
 
-function serve({ consultations = [] as Array<ChartEncounter>, inr = [] as Array<ChartEncounter>, fails = false } = {}) {
+function serve({
+  consultations = [] as Array<ChartEncounter>,
+  inr = [] as Array<ChartEncounter>,
+  fails = false,
+  mayEnter = true,
+} = {}) {
   vi.mocked(openmrsFetch).mockImplementation((async (url: string) => {
+    if (url.includes('/form/')) {
+      return {
+        data: { uuid: 'form', encounterType: { editPrivilege: mayEnter ? null : { display: 'Task: nobody' } } },
+      };
+    }
     if (fails && url.includes(`encounterType=${config.inrReviews.encounterType}`)) {
       throw new Error('403');
     }
@@ -131,7 +148,8 @@ describe('inrChartData', () => {
 describe('the consultation form INR trend', () => {
   beforeEach(async () => {
     vi.mocked(AreaChart).mockClear();
-    await signInWith(['Get Encounters', 'Get Observations']);
+    openForm.mockClear();
+    await signInWith(['Get Encounters', 'Get Observations', 'Add Encounters']);
   });
 
   it('draws the INR over time with the target range as its band, on an axis that reaches at least 5', async () => {
@@ -211,5 +229,31 @@ describe('the consultation form INR trend', () => {
 
     expect(await screen.findByText('The INR could not be loaded')).toBeInTheDocument();
     expect(screen.queryByText('No INR recorded')).not.toBeInTheDocument();
+  });
+  it("opens the patient's latest INR Monitoring for editing from under the chart", async () => {
+    serve({ inr: [inrEncounter('2026-10-05', 2.6), inrEncounter('2026-08-01', 1.8)] });
+
+    renderTrend();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+    expect(openForm).toHaveBeenCalledWith(config.inrReviews.form, undefined, 'inr-2026-10-05');
+  });
+
+  it('offers to record the first INR Monitoring for a patient on warfarin who has none', async () => {
+    serve({ consultations: [onWarfarin()] });
+
+    renderTrend();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Record INR monitoring' }));
+    expect(openForm).toHaveBeenCalledWith(config.inrReviews.form);
+  });
+
+  it('offers no button to a user who may not record the INR form', async () => {
+    serve({ inr: [inrEncounter('2026-10-05', 2.6)], mayEnter: false });
+
+    renderTrend();
+
+    expect(await screen.findByTestId('area-chart')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /INR monitoring/ })).not.toBeInTheDocument();
   });
 });
