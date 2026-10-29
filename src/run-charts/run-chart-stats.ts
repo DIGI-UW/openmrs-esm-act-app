@@ -2,13 +2,13 @@ import dayjs from 'dayjs';
 
 /** One point of a run chart as ACT Core answers it. */
 export interface RunChartPoint {
-  /** The first day of the point's period, as YYYY-MM-DD. */
+  /** The day the figure is as of, YYYY-MM-DD: the period's last day, or the range's end for the last period. */
   date: string;
   /** A total, or a percent from 0 to 100; null for a percent of none. */
   value: number | null;
-  /** A count's value, or a percent's numerator summed over the period's days. */
+  /** A count's value, or a percent's numerator. */
   count: number | null;
-  /** A percent's denominator summed over the period's days; null for a count. */
+  /** A percent's denominator; null for a count. */
   total: number | null;
 }
 

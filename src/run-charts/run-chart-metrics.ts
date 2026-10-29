@@ -3,7 +3,7 @@ import { type TFunction } from 'i18next';
 /** A count metric is a total; a percent metric is a share of another figure, which the endpoint also gives. */
 export type RunChartMetricKind = 'count' | 'percent';
 
-/** How a snapshot's days are grouped into points. */
+/** How a range is cut into points: each point is the figure as of the last day of its period. */
 export type RunChartPeriod = 'day' | 'week' | 'month';
 
 export interface RunChartMetric {
@@ -63,7 +63,7 @@ export function metricLabel(t: TFunction, id: string) {
 export function periodName(t: TFunction, period: RunChartPeriod) {
   switch (period) {
     case 'day':
-      return t('periodNight', 'night');
+      return t('periodDay', 'day');
     case 'month':
       return t('periodMonth', 'month');
     default:
@@ -74,7 +74,7 @@ export function periodName(t: TFunction, period: RunChartPeriod) {
 export function periodNames(t: TFunction, period: RunChartPeriod) {
   switch (period) {
     case 'day':
-      return t('periodNights', 'nights');
+      return t('periodDays', 'days');
     case 'month':
       return t('periodMonths', 'months');
     default:

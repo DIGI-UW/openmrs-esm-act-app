@@ -16,11 +16,13 @@ import {
   kindOf,
   metricLabel,
   periodName,
-  periodNames,
   type RunChartPeriod,
   runChartMetrics,
 } from './run-chart-metrics';
 import { changeOf, localDay, MIN_POINTS_FOR_CHART, MIN_POINTS_FOR_MEDIAN, shifts, withValue } from './run-chart-stats';
+
+/** ACT Core charts a day per point only over a range this long or shorter. */
+export const MOST_DAILY_DAYS = 92;
 import { pointDetail } from './run-chart-tooltip';
 import { useClinicName } from './run-chart-clinic-name';
 import { HistoryNotice } from './run-chart-history-notice.component';
@@ -137,9 +139,12 @@ export default function RunCharts() {
 
   const limited = limit.status === 'ready';
   const metric = isMetric(filters.metric) ? filters.metric : defaultMetric;
-  const period: RunChartPeriod = isPeriod(filters.points) ? filters.points : defaultPeriod;
   const from = validDay(filters.from) ? filters.from : isoDay(dayjs().subtract(12, 'month').toDate());
   const to = validDay(filters.to) ? filters.to : isoDay(new Date());
+  // A longer range in days is refused, so Day is offered only while the range allows it.
+  const longRange = dayjs(to).diff(dayjs(from), 'day') > MOST_DAILY_DAYS;
+  const period: RunChartPeriod =
+    isPeriod(filters.points) && !(filters.points === 'day' && longRange) ? filters.points : defaultPeriod;
   // A limited administrator is held to their clinics whatever the URL says, not to all clinics.
   const clinic = limited
     ? limit.uuids.includes(filters.clinic)
@@ -205,7 +210,7 @@ export default function RunCharts() {
       return <SkeletonText paragraph lineCount={5} />;
     }
     if (!hasChart) {
-      return <HistoryNotice params={params} clinic={clinicName} />;
+      return <HistoryNotice points={chart.points} period={period} metric={metric} clinic={clinicName} />;
     }
     return (
       <>
@@ -220,13 +225,8 @@ export default function RunCharts() {
         />
         <div className={styles.notes}>
           <span>
-            {chart.lastSnapshot
-              ? t('runChartNightly', 'Snapshots are taken every night at 02:05. Last: {{date}}.', {
-                  date: formatDate(localDay(chart.lastSnapshot), { time: false, noToday: true }),
-                })
-              : t('runChartNightlyNone', 'Snapshots are taken every night at 02:05.')}
+            {t('runChartCalculated', 'Each point is the figure on its date, worked out from the records as they are now.')}
           </span>
-          <span>{t('runChartHistoryStarts', 'History starts on the first night the snapshot ran.')}</span>
         </div>
       </>
     );
@@ -246,15 +246,9 @@ export default function RunCharts() {
             {noClinic ? label : t('runChartTitle', '{{metric}}, {{clinic}}', { metric: label, clinic: clinicName })}
           </h2>
           <p className={styles.sub}>
-            {kind === 'percent'
-              ? t(
-                  'runChartPercentNote',
-                  'One point per {{period}}: the period’s snapshots added up, as a share of their patients.',
-                  {
-                    period: periodName(t, period),
-                  },
-                )
-              : t('runChartCountNote', 'One point per {{period}}: the period’s last snapshot.', {
+            {period === 'day'
+              ? t('runChartPointNoteDay', 'One point per day.')
+              : t('runChartPointNote', 'One point per {{period}}, as of its last day.', {
                   period: periodName(t, period),
                 })}
           </p>
@@ -308,7 +302,7 @@ export default function RunCharts() {
                 selectedIndex={['day', 'week', 'month'].indexOf(period)}
                 onChange={({ name }) => update({ points: String(name) })}
               >
-                <Switch name="day" text={t('day', 'Day')} />
+                <Switch name="day" text={t('day', 'Day')} disabled={longRange} />
                 <Switch name="week" text={t('week', 'Week')} />
                 <Switch name="month" text={t('month', 'Month')} />
               </ContentSwitcher>

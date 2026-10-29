@@ -17,20 +17,23 @@ const params: RunChartParams = {
   points: 'week',
 };
 
+const answer = {
+  startDate: '2026-01-01',
+  endDate: '2026-03-31',
+  period: 'week',
+  metrics: {
+    active_registrants: { points: [{ date: '2026-01-04', value: 9, count: 9, total: null }], median: 9 },
+    total_registrants: { points: [{ date: '2026-01-04', value: 12, count: 12, total: null }], median: 12 },
+  },
+};
+
 describe('useRunChart', () => {
   beforeEach(() => {
     vi.mocked(openmrsFetch).mockReset();
   });
 
-  it('asks ACT Core for the metric over the range in points of the period, for the clinic', async () => {
-    vi.mocked(openmrsFetch).mockResolvedValue({
-      data: {
-        metric: 'active_registrants',
-        points: [{ date: '2025-12-29', value: 9, count: 9, total: null }],
-        median: 9,
-        lastSnapshot: '2026-03-30',
-      },
-    } as never);
+  it('asks ACT Core for every metric over the range in points of the period, for the clinic, and reads its own', async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: answer } as never);
 
     const { result } = renderHook(() => useRunChart(params), { wrapper });
 
@@ -38,20 +41,31 @@ describe('useRunChart', () => {
     const url = new URL(String(vi.mocked(openmrsFetch).mock.calls[0][0]), 'http://x');
     expect(url.pathname).toBe('/ws/rest/v1/actcore/runchart');
     expect(Object.fromEntries(url.searchParams)).toEqual({
-      metric: 'active_registrants',
       clinic: 'clinic-1',
       startDate: '2026-01-01',
       endDate: '2026-03-31',
       points: 'week',
     });
+    expect(result.current.points[0].value).toBe(9);
     expect(result.current.median).toBe(9);
-    expect(result.current.lastSnapshot).toBe('2026-03-30');
+  });
+
+  it('serves two metrics over one range from one request', async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: answer } as never);
+
+    const { result } = renderHook(
+      () => [useRunChart(params), useRunChart({ ...params, metric: 'total_registrants' })],
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current[1].points).toHaveLength(1));
+    expect(result.current[0].points[0].value).toBe(9);
+    expect(result.current[1].points[0].value).toBe(12);
+    expect(openmrsFetch).toHaveBeenCalledTimes(1);
   });
 
   it('leaves the clinic out to read every clinic', async () => {
-    vi.mocked(openmrsFetch).mockResolvedValue({
-      data: { metric: 'x', points: [], median: null, lastSnapshot: null },
-    } as never);
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: { ...answer, metrics: {} } } as never);
 
     const { result } = renderHook(() => useRunChart({ ...params, clinic: null }), { wrapper });
 
@@ -59,6 +73,7 @@ describe('useRunChart', () => {
     expect(new URL(String(vi.mocked(openmrsFetch).mock.calls[0][0]), 'http://x').searchParams.has('clinic')).toBe(
       false,
     );
+    expect(result.current.points).toEqual([]);
   });
 
   it('asks for nothing without params, and says so when ACT Core cannot answer', async () => {

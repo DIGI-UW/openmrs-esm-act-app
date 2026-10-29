@@ -37,12 +37,8 @@ const point = (index: number, value: number | null, total: number | null = null)
 });
 const series = (...values: Array<number | null>) => values.map((value, index) => point(index, value, 100));
 
-function answer(
-  points: Array<RunChartPoint>,
-  median: number | null = null,
-  lastSnapshot: string | null = '2026-10-21',
-) {
-  return { points, median, lastSnapshot, isLoading: false, error: undefined, mutate: vi.fn() };
+function answer(points: Array<RunChartPoint>, median: number | null = null) {
+  return { points, median, isLoading: false, error: undefined, mutate: vi.fn() };
 }
 const asks = () => vi.mocked(useRunChart).mock.calls.map(([params]) => params as RunChartParams | null);
 const lastChartProps = () =>
@@ -131,17 +127,8 @@ describe('RunCharts', () => {
       { group: 'Value', date: new Date(2026, 2, 1), value: 65 },
     ]);
 
-    expect(html).toContain('65% · 65 of 100 patient-days');
-    expect(html).not.toContain('Week of');
-  });
-
-  it('asks the notice for the days from well before any snapshot, whatever range is chosen', () => {
-    vi.mocked(useRunChart).mockImplementation((params) => answer(params ? [point(0, 57, 100)] : []) as never);
-    window.history.replaceState({}, '', '/home/act-run-charts?from=2026-10-01');
-    render(<RunCharts />);
-
-    expect(asks().find((params) => params?.points === 'day')?.startDate).toBe('2000-01-01');
-    expect(asks().find((params) => params?.points === 'week')?.startDate).toBe('2026-10-01');
+    expect(html).toContain('65% · 65 of 100');
+    expect(html).not.toContain('Week to');
   });
 
   it('never calls a chosen clinic All clinics while the clinic list loads', () => {
@@ -171,40 +158,54 @@ describe('RunCharts', () => {
     expect(lastChartProps().options.axes.left.domain).toBeUndefined();
   });
 
-  it('names the week a point starts and the patient-days behind a percent in its tooltip', () => {
+  it('names the week a point ends and the figures behind a percent on that day in its tooltip', () => {
     render(<RunCharts />);
 
     const html = lastChartProps().options.tooltip.customHTML([
       { group: 'Value', date: new Date(2026, 0, 12), value: 70 },
     ]);
 
-    expect(html).toContain('Week of');
-    expect(html).toContain('70% · 70 of 100 patient-days');
+    expect(html).toContain('Week to');
+    expect(html).toContain('70% · 70 of 100');
   });
 
-  it('says when the snapshots started and the latest figure before a chart can be drawn', () => {
-    vi.mocked(useRunChart).mockImplementation((params) => {
-      if (!params) {
-        return answer([]) as never;
-      }
-      return answer(params.points === 'day' ? [point(0, 55, 100), point(1, 57, 100)] : [point(0, 57, 100)]) as never;
-    });
+  it('says each point is worked out from the records as they are now, and nothing of snapshots', () => {
     render(<RunCharts />);
 
-    expect(screen.getByText(/Snapshots started on/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Each point is the figure on its date, worked out from the records as they are now.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('One point per week, as of its last day.')).toBeInTheDocument();
+    expect(screen.queryByText(/snapshot/i)).not.toBeInTheDocument();
+  });
+
+  it('says one point has a value, and which, before a chart can be drawn, asking for nothing more', () => {
+    vi.mocked(useRunChart).mockImplementation((params) => answer(params ? [point(0, 57, 100)] : []) as never);
+    render(<RunCharts />);
+
+    expect(screen.getByText('One point has a value in this range')).toBeInTheDocument();
     expect(
       screen.getByText(/The chart appears after the second week; a median and shifts after 10 weeks/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Latest, .*: 57% · 57 of 100/)).toBeInTheDocument();
     expect(LineChart).not.toHaveBeenCalled();
-    expect(asks().some((params) => params?.points === 'day')).toBe(true);
+    expect(asks().every((params) => params === null || params.points === 'week')).toBe(true);
   });
 
-  it('says no snapshot has been taken when there is none at all', () => {
-    vi.mocked(useRunChart).mockImplementation((params) => answer([], null, null) as never);
+  it('says there is nothing to chart when no point has a value', () => {
+    vi.mocked(useRunChart).mockImplementation(() => answer([]) as never);
     render(<RunCharts />);
 
-    expect(screen.getByText(/No snapshot has been taken for All clinics yet/)).toBeInTheDocument();
+    expect(screen.getByText('Nothing to chart for All clinics in this range')).toBeInTheDocument();
+  });
+
+  it('offers no Day points over a range longer than 92 days, and charts weeks when the address asks for days', () => {
+    window.history.replaceState({}, '', '/home/act-run-charts?points=day&from=2026-01-01&to=2026-06-30');
+    render(<RunCharts />);
+
+    expect(screen.getByRole('tab', { name: 'Day' })).toBeDisabled();
+    expect(asks()[0]?.points).toBe('week');
+    expect(screen.getByText('One point per week, as of its last day.')).toBeInTheDocument();
   });
 
   it('shows each of the eight metrics as a tile with its latest value and its change', () => {
@@ -263,10 +264,12 @@ describe('RunCharts', () => {
 
   it('groups by day or month when asked', async () => {
     const user = userEvent.setup();
+    window.history.replaceState({}, '', '/home/act-run-charts?from=2026-04-01&to=2026-06-30');
     render(<RunCharts />);
 
     await user.click(screen.getByRole('tab', { name: 'Day' }));
     expect(asks().at(-1)?.points).toBe('day');
+    expect(screen.getByText('One point per day.')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Month' }));
     expect(asks().at(-1)?.points).toBe('month');

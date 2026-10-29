@@ -77,12 +77,12 @@ export function RunChartCard({ scope }: { scope: Record<string, string> }) {
       </div>
     );
   } else if (held.length < MIN_POINTS_FOR_CHART) {
-    body = <HistoryNotice params={params} clinic={clinicName} />;
+    body = <HistoryNotice points={chart.points} period={defaultPeriod} metric={defaultMetric} clinic={clinicName} />;
   } else {
     body = (
       <>
         <p className={styles.cardMetric} data-testid="run-chart-latest">
-          {pointDetail(t, defaultPeriod, kind, latest)}
+          {pointDetail(t, kind, latest)}
         </p>
         {median !== null && (
           <p className={styles.cardNote}>{t('runChartMedianValue', 'Median {{value}}', { value: median })}</p>
@@ -107,7 +107,7 @@ export function RunChartCard({ scope }: { scope: Record<string, string> }) {
       link={{ label: t('openRunCharts', 'Open run charts'), to: `\${openmrsSpaBase}/home/act-run-charts?${query}` }}
     >
       <p className={styles.cardDescription}>
-        {t('runChartsCardDescription', "A clinic's figures over time, from a snapshot taken every night")}
+        {t('runChartsCardDescription', "A clinic's figures over time, worked out from the records as they are now")}
       </p>
       <h3 className={styles.cardHeading}>
         {t('runChartTitle', '{{metric}}, {{clinic}}', { metric: label, clinic: clinicName })}
