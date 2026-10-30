@@ -93,6 +93,19 @@ describe('latestInrEntry', () => {
     expect(entry).toMatchObject({ group: { uuid: 'g-inr' }, inr: 2.1 });
   });
 
+  it('still chooses a group holding an INR that follows one holding none in the same encounter', () => {
+    const entry = latestInrEntry(
+      [
+        inrEncounter('enc', '2026-10-01T09:00:00.000+0300', {
+          groups: [{ uuid: 'g-none' }, { uuid: 'g-inr', tested: '2026-09-01T00:00:00.000+0300', inr: 2.1 }],
+        }),
+      ],
+      i,
+    );
+
+    expect(entry).toMatchObject({ group: { uuid: 'g-inr' }, groupCount: 2 });
+  });
+
   it('dates a group with no Date Tested by its encounter', () => {
     const entry = latestInrEntry(
       [inrEncounter('one', '2026-10-12T09:00:00.000+0300', { groups: [{ uuid: 'g', inr: 3.1 }] })],

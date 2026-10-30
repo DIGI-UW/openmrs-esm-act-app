@@ -265,6 +265,30 @@ describe('the INR editor under the consultation form chart', () => {
     expect(init.body.obs!.filter((one) => one.voided)).toEqual([]);
   });
 
+  it('offers the first INR Monitoring to a user who may add encounters but not edit them, and to no one who may not', async () => {
+    await signInWith(['Get Encounters', 'Get Observations', 'Add Encounters']);
+    serve({ consultations: [onWarfarin()] });
+    const view = renderTrend();
+    expect(await screen.findByRole('button', { name: 'Record INR monitoring' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit INR monitoring' })).not.toBeInTheDocument();
+    view.unmount();
+
+    serve({ consultations: [onWarfarin()], mayEnter: false });
+    renderTrend();
+    expect(await screen.findByText('No INR recorded')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record INR monitoring' })).not.toBeInTheDocument();
+  });
+
+  it('shows the new dose field only once Dose change is Yes', async () => {
+    serve({ inr: [inrEncounter('latest', '2026-10-16', 1.7)] });
+    renderTrend();
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+
+    expect(screen.queryByLabelText('New anticoagulant dose')).not.toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Dose change'), 'Yes');
+    expect(screen.getByLabelText('New anticoagulant dose')).toBeInTheDocument();
+  });
+
   it('offers to record the first INR Monitoring to a patient on warfarin who has none', async () => {
     serve({ consultations: [onWarfarin()] });
     renderTrend();
