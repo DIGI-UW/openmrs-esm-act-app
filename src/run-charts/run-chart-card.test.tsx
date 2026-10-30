@@ -33,7 +33,6 @@ const point = (index: number, value: number | null): RunChartPoint => ({
 const answer = (points: Array<RunChartPoint>, median: number | null = null) => ({
   points,
   median,
-  lastSnapshot: '2026-10-21',
   isLoading: false,
   error: undefined,
   mutate: vi.fn(),
@@ -79,7 +78,7 @@ describe('RunChartCard', () => {
   it('shows the latest value with the figures behind it, and no median before there is one', () => {
     render(<RunChartCard scope={{}} />);
 
-    expect(screen.getByTestId('run-chart-latest')).toHaveTextContent('82% · 82 of 100 patient-days');
+    expect(screen.getByTestId('run-chart-latest')).toHaveTextContent('82% · 82 of 100');
     expect(screen.queryByText(/^Median/)).not.toBeInTheDocument();
   });
 
@@ -121,14 +120,15 @@ describe('RunChartCard', () => {
     expect(asks().every((params) => params === null)).toBe(true);
   });
 
-  it('says when the snapshots started instead of a chart before there is a second point', () => {
-    vi.mocked(useRunChart).mockImplementation(
-      (params) =>
-        answer(params ? (params.points === 'day' ? [point(0, 55), point(1, 57)] : [point(0, 57)]) : []) as never,
-    );
+  it('says one point has a value instead of a chart before there is a second, and describes the points', () => {
+    vi.mocked(useRunChart).mockImplementation((params) => answer(params ? [point(0, 57)] : []) as never);
     render(<RunChartCard scope={{}} />);
 
-    expect(screen.getByText(/Snapshots started on/)).toBeInTheDocument();
+    expect(screen.getByText('One point has a value in this range')).toBeInTheDocument();
+    expect(screen.getByText(/Latest, .*: 57% · 57 of 100/)).toBeInTheDocument();
+    expect(
+      screen.getByText("A clinic's figures over time, worked out from the records as they are now"),
+    ).toBeInTheDocument();
     expect(LineChart).not.toHaveBeenCalled();
   });
 

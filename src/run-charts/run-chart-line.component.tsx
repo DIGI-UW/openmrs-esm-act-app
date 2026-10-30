@@ -125,7 +125,7 @@ export function RunChartLine({
         if (!point) {
           return '';
         }
-        return `<div class="${styles.tooltip}"><strong>${escapeHtml(pointTitle(t, period, point.date))}</strong><br/>${escapeHtml(pointDetail(t, period, kind, point))}</div>`;
+        return `<div class="${styles.tooltip}"><strong>${escapeHtml(pointTitle(t, period, point.date))}</strong><br/>${escapeHtml(pointDetail(t, kind, point))}</div>`;
       },
     },
   });
@@ -146,7 +146,7 @@ export function RunChartLine({
           {held.map((point) => (
             <tr key={point.date}>
               <th scope="row">{pointTitle(t, period, point.date)}</th>
-              <td>{pointDetail(t, period, kind, point)}</td>
+              <td>{pointDetail(t, kind, point)}</td>
             </tr>
           ))}
         </tbody>

@@ -14,15 +14,8 @@ describe('Flags and adherence page', () => {
     await signInWith(['Task: act.refreshFlags']);
   });
 
-  it('carries the run chart snapshot beside the refresh, each with its button', async () => {
-    mockOpenmrsFetch.mockImplementation(
-      async (url: string) =>
-        ({
-          data: url.includes('/runchart/runs')
-            ? { running: false, runs: [], lastTaken: null }
-            : { lastRefreshed: null, running: false },
-        }) as never,
-    );
+  it('carries the refresh alone, with no second tile and no run chart request', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { lastRefreshed: null, running: false } } as never);
 
     render(
       <SWRConfig value={{ provider: () => new Map() }}>
@@ -30,8 +23,8 @@ describe('Flags and adherence page', () => {
       </SWRConfig>,
     );
 
-    expect(await screen.findByRole('heading', { name: 'Run chart snapshot' })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Take snapshot now' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Refresh now' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Refresh now' })).toBeEnabled();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(mockOpenmrsFetch.mock.calls.every(([url]) => !String(url).includes('/runchart'))).toBe(true);
   });
 });
