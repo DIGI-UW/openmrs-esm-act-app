@@ -265,6 +265,7 @@ describe('the INR editor under the consultation form chart', () => {
     expect(init.body).toMatchObject({
       patient: 'grace',
       encounterType: config.inrReviews.encounterType,
+      form: config.inrReviews.form,
       location: 'gulu',
     });
     expect(init.body.obs!.filter((one) => one.voided)).toEqual([]);
