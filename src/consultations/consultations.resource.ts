@@ -28,7 +28,7 @@ export const answerText = (value: unknown) =>
     ? String((value as { display?: string }).display ?? '')
     : String(value ?? '');
 
-const answerUuid = (value: unknown) =>
+export const answerUuid = (value: unknown) =>
   typeof value === 'object' && value !== null ? String((value as { uuid?: string }).uuid ?? '') : '';
 
 /** The answers to a question, among the encounter's top-level answers or a group's members. */

@@ -1,6 +1,12 @@
 import { openmrsFetch, parseDate, restBaseUrl } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { answerText, answersIn, type ChartEncounter, type GroupedObs } from '../consultations/consultations.resource';
+import {
+  answerText,
+  answersIn,
+  answerUuid,
+  type ChartEncounter,
+  type GroupedObs,
+} from '../consultations/consultations.resource';
 
 type Concepts = Config['inrReviews']['concepts'];
 
@@ -9,8 +15,6 @@ const day = (value: unknown) => {
   const text = String(value ?? '');
   return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : '';
 };
-const answerUuid = (value: unknown) =>
-  typeof value === 'object' && value !== null ? String((value as { uuid?: string }).uuid ?? '') : '';
 
 /** The INR entry the editor changes, with the uuids of the answers it replaces. */
 export interface InrEntry {

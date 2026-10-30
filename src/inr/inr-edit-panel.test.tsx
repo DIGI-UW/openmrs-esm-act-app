@@ -1,4 +1,5 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
@@ -13,6 +14,8 @@ import {
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
+import InrEditPanel from './inr-edit-panel.component';
+import { latestInrEntry } from './inr-edit.resource';
 import InrTrend from './inr-trend.component';
 
 vi.mock('@carbon/charts-react', async () => ({
@@ -75,9 +78,11 @@ function serve({
   inr = [] as Array<ChartEncounter>,
   mayEnter = true,
   writeFails = false,
+  holdWrites = null as Promise<void> | null,
 } = {}) {
   vi.mocked(openmrsFetch).mockImplementation((async (url: string, init?: { method?: string }) => {
     if (init?.method === 'POST') {
+      await holdWrites;
       if (writeFails) {
         throw Object.assign(new Error('Server error'), { responseBody: { error: { message: 'Privileges required' } } });
       }
@@ -296,6 +301,169 @@ describe('the INR editor under the consultation form chart', () => {
 
     expect(screen.getByLabelText('INR target')).toBeDisabled();
     expect(screen.getByLabelText('Next INR date')).toBeDisabled();
+  });
+
+  it('saves a new dose only while Dose change is Yes', async () => {
+    serve({ inr: [inrEncounter('latest', '2026-10-16', 1.7)] });
+    renderTrend();
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+    const members = () =>
+      writes()
+        .at(-1)![1]
+        .body.obs!.find((one) => one.concept === i.group)
+        .groupMembers.map((member: any) => [member.concept, member.value]);
+
+    await userEvent.selectOptions(screen.getByLabelText('Dose change'), 'Yes');
+    await userEvent.type(screen.getByLabelText('New anticoagulant dose'), '4 mg');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() => expect(writes()).toHaveLength(1));
+    expect(members()).toContainEqual([i.newDose, '4 mg']);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+    await userEvent.selectOptions(screen.getByLabelText('Dose change'), 'Yes');
+    await userEvent.type(screen.getByLabelText('New anticoagulant dose'), '5 mg');
+    await userEvent.selectOptions(screen.getByLabelText('Dose change'), 'No');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() => expect(writes()).toHaveLength(2));
+    expect(members().map(([concept]: [string]) => concept)).not.toContain(i.newDose);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+    await userEvent.selectOptions(screen.getByLabelText('Dose change'), 'Yes');
+    await userEvent.type(screen.getByLabelText('New anticoagulant dose'), '6 mg');
+    fireEvent.change(screen.getByLabelText('Dose change'), { target: { value: '' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() => expect(writes()).toHaveLength(3));
+    expect(members().map(([concept]: [string]) => concept)).not.toContain(i.newDose);
+  });
+
+  it('disables Save and Cancel while saving, posts once, and ignores Escape until the save ends', async () => {
+    let release!: () => void;
+    serve({
+      inr: [inrEncounter('latest', '2026-10-16', 1.7)],
+      holdWrites: new Promise<void>((resolve) => (release = resolve)),
+    });
+    renderTrend();
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled());
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await userEvent.type(screen.getByLabelText('INR value'), '{Escape}');
+    expect(screen.getByLabelText('INR value')).toBeInTheDocument();
+    expect(writes()).toHaveLength(1);
+
+    release();
+    await vi.waitFor(() => expect(screen.queryByLabelText('INR value')).not.toBeInTheDocument());
+    expect(writes()).toHaveLength(1);
+  });
+
+  it('edits the target and the next INR of an encounter holding one entry, replacing the old answers', async () => {
+    serve({ inr: [inrEncounter('latest', '2026-10-16', 1.7, 1)] });
+    renderTrend();
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+
+    expect(screen.getByLabelText('INR target')).toBeEnabled();
+    expect(screen.getByLabelText('Next INR date')).toBeEnabled();
+    await userEvent.selectOptions(screen.getByLabelText('INR target'), '2.0-3.0');
+    fireEvent.change(screen.getByLabelText('Next INR date'), { target: { value: '2026-12-01' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() => expect(writes()).toHaveLength(1));
+    const obsWritten = writes()[0][1].body.obs!;
+    expect(obsWritten.filter((one) => one.voided).map((one) => one.uuid)).toEqual([
+      'latest-g0',
+      'latest-target',
+      'latest-next',
+    ]);
+    expect(obsWritten.filter((one) => !one.voided && one.concept !== i.group)).toEqual([
+      { concept: i.target, person: 'grace', value: t23 },
+      { concept: i.nextInr, person: 'grace', value: '2026-12-01' },
+    ]);
+  });
+
+  it('accepts an INR of 99 and rejects one just above it', async () => {
+    serve({ inr: [inrEncounter('latest', '2026-10-16', 1.7)] });
+    renderTrend();
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit INR monitoring' }));
+
+    typeInr('99.1');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(writes()).toEqual([]);
+    typeInr('99');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() => expect(writes()).toHaveLength(1));
+  });
+
+  it('dates a new INR today', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-30T10:00:00'));
+    try {
+      serve({ inr: [inrEncounter('latest', '2026-10-16', 1.7)] });
+      renderTrend();
+      await userEvent.click(await screen.findByRole('button', { name: 'Record new INR' }));
+      expect(screen.getByLabelText('Date tested')).toHaveValue(dayjs().format('YYYY-MM-DD'));
+      expect(screen.getByLabelText('Date tested')).toHaveValue('2026-10-30');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('offers only the buttons that fit the entry', async () => {
+    const noValue = {
+      ...inrEncounter('empty', '2026-10-01', 1),
+      obs: [obs('empty-target', i.target, coded(t23, 'target'))],
+    };
+    serve({ consultations: [onWarfarin()], inr: [noValue as ChartEncounter] });
+    const view = renderTrend();
+    expect(await screen.findByRole('button', { name: 'Edit INR monitoring' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record new INR' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record INR monitoring' })).not.toBeInTheDocument();
+    view.unmount();
+
+    serve({ inr: [inrEncounter('latest', '2026-10-16', 1.7)] });
+    renderTrend();
+    expect(await screen.findByRole('button', { name: 'Record new INR' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit INR monitoring' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record INR monitoring' })).not.toBeInTheDocument();
+  });
+
+  it('voids the group the panel opened with when the latest entry changes underneath it', async () => {
+    const entryOf = (uuid: string, group: string) =>
+      latestInrEntry(
+        [
+          {
+            uuid,
+            encounterDatetime: '2026-10-16T09:00:00.000+0300',
+            obs: [
+              obs(group, i.group, null, [
+                obs(`${group}-date`, i.dateTested, '2026-10-16T00:00:00.000+0300'),
+                obs(`${group}-inr`, i.value, 1.7),
+              ]),
+            ],
+          } as ChartEncounter,
+        ],
+        config.inrReviews.concepts,
+      );
+    serve();
+    const panel = (entry: ReturnType<typeof entryOf>) => (
+      <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+        <InrEditPanel patientUuid="grace" entry={entry} mode="edit" onClose={vi.fn()} />
+      </SWRConfig>
+    );
+    const view = render(panel(entryOf('first', 'g-first')));
+
+    view.rerender(panel(entryOf('second', 'g-second')));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() => expect(writes()).toHaveLength(1));
+    expect(writes()[0][0]).toBe(`${restBaseUrl}/encounter/first`);
+    expect(
+      writes()[0][1]
+        .body.obs!.filter((one) => one.voided)
+        .map((one) => one.uuid),
+    ).toEqual(['g-first']);
   });
 
   it('keeps the panel open with the reason when the save fails', async () => {

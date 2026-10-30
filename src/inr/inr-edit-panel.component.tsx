@@ -29,12 +29,13 @@ export default function InrEditPanel({
   const { inrReviews } = useConfig<Config>();
   const { sessionLocation } = useSession();
   const { mutate } = useSWRConfig();
-  const editing = mode === 'edit' ? entry : null;
+  const [opened] = useState(entry);
+  const editing = mode === 'edit' ? opened : null;
   const [dateTested, setDateTested] = useState(editing?.dateTested || dayjs().format('YYYY-MM-DD'));
   const [inr, setInr] = useState(editing?.inr === null || !editing ? '' : String(editing.inr));
   const [doseChange, setDoseChange] = useState(editing?.doseChange ?? '');
   const [newDose, setNewDose] = useState(editing?.newDose ?? '');
-  const [target, setTarget] = useState(entry?.target?.valueUuid ?? '');
+  const [target, setTarget] = useState(opened?.target?.valueUuid ?? '');
   const [nextInr, setNextInr] = useState(editing?.next?.value ?? '');
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -83,7 +84,9 @@ export default function InrEditPanel({
   const onKeyDown = (event: React.KeyboardEvent) => {
     event.stopPropagation();
     if (event.key === 'Escape') {
-      onClose();
+      if (!saving) {
+        onClose();
+      }
     } else if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) {
       event.preventDefault();
     }
