@@ -7,6 +7,7 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { useClinics } from '../programme-report/clinics.resource';
+import { restErrorMessage } from '../rest-error-message';
 import { useUrlFilters } from '../table-filters/url-filters';
 import {
   defaultMetric,
@@ -204,6 +205,7 @@ export default function RunCharts() {
             hideCloseButton
             statusIconDescription={t('errorIcon', 'error icon')}
             title={t('runChartCouldNotLoad', 'Could not load the run chart')}
+            subtitle={restErrorMessage(chart.error)}
           />
           <Button size="md" onClick={() => void chart.mutate()}>
             {t('tryAgain', 'Try again')}

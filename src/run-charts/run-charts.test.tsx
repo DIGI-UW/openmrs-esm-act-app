@@ -207,6 +207,23 @@ describe('RunCharts', () => {
     expect(screen.getByText('One point per week, as of its last day.')).toBeInTheDocument();
   });
 
+  it('offers Day, and asks for days, over a range of exactly 92 days', () => {
+    window.history.replaceState({}, '', '/home/act-run-charts?points=day&from=2026-07-30&to=2026-10-30');
+    render(<RunCharts />);
+
+    expect(screen.getByRole('tab', { name: 'Day' })).toBeEnabled();
+    expect(asks()[0]?.points).toBe('day');
+    expect(screen.getByText('One point per day.')).toBeInTheDocument();
+  });
+
+  it('withdraws Day, and asks for weeks, one day past the limit at 93 days', () => {
+    window.history.replaceState({}, '', '/home/act-run-charts?points=day&from=2026-07-29&to=2026-10-30');
+    render(<RunCharts />);
+
+    expect(screen.getByRole('tab', { name: 'Day' })).toBeDisabled();
+    expect(asks()[0]?.points).toBe('week');
+  });
+
   it('shows each of the eight metrics as a tile with its latest value and its change', () => {
     render(<RunCharts />);
 
@@ -365,20 +382,27 @@ describe('RunCharts', () => {
     );
   });
 
-  it('says so, with a way to try again, when the run chart cannot load', async () => {
+  it("says so, with ACT Core's reason and a way to try again, when the run chart cannot load", async () => {
     const user = userEvent.setup();
     const mutate = vi.fn();
+    const refused = Object.assign(new Error('Server responded with 400 (Bad Request)'), {
+      responseBody: {
+        error: {
+          message: 'The range has 1001 points; at most 1000 can be charted, so shorten it or ask for longer periods',
+        },
+      },
+    });
     vi.mocked(useRunChart).mockImplementation(
-      (params) =>
-        ({
-          ...(answer([]) as object),
-          error: params ? new Error('refused') : undefined,
-          mutate,
-        }) as never,
+      (params) => ({ ...(answer([]) as object), error: params ? refused : undefined, mutate }) as never,
     );
     render(<RunCharts />);
 
     expect(screen.getByText('Could not load the run chart')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'The range has 1001 points; at most 1000 can be charted, so shorten it or ask for longer periods',
+      ),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(mutate).toHaveBeenCalled();
   });
