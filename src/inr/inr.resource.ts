@@ -15,6 +15,7 @@ export interface InrReview {
   key: string;
   /** The RHD INR Monitoring that records it, which Edit reopens. */
   encounterUuid: string;
+  groupUuid: string | null;
   date: Date;
   inr: number | null;
   target: string;
@@ -58,6 +59,7 @@ export function toInrReviews(encounters: Array<ChartEncounter>, concepts: Config
         return {
           key: `${encounter.uuid}-${index}`,
           encounterUuid: encounter.uuid,
+          groupUuid: group?.uuid ?? null,
           date: parseDate(String(tested?.value ?? encounter.encounterDatetime)),
           inr,
           target,

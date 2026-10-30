@@ -8,13 +8,12 @@ import { useRecordInr } from './inr-reviews.component';
 import { useInrReviews } from './inr.resource';
 import styles from '../styles/summary-card.scss';
 
+// The chart library is large, so the card loads it when it draws a chart.
+const InrTrendChart = React.lazy(() => import('./inr-trend-chart.component'));
+
 const day = (date: Date) => formatDate(date, { time: false, noToday: true });
 
-/**
- * The patient summary's INR review card, for a patient on warfarin only, as the prototype's: the last INR and its
- * date, the target range, the next INR due (red once overdue) and the warfarin dose. Edit under the last INR reopens
- * the INR Monitoring that records it, for a user who may record one.
- */
+/** The patient summary's INR review card, for a patient on warfarin, with the INR trend beneath its fields. */
 export default function InrCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { reviews, onWarfarin, dose, nextInr, isLoading } = useInrReviews(patientUuid);
@@ -66,15 +65,14 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
                 data-overdue={String(Boolean(field.overdue))}
               >
                 {field.value}
-                {field.id === 'last' && last && record && (
+                {field.id === 'last' && last && record?.edit && (
                   <Button
                     kind="ghost"
                     size="sm"
                     className={styles.fieldAction}
                     renderIcon={(props) => <EditIcon size={16} {...props} />}
-                    disabled={record.isOpening}
                     aria-label={t('editLastInr', 'Edit last INR')}
-                    onClick={() => record.edit(last.encounterUuid)}
+                    onClick={() => record.edit(last.encounterUuid, last.groupUuid)}
                   >
                     {t('edit', 'Edit')}
                   </Button>
@@ -84,6 +82,11 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
           ))}
         </dl>
       )}
+      <div className={styles.trend}>
+        <React.Suspense fallback={<SkeletonText />}>
+          <InrTrendChart patientUuid={patientUuid} />
+        </React.Suspense>
+      </div>
     </div>
   );
 }
