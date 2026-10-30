@@ -147,7 +147,15 @@ describe('inrPayload', () => {
   it('voids the old group, target and next INR and adds the whole new group, target and next INR', () => {
     const body = inrPayload('grace', i, sole, edit);
 
-    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual(['g', 'enc-target', 'enc-next']);
+    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual([
+      'g',
+      'g-date',
+      'g-inr',
+      'g-dose',
+      'g-new',
+      'enc-target',
+      'enc-next',
+    ]);
     const [group, ...rest] = added(body);
     expect(group.concept).toBe(i.group);
     expect(members(group)).toEqual({ [i.dateTested]: '2026-10-20', [i.value]: 2.8, [i.doseChange]: no });
@@ -166,14 +174,27 @@ describe('inrPayload', () => {
   it('leaves the target and the next INR alone when they are unchanged', () => {
     const body = inrPayload('grace', i, sole, { ...edit, target: t35, nextInr: '2026-11-13' });
 
-    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual(['g']);
+    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual([
+      'g',
+      'g-date',
+      'g-inr',
+      'g-dose',
+      'g-new',
+    ]);
     expect(added(body)).toHaveLength(1);
   });
 
   it('voids the next INR when it is cleared', () => {
     const body = inrPayload('grace', i, sole, { ...edit, target: t35, nextInr: '' });
 
-    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual(['g', 'enc-next']);
+    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual([
+      'g',
+      'g-date',
+      'g-inr',
+      'g-dose',
+      'g-new',
+      'enc-next',
+    ]);
     expect(added(body)).toHaveLength(1);
   });
 
@@ -194,7 +215,7 @@ describe('inrPayload', () => {
 
     const body = inrPayload('grace', i, shared, edit);
 
-    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual(['g']);
+    expect(body.filter((one: any) => one.voided).map((one: any) => one.uuid)).toEqual(['g', 'g-date', 'g-inr']);
     expect(added(body).map((one: any) => one.concept)).toEqual([i.group]);
   });
 
@@ -221,7 +242,15 @@ describe('saveInr', () => {
   );
 
   it('edits the encounter in place in one request that names no visit, location or date', async () => {
-    await saveInr({ patient: 'grace', encounterType: 'type', location: 'gulu', concepts: i, entry, edit });
+    await saveInr({
+      patient: 'grace',
+      encounterType: 'type',
+      form: 'inr-form',
+      location: 'gulu',
+      concepts: i,
+      entry,
+      edit,
+    });
 
     expect(calls()).toHaveLength(1);
     const [[url, init]] = calls();
@@ -231,11 +260,20 @@ describe('saveInr', () => {
   });
 
   it('records a new INR Monitoring at the location, naming no visit or date, so the server places it', async () => {
-    await saveInr({ patient: 'grace', encounterType: 'type', location: 'gulu', concepts: i, entry: null, edit });
+    await saveInr({
+      patient: 'grace',
+      encounterType: 'type',
+      form: 'inr-form',
+      location: 'gulu',
+      concepts: i,
+      entry: null,
+      edit,
+    });
 
     const [[url, init]] = calls();
     expect(url).toBe(`${restBaseUrl}/encounter`);
-    expect(Object.keys(init.body).sort()).toEqual(['encounterType', 'location', 'obs', 'patient']);
+    expect(Object.keys(init.body).sort()).toEqual(['encounterType', 'form', 'location', 'obs', 'patient']);
+    expect(init.body.form).toBe('inr-form');
     expect(init.body.obs[0].concept).toBe(i.group);
   });
 });

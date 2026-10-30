@@ -59,6 +59,7 @@ export default function InrEditPanel({
       await saveInr({
         patient: patientUuid,
         encounterType: inrReviews.encounterType,
+        form: inrReviews.form,
         location: sessionLocation?.uuid,
         concepts: inrReviews.concepts,
         entry: editing,

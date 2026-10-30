@@ -22,7 +22,7 @@ export interface InrEntry {
   /** How many INR entries the encounter holds: they share its one INR Target and Next INR Date. */
   groupCount: number;
   /** Null for an INR Monitoring that holds no INR yet. */
-  group: { uuid: string } | null;
+  group: { uuid: string; memberUuids: Array<string> } | null;
   dateTested: string;
   inr: number | null;
   doseChange: string;
@@ -84,7 +84,9 @@ export function latestInrEntry(encounters: Array<ChartEncounter>, concepts: Conc
   return {
     encounterUuid: encounter.uuid,
     groupCount: answersIn(encounter.obs, concepts.group).length,
-    group: best ? { uuid: best.group.uuid ?? '' } : null,
+    group: best
+      ? { uuid: best.group.uuid ?? '', memberUuids: (members ?? []).map((member) => member.uuid ?? '') }
+      : null,
     dateTested: best ? day(tested?.value ?? encounter.encounterDatetime) : '',
     inr: inr ? Number(inr.value) : null,
     doseChange: dose ? answerUuid(dose.value) : '',
@@ -120,7 +122,10 @@ export function inrPayload(
     },
   ];
   if (entry?.group) {
-    voided.push({ uuid: entry.group.uuid, voided: true });
+    // The server voids the group row only, so its members are voided with it.
+    for (const uuid of [entry.group.uuid, ...entry.group.memberUuids]) {
+      voided.push({ uuid, voided: true });
+    }
   }
   if (ownsEncounterAnswers) {
     if (edit.target && edit.target !== entry?.target?.valueUuid) {
@@ -148,6 +153,7 @@ export function inrPayload(
 export async function saveInr({
   patient,
   encounterType,
+  form,
   location,
   concepts,
   entry,
@@ -155,6 +161,7 @@ export async function saveInr({
 }: {
   patient: string;
   encounterType: string;
+  form: string;
   location: string;
   concepts: Concepts;
   entry: InrEntry | null;
@@ -169,6 +176,6 @@ export async function saveInr({
   await openmrsFetch(`${restBaseUrl}/encounter`, {
     method: 'POST',
     headers,
-    body: { patient, encounterType, location, obs },
+    body: { patient, encounterType, form, location, obs },
   });
 }

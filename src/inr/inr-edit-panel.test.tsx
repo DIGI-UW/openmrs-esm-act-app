@@ -173,7 +173,12 @@ describe('the INR editor under the consultation form chart', () => {
       [i.value, 2.6],
       [i.doseChange, no],
     ]);
-    expect(init.body.obs!.filter((one) => one.voided).map((one) => one.uuid)).toEqual(['latest-g0']);
+    expect(init.body.obs!.filter((one) => one.voided).map((one) => one.uuid)).toEqual([
+      'latest-g0',
+      'latest-g0-date',
+      'latest-g0-inr',
+      'latest-g0-dose',
+    ]);
     expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
     expect(reads()).toBeGreaterThan(before);
   });
@@ -397,6 +402,9 @@ describe('the INR editor under the consultation form chart', () => {
     const obsWritten = writes()[0][1].body.obs!;
     expect(obsWritten.filter((one) => one.voided).map((one) => one.uuid)).toEqual([
       'latest-g0',
+      'latest-g0-date',
+      'latest-g0-inr',
+      'latest-g0-dose',
       'latest-target',
       'latest-next',
     ]);
@@ -487,7 +495,7 @@ describe('the INR editor under the consultation form chart', () => {
       writes()[0][1]
         .body.obs!.filter((one) => one.voided)
         .map((one) => one.uuid),
-    ).toEqual(['g-first']);
+    ).toEqual(['g-first', 'g-first-date', 'g-first-inr']);
   });
 
   it('keeps the panel open with the reason when the save fails', async () => {
