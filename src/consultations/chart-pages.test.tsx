@@ -290,7 +290,7 @@ describe('chart pages by role', () => {
   it('shows INR reviews, the INR card and the nav link only for a patient on warfarin', async () => {
     serve({
       consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
-      inr: [inrEncounter('a', '2026-08-24', 2.1, '2026-09-21')],
+      inr: [inrEncounter('a', '2026-07-27', 1.6, '2026-08-24'), inrEncounter('b', '2026-08-24', 2.1, '2026-09-21')],
     });
 
     renderIn(
@@ -301,7 +301,7 @@ describe('chart pages by role', () => {
       </>,
     );
 
-    expect(await screen.findByTestId('inr-row')).toHaveTextContent(/2\.1.*2\.0 - 3\.0.*In range/);
+    expect((await screen.findAllByTestId('inr-row'))[0]).toHaveTextContent(/2\.1.*2\.0 - 3\.0.*In range/);
     expect(await screen.findByTestId('inr-dose')).toHaveTextContent('5 mg daily');
     expect(screen.getByTestId('inr-next')).toHaveAttribute('data-overdue', 'true');
     expect(await screen.findByTestId('inr-chart')).toBeInTheDocument();

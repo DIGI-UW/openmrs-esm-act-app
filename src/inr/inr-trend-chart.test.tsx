@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AreaChart } from '@carbon/charts-react';
-import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
+import { formatDate, getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
@@ -68,6 +68,8 @@ const renderTrend = () =>
       <InrTrendChart patientUuid="grace" />
     </SWRConfig>,
   );
+
+const testedOn = (day: string) => formatDate(new Date(`${day}T00:00:00.000+0300`), { time: false, noToday: true });
 
 const lastChart = () => vi.mocked(AreaChart).mock.calls.at(-1)![0] as unknown as { data: Array<any>; options: any };
 
@@ -153,7 +155,7 @@ describe('the INR trend chart', () => {
     ['an INR above 5', '2.0 - 3.0', 5.4, [0, 6]],
     ['a target above 5', '5.0 - 5.5', 2.6, [0, 6]],
   ])('raises the top of the axis for %s', async (_, target, value, domain) => {
-    serve({ inr: [inrEncounter('2026-10-05', value, target)] });
+    serve({ inr: [inrEncounter('2026-10-05', value, target), inrEncounter('2026-08-01', 2.4, target)] });
 
     renderTrend();
 
@@ -162,7 +164,7 @@ describe('the INR trend chart', () => {
   });
 
   it('hands the chart the same data and options when it renders again with the same INRs', async () => {
-    serve({ inr: [inrEncounter('2026-10-05', 2.6)] });
+    serve({ inr: [inrEncounter('2026-10-05', 2.6), inrEncounter('2026-08-01', 1.8)] });
 
     const { rerender } = renderTrend();
     await screen.findByTestId('area-chart');
@@ -179,7 +181,7 @@ describe('the INR trend chart', () => {
   });
 
   it('draws it for a patient with INR results who is not on warfarin', async () => {
-    serve({ inr: [inrEncounter('2026-10-05', 2.6)] });
+    serve({ inr: [inrEncounter('2026-10-05', 2.6), inrEncounter('2026-08-01', 1.8)] });
 
     renderTrend();
 
@@ -187,16 +189,40 @@ describe('the INR trend chart', () => {
   });
 
   it('says the band is the standard range only while no INR records a target', async () => {
-    serve({ inr: [inrEncounter('2026-10-05', 2.6, '')] });
+    serve({ inr: [inrEncounter('2026-10-05', 2.6, ''), inrEncounter('2026-08-01', 1.8, '')] });
     const view = renderTrend();
     expect(await screen.findByText('Standard range 2.0 to 3.0, as no target is recorded')).toBeInTheDocument();
     view.unmount();
 
-    serve({ inr: [inrEncounter('2026-10-05', 2.6)] });
+    serve({ inr: [inrEncounter('2026-10-05', 2.6), inrEncounter('2026-08-01', 1.8)] });
     renderTrend();
 
     await screen.findByTestId('area-chart');
     expect(screen.queryByText(/Standard range/)).not.toBeInTheDocument();
+  });
+
+  it('states the one INR, its date and the recorded target in place of a chart', async () => {
+    serve({ inr: [inrEncounter('2026-10-05', 2.6, '2.5 - 3.5')] });
+
+    renderTrend();
+
+    expect(
+      await screen.findByText(`INR 2.6 on ${testedOn('2026-10-05')}, target range 2.5 to 3.5`),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Standard range/)).not.toBeInTheDocument();
+    expect(AreaChart).not.toHaveBeenCalled();
+  });
+
+  it('states the standard range, with its note, for the one INR that records no target', async () => {
+    serve({ inr: [inrEncounter('2026-10-05', 2.6, '')] });
+
+    renderTrend();
+
+    expect(
+      await screen.findByText(`INR 2.6 on ${testedOn('2026-10-05')}, target range 2.0 to 3.0`),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Standard range 2.0 to 3.0, as no target is recorded')).toBeInTheDocument();
+    expect(AreaChart).not.toHaveBeenCalled();
   });
 
   it('says no INR is recorded for a patient on warfarin who has none', async () => {

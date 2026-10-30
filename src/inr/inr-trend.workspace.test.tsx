@@ -88,7 +88,7 @@ describe('InrTrendWorkspace', () => {
   });
 
   it('offers nothing to change to a user who may not record the INR form', async () => {
-    serve([inrEncounter('latest', '2026-10-05', 2.6)], false);
+    serve([inrEncounter('older', '2026-08-01', 1.8), inrEncounter('latest', '2026-10-05', 2.6)], false);
 
     renderWorkspace();
 

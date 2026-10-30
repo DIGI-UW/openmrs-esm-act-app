@@ -420,6 +420,7 @@
   "INR reviews": "INR reviews",
   "inRange": "In range",
   "inrChartEmpty": "No INR recorded",
+  "inrChartSingle": "INR {{inr}} on {{date}}, target range {{low}} to {{high}}",
   "inrChartStandardRange": "Standard range 2.0 to 3.0, as no target is recorded",
   "inrChartTitle": "INR over time, with the target range",
   "inrChartValue": "INR",

@@ -562,7 +562,7 @@ export const configSchema = {
         ],
       },
       _description:
-        "The INR form's answers the INR editor offers: Yes and No for Dose Change, and the INR Target ranges with their labels.",
+        "The INR form's answers the INR editor offers: Yes and No for Dose Change, and the INR Target ranges with their labels. These uuids are copied from distro/configuration/ampathforms/rhd_inr_monitoring.json and must be kept in step with it.",
     },
   },
   contactCard: {

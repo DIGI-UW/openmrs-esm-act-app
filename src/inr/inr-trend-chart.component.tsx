@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AreaChart, ScaleTypes } from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
 import { InlineNotification, SkeletonText } from '@carbon/react';
+import { formatDate } from '@openmrs/esm-framework';
 import { useStable } from '../run-charts/run-chart-line.component';
 import { targetRange, useInrReviews, type InrReview } from './inr.resource';
 import styles from './inr-trend-chart.scss';
@@ -56,14 +57,29 @@ export default function InrTrendChart({ patientUuid }: { patientUuid: string }) 
   if (!data.length) {
     return onWarfarin ? <p className={styles.note}>{t('inrChartEmpty', 'No INR recorded')}</p> : null;
   }
+  const standardNote = !reviews.some((review) => targetRange(review.target)) && (
+    <p className={styles.note}>{t('inrChartStandardRange', 'Standard range 2.0 to 3.0, as no target is recorded')}</p>
+  );
+  if (data.length === 1) {
+    const [only] = data;
+    return (
+      <div data-testid="inr-single">
+        <p>
+          {t('inrChartSingle', 'INR {{inr}} on {{date}}, target range {{low}} to {{high}}', {
+            inr: only.value,
+            date: formatDate(only.date, { time: false, noToday: true }),
+            low: only.low.toFixed(1),
+            high: only.high.toFixed(1),
+          })}
+        </p>
+        {standardNote}
+      </div>
+    );
+  }
   return (
     <div data-testid="inr-chart">
       <AreaChart data={data} options={options} />
-      {!reviews.some((review) => targetRange(review.target)) && (
-        <p className={styles.note}>
-          {t('inrChartStandardRange', 'Standard range 2.0 to 3.0, as no target is recorded')}
-        </p>
-      )}
+      {standardNote}
     </div>
   );
 }
