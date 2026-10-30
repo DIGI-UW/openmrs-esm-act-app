@@ -193,6 +193,16 @@ describe('configSchema', () => {
           value: '161482AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           newDose: 'f27f6ed2-48db-5be7-91da-3e2483915462',
           nextInr: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          doseChange: 'a72dadd1-27de-5578-9595-31d2b621870d',
+        },
+        answers: {
+          yes: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          targets: [
+            { label: '1.5-2.5', uuid: '2822a113-1cd3-510e-b5bf-95b9279b1a4f' },
+            { label: '2.0-3.0', uuid: 'd894d89a-04bd-5fc0-91a0-5dc3ddd8802b' },
+            { label: '2.5-3.5', uuid: 'ea841a3a-f9cb-5761-aac6-939ffb158d94' },
+          ],
         },
       },
       contactCard: {

@@ -545,9 +545,24 @@ export const configSchema = {
         value: '161482AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         newDose: 'f27f6ed2-48db-5be7-91da-3e2483915462',
         nextInr: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        doseChange: 'a72dadd1-27de-5578-9595-31d2b621870d',
       },
       _description:
-        "The INR form's questions: INR Target, the INR Value group with its Date Tested, INR Value and New Anticoagulant Dose, and Next INR Date.",
+        "The INR form's questions: INR Target, the INR Value group with its Date Tested, INR Value, Dose Change and New Anticoagulant Dose, and Next INR Date.",
+    },
+    answers: {
+      _type: Type.Object,
+      _default: {
+        yes: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        targets: [
+          { label: '1.5-2.5', uuid: '2822a113-1cd3-510e-b5bf-95b9279b1a4f' },
+          { label: '2.0-3.0', uuid: 'd894d89a-04bd-5fc0-91a0-5dc3ddd8802b' },
+          { label: '2.5-3.5', uuid: 'ea841a3a-f9cb-5761-aac6-939ffb158d94' },
+        ],
+      },
+      _description:
+        "The INR form's answers the consultation form's INR editor offers: Yes and No for Dose Change, and the INR Target ranges with their labels.",
     },
   },
   contactCard: {
@@ -1048,7 +1063,8 @@ export interface Config {
   inrReviews: {
     encounterType: string;
     form: string;
-    concepts: Record<'target' | 'group' | 'dateTested' | 'value' | 'newDose' | 'nextInr', string>;
+    concepts: Record<'target' | 'group' | 'dateTested' | 'value' | 'newDose' | 'nextInr' | 'doseChange', string>;
+    answers: { yes: string; no: string; targets: Array<{ label: string; uuid: string }> };
   };
   contactCard: { attributeTypes: Record<'phone' | 'phoneOwner' | 'primaryCareClinic' | 'cardiacClinic', string> };
   clinicianPrivilege: string;

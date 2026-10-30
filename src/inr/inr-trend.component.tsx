@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AreaChart, ScaleTypes } from '@carbon/charts-react';
 import '@carbon/charts-react/styles.css';
-import { InlineNotification, SkeletonText } from '@carbon/react';
+import { Button, InlineNotification, SkeletonText } from '@carbon/react';
+import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { useStable } from '../run-charts/run-chart-line.component';
+import { useMayEnterForm } from '../access/may-enter-form';
+import { type Config } from '../config-schema';
+import { PRIVILEGE_EDIT_ENCOUNTERS } from '../constants';
+import { useChartEncounters } from '../consultations/consultations.resource';
+import InrEditPanel from './inr-edit-panel.component';
+import { latestInrEntry } from './inr-edit.resource';
 import { targetRange, useInrReviews, type InrReview } from './inr.resource';
 
 /** The therapeutic range for a patient none of whose INRs records a target: ACT 2.0's green band. */
@@ -30,6 +37,13 @@ export function inrChartData(reviews: Array<InrReview>, label: string) {
 export default function InrTrend({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { reviews, onWarfarin, isLoading, error } = useInrReviews(patientUuid);
+  const { inrReviews } = useConfig<Config>();
+  const { encounters } = useChartEncounters(patientUuid, inrReviews.encounterType);
+  const { user } = useSession();
+  const mayRecord = useMayEnterForm(inrReviews.form);
+  const mayEdit = mayRecord && Boolean(user) && userHasAccess(PRIVILEGE_EDIT_ENCOUNTERS, user);
+  const entry = latestInrEntry(encounters, inrReviews.concepts);
+  const [panel, setPanel] = useState<'edit' | 'record' | null>(null);
   const label = t('inrChartValue', 'INR');
   const data = useStable(inrChartData(reviews, label));
   const top = Math.max(5, Math.ceil(Math.max(...data.map((point) => Math.max(point.value, point.high)))));
@@ -61,12 +75,39 @@ export default function InrTrend({ patientUuid }: { patientUuid: string }) {
       />
     );
   }
+  const actions = panel ? (
+    <InrEditPanel patientUuid={patientUuid} entry={entry} mode={panel} onClose={() => setPanel(null)} />
+  ) : (
+    <div>
+      {entry && mayEdit && (
+        <Button type="button" kind="tertiary" size="sm" onClick={() => setPanel('edit')}>
+          {t('editInrMonitoring', 'Edit INR monitoring')}
+        </Button>
+      )}
+      {entry?.group && mayRecord && (
+        <Button type="button" kind="ghost" size="sm" onClick={() => setPanel('record')}>
+          {t('recordNewInr', 'Record new INR')}
+        </Button>
+      )}
+      {!entry && mayRecord && (
+        <Button type="button" kind="tertiary" size="sm" onClick={() => setPanel('record')}>
+          {t('recordInrMonitoring', 'Record INR monitoring')}
+        </Button>
+      )}
+    </div>
+  );
   if (!data.length) {
-    return onWarfarin ? <p>{t('inrChartEmpty', 'No INR recorded')}</p> : null;
+    return onWarfarin ? (
+      <div>
+        <p>{t('inrChartEmpty', 'No INR recorded')}</p>
+        {actions}
+      </div>
+    ) : null;
   }
   return (
     <div data-testid="inr-chart">
       <AreaChart data={data} options={options} />
+      {actions}
     </div>
   );
 }
