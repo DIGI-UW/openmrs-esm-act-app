@@ -411,6 +411,18 @@ describe('chart pages by role', () => {
     expect(patientOfBasePath('/openmrs/spa/patient/abc-123/chart')).toBe('abc-123');
   });
 
+  it('shows the INR card for a patient with an INR who is not on warfarin', async () => {
+    serve({
+      consultations: [consultation('new', '2026-04-01')],
+      inr: [inrEncounter('a', '2026-08-24', 2.1, '2026-09-21')],
+    });
+
+    renderIn(<InrCard patientUuid="winnie" />);
+
+    expect(await screen.findByTestId('inr-last')).toHaveTextContent('2.1');
+    expect(await screen.findByTestId('inr-single')).toBeInTheDocument();
+  });
+
   it('shows the clinics registration recorded on the banner, leaving out one not recorded', async () => {
     serve();
 

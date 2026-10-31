@@ -13,15 +13,15 @@ const InrTrendChart = React.lazy(() => import('./inr-trend-chart.component'));
 
 const day = (date: Date) => formatDate(date, { time: false, noToday: true });
 
-/** The patient summary's INR review card, for a patient on warfarin, with the INR trend beneath its fields. */
+/** The patient summary's INR review card, for a patient on warfarin or with an INR, with the trend beneath. */
 export default function InrCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { reviews, onWarfarin, dose, nextInr, isLoading } = useInrReviews(patientUuid);
   const record = useRecordInr(patientUuid);
-  if (!isLoading && !onWarfarin) {
+  const last = reviews.find((review) => review.inr !== null);
+  if (!isLoading && !onWarfarin && !last) {
     return null;
   }
-  const last = reviews.find((review) => review.inr !== null);
   const fields = [
     {
       id: 'last',
