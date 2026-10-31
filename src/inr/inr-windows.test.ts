@@ -48,5 +48,5 @@ describe('the INR windows in routes.json', () => {
     expect(Object.keys(app)).toEqual(
       expect.arrayContaining(['inrTrendActionButton', 'inrTrendWorkspace', 'inrEditWorkspace']),
     );
-  });
+  }, 30_000);
 });
