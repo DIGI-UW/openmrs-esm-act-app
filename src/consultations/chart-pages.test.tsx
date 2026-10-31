@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, launchWorkspace2, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import CliniciansOnlyNote from '../chart-note/clinicians-only-note.component';
@@ -11,6 +11,7 @@ import ClinicsBanner from '../contact/clinics-banner.component';
 import InrCard from '../inr/inr-card.component';
 import InrDashboardLink, { patientOfBasePath } from '../inr/inr-dashboard-link.component';
 import InrReviews from '../inr/inr-reviews.component';
+import { launchInInrWindow } from '../inr/launch-inr-window';
 import { inrResult, targetRange, toInrReviews } from '../inr/inr.resource';
 import { InrPill } from '../patient-status/status-pills.component';
 import ConsultationCard from './consultation-card.component';
@@ -18,6 +19,12 @@ import Consultations from './consultations.component';
 import { type ChartEncounter, toConsultation, warfarinOf } from './consultations.resource';
 import { diagnosisConcepts } from './patient-details.resource';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+
+// The INR card draws its trend with the chart library, whose SVG calls happy-dom does not implement.
+vi.mock('@carbon/charts-react', async () => ({
+  ...(await vi.importActual<object>('@carbon/charts-react')),
+  AreaChart: () => <div data-testid="area-chart" />,
+}));
 
 // Opening a form in a visit is open-form-in-visit's own test; here it records which form was opened.
 const openForm = vi.fn();
@@ -69,7 +76,10 @@ const inrEncounter = (uuid: string, tested: string, value: number, next: string)
     encounterDatetime: `${tested}T09:00:00.000+0300`,
     obs: [
       obs(i.target, coded('t23', '2.0 - 3.0')),
-      obs(i.group, null, [obs(i.dateTested, `${tested}T00:00:00.000+0300`), obs(i.value, value)]),
+      {
+        uuid: `${uuid}-group`,
+        ...obs(i.group, null, [obs(i.dateTested, `${tested}T00:00:00.000+0300`), obs(i.value, value)]),
+      },
       obs(i.nextInr, `${next}T00:00:00.000+0300`),
     ],
   }) as ChartEncounter;
@@ -130,7 +140,13 @@ const renderIn = (element: React.ReactElement) =>
 
 describe('chart pages by role', () => {
   beforeEach(async () => {
-    await signInWith(['Add Encounters', 'Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
+    await signInWith([
+      'Add Encounters',
+      'Edit Encounters',
+      'Get Encounters',
+      'Get Observations',
+      'Task: act.enterClinicalForms',
+    ]);
   });
 
   it("reads a consultation's provider, NYHA class, prophylaxis plan and next review", () => {
@@ -274,7 +290,7 @@ describe('chart pages by role', () => {
   it('shows INR reviews, the INR card and the nav link only for a patient on warfarin', async () => {
     serve({
       consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
-      inr: [inrEncounter('a', '2026-08-24', 2.1, '2026-09-21')],
+      inr: [inrEncounter('a', '2026-07-27', 1.6, '2026-08-24'), inrEncounter('b', '2026-08-24', 2.1, '2026-09-21')],
     });
 
     renderIn(
@@ -285,16 +301,17 @@ describe('chart pages by role', () => {
       </>,
     );
 
-    expect(await screen.findByTestId('inr-row')).toHaveTextContent(/2\.1.*2\.0 - 3\.0.*In range/);
+    expect((await screen.findAllByTestId('inr-row'))[0]).toHaveTextContent(/2\.1.*2\.0 - 3\.0.*In range/);
     expect(await screen.findByTestId('inr-dose')).toHaveTextContent('5 mg daily');
     expect(screen.getByTestId('inr-next')).toHaveAttribute('data-overdue', 'true');
+    expect(await screen.findByTestId('inr-chart')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /INR reviews/ })).toHaveAttribute(
       'href',
       '/openmrs/spa/patient/winnie/chart/act-inr-reviews',
     );
   });
 
-  it("reopens an INR Monitoring from its row's Edit and from Edit under the card's last INR", async () => {
+  it("opens the INR editor from a row's Edit and from Edit under the card's last INR, never the stock form", async () => {
     serve({
       consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
       inr: [inrEncounter('a', '2026-07-27', 1.6, '2026-08-24'), inrEncounter('b', '2026-08-24', 2.1, '2026-09-21')],
@@ -308,9 +325,54 @@ describe('chart pages by role', () => {
     );
 
     await userEvent.click(await screen.findByRole('button', { name: /^Edit INR of .*Jul/ }));
-    expect(openForm).toHaveBeenLastCalledWith(config.inrReviews.form, undefined, 'a');
+    expect(launchWorkspace2).toHaveBeenLastCalledWith('act-inr-edit-workspace', {
+      encounterUuid: 'a',
+      groupUuid: 'a-group',
+    });
     await userEvent.click(await screen.findByRole('button', { name: 'Edit last INR' }));
-    expect(openForm).toHaveBeenLastCalledWith(config.inrReviews.form, undefined, 'b');
+    expect(launchWorkspace2).toHaveBeenLastCalledWith('act-inr-edit-workspace', {
+      encounterUuid: 'b',
+      groupUuid: 'b-group',
+    });
+    expect(openForm).not.toHaveBeenCalled();
+  });
+
+  it('records a new INR through the INR Monitoring form, launched in the INR window', async () => {
+    serve({
+      consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
+      inr: [inrEncounter('a', '2026-08-24', 2.1, '2026-09-21')],
+    });
+
+    renderIn(<InrCard patientUuid="winnie" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /Record INR/ }));
+    expect(openForm).toHaveBeenCalledWith(config.inrReviews.form);
+    expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie', launchInInrWindow);
+  });
+
+  it('launches the form entry workspace of the INR window for a form the hook opens', () => {
+    launchInInrWindow('patient-form-entry-workspace', { form: 'f', encounterUuid: '' });
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-inr-form-entry-workspace', { form: 'f', encounterUuid: '' });
+  });
+
+  it('offers Record INR but no Edit to a user without Edit Encounters', async () => {
+    await signInWith(['Add Encounters', 'Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
+    serve({
+      consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
+      inr: [inrEncounter('a', '2026-08-24', 2.1, '2026-09-21')],
+    });
+
+    renderIn(
+      <>
+        <InrReviews patientUuid="winnie" />
+        <InrCard patientUuid="winnie" />
+      </>,
+    );
+
+    await screen.findByTestId('inr-row');
+    expect(await screen.findAllByRole('button', { name: /Record INR/ })).not.toHaveLength(0);
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
   });
 
   it('offers no INR Edit to a user who may not record one', async () => {
@@ -347,6 +409,18 @@ describe('chart pages by role', () => {
     expect(screen.queryByTestId('inr-last')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /INR reviews/ })).not.toBeInTheDocument();
     expect(patientOfBasePath('/openmrs/spa/patient/abc-123/chart')).toBe('abc-123');
+  });
+
+  it('shows the INR card for a patient with an INR who is not on warfarin', async () => {
+    serve({
+      consultations: [consultation('new', '2026-04-01')],
+      inr: [inrEncounter('a', '2026-08-24', 2.1, '2026-09-21')],
+    });
+
+    renderIn(<InrCard patientUuid="winnie" />);
+
+    expect(await screen.findByTestId('inr-last')).toHaveTextContent('2.1');
+    expect(await screen.findByTestId('inr-single')).toBeInTheDocument();
   });
 
   it('shows the clinics registration recorded on the banner, leaving out one not recorded', async () => {

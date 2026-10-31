@@ -1,0 +1,9 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.note {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-top: layout.$spacing-03;
+}

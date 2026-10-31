@@ -111,6 +111,12 @@ export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/cl
 
 export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
 
+export const inrTrendActionButton = getAsyncLifecycle(() => import('./inr/inr-trend-action-button.component'), options);
+
+export const inrTrendWorkspace = getAsyncLifecycle(() => import('./inr/inr-trend.workspace'), options);
+
+export const inrEditWorkspace = getAsyncLifecycle(() => import('./inr/inr-edit.workspace'), options);
+
 export const clinicsBanner = getAsyncLifecycle(() => import('./contact/clinics-banner.component'), options);
 
 export const medicationsCard = getAsyncLifecycle(() => import('./medications/medications-card.component'), options);

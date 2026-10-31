@@ -12,7 +12,7 @@ const purple = '#8a3ffc';
 const green = '#a7f0ba';
 
 // Carbon redraws a chart whenever its data or options is a new object.
-function useStable<T>(value: T): T {
+export function useStable<T>(value: T): T {
   const stable = useRef(value);
   if (JSON.stringify(stable.current) !== JSON.stringify(value)) {
     stable.current = value;

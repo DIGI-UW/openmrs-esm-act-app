@@ -18,30 +18,37 @@ import {
   ErrorState,
   formatDate,
   isDesktop,
+  launchWorkspace2,
   useConfig,
   useLayoutType,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { useMayEnterForm } from '../access/may-enter-form';
 import { EditButton } from '../cardiac-tests/cardiac-tests.component';
 import { type Config } from '../config-schema';
+import { PRIVILEGE_EDIT_ENCOUNTERS } from '../constants';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+import { launchInInrWindow } from './launch-inr-window';
 import { type InrResult, type InrReview, useInrReviews } from './inr.resource';
 import styles from '../cardiac-tests/cardiac-tests.scss';
 
 const day = (date: Date | null) => (date ? formatDate(date, { time: false, noToday: true }) : '--');
 
-/**
- * Record INR, and Edit, which reopens an INR Monitoring in the form, for a user who may record the INR form; nothing
- * for anyone else.
- */
+/** Record INR and Edit for a user who may record the INR form; Edit also needs Edit Encounters. */
 export function useRecordInr(patientUuid: string) {
   const { inrReviews } = useConfig<Config>();
-  const { open, isOpening } = useOpenFormInVisit(patientUuid);
+  const { open, isOpening } = useOpenFormInVisit(patientUuid, launchInInrWindow);
+  const { user } = useSession();
   const may = useMayEnterForm(inrReviews.form);
+  const mayEdit = may && Boolean(user) && userHasAccess(PRIVILEGE_EDIT_ENCOUNTERS, user);
   return may
     ? {
         record: () => open(inrReviews.form),
-        edit: (encounterUuid: string) => open(inrReviews.form, undefined, encounterUuid),
+        edit: mayEdit
+          ? (encounterUuid: string, groupUuid: string | null) =>
+              launchWorkspace2('act-inr-edit-workspace', { encounterUuid, groupUuid })
+          : null,
         isOpening,
       }
     : null;
@@ -126,7 +133,7 @@ export default function InrReviews({ patientUuid }: { patientUuid: string }) {
                 {columns.map((column) => (
                   <TableHeader key={column.header}>{column.header}</TableHeader>
                 ))}
-                {record && <TableHeader aria-label={t('edit', 'Edit')} />}
+                {record?.edit && <TableHeader aria-label={t('edit', 'Edit')} />}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -135,12 +142,11 @@ export default function InrReviews({ patientUuid }: { patientUuid: string }) {
                   {columns.map((column) => (
                     <TableCell key={column.header}>{column.cell(review)}</TableCell>
                   ))}
-                  {record && (
+                  {record?.edit && (
                     <TableCell>
                       <EditButton
                         label={t('editInr', 'Edit INR of {{date}}', { date: day(review.date) })}
-                        disabled={record.isOpening}
-                        onClick={() => record.edit(review.encounterUuid)}
+                        onClick={() => record.edit(review.encounterUuid, review.groupUuid)}
                       />
                     </TableCell>
                   )}

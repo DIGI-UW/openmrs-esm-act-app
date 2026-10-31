@@ -6,6 +6,7 @@ import { fetchAll } from '../fetch-all';
 
 /** An answer with its question, and the answers grouped under it. */
 export interface GroupedObs {
+  uuid?: string;
   concept: { uuid: string; display?: string };
   value: unknown;
   groupMembers?: Array<GroupedObs> | null;
@@ -19,7 +20,7 @@ export interface ChartEncounter {
 }
 
 const representation =
-  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(concept:(uuid,display),value,groupMembers:(concept:(uuid,display),value)))';
+  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value)))';
 
 /** A coded answer's name, or a plain answer as text. */
 export const answerText = (value: unknown) =>
@@ -27,7 +28,7 @@ export const answerText = (value: unknown) =>
     ? String((value as { display?: string }).display ?? '')
     : String(value ?? '');
 
-const answerUuid = (value: unknown) =>
+export const answerUuid = (value: unknown) =>
   typeof value === 'object' && value !== null ? String((value as { uuid?: string }).uuid ?? '') : '';
 
 /** The answers to a question, among the encounter's top-level answers or a group's members. */
