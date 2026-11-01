@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -16,17 +16,14 @@ import {
 import {
   CardiologyPictogram,
   ConfigurableLink,
-  fetchCurrentPatient,
   formatDate,
   isDesktop,
-  launchWorkspace2,
-  showSnackbar,
+  navigate,
   useConfig,
   useLayoutType,
   UserHasAccess,
 } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
-import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -63,40 +60,15 @@ const sortValues: Record<string, (row: ReportRow) => SortValue> = {
 
 const statusTags = { 'Not contacted': 'warm-gray', 'Echo booked': 'blue', Urgent: 'red' } as const;
 
-const screenPositiveFormEntryWorkspace = 'act-screen-positive-form-entry-workspace';
-
 export function ScreenPositiveTable() {
   const { t } = useTranslation();
   const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
-  // Same objects on a second click, so the open workspace does not prompt to close the form.
-  const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
-  // Opens the form that recorded the Screen + to edit, where its Diagnosis Details take the patient off the list,
-  // as ACT 2.0's row opened the patient form.
-  const enterDiagnosis = async (row: ReportRow) => {
-    const patientUuid = String(row.patient_uuid);
-    const encounterUuid = String(row.encounter_uuid);
-    if (!loaded.current.has(encounterUuid)) {
-      loaded.current.set(
-        encounterUuid,
-        Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]),
-      );
-    }
-    try {
-      const [form, patient] = await loaded.current.get(encounterUuid);
-      // An edit loads its encounter's own visit, so the list passes none.
-      // Both form engines report a save through mutateVisitContext, which evaluates the list again.
-      launchWorkspace2(
-        screenPositiveFormEntryWorkspace,
-        { form, encounterUuid },
-        { patient, patientUuid, visitContext: null, mutateVisitContext: mutate },
-      );
-    } catch (e) {
-      loaded.current.delete(encounterUuid);
-      showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
-    }
-  };
+  // The diagnosis is recorded on the RHD Consultation Visit (AR-167), so the row opens the patient's Consultation
+  // visits page, where Start consultation records it; the saved consultation takes the patient off the list.
+  const recordDiagnosis = (row: ReportRow) =>
+    navigate({ to: `${window.getOpenmrsSpaBase()}patient/${String(row.patient_uuid)}/chart/act-consultations` });
   const [filters, setFilters, filtersPending] = useScreenPositiveFilters();
   const clinicKind = useSessionClinicKind();
   const [sort, setSort] = useState<ColumnSort | null>(null);
@@ -217,8 +189,8 @@ export function ScreenPositiveTable() {
                   <TableCell>
                     {row.form_uuid && (
                       <MayEnterForm formUuid={String(row.form_uuid)}>
-                        <Button kind="ghost" size="sm" onClick={() => enterDiagnosis(row)}>
-                          {t('enterDiagnosis', 'Enter diagnosis')}
+                        <Button kind="ghost" size="sm" onClick={() => recordDiagnosis(row)}>
+                          {t('recordDiagnosis', 'Record diagnosis')}
                         </Button>
                       </MayEnterForm>
                     )}
@@ -245,7 +217,7 @@ export default function ScreenPositive() {
         <p className={styles.description}>
           {t(
             'diagnosisToConfirmDescription',
-            'Screen-positive patients whose diagnosis has no details yet. Enter diagnosis takes a patient off this list.',
+            'Screen-positive patients with no diagnosis yet. Record diagnosis opens their Consultation visits, where a saved consultation with a diagnosis takes them off this list.',
           )}
         </p>
         <ScreenPositiveTable />

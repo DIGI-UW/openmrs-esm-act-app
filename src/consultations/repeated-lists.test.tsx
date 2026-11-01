@@ -94,7 +94,7 @@ function serve({
     if (url.includes(`encounterType=${config.consultations.encounterType}`)) {
       return { data: { results: consultations, totalCount: consultations.length } };
     }
-    if (url.includes(`encounterType=${diagnosisConcepts.encounterType}`)) {
+    if (url.includes(`encounterType=${diagnosisConcepts.encounterTypes.patientInformation}`)) {
       return { data: { results: patientInformation, totalCount: patientInformation.length } };
     }
     if (url.includes('/form/')) {
@@ -140,16 +140,14 @@ describe('the Consultation visits page tables', () => {
     expect(rows[1]).toHaveTextContent(/Congenital.*No/);
   });
 
-  it('shows only the diagnoses of the latest Patient Information', async () => {
+  it('shows only the diagnoses of the latest consultation or Patient Information that records one', async () => {
     const diagnosis = (name: string) =>
       obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded(name, name))]);
     const record = (uuid: string, date: string, name: string) =>
       ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, obs: [diagnosis(name)] }) as ChartEncounter;
     serve({
-      patientInformation: [
-        record('older', '2025-03-01', 'Congenital'),
-        record('latest', '2026-03-01', 'Rheumatic Heart Disease'),
-      ],
+      consultations: [record('latest', '2026-03-01', 'Rheumatic Heart Disease'), consultation('bare', '2026-04-01')],
+      patientInformation: [record('older', '2025-03-01', 'Congenital')],
     });
 
     renderIn(<Diagnoses patientUuid="winnie" />);
@@ -182,13 +180,30 @@ describe('the Consultation visits page tables', () => {
     ).toBeInTheDocument();
   });
 
-  it("reopens a diagnosis's Patient Information, and an item's latest consultation, from its Edit", async () => {
+  it("reopens a diagnosis's consultation, and an item's latest consultation, from its Edit", async () => {
     const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
+    const diagnosis = obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded('rhd', 'RHD'))]);
     serve({
       consultations: [
-        consultation('new', '2026-04-01', [item(c.allergy, 'Penicillin')]),
+        consultation('new', '2026-04-01', [item(c.allergy, 'Penicillin'), diagnosis]),
         consultation('old', '2025-10-01', [item(c.allergy, 'Penicillin'), item(c.complication, 'Stroke')]),
       ],
+    });
+
+    renderIn(<ConsultationsPage patientUuid="winnie" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit RHD' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
+    await userEvent.click(
+      await screen.findByRole('button', { name: /^Edit Penicillin in the consultation of .*Apr.*2026$/ }),
+    );
+    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
+    await userEvent.click(screen.getByRole('button', { name: /^Edit Stroke in the consultation of .*Oct.*2025$/ }));
+    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'old');
+  });
+
+  it("reopens the Patient Information that recorded a diagnosis before AR-167, from its Edit", async () => {
+    serve({
       patientInformation: [
         {
           uuid: 'pi',
@@ -198,16 +213,10 @@ describe('the Consultation visits page tables', () => {
       ],
     });
 
-    renderIn(<ConsultationsPage patientUuid="winnie" />);
+    renderIn(<Diagnoses patientUuid="winnie" />);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit RHD' }));
     expect(openForm).toHaveBeenLastCalledWith(config.patientInformationForm, undefined, 'pi');
-    await userEvent.click(
-      await screen.findByRole('button', { name: /^Edit Penicillin in the consultation of .*Apr.*2026$/ }),
-    );
-    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
-    await userEvent.click(screen.getByRole('button', { name: /^Edit Stroke in the consultation of .*Oct.*2025$/ }));
-    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'old');
   });
 
   it('shows the tables without Edit to a user who may not record the forms', async () => {

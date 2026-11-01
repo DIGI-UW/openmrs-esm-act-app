@@ -54,7 +54,7 @@ describe('Diagnosis to confirm', () => {
     render(<ScreenPositive />);
 
     expect(screen.getByRole('heading', { name: 'Diagnosis to confirm' })).toBeInTheDocument();
-    expect(screen.getByText(/Enter diagnosis takes a patient off this list\./)).toBeInTheDocument();
+    expect(screen.getByText(/Record diagnosis opens their Consultation visits/)).toBeInTheDocument();
   });
 
   it('lists each patient with their age and sex, the date of positive screen, screening site and follow-up status', () => {
@@ -66,7 +66,7 @@ describe('Diagnosis to confirm', () => {
     const cells = within(screen.getByRole('row', { name: /Patient 2\b/ }))
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
-    expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Echo booked', 'Enter diagnosis']);
+    expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Echo booked', 'Record diagnosis']);
   });
 
   it('sorts by any column, the date of positive screen by its day, then returns to the report order', async () => {

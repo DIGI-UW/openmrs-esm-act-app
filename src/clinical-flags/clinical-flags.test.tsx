@@ -107,7 +107,7 @@ describe('clinical banner flags', () => {
 
   function serve(prophylaxisStatus: string) {
     vi.mocked(openmrsFetch).mockImplementation((async (url: string) => {
-      if (url.includes(`encounterType=${diagnosisConcepts.encounterType}`)) {
+      if (url.includes(`encounterType=${diagnosisConcepts.encounterTypes.patientInformation}`)) {
         return { data: { results: [patientInformation(YES, false)], totalCount: 1 } };
       }
       if (url.includes(`encounterType=${config.consultations.encounterType}`)) {
