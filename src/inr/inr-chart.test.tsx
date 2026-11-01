@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import InrChart, { inrChartModel, inrTone, type InrPoint } from './inr-chart.component';
 
@@ -61,6 +61,14 @@ describe('inrChartModel', () => {
     expect(only.x).toBe(395);
   });
 
+  it('keeps the label of the highest reading inside the box', () => {
+    for (const value of [5, 7.2]) {
+      const { valueLabel } = inrChartModel([point('2026-10-05', 2.4), point('2026-10-12', value)]);
+
+      expect(valueLabel!.y).toBeGreaterThanOrEqual(10);
+    }
+  });
+
   it("marks the patient's own target only when it differs from the 2.0 to 3.0 zone", () => {
     expect(inrChartModel(points).targetBox).toBeNull();
     expect(inrChartModel([point('2026-10-05', 3.2, [2.5, 3.5])]).targetBox).toMatchObject({
@@ -95,5 +103,30 @@ describe('InrChart', () => {
 
     expect(screen.getAllByTestId('inr-dot')).toHaveLength(1);
     expect(screen.getByText(/Target 2\.5-3\.5/)).toBeInTheDocument();
+  });
+
+  it('renders two readings on one day without a key warning, labelling that day once', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(<InrChart readings={[point('2026-10-12', 2.2), point('2026-10-12', 3.1)]} />);
+
+    expect(screen.getAllByTestId('inr-dot')).toHaveLength(2);
+    expect(screen.getAllByTestId('inr-date-label')).toHaveLength(1);
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
+
+  it('labels the first and last dates and at most eight in all for a long history', () => {
+    const start = new Date('2026-09-01T00:00:00');
+    const days = Array.from({ length: 45 }, (_, k) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + k);
+      return day.toISOString().slice(0, 10);
+    });
+    render(<InrChart readings={days.map((day) => point(day, 2.5))} />);
+
+    const labels = screen.getAllByTestId('inr-date-label').map((label) => label.textContent);
+    expect(labels.length).toBeLessThanOrEqual(8);
+    expect(labels[0]).toMatch(/^01-Sep/);
+    expect(labels.at(-1)).toMatch(/^15-Oct/);
   });
 });

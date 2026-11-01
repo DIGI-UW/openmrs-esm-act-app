@@ -83,6 +83,9 @@ export default function InrReviews({ patientUuid }: { patientUuid: string }) {
   const desktop = isDesktop(useLayoutType());
   const { reviews, error, isLoading } = useInrReviews(patientUuid);
   const record = useRecordInr(patientUuid);
+  const readings = reviews
+    .filter((review) => review.inr !== null)
+    .map((review) => ({ date: review.date, value: review.inr, target: targetRange(review.target) }));
   const title = t('inrReviews', 'INR reviews');
   const columns: Array<{ header: string; cell: (review: InrReview) => React.ReactNode }> = [
     { header: t('date', 'Date'), cell: (review) => day(review.date) },
@@ -129,13 +132,11 @@ export default function InrReviews({ patientUuid }: { patientUuid: string }) {
         />
       ) : (
         <div className={styles.tableContainer}>
-          <div className={summaryStyles.chart}>
-            <InrChart
-              readings={reviews
-                .filter((review) => review.inr !== null)
-                .map((review) => ({ date: review.date, value: review.inr, target: targetRange(review.target) }))}
-            />
-          </div>
+          {readings.length > 0 && (
+            <div className={summaryStyles.chart}>
+              <InrChart readings={readings} />
+            </div>
+          )}
           <Table size={desktop ? 'sm' : 'lg'} aria-label={title}>
             <TableHead>
               <TableRow>

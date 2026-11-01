@@ -434,6 +434,7 @@
   "inrMonitoring": "INR Monitoring",
   "inrNotFound": "This INR could not be found",
   "inrOverdue": "INR overdue",
+  "inrReadingOn": "{{value}} on {{date}}",
   "inrReviewDue": "INR review due",
   "inrReviews": "INR reviews",
   "inrReviewsLowercase": "INR reviews",

@@ -89,7 +89,9 @@ export function useInrReviews(patientUuid: string | null) {
   const reviews = toInrReviews(inr.encounters, inrReviews.concepts);
   const warfarin = warfarinOf(consults.encounters, consultations.concepts, consultations.vitaminKAntagonists);
   const nextInr = inr.encounters.length ? (reviews.find((review) => review.nextInr)?.nextInr ?? null) : null;
-  const indication = answerText(answersIn(inr.encounters[0]?.obs, inrReviews.concepts.indication)[0]?.value ?? '');
+  const indication = inr.encounters
+    .map((encounter) => answerText(answersIn(encounter.obs, inrReviews.concepts.indication)[0]?.value ?? ''))
+    .find(Boolean);
   return {
     reviews,
     indication: indication || null,

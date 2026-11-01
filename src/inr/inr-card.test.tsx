@@ -1,5 +1,6 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
@@ -9,6 +10,7 @@ import { type ChartEncounter } from '../consultations/consultations.resource';
 import InrCard from './inr-card.component';
 import InrStatusFlag from './inr-status-flag.component';
 
+const ago = (days: number) => dayjs().subtract(days, 'day').format('YYYY-MM-DD');
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
 const c = config.consultations.concepts;
 const i = config.inrReviews.concepts;
@@ -101,6 +103,17 @@ describe('InrCard', () => {
     expect(older).toHaveTextContent('2.2 · in range');
   });
 
+  it('takes the indication from the newest INR that records one', async () => {
+    serve(
+      [onWarfarin],
+      [reading('2026-09-28', 2.2, { indication: 'Atrial fibrillation' }), reading('2026-10-12', 3.1)],
+    );
+
+    renderIn(<InrCard patientUuid="grace" />);
+
+    expect(await screen.findByTestId('inr-indication')).toHaveTextContent('Atrial fibrillation');
+  });
+
   it('judges a reading against the target its own INR Monitoring records, and marks that target on the chart', async () => {
     serve([onWarfarin], [reading('2026-10-12', 3.2, { target: '2.5 - 3.5' })]);
 
@@ -155,24 +168,36 @@ describe('InrStatusFlag', () => {
   });
 
   it('adds the latest INR to the banner when it is above or below its target, and not when it is in range', async () => {
-    serve([onWarfarin], [reading('2026-10-12', 3.1)]);
+    serve([onWarfarin], [reading(ago(10), 3.1)]);
     const { unmount: unmountAbove } = renderIn(<InrStatusFlag patientUuid="grace" />);
     expect(await screen.findByTestId('inr-value-status')).toHaveTextContent('INR 3.1 above target');
     unmountAbove();
 
-    serve([onWarfarin], [reading('2026-10-12', 1.7)]);
+    serve([onWarfarin], [reading(ago(10), 1.7)]);
     const { unmount: unmountBelow } = renderIn(<InrStatusFlag patientUuid="grace" />);
     expect(await screen.findByTestId('inr-value-status')).toHaveTextContent('INR 1.7 below target');
     unmountBelow();
 
-    serve([onWarfarin], [reading('2026-10-12', 2.4)]);
+    serve([onWarfarin], [reading(ago(10), 2.4)]);
     renderIn(<InrStatusFlag patientUuid="grace" />);
     await vi.waitFor(() => expect(openmrsFetch).toHaveBeenCalled());
     await vi.waitFor(() => expect(screen.queryByTestId('inr-value-status')).not.toBeInTheDocument());
   });
 
+  it('shows the value pill for a reading within three months and not for an older one', async () => {
+    serve([onWarfarin], [reading(ago(100), 3.1, { next: ago(50) })]);
+    const { unmount } = renderIn(<InrStatusFlag patientUuid="grace" />);
+    expect(await screen.findByTestId('inr-status')).toHaveTextContent('INR overdue');
+    expect(screen.queryByTestId('inr-value-status')).not.toBeInTheDocument();
+    unmount();
+
+    serve([onWarfarin], [reading(ago(60), 3.1)]);
+    renderIn(<InrStatusFlag patientUuid="grace" />);
+    expect(await screen.findByTestId('inr-value-status')).toHaveTextContent('INR 3.1 above target');
+  });
+
   it('shows nothing for a patient who is not on warfarin', async () => {
-    serve([], [reading('2026-10-12', 3.1)]);
+    serve([], [reading(ago(10), 3.1)]);
 
     const { container } = renderIn(<InrStatusFlag patientUuid="grace" />);
 

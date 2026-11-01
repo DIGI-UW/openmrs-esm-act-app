@@ -287,6 +287,17 @@ describe('chart pages by role', () => {
     expect(screen.queryByRole('button', { name: /diagnosis/ })).not.toBeInTheDocument();
   });
 
+  it('draws no chart on the INR reviews page when no review has a value', async () => {
+    const missed = inrEncounter('a', '2026-07-27', 0, '2026-08-24');
+    missed.obs = missed.obs.map((o) => (o.groupMembers ? { ...o, groupMembers: [o.groupMembers[0]] } : o));
+    serve({ consultations: [consultation('new', '2026-04-01', [warfarinGroup()])], inr: [missed] });
+
+    renderIn(<InrReviews patientUuid="winnie" />);
+
+    expect((await screen.findAllByTestId('inr-row'))[0]).toHaveTextContent('--');
+    expect(screen.queryByRole('img', { name: /INR over time/ })).not.toBeInTheDocument();
+  });
+
   it('shows INR reviews, the INR card and the nav link only for a patient on warfarin', async () => {
     serve({
       consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
