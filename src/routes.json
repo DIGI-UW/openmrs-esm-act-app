@@ -976,6 +976,12 @@
       "canMaximize": true
     },
     {
+      "name": "act-cardiac-test-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
       "name": "act-update-patient-status",
       "group": "patient-chart"
     },
@@ -1029,6 +1035,11 @@
       "name": "act-screen-positive-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-cardiac-test-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-cardiac-test-form-entry"
     },
     {
       "name": "act-update-patient-status-workspace",
