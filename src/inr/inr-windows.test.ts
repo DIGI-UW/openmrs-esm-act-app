@@ -22,12 +22,11 @@ afterAll(() => {
 });
 
 const routes = routeFile as unknown as {
-  workspaceWindows2: Array<{ name: string; group: string; icon?: string }>;
+  workspaceWindows2: Array<{ name: string; group: string }>;
   workspaces2: Array<{ name: string; component: string; window: string }>;
 };
 
 const windows: Array<[workspace: string, window: string, component: string]> = [
-  ['act-inr-trend-workspace', 'act-inr-trend', 'inrTrendWorkspace'],
   ['act-inr-edit-workspace', 'act-inr-monitoring', 'inrEditWorkspace'],
   ['act-inr-form-entry-workspace', 'act-inr-form-entry', '@openmrs/esm-patient-forms-app#patientFormEntryWorkspace'],
 ];
@@ -40,13 +39,9 @@ describe('the INR windows in routes.json', () => {
     expect(routes.workspaceWindows2.find((candidate) => candidate.name === window)?.group).toBe('patient-chart');
   });
 
-  it('gives the trend window a side rail button, and the app exports it and the workspaces it names', async () => {
+  it('exports the edit workspace the window names', async () => {
     const app = await import('../index');
-    const trend = routes.workspaceWindows2.find((candidate) => candidate.name === 'act-inr-trend');
 
-    expect(trend?.icon).toBe('inrTrendActionButton');
-    expect(Object.keys(app)).toEqual(
-      expect.arrayContaining(['inrTrendActionButton', 'inrTrendWorkspace', 'inrEditWorkspace']),
-    );
+    expect(Object.keys(app)).toContain('inrEditWorkspace');
   }, 30_000);
 });

@@ -29,9 +29,11 @@ import { EditButton } from '../cardiac-tests/cardiac-tests.component';
 import { type Config } from '../config-schema';
 import { PRIVILEGE_EDIT_ENCOUNTERS } from '../constants';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+import InrChart from './inr-chart.component';
 import { launchInInrWindow } from './launch-inr-window';
-import { type InrResult, type InrReview, useInrReviews } from './inr.resource';
+import { type InrResult, type InrReview, targetRange, useInrReviews } from './inr.resource';
 import styles from '../cardiac-tests/cardiac-tests.scss';
+import summaryStyles from '../styles/summary-card.scss';
 
 const day = (date: Date | null) => (date ? formatDate(date, { time: false, noToday: true }) : '--');
 
@@ -127,6 +129,13 @@ export default function InrReviews({ patientUuid }: { patientUuid: string }) {
         />
       ) : (
         <div className={styles.tableContainer}>
+          <div className={summaryStyles.chart}>
+            <InrChart
+              readings={reviews
+                .filter((review) => review.inr !== null)
+                .map((review) => ({ date: review.date, value: review.inr, target: targetRange(review.target) }))}
+            />
+          </div>
           <Table size={desktop ? 'sm' : 'lg'} aria-label={title}>
             <TableHead>
               <TableRow>

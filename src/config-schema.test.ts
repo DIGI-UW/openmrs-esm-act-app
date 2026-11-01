@@ -194,6 +194,7 @@ describe('configSchema', () => {
           newDose: 'f27f6ed2-48db-5be7-91da-3e2483915462',
           nextInr: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           doseChange: 'a72dadd1-27de-5578-9595-31d2b621870d',
+          indication: '6e8ed53f-15e6-5b00-9ed0-44b11bd2d638',
         },
         answers: {
           yes: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',

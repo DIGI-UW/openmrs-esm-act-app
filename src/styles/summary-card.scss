@@ -89,6 +89,37 @@
   margin-top: layout.$spacing-02;
 }
 
-.trend {
+.chart {
+  padding: 0 layout.$spacing-05 layout.$spacing-03;
+}
+
+.dot {
+  display: inline-block;
+  width: layout.$spacing-03;
+  height: layout.$spacing-03;
+  margin-right: layout.$spacing-03;
+  border-radius: 50%;
+
+  &[data-tone='green'] {
+    background-color: #24a148;
+  }
+
+  &[data-tone='orange'] {
+    background-color: #ff832b;
+  }
+
+  &[data-tone='red'] {
+    background-color: #da1e28;
+  }
+}
+
+.seeAll {
+  padding: layout.$spacing-03 layout.$spacing-05;
+  text-align: right;
+}
+
+.note {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
   padding: 0 layout.$spacing-05 layout.$spacing-05;
 }

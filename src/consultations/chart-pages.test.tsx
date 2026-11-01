@@ -304,32 +304,29 @@ describe('chart pages by role', () => {
     expect((await screen.findAllByTestId('inr-row'))[0]).toHaveTextContent(/2\.1.*2\.0 - 3\.0.*In range/);
     expect(await screen.findByTestId('inr-dose')).toHaveTextContent('5 mg daily');
     expect(screen.getByTestId('inr-next')).toHaveAttribute('data-overdue', 'true');
-    expect(await screen.findByTestId('inr-chart')).toBeInTheDocument();
+    expect(await screen.findAllByRole('img', { name: /INR over time/ })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /INR reviews/ })).toHaveAttribute(
       'href',
       '/openmrs/spa/patient/winnie/chart/act-inr-reviews',
     );
   });
 
-  it("opens the INR editor from a row's Edit and from Edit under the card's last INR, never the stock form", async () => {
+  it("opens the INR editor from the card's reading and from a row of the INR reviews page, never the stock form", async () => {
     serve({
       consultations: [consultation('new', '2026-04-01', [warfarinGroup()])],
       inr: [inrEncounter('a', '2026-07-27', 1.6, '2026-08-24'), inrEncounter('b', '2026-08-24', 2.1, '2026-09-21')],
     });
 
-    renderIn(
-      <>
-        <InrReviews patientUuid="winnie" />
-        <InrCard patientUuid="winnie" />
-      </>,
-    );
-
+    const { unmount } = renderIn(<InrReviews patientUuid="winnie" />);
     await userEvent.click(await screen.findByRole('button', { name: /^Edit INR of .*Jul/ }));
     expect(launchWorkspace2).toHaveBeenLastCalledWith('act-inr-edit-workspace', {
       encounterUuid: 'a',
       groupUuid: 'a-group',
     });
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit last INR' }));
+    unmount();
+
+    renderIn(<InrCard patientUuid="winnie" />);
+    await userEvent.click(await screen.findByRole('button', { name: /^Edit INR of .*Aug/ }));
     expect(launchWorkspace2).toHaveBeenLastCalledWith('act-inr-edit-workspace', {
       encounterUuid: 'b',
       groupUuid: 'b-group',
@@ -390,7 +387,7 @@ describe('chart pages by role', () => {
     );
 
     await screen.findByTestId('inr-row');
-    await screen.findByTestId('inr-last');
+    await screen.findAllByTestId('inr-reading');
     expect(screen.queryByRole('button', { name: /^Edit|Record INR/ })).not.toBeInTheDocument();
   });
 
@@ -406,7 +403,7 @@ describe('chart pages by role', () => {
     );
 
     expect(await screen.findByTestId('banner-cardiac-clinic')).toHaveTextContent('Cardiac clinic: Gulu RRH');
-    expect(screen.queryByTestId('inr-last')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('inr-reading')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /INR reviews/ })).not.toBeInTheDocument();
     expect(patientOfBasePath('/openmrs/spa/patient/abc-123/chart')).toBe('abc-123');
   });
@@ -419,8 +416,8 @@ describe('chart pages by role', () => {
 
     renderIn(<InrCard patientUuid="winnie" />);
 
-    expect(await screen.findByTestId('inr-last')).toHaveTextContent('2.1');
-    expect(await screen.findByTestId('inr-single')).toBeInTheDocument();
+    expect(await screen.findByTestId('inr-reading')).toHaveTextContent(/2\.1 · in range/);
+    expect(screen.getByRole('img', { name: /INR over time: 2\.1/ })).toBeInTheDocument();
   });
 
   it('shows the clinics registration recorded on the banner, leaving out one not recorded', async () => {

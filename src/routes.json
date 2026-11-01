@@ -984,13 +984,6 @@
       "group": "patient-chart"
     },
     {
-      "name": "act-inr-trend",
-      "group": "patient-chart",
-      "icon": "inrTrendActionButton",
-      "order": 10,
-      "width": "wider"
-    },
-    {
       "name": "act-inr-monitoring",
       "group": "patient-chart"
     },
@@ -1056,11 +1049,6 @@
       "name": "act-update-prophylaxis-workspace",
       "component": "updateProphylaxisWorkspace",
       "window": "act-update-prophylaxis"
-    },
-    {
-      "name": "act-inr-trend-workspace",
-      "component": "inrTrendWorkspace",
-      "window": "act-inr-trend"
     },
     {
       "name": "act-inr-edit-workspace",

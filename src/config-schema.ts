@@ -546,9 +546,10 @@ export const configSchema = {
         newDose: 'f27f6ed2-48db-5be7-91da-3e2483915462',
         nextInr: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         doseChange: 'a72dadd1-27de-5578-9595-31d2b621870d',
+        indication: '6e8ed53f-15e6-5b00-9ed0-44b11bd2d638',
       },
       _description:
-        "The INR form's questions: INR Target, the INR Value group with its Date Tested, INR Value, Dose Change and New Anticoagulant Dose, and Next INR Date.",
+        "The INR form's questions: Indication, INR Target, the INR Value group with its Date Tested, INR Value, Dose Change and New Anticoagulant Dose, and Next INR Date.",
     },
     answers: {
       _type: Type.Object,
@@ -1063,7 +1064,10 @@ export interface Config {
   inrReviews: {
     encounterType: string;
     form: string;
-    concepts: Record<'target' | 'group' | 'dateTested' | 'value' | 'newDose' | 'nextInr' | 'doseChange', string>;
+    concepts: Record<
+      'target' | 'group' | 'dateTested' | 'value' | 'newDose' | 'nextInr' | 'doseChange' | 'indication',
+      string
+    >;
     answers: { yes: string; no: string; targets: Array<{ label: string; uuid: string }> };
   };
   contactCard: { attributeTypes: Record<'phone' | 'phoneOwner' | 'primaryCareClinic' | 'cardiacClinic', string> };
