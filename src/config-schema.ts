@@ -510,6 +510,35 @@ export const configSchema = {
       _description:
         "The consultation's Allergy answers that are an allergy to penicillin, which the patient banner and the consultation form mark: Penicillin (allergy) and Penicillin (anaphylaxis), as the patients report counts them. An answer named penicillin is marked whatever its uuid.",
     },
+    vitals: {
+      _type: Type.Array,
+      _elements: {
+        _type: Type.Object,
+        label: { _type: Type.String, _description: 'The name the consultation form shows before the value.' },
+        concepts: {
+          _type: Type.Array,
+          _elements: { _type: Type.UUID },
+          _description: "The concept, or concepts whose values are shown joined by '/', as blood pressure's two.",
+        },
+        unit: { _type: Type.String, _description: 'The unit shown after the value.' },
+      },
+      _default: [
+        {
+          label: 'BP',
+          concepts: ['5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+          unit: 'mmHg',
+        },
+        { label: 'Pulse', concepts: ['5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'bpm' },
+        { label: 'Temp', concepts: ['5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '°C' },
+        { label: 'RR', concepts: ['5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '/min' },
+        { label: 'SpO2', concepts: ['5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '%' },
+        { label: 'Weight', concepts: ['5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'kg' },
+        { label: 'Height', concepts: ['5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'cm' },
+        { label: 'MUAC', concepts: ['1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'cm' },
+      ],
+      _description:
+        "The vitals and biometrics the consultation form shows at its top, read from what the Vitals & Biometrics form recorded in the consultation's visit, in this order. The concepts are the vitals app's defaults.",
+    },
   },
   medications: {
     encounterType: {
@@ -1059,6 +1088,7 @@ export interface Config {
     >;
     vitaminKAntagonists: Array<string>;
     penicillinAllergyAnswers: Array<string>;
+    vitals: Array<{ label: string; concepts: Array<string>; unit: string }>;
   };
   medications: { encounterType: string; form: string };
   inrReviews: {

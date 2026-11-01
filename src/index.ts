@@ -28,6 +28,7 @@ import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-pati
 import { trackActReturn } from './back-to-act/act-return';
 import { registerAllergies } from './allergies/allergies.resource';
 import { registerNextInjectionDue } from './prophylaxis/next-injection-due';
+import { registerVisitVitals } from './vitals/visit-vitals.resource';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
 const moduleName = '@act-registry/esm-act-app';
@@ -47,6 +48,7 @@ export function startupApp() {
   trackActReturn();
   registerNextInjectionDue();
   registerAllergies();
+  registerVisitVitals();
 }
 
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);

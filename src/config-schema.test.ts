@@ -178,6 +178,20 @@ describe('configSchema', () => {
         },
         vitaminKAntagonists: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
         penicillinAllergyAnswers: ['149071AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'b4e6c064-ab4f-5ee4-9837-094731ee23d4'],
+        vitals: [
+          {
+            label: 'BP',
+            concepts: ['5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+            unit: 'mmHg',
+          },
+          { label: 'Pulse', concepts: ['5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'bpm' },
+          { label: 'Temp', concepts: ['5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '°C' },
+          { label: 'RR', concepts: ['5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '/min' },
+          { label: 'SpO2', concepts: ['5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '%' },
+          { label: 'Weight', concepts: ['5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'kg' },
+          { label: 'Height', concepts: ['5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'cm' },
+          { label: 'MUAC', concepts: ['1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'cm' },
+        ],
       },
       medications: {
         encounterType: 'e3f1b6a8-5c2d-4f7e-9a41-6d8b2c0e7f53',
