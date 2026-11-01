@@ -3,6 +3,7 @@ import { SWRConfig } from 'swr';
 import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
@@ -68,6 +69,8 @@ function serve(consultations: Array<ChartEncounter>, inr: Array<ChartEncounter>)
 const renderIn = (element: React.ReactElement) =>
   render(<SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{element}</SWRConfig>);
 
+const showReadings = async () => userEvent.click(await screen.findByRole('button', { name: /Show readings/ }));
+
 describe('InrCard', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
@@ -94,6 +97,9 @@ describe('InrCard', () => {
     expect(screen.getByTestId('inr-target')).toHaveTextContent('2.0 - 3.0');
     expect(screen.getByTestId('inr-next')).toHaveTextContent('09-Nov-2026');
     expect(screen.getByTestId('inr-dose')).toHaveTextContent('4 mg');
+    expect(screen.queryByRole('img', { name: /INR over time/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('inr-reading')).not.toBeInTheDocument();
+    await showReadings();
     expect(screen.getByRole('img', { name: /INR over time: 2\.2.*3\.1/ })).toBeInTheDocument();
     const [newest, older] = screen.getAllByTestId('inr-reading');
     expect(newest).toHaveTextContent('3.1 · above target');
@@ -101,6 +107,18 @@ describe('InrCard', () => {
     expect(within(newest).getByTestId('inr-tone')).toHaveAttribute('data-tone', 'orange');
     expect(within(older).getByTestId('inr-tone')).toHaveAttribute('data-tone', 'green');
     expect(older).toHaveTextContent('2.2 · in range');
+  });
+
+  it('hides the chart and readings again when Hide readings is pressed', async () => {
+    serve([onWarfarin], [reading('2026-10-12', 3.1)]);
+
+    renderIn(<InrCard patientUuid="grace" />);
+
+    await showReadings();
+    expect(await screen.findByTestId('inr-reading')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Hide readings/ }));
+    expect(screen.queryByTestId('inr-reading')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Show readings/ })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('takes the indication from the newest INR that records one', async () => {
@@ -119,6 +137,7 @@ describe('InrCard', () => {
 
     renderIn(<InrCard patientUuid="grace" />);
 
+    await showReadings();
     expect(await screen.findByTestId('inr-reading')).toHaveTextContent('3.2 · in range');
     expect(screen.getByText(/Target 2\.5-3\.5/)).toBeInTheDocument();
   });
@@ -133,6 +152,7 @@ describe('InrCard', () => {
 
     renderIn(<InrCard patientUuid="grace" />);
 
+    await showReadings();
     expect(await screen.findAllByTestId('inr-reading')).toHaveLength(5);
     expect(screen.getByRole('link', { name: 'See all' })).toHaveAttribute(
       'href',
@@ -145,6 +165,7 @@ describe('InrCard', () => {
 
     renderIn(<InrCard patientUuid="grace" />);
 
+    await showReadings();
     await screen.findByTestId('inr-reading');
     expect(screen.queryByRole('link', { name: 'See all' })).not.toBeInTheDocument();
   });

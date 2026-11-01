@@ -138,6 +138,8 @@ function serve({
 const renderIn = (element: React.ReactElement) =>
   render(<SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{element}</SWRConfig>);
 
+const showReadings = async () => userEvent.click(await screen.findByRole('button', { name: /Show readings/ }));
+
 describe('chart pages by role', () => {
   beforeEach(async () => {
     await signInWith([
@@ -315,6 +317,8 @@ describe('chart pages by role', () => {
     expect((await screen.findAllByTestId('inr-row'))[0]).toHaveTextContent(/2\.1.*2\.0 - 3\.0.*In range/);
     expect(await screen.findByTestId('inr-dose')).toHaveTextContent('5 mg daily');
     expect(screen.getByTestId('inr-next')).toHaveAttribute('data-overdue', 'true');
+    expect(await screen.findAllByRole('img', { name: /INR over time/ })).toHaveLength(1);
+    await showReadings();
     expect(await screen.findAllByRole('img', { name: /INR over time/ })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /INR reviews/ })).toHaveAttribute(
       'href',
@@ -337,6 +341,7 @@ describe('chart pages by role', () => {
     unmount();
 
     renderIn(<InrCard patientUuid="winnie" />);
+    await showReadings();
     await userEvent.click(await screen.findByRole('button', { name: /^Edit INR of .*Aug/ }));
     expect(launchWorkspace2).toHaveBeenLastCalledWith('act-inr-edit-workspace', {
       encounterUuid: 'b',
@@ -398,6 +403,7 @@ describe('chart pages by role', () => {
     );
 
     await screen.findByTestId('inr-row');
+    await showReadings();
     await screen.findAllByTestId('inr-reading');
     expect(screen.queryByRole('button', { name: /^Edit|Record INR/ })).not.toBeInTheDocument();
   });
@@ -427,6 +433,7 @@ describe('chart pages by role', () => {
 
     renderIn(<InrCard patientUuid="winnie" />);
 
+    await showReadings();
     expect(await screen.findByTestId('inr-reading')).toHaveTextContent(/2\.1 · in range/);
     expect(screen.getByRole('img', { name: /INR over time: 2\.1/ })).toBeInTheDocument();
   });
