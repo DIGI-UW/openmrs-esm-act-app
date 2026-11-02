@@ -2,13 +2,13 @@ import dayjs from 'dayjs';
 
 /** One point of a run chart as ACT Core answers it. */
 export interface RunChartPoint {
-  /** The first day of the point's period, as YYYY-MM-DD. */
+  /** The day the figure is as of, YYYY-MM-DD: the period's last day, or the range's end for the last period. */
   date: string;
   /** A total, or a percent from 0 to 100; null for a percent of none. */
   value: number | null;
-  /** A count's value, or a percent's numerator summed over the period's days. */
+  /** A count's value, or a percent's numerator. */
   count: number | null;
-  /** A percent's denominator summed over the period's days; null for a count. */
+  /** A percent's denominator; null for a count. */
   total: number | null;
 }
 
@@ -27,6 +27,8 @@ export const SHIFT_LENGTH = 6;
 export const MIN_POINTS_FOR_CHART = 2;
 /** A median and shifts mean something only from this many points, as the design says. */
 export const MIN_POINTS_FOR_MEDIAN = 10;
+/** ACT Core charts a day per point only over a range this long or shorter, in days. */
+export const MOST_DAILY_DAYS = 92;
 
 /** A plain date as the local day, as a zoned midnight reads as the day before in a zone behind UTC. */
 export const localDay = (date: string) => dayjs(date).startOf('day').toDate();
