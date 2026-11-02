@@ -21,7 +21,7 @@ export default function ClinicalFlags({ patientUuid, patient }: { patientUuid: s
   const deceased = Boolean(patient?.deceasedBoolean || patient?.deceasedDateTime);
   const clinician = Boolean(user) && userHasAccess(clinicianPrivilege, user);
   const living = deceased ? null : patientUuid;
-  const patientInformation = useChartEncounters(living, diagnosisConcepts.encounterType);
+  const patientInformation = useChartEncounters(living, diagnosisConcepts.encounterTypes.patientInformation);
   const consults = useChartEncounters(clinician ? living : null, consultations.encounterType);
   // A procedure recorded on Procedures and Outcomes completes its recommendation (AR-162).
   const procedureEncounters = useChartEncounters(clinician ? living : null, procedures.encounterType);

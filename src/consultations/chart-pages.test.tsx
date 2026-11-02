@@ -103,7 +103,7 @@ function serve({
     if (url.includes(`encounterType=${config.inrReviews.encounterType}`)) {
       return { data: { results: inr, totalCount: inr.length } };
     }
-    if (url.includes(`encounterType=${diagnosisConcepts.encounterType}`)) {
+    if (url.includes(`encounterType=${diagnosisConcepts.encounterTypes.patientInformation}`)) {
       return { data: { results: patientInformation, totalCount: patientInformation.length } };
     }
     if (url.includes('encounterType=')) {
@@ -250,7 +250,7 @@ describe('chart pages by role', () => {
     expect(screen.queryByRole('button', { name: 'Edit last consultation' })).not.toBeInTheDocument();
   });
 
-  it("shows the diagnosis with Update diagnosis, which opens the patient's Patient Information", async () => {
+  it('shows the diagnosis, from a Patient Information too, with Update diagnosis, which edits the last consultation', async () => {
     serve({
       consultations: [consultation('new', '2026-04-01')],
       patientInformation: [
@@ -273,14 +273,15 @@ describe('chart pages by role', () => {
       'Rheumatic Heart Disease/Rheumatic Fever (RHD B)',
     );
     await userEvent.click(await screen.findByRole('button', { name: /Update diagnosis/ }));
-    expect(openForm).toHaveBeenCalledWith(config.patientInformationForm);
+    expect(openForm).toHaveBeenCalledWith(config.consultations.form, undefined, 'new');
     expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie');
   });
 
-  it('offers Record diagnosis when there is none, and nothing to a user who may not record Patient Information', async () => {
-    serve({ consultations: [consultation('new', '2026-04-01')] });
+  it('offers Record diagnosis when there is none, which starts a consultation, and nothing to a user who may not record one', async () => {
+    serve();
     const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
-    expect(await screen.findByRole('button', { name: /Record diagnosis/ })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: /Record diagnosis/ }));
+    expect(openForm).toHaveBeenCalledWith(config.consultations.form);
     unmount();
 
     serve({ consultations: [consultation('new', '2026-04-01')], mayEnter: false });
