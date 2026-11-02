@@ -16,8 +16,8 @@ import { type Config } from '../config-schema';
 import { useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
-import { RecordProphylaxisButtons } from '../prophylaxis/record-prophylaxis-buttons.component';
-import UpdateProphylaxis from '../prophylaxis/update-prophylaxis.component';
+import { usePrescription } from '../prophylaxis/prescription.resource';
+import ProphylaxisCard from '../prophylaxis/prophylaxis-card.component';
 import { type BpgInjection, useBpgInjections, useOralEntries } from './prophylaxis-page.resource';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './prophylaxis-page.scss';
@@ -47,16 +47,6 @@ function useTimingTag(patientUuid: string) {
   };
 }
 
-/** The leading section's actions, as the Prophylaxis card's: Update prophylaxis, then Record. */
-function Actions({ patientUuid }: { patientUuid: string }) {
-  return (
-    <div className={cardStyles.actions}>
-      <UpdateProphylaxis patientUuid={patientUuid} />
-      <RecordProphylaxisButtons patientUuid={patientUuid} />
-    </div>
-  );
-}
-
 /** A dose's Edit, which reopens its encounter in the form that recorded it, for a user who may record that form. */
 function useEditDose(patientUuid: string, form: string) {
   const mayEdit = useMayEnterForm(form);
@@ -68,8 +58,74 @@ const day = (date: string) => formatDate(parseDate(date), { time: false, noToday
 
 interface SectionProps {
   patientUuid: string;
-  /** Whether the section leads the page, carrying the actions and saying when it is empty. */
+  /** Whether the section is the prescribed type's, which says when it is empty. */
   leads: boolean;
+}
+
+/** Every course prescribed, newest start first, the ones in force marked Current. */
+function PrescriptionHistory({ patientUuid }: { patientUuid: string }) {
+  const { t } = useTranslation();
+  const desktop = isDesktop(useLayoutType());
+  const { history, error, isLoading } = usePrescription(patientUuid, useConfig<Config>().prophylaxisUpdate.concepts);
+  const title = t('prescriptionHistory', 'Prescription history');
+  const headers = [
+    t('regimen', 'Regimen'),
+    t('started', 'Started'),
+    t('stopped', 'Stopped'),
+    t('reasonStopped', 'Reason stopped'),
+    t('recorded', 'Recorded'),
+  ];
+
+  if (error) {
+    return <ErrorState error={error} headerTitle={title} />;
+  }
+  const body = isLoading ? (
+    <DataTableSkeleton
+      role="progressbar"
+      columnCount={headers.length + 1}
+      compact={desktop}
+      showHeader={false}
+      showToolbar={false}
+    />
+  ) : !history?.length ? (
+    <TableEmptyState message={t('noPrescriptionHistory', 'There is no prescription history to display')} />
+  ) : (
+    <Table aria-label={title} size={desktop ? 'sm' : 'lg'}>
+      <TableHead>
+        <TableRow>
+          {headers.map((header) => (
+            <TableHeader key={header}>{header}</TableHeader>
+          ))}
+          <TableHeader aria-label={t('current', 'Current')} />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {history.map((course) => (
+          <TableRow key={`${course.regimen} ${course.started}`}>
+            <TableCell>{course.regimen}</TableCell>
+            <TableCell>{day(course.started)}</TableCell>
+            <TableCell>{course.stopped ? day(course.stopped) : '--'}</TableCell>
+            <TableCell>{course.reasonStopped ?? '--'}</TableCell>
+            <TableCell>{day(course.recorded)}</TableCell>
+            <TableCell>
+              {course.current && (
+                <Tag type="green" size="sm">
+                  {t('current', 'Current')}
+                </Tag>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
+  return (
+    <div className={cardStyles.card} data-testid="prescription-history">
+      <CardHeader title={title} />
+      {body}
+    </div>
+  );
 }
 
 function BpgInjections({ patientUuid, leads }: SectionProps) {
@@ -134,7 +190,7 @@ function BpgInjections({ patientUuid, leads }: SectionProps) {
 
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title}>{leads && <Actions patientUuid={patientUuid} />}</CardHeader>
+      <CardHeader title={title} />
       {body}
     </div>
   );
@@ -221,24 +277,38 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
 
   return (
     <div className={cardStyles.card}>
-      <CardHeader title={title}>{leads && <Actions patientUuid={patientUuid} />}</CardHeader>
+      <CardHeader title={title} />
       {body}
     </div>
   );
 }
 
-/** The prescribed type's history leads, with Update prophylaxis and the Record actions; the other shows only when it has entries. */
+/**
+ * The current prescription as the Prophylaxis card shows it, with Update prophylaxis and the Record actions, then the
+ * prescription history and the doses: the prescribed type's first, the other only when it has entries.
+ */
 export default function ProphylaxisPage({ patientUuid }: { patientUuid: string }) {
+  const { t } = useTranslation();
   const oral = useProphylaxisSummary(patientUuid).summary?.type === 'Oral';
-  return oral ? (
+  return (
     <>
-      <OralEntries patientUuid={patientUuid} leads />
-      <BpgInjections patientUuid={patientUuid} leads={false} />
-    </>
-  ) : (
-    <>
-      <BpgInjections patientUuid={patientUuid} leads />
-      <OralEntries patientUuid={patientUuid} leads={false} />
+      <ProphylaxisCard
+        patientUuid={patientUuid}
+        title={t('currentPrescription', 'Current prescription')}
+        historyLink={false}
+      />
+      <PrescriptionHistory patientUuid={patientUuid} />
+      {oral ? (
+        <>
+          <OralEntries patientUuid={patientUuid} leads />
+          <BpgInjections patientUuid={patientUuid} leads={false} />
+        </>
+      ) : (
+        <>
+          <BpgInjections patientUuid={patientUuid} leads />
+          <OralEntries patientUuid={patientUuid} leads={false} />
+        </>
+      )}
     </>
   );
 }

@@ -102,6 +102,7 @@ function serve({
   failOral = false,
   summary = { type: 'BPG', injections: timing } as object | Error,
   editPrivilege = 'Add Encounters',
+  prescriptions = [] as Array<object>,
 } = {}) {
   mockOpenmrsFetch.mockImplementation(((url: string) => {
     if (url.includes('/encountertype/')) {
@@ -112,6 +113,10 @@ function serve({
     }
     if (failEncounters || (failOral && url.includes('encounterType=55271793'))) {
       return Promise.reject(new Error('Forbidden'));
+    }
+    // The patient's every encounter, which the prescription is read from.
+    if (!url.includes('encounterType=')) {
+      return Promise.resolve({ data: { results: prescriptions, totalCount: prescriptions.length } });
     }
     const results = url.includes('encounterType=04cf03db') ? injections : oralEntries;
     return Promise.resolve({ data: { results, totalCount: results.length } });
@@ -144,6 +149,61 @@ function rows(table: HTMLElement) {
         .map((cell) => cell.textContent),
     );
 }
+
+const [prescription, dateStarted, dateStopped, reasonStopped, duration] = [
+  '668e0221-8b41-5669-9ad8-78e193d42494',
+  '5bcc7d12-b279-5955-815c-090a1f392071',
+  'd75edc42-3213-5a06-9228-4e5735b9594b',
+  'fa21e431-e64d-5493-b18c-9a1eaf7ee16a',
+  '11117263-f71d-58e2-8363-d2e9b1dbddab',
+];
+const q28 = { uuid: '50be4b26-6c5b-5aaa-9254-3bfd313b4522', display: 'Q28 day BPG' };
+const oralPenicillin = { uuid: 'b9884219-358a-594b-94f5-f8a8863a25f3', display: 'Oral penicillin V' };
+const course = (regimen: object, started: string, stop?: string) => ({
+  uuid: `${regimen['display']}-${started}-${stop}`,
+  concept: { uuid: prescription },
+  value: null,
+  groupMembers: [
+    { uuid: 'r', concept: { uuid: prescription }, value: regimen },
+    { uuid: 's', concept: { uuid: dateStarted }, value: `${started}T00:00:00.000+0000` },
+    ...(stop
+      ? [
+          { uuid: 'x', concept: { uuid: dateStopped }, value: `${stop}T00:00:00.000+0000` },
+          { uuid: 'y', concept: { uuid: reasonStopped }, value: { uuid: 'side', display: 'Side effects' } },
+        ]
+      : []),
+  ],
+});
+// Yolanda's: oral penicillin from January, stopped in October on the consultation that starts BPG every 4 weeks.
+const yolanda = [
+  {
+    uuid: 'consult-jan',
+    encounterDatetime: '2026-01-12T09:00:00.000+0000',
+    encounterType: { uuid: 'consultation' },
+    obs: [course(oralPenicillin, '2026-01-12')],
+  },
+  {
+    uuid: 'consult-oct',
+    encounterDatetime: '2026-10-28T09:00:00.000+0000',
+    encounterType: { uuid: 'consultation' },
+    obs: [
+      course(q28, '2026-10-28'),
+      course(oralPenicillin, '2026-01-12', '2026-10-28'),
+      { uuid: 'd', concept: { uuid: duration }, value: { uuid: 'five', display: '5 years' } },
+    ],
+  },
+];
+const newlyPrescribed = {
+  regimen: 'Q28 day BPG',
+  type: 'BPG',
+  intervalDays: 28,
+  lastGiven: null,
+  nextDue: '2026-11-25',
+  status: 'ok',
+  onTime: { given: 0, total: 0, months: 6 },
+  adherence: null,
+  injections: [],
+};
 
 describe('ProphylaxisPage', () => {
   beforeEach(async () => {
@@ -266,9 +326,7 @@ describe('ProphylaxisPage', () => {
 
       renderPage();
 
-      expect(await screen.findByTestId('table-empty-state')).toHaveTextContent(
-        'There are no oral adherence reports to display',
-      );
+      expect(await screen.findByText('There are no oral adherence reports to display')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /^Record oral/ })).toBeInTheDocument();
     });
   });
@@ -349,16 +407,24 @@ describe('ProphylaxisPage', () => {
     expect(await within(table).findByText('02-Oct-2026')).toBeInTheDocument();
   });
 
-  it.each(layouts)('shows a table skeleton sized for a $layout while the injections load', ({ layout, compact }) => {
-    setLayout(layout);
-    mockOpenmrsFetch.mockImplementation((() => new Promise(() => undefined)) as never);
+  it.each(layouts)(
+    'shows a table skeleton sized for a $layout while the injections load',
+    async ({ layout, compact }) => {
+      setLayout(layout);
+      // The prescription history has loaded, so the one table skeleton is the injections'.
+      mockOpenmrsFetch.mockImplementation(((url: string) =>
+        url.includes('/encounter?') && !url.includes('encounterType=')
+          ? Promise.resolve({ data: { results: [], totalCount: 0 } })
+          : new Promise(() => undefined)) as never);
 
-    renderPage();
+      renderPage();
 
-    const { skeleton, columns } = tableSkeleton();
-    expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
-    expect(columns).toBe(4);
-  });
+      await screen.findByText('There is no prescription history to display');
+      const { skeleton, columns } = tableSkeleton();
+      expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
+      expect(columns).toBe(4);
+    },
+  );
 
   it('offers only Record BPG to a patient on BPG', async () => {
     renderPage();
@@ -389,10 +455,59 @@ describe('ProphylaxisPage', () => {
 
     renderPage();
 
-    expect(await screen.findByTestId('table-empty-state')).toHaveTextContent('There are no BPG injections to display');
+    expect(await screen.findByText('There are no BPG injections to display')).toBeInTheDocument();
     expect(screen.getByTestId('needs-prescription')).toHaveTextContent('Needs prescription');
     expect(screen.queryByRole('button', { name: /^Record BPG/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Record oral/ })).not.toBeInTheDocument();
+  });
+
+  it('leads with the current prescription as the Prophylaxis card shows it, with its actions and no link to itself', async () => {
+    serve({ injections: [], summary: newlyPrescribed, prescriptions: yolanda });
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Current prescription' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('prophylaxis-started')).toHaveTextContent('28-Oct-2026'));
+    expect(screen.getByTestId('prophylaxis-type')).toHaveTextContent('BPG · every 4 weeks');
+    expect(screen.getByTestId('prophylaxis-duration')).toHaveTextContent('5 years');
+    expect(screen.getByTestId('prophylaxis-last-dose')).toHaveTextContent('--');
+    expect(screen.getByTestId('prophylaxis-next-due')).toHaveTextContent('25-Nov-2026');
+    expect(screen.getByTestId('prophylaxis-on-time')).toHaveTextContent('0 of 0');
+    expect(screen.getAllByRole('button', { name: /^Update prophylaxis/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /^Record BPG/ })).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'History' })).not.toBeInTheDocument();
+  });
+
+  it('lists the prescription history, newest start first, the current course marked and a stopped one with why', async () => {
+    serve({ injections: [], summary: newlyPrescribed, prescriptions: yolanda });
+
+    renderPage();
+
+    const table = await screen.findByRole('table', { name: 'Prescription history' });
+    await waitFor(() =>
+      expect(rows(table)).toEqual([
+        ['Q28 day BPG', '28-Oct-2026', '--', '--', '28-Oct-2026', 'Current'],
+        ['Oral penicillin V', '12-Jan-2026', '28-Oct-2026', 'Side effects', '12-Jan-2026', ''],
+      ]),
+    );
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((header) => header.textContent),
+    ).toEqual(['Regimen', 'Started', 'Stopped', 'Reason stopped', 'Recorded', '']);
+  });
+
+  it('says so when the patient has never been prescribed prophylaxis', async () => {
+    serve({ injections: [], summary: { type: null, status: 'none' } });
+
+    renderPage();
+
+    const history = await screen.findByTestId('prescription-history');
+    await waitFor(() =>
+      expect(within(history).getByTestId('table-empty-state')).toHaveTextContent(
+        'There is no prescription history to display',
+      ),
+    );
   });
 
   it('says so when the injections cannot be loaded', async () => {

@@ -22,6 +22,10 @@ import styles from '../styles/summary-card.scss';
 
 interface ProphylaxisCardProps {
   patientUuid: string;
+  /** The heading, Prophylaxis by default. */
+  title?: string;
+  /** Whether to link to the Prophylaxis page, which the page itself does not. */
+  historyLink?: boolean;
 }
 
 function useRegimenLabel() {
@@ -55,7 +59,7 @@ const date = (value: string | null) => (value ? formatDate(parseDate(value), { t
 const percent = (fraction: number) => `${Math.round(fraction * 100)}%`;
 
 /** The patient summary's prophylaxis: regimen, its start and duration, last and next dose, on-time count, and the forms to record a dose. */
-export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
+export default function ProphylaxisCard({ patientUuid, title, historyLink = true }: ProphylaxisCardProps) {
   const { t } = useTranslation();
   const { summary, error } = useProphylaxisSummary(patientUuid);
   const { prophylaxisUpdate } = useConfig<Config>();
@@ -121,9 +125,9 @@ export default function ProphylaxisCard({ patientUuid }: ProphylaxisCardProps) {
 
   return (
     <div className={styles.card}>
-      <CardHeader title={t('prophylaxis', 'Prophylaxis')}>
+      <CardHeader title={title ?? t('prophylaxis', 'Prophylaxis')}>
         <div className={styles.actions}>
-          {pagePath && (
+          {historyLink && pagePath && (
             <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`} className={styles.headerLink}>
               {t('history', 'History')}
             </ConfigurableLink>

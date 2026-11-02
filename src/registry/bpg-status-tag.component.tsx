@@ -5,7 +5,14 @@ import { type ReportRow } from '../reports/report-dataset.resource';
 import styles from './registry.scss';
 
 /** The registry report's BPG statuses, in the order the filter offers them. */
-export const bpgStatuses = ['Covered', 'Deadline approaching', 'Not covered', 'No prescription', 'Oral'] as const;
+export const bpgStatuses = [
+  'Covered',
+  'Deadline approaching',
+  'First dose due',
+  'Not covered',
+  'No prescription',
+  'Oral',
+] as const;
 
 /** A BPG status as the filter offers it; the tag words a due dose by its days instead. */
 export function useBpgStatusLabel() {
@@ -14,6 +21,7 @@ export function useBpgStatusLabel() {
     ({
       Covered: t('covered', 'Covered'),
       'Deadline approaching': t('dueWithinSevenDays', 'Due within 7 days'),
+      'First dose due': t('firstDoseDue', 'First dose due'),
       'Not covered': t('notCovered', 'Not covered'),
       'No prescription': t('noPrescription', 'No prescription'),
       Oral: t('onOral', 'On oral'),
@@ -23,6 +31,7 @@ export function useBpgStatusLabel() {
 const tagTypes = {
   Covered: 'green',
   'Deadline approaching': 'blue',
+  'First dose due': 'cool-gray',
   'Not covered': 'red',
   'No prescription': 'warm-gray',
   Oral: 'gray',

@@ -10,7 +10,7 @@ const date = (value: unknown) => (typeof value === 'string' && value ? value.sli
 const text = (value: unknown) => (value == null || value === '' ? null : String(value));
 
 // The least covered first, as the status tag's colours read, and the patients with no BPG status last.
-const bpgRanks = ['Not covered', 'Deadline approaching', 'Covered', 'Oral', 'No prescription'];
+const bpgRanks = ['Not covered', 'Deadline approaching', 'First dose due', 'Covered', 'Oral', 'No prescription'];
 // Days until the next dose are a day count of a year or two at most, so a rank outweighs them.
 const bpgRankWeight = 100000;
 

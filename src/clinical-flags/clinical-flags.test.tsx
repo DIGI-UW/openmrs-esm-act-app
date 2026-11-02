@@ -127,26 +127,26 @@ describe('clinical banner flags', () => {
       </SWRConfig>,
     );
 
-  it('shows a clinician every flag: the echo, no prescription, and the recent recommendation', async () => {
-    await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
-    serve('none');
+  it.each([
+    ['none', false],
+    ['ok', false],
+    ['overdue', true],
+  ])(
+    'shows a clinician the echo and the recent recommendation, leaving prophylaxis (%s, on hold %s) to the prophylaxis pill',
+    async (status, bpgOnHold) => {
+      await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
+      serve(status, bpgOnHold);
 
-    renderFlags();
+      renderFlags();
 
-    expect(await screen.findByTestId('echo-status')).toHaveTextContent('Confirmatory echo needed');
-    expect(await screen.findByTestId('prescription-status')).toHaveTextContent('No prophylaxis prescription');
-    expect(await screen.findByTestId('procedure-status')).toHaveTextContent('Procedural rec. < 12 months');
-  });
-
-  it('shows a clinician no Prophylaxis prescribed while BPG is on hold, which the prophylaxis pill says', async () => {
-    await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
-    serve('overdue', true);
-
-    renderFlags();
-
-    await screen.findByTestId('procedure-status');
-    expect(screen.queryByTestId('prescription-status')).not.toBeInTheDocument();
-  });
+      expect(await screen.findByTestId('echo-status')).toHaveTextContent('Confirmatory echo needed');
+      expect(await screen.findByTestId('procedure-status')).toHaveTextContent('Procedural rec. < 12 months');
+      expect(screen.queryByTestId('prescription-status')).not.toBeInTheDocument();
+      expect(vi.mocked(openmrsFetch).mock.calls.some(([url]) => String(url).includes('/actcore/prophylaxis'))).toBe(
+        false,
+      );
+    },
+  );
 
   it('shows anyone else only the echo flag', async () => {
     await signInWith(['Get Encounters', 'Get Observations']);
