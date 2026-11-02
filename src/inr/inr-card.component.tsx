@@ -61,7 +61,7 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
   return (
     <div className={styles.card}>
       <CardHeader title={t('inrMonitoring', 'INR Monitoring')}>
-        <>
+        <div className={styles.headerActions}>
           {readings.length > 0 && (
             <Button
               kind="ghost"
@@ -86,7 +86,7 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
               {t('recordInr', 'Record INR')}
             </Button>
           )}
-        </>
+        </div>
       </CardHeader>
       {isLoading ? (
         <SkeletonText paragraph lineCount={2} />
