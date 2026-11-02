@@ -26,8 +26,8 @@ const group = (regimen: object, started: string | null, stopped?: string, uuid?:
     concepts.prescription,
     null,
     [
-      obs(concepts.prescription, regimen),
-      ...(started ? [obs(concepts.dateStarted, started)] : []),
+      obs(concepts.prescription, regimen, undefined, uuid && `${uuid}-regimen`),
+      ...(started ? [obs(concepts.dateStarted, started, undefined, uuid && `${uuid}-started`)] : []),
       ...(stopped ? [obs(concepts.dateStopped, stopped), obs(concepts.reasonStopped, coded('r', 'Allergy'))] : []),
     ],
     uuid,
@@ -410,7 +410,12 @@ describe('savePrescription', () => {
     expect(calls()).toHaveLength(1);
     const [[url, body]] = calls() as [[string, { obs: Array<{ uuid?: string; voided?: boolean }> }]];
     expect(url).toBe(`${restBaseUrl}/encounter/today`);
-    expect(body.obs.filter((one) => one.voided).map((one) => one.uuid)).toEqual(['main', 'duration-obs']);
+    expect(body.obs.filter((one) => one.voided).map((one) => one.uuid)).toEqual([
+      'main',
+      'main-regimen',
+      'main-started',
+      'duration-obs',
+    ]);
     expect(body.obs.filter((one) => !one.voided)).toHaveLength(3);
   });
 
@@ -428,7 +433,14 @@ describe('savePrescription', () => {
     await savePrescription({ ...common, current, main: 'main', today: '2026-10-25' });
 
     const [[, body]] = calls() as [[string, { obs: Array<Record<string, unknown>> }]];
-    expect(body.obs.filter((one) => one.voided).map((one) => one.uuid)).toEqual(['old', 'main']);
+    expect(body.obs.filter((one) => one.voided).map((one) => one.uuid)).toEqual([
+      'old',
+      'old-regimen',
+      'old-started',
+      'main',
+      'main-regimen',
+      'main-started',
+    ]);
     const added = body.obs.filter((one) => !one.voided && one.concept === concepts.prescription);
     expect(
       added.map((one) => {
