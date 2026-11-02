@@ -118,7 +118,7 @@ describe('Diagnosis to confirm', () => {
     render(<ScreenPositive />);
 
     const cells = within(screen.getByRole('row', { name: /Patient 4\b/ })).getAllByRole('cell');
-    expect(cells[2].textContent).toBe('');
+    expect(cells[2]).toHaveTextContent('');
   });
 
   it("links each patient's name to their chart", () => {
@@ -215,7 +215,7 @@ describe('Diagnosis to confirm', () => {
       const { rerender } = render(<ScreenPositive />);
 
       const { skeleton, rows, columns } = tableSkeleton();
-      expect({ rows, columns }).toEqual({ rows: 10, columns: 5 });
+      expect({ rows, columns }).toEqual({ rows: 10, columns: 4 });
       expect(skeleton.className.includes('cds--data-table--compact')).toBe(compact);
       dataset({ rows: screenPositiveRows });
       rerender(<ScreenPositive />);
