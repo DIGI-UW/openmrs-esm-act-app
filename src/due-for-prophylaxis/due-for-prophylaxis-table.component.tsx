@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } fr
 import { ConfigurableLink, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { patientChartUrl } from '../patient-chart-url';
 import { type ReportRow } from '../reports/report-dataset.resource';
-import { adherence, type DueColumn, dueColumns, lowAdherence } from './due-list';
+import { adherence, type DueColumn, dueColumns, firstDoseDue, lowAdherence } from './due-list';
 import { RecordDoseAction, useRecordDose } from './record-dose.component';
 import styles from './due-for-prophylaxis.scss';
 
@@ -27,10 +27,11 @@ export function DueForProphylaxisTable({ rows, recorded }: { rows: Array<ReportR
         return null;
       }
       const recordedToday = recorded.has(String(row.patient_uuid));
-      const dueNow = !recordedToday && (row.status === 'due_today' || row.status === 'due_soon');
+      const firstDose = !recordedToday && firstDoseDue(row);
+      const dueNow = !recordedToday && !firstDose && (row.status === 'due_today' || row.status === 'due_soon');
       return (
         <Tag
-          type={recordedToday ? 'green' : row.status === 'overdue' ? 'red' : 'warm-gray'}
+          type={recordedToday ? 'green' : row.status === 'overdue' ? 'red' : firstDose ? 'blue' : 'warm-gray'}
           className={dueNow ? styles.dueTag : undefined}
         >
           {text}

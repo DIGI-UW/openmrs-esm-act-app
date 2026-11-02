@@ -52,7 +52,7 @@
   flex-shrink: 0;
 }
 
-// Carbon has no yellow tag, so Due today and Due in 48 h are drawn in Carbon's yellow here.
+// Carbon has no yellow tag, so a dose due is drawn in Carbon's yellow here.
 .dueTag {
   @include act-yellow-tag;
 }

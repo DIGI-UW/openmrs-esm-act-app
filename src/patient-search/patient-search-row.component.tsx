@@ -10,7 +10,8 @@ import styles from './patient-search-panel.scss';
 
 function StatusTag({ patientUuid }: { patientUuid: string }) {
   const { summary } = useProphylaxisSummary(patientUuid);
-  return <ProphylaxisPill summary={summary} />;
+  // ACT 2.0's patient list showed a patient without a prescription as plain None, not as a status.
+  return <ProphylaxisPill summary={summary} showNoPrescription={false} />;
 }
 
 /** One patient in the search panel: initials, name, demographics, ACT ID and prophylaxis status. */

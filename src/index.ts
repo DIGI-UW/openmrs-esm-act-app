@@ -108,6 +108,10 @@ export const consultationCard = getAsyncLifecycle(() => import('./consultations/
 
 export const inrStatusFlag = getAsyncLifecycle(() => import('./inr/inr-status-flag.component'), options);
 export const allergiesPill = getAsyncLifecycle(() => import('./allergies/allergies-pill.component'), options);
+export const anaphylaxisAlert = getAsyncLifecycle(
+  () => import('./patient-status/anaphylaxis-alert.component'),
+  options,
+);
 
 export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/clinical-flags.component'), options);
 
