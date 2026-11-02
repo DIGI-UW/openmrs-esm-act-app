@@ -502,6 +502,33 @@ describe('ProphylaxisPage', () => {
     ).toEqual(['Regimen', 'Started', 'Stopped', 'Reason stopped', 'Recorded', '']);
   });
 
+  it('shows the day a course was replaced when a later prescription drops it without a stop, and a stop over that', async () => {
+    const [january, october] = yolanda;
+    const march = { ...january, uuid: 'consult-mar', encounterDatetime: '2026-03-01T09:00:00.000+0000' };
+    const november = { ...october, uuid: 'consult-nov', encounterDatetime: '2026-11-01T09:00:00.000+0000' };
+    serve({
+      injections: [],
+      summary: newlyPrescribed,
+      prescriptions: [
+        january,
+        { ...march, obs: [course(oralPenicillin, '2026-03-01')] },
+        { ...october, obs: [course(q28, '2026-10-28'), course(oralPenicillin, '2026-03-01', '2026-10-28')] },
+        { ...november, obs: [course(q28, '2026-10-28')] },
+      ],
+    });
+
+    renderPage();
+
+    const table = await screen.findByRole('table', { name: 'Prescription history' });
+    await waitFor(() =>
+      expect(rows(table)).toEqual([
+        ['Q28 day BPG', '28-Oct-2026', '--', '--', '28-Oct-2026', 'Current'],
+        ['Oral penicillin V', '01-Mar-2026', '28-Oct-2026', 'Side effects', '01-Mar-2026', ''],
+        ['Oral penicillin V', '12-Jan-2026', 'Replaced 01-Mar-2026', '--', '12-Jan-2026', ''],
+      ]),
+    );
+  });
+
   it('says so when the patient has never been prescribed prophylaxis', async () => {
     serve({ injections: [], summary: { type: null, status: 'none' } });
 

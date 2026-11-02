@@ -31,7 +31,7 @@ export function useBpgStatusLabel() {
 const tagTypes = {
   Covered: 'green',
   'Deadline approaching': 'blue',
-  'First dose due': 'cool-gray',
+  'First dose due': 'blue',
   'Not covered': 'red',
   'No prescription': 'warm-gray',
   Oral: 'gray',

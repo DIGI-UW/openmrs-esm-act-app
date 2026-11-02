@@ -103,7 +103,13 @@ function PrescriptionHistory({ patientUuid }: { patientUuid: string }) {
           <TableRow key={`${course.regimen} ${course.started}`}>
             <TableCell>{course.regimen}</TableCell>
             <TableCell>{day(course.started)}</TableCell>
-            <TableCell>{course.stopped ? day(course.stopped) : '--'}</TableCell>
+            <TableCell>
+              {course.stopped
+                ? day(course.stopped)
+                : course.replaced
+                  ? t('replacedOn', 'Replaced {{date}}', { date: day(course.replaced) })
+                  : '--'}
+            </TableCell>
             <TableCell>{course.reasonStopped ?? '--'}</TableCell>
             <TableCell>{day(course.recorded)}</TableCell>
             <TableCell>

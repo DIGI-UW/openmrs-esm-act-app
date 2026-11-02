@@ -6,7 +6,8 @@ import { daysUntil, dueTone, fullDate, shortDate } from './due-tone';
 import { type PillTone, StatusPill } from './status-pill.component';
 
 /**
- * A prescription with no dose yet, oral included, has its first dose due; an oral one with no known supply end, none.
+ * A prescription with no dose yet, oral included, has its first dose due; an oral one with a report but no known supply
+ * end shows none.
  */
 export function ProphylaxisPill({
   summary,

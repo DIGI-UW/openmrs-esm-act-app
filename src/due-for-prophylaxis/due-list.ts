@@ -75,7 +75,10 @@ export function dueColumns(t: TFunction, recorded: Set<string>): Array<DueColumn
   ];
 }
 
-/** The row's status; as in the patient banner, a prescribed patient with no dose yet has a first dose due unless overdue. */
+/** As in the patient banner, a prescribed patient with no dose yet has a first dose due unless overdue. */
+export const firstDoseDue = (row: ReportRow) =>
+  Boolean(row.status) && row.status !== 'no_prescription' && row.status !== 'overdue' && !row.last_given;
+
 export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean) {
   if (recordedToday) {
     return t('recordedToday', 'Recorded today');
@@ -86,11 +89,11 @@ export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean
   if (!row.status) {
     return '';
   }
+  if (firstDoseDue(row)) {
+    return t('firstDoseDue', 'First dose due');
+  }
   if (row.status === 'overdue') {
     return t('overdue', 'Overdue');
-  }
-  if (!row.last_given) {
-    return t('firstDoseDue', 'First dose due');
   }
   if (row.status === 'up_to_date') {
     return t('upToDate', 'Up to date');

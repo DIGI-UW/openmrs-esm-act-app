@@ -66,7 +66,7 @@ function statusTag(name: RegExp) {
   const tag = within(status).getByTitle(/./).parentElement;
   return [
     tag.textContent,
-    tag.className.match(/cds--tag--(red|green|warm-gray)/)?.[0],
+    tag.className.match(/cds--tag--(red|green|warm-gray|blue)/)?.[0],
     tag.classList.contains('dueTag'),
   ];
 }
@@ -217,7 +217,7 @@ describe('Due for prophylaxis page', () => {
     );
   });
 
-  it('tags Overdue red, First dose due and Due soon yellow, and Recorded today green', async () => {
+  it('tags Overdue red, First dose due blue as in the patient banner, Due soon yellow, and Recorded today green', async () => {
     dataset({ rows: dueRows });
     recorded(['patient-today']);
 
@@ -226,7 +226,7 @@ describe('Due for prophylaxis page', () => {
 
     expect([/rhd00012/, /rhd00021/, /rhd00003/, /rhd00052/].map(statusTag)).toEqual([
       ['Overdue', 'cds--tag--red', false],
-      ['First dose due', 'cds--tag--warm-gray', true],
+      ['First dose due', 'cds--tag--blue', false],
       ['Recorded today', 'cds--tag--green', false],
       ['Due soon', 'cds--tag--warm-gray', true],
     ]);

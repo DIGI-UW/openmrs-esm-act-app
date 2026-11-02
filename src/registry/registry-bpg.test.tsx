@@ -124,7 +124,7 @@ describe('Registry BPG status and adherence', () => {
     expect(tag).toHaveClass('cds--tag--gray');
   });
 
-  it('shows a BPG patient given no dose yet as a cool gray First dose due tag, as the patient banner says', async () => {
+  it('shows a BPG patient given no dose yet as a blue First dose due tag, as the patient banner says', async () => {
     await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
@@ -138,7 +138,7 @@ describe('Registry BPG status and adherence', () => {
 
     const tag = within(bpgCell('Patient 1')).getByTestId('bpg-status');
     expect(tag).toHaveTextContent(/^First dose due$/);
-    expect(tag).toHaveClass('cds--tag--cool-gray');
+    expect(tag).toHaveClass('cds--tag--blue');
   });
 
   it('narrows the rows to the patients on oral prophylaxis', async () => {

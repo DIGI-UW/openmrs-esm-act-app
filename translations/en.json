@@ -765,6 +765,7 @@
   "registryDescriptionAt": "Patients enrolled in the RHD Registry programme at {{clinic}}",
   "remove": "Remove",
   "renameStudy": "Rename study",
+  "replacedOn": "Replaced {{date}}",
   "report": "Report",
   "reportHasNoRows": "The report has no rows for these dates",
   "reports": "Reports",

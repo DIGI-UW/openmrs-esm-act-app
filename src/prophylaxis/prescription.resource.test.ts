@@ -62,6 +62,7 @@ describe('prescriptionHistoryOf', () => {
         started: '2026-03-02',
         stopped: '2026-07-30',
         reasonStopped: 'Allergy',
+        replaced: null,
         recorded: '2026-03-02',
         current: false,
       },
@@ -70,6 +71,7 @@ describe('prescriptionHistoryOf', () => {
         started: '2026-01-10',
         stopped: '2026-07-30',
         reasonStopped: 'Allergy',
+        replaced: null,
         recorded: '2026-01-10',
         current: false,
       },
@@ -88,6 +90,23 @@ describe('prescriptionHistoryOf', () => {
     expect(history.map((course) => [course.regimen, course.stopped, course.current])).toEqual([
       ['Q28 day BPG', null, true],
       ['Oral penicillin V', null, false],
+    ]);
+  });
+
+  it('dates a course a later prescription drops without a stop by the first day that no longer carries it', () => {
+    const history = prescriptionHistoryOf(
+      [
+        encounter('start', '2026-01-10T09:00:00.000+0000', [group(oral, '2026-01-10')]),
+        encounter('carried', '2026-03-02T09:00:00.000+0000', [group(oral, '2026-01-10')]),
+        encounter('switch', '2026-06-10T09:00:00.000+0000', [group(q28, '2026-06-10')]),
+        encounter('later', '2026-08-01T09:00:00.000+0000', [group(q28, '2026-06-10')]),
+      ],
+      concepts,
+    );
+
+    expect(history.map((course) => [course.regimen, course.current, course.replaced])).toEqual([
+      ['Q28 day BPG', true, null],
+      ['Oral penicillin V', false, '2026-06-10'],
     ]);
   });
 

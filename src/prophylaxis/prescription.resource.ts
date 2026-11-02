@@ -109,6 +109,8 @@ export interface PrescribedCourse {
   started: string;
   stopped: string | null;
   reasonStopped: string | null;
+  /** The first later day whose prescription no longer carries the course; null while the latest day carries it. */
+  replaced: string | null;
   /** The day of the first encounter that records the course. */
   recorded: string;
   current: boolean;
@@ -125,6 +127,8 @@ export function prescriptionHistoryOf(
 ): Array<PrescribedCourse> {
   const inForce = new Set(current?.groups.map((one) => `${one.regimen.uuid} ${one.started}`));
   const courses = new Map<string, PrescribedCourse>();
+  const lastCarried = new Map<string, string>();
+  const prescribedDays = new Set<string>();
   const byDay = encounters
     .map((encounter) => ({ encounter, day: dayOfEncounter(encounter, concepts) }))
     .sort(
@@ -133,6 +137,7 @@ export function prescriptionHistoryOf(
     );
   for (const { encounter, day } of byDay) {
     for (const group of groupsOf(encounter, concepts)) {
+      prescribedDays.add(day);
       const regimen = answerOf(memberOf(group, concepts.prescription)!.value);
       const started = memberOf(group, concepts.dateStarted)?.value;
       if (!started || regimen.uuid === concepts.none) {
@@ -144,6 +149,7 @@ export function prescriptionHistoryOf(
         started: dayOf(started),
         stopped: null,
         reasonStopped: null,
+        replaced: null,
         recorded: day,
         current: inForce.has(key),
       };
@@ -154,7 +160,11 @@ export function prescriptionHistoryOf(
         course.reasonStopped = reason ? answerOf(reason.value).label : null;
       }
       courses.set(key, course);
+      lastCarried.set(key, day);
     }
+  }
+  for (const [key, course] of courses) {
+    course.replaced = [...prescribedDays].find((day) => day > lastCarried.get(key)!) ?? null;
   }
   return [...courses.values()].sort((a, b) => b.started.localeCompare(a.started));
 }
