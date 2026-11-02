@@ -176,7 +176,7 @@ export function ResearchParticipationAction() {
   return (
     <QuickActionTile
       Icon={Chemistry}
-      label={t('researchParticipation', 'Research participation')}
+      label={t('studies', 'Studies')}
       subtitle={t('governedOffByDefault', 'Governed · OFF by default')}
       to={instanceAdminQuickActions.researchParticipationUrl}
     />
