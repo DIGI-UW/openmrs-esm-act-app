@@ -17,7 +17,7 @@ import { type Config } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import Consultations, { useStartConsultation } from './consultations.component';
 import { useConsultations } from './consultations.resource';
-import { useDiagnoses } from './patient-details.resource';
+import { type DiagnosisRow, useDiagnoses } from './patient-details.resource';
 import { toListedItems } from './repeated-lists.resource';
 import styles from '../cardiac-tests/cardiac-tests.scss';
 
@@ -77,14 +77,18 @@ export function CompactTable<Row extends { key: string }>({
 }
 
 /**
- * Every diagnosis the patient's Patient Information records, as a table, with Edit, which reopens that Patient
- * Information, for a user who may record it.
+ * Every diagnosis the patient's latest consultation records, as a table, with Edit, which reopens that consultation,
+ * for a user who may record one. A diagnosis a Patient Information recorded before AR-167 is listed until a
+ * consultation records one, and its Edit reopens that Patient Information.
  */
 export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { patientInformationForm } = useConfig<Config>();
+  const { consultations, patientInformationForm } = useConfig<Config>();
   const { diagnoses, error, isLoading } = useDiagnoses(patientUuid);
-  const mayEdit = useMayEnterForm(patientInformationForm);
+  const mayEditConsultation = useMayEnterForm(consultations.form);
+  const mayEditInformation = useMayEnterForm(patientInformationForm);
+  const formOf = (one: DiagnosisRow) => (one.onConsultation ? consultations.form : patientInformationForm);
+  const mayEdit = diagnoses.every((one) => (one.onConsultation ? mayEditConsultation : mayEditInformation));
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
   const title = t('diagnoses', 'Diagnoses');
   type Row = (typeof diagnoses)[number];
@@ -104,7 +108,7 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
                   interpolation: { escapeValue: false },
                 })}
                 disabled={isOpening}
-                onClick={() => open(patientInformationForm, undefined, one.encounterUuid)}
+                onClick={() => open(formOf(one), undefined, one.encounterUuid)}
               />
             ),
           },

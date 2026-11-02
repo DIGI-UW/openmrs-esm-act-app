@@ -1,12 +1,21 @@
 import { type ReportRow } from '../reports/report-dataset.resource';
 
-/** Overdue, due today, due in the next two days or up to date, as the Due for Prophylaxis report words it. */
+/** ACT Core's and the registry's due soon window, which the patient banner shows. */
+const PROPHYLAXIS_DUE_SOON_DAYS = 7;
+
+/** Overdue, due today, due in the next 7 days or up to date, as the Due for Prophylaxis report names its statuses. */
 function dueStatus(daysUntilDue: unknown) {
   if (daysUntilDue === null || daysUntilDue === undefined || daysUntilDue === '') {
     return '';
   }
   const days = Number(daysUntilDue);
-  return days < 0 ? 'overdue' : days === 0 ? 'due_today' : days <= 2 ? 'due_soon' : 'up_to_date';
+  return days < 0
+    ? 'overdue'
+    : days === 0
+      ? 'due_today'
+      : days <= PROPHYLAXIS_DUE_SOON_DAYS
+        ? 'due_soon'
+        : 'up_to_date';
 }
 
 /**

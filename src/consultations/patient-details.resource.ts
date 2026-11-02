@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, parseDate, restBaseUrl } from '@openmrs/esm-framework';
 import {
   answersIn,
   answerText,
@@ -27,9 +27,15 @@ export function usePersonDetails(patientUuid: string | null) {
   return { attributes, village: data?.data?.preferredAddress?.cityVillage ?? null, error, isLoading };
 }
 
-/** The Patient Information questions a diagnosis reads. */
+/**
+ * The questions a diagnosis reads. A clinician records it on the RHD Consultation Visit (AR-167); one a Patient
+ * Information recorded before then still counts, so both encounter types are read.
+ */
 export const diagnosisConcepts = {
-  encounterType: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
+  encounterTypes: {
+    consultation: 'c2503561-c00d-5460-8157-43d594472b4a',
+    patientInformation: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
+  },
   group: '594b4495-36dc-52a6-9810-15a9e2e2dcb9',
   category: '1a5aa050-661d-5e89-95d7-c1eba476df22',
   active: 'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
@@ -43,12 +49,28 @@ export const diagnosisConcepts = {
   ],
 };
 
+/** The patient's consultations and Patient Information together, newest first. */
+function useDiagnosisEncounters(patientUuid: string | null) {
+  const consultations = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.consultation);
+  const information = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.patientInformation);
+  const tag = (list: Array<ChartEncounter>, onConsultation: boolean) =>
+    list.map((encounter) => ({ ...encounter, onConsultation }));
+  const encounters = [...tag(consultations.encounters, true), ...tag(information.encounters, false)].sort(
+    (a, b) => parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),
+  );
+  return {
+    encounters,
+    error: consultations.error ?? information.error,
+    isLoading: consultations.isLoading || information.isLoading,
+  };
+}
+
 /**
- * The diagnosis of the patient's latest Patient Information, as the registry reads it: the first Diagnosis with a
- * Category, and its details in name order. Null with none.
+ * The diagnosis of the patient's latest consultation or Patient Information that records one, as the registry reads
+ * it: the first Diagnosis with a Category, and its details in name order. Null with none.
  */
 export function useLatestDiagnosis(patientUuid: string | null) {
-  const { encounters, error, isLoading } = useChartEncounters(patientUuid, diagnosisConcepts.encounterType);
+  const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
   const group = encounters
     .flatMap((encounter) => answersIn(encounter.obs, diagnosisConcepts.group))
     .find((one) => answersIn(one.groupMembers, diagnosisConcepts.category).length);
@@ -65,8 +87,10 @@ export function useLatestDiagnosis(patientUuid: string | null) {
 
 export interface DiagnosisRow {
   key: string;
-  /** The Patient Information that records it, which Edit reopens. */
+  /** The consultation or Patient Information that records it, which Edit reopens. */
   encounterUuid: string;
+  /** Whether a consultation records it; otherwise a Patient Information from before AR-167. */
+  onConsultation: boolean;
   diagnosis: string;
   active: string;
   started: string | null;
@@ -74,7 +98,12 @@ export interface DiagnosisRow {
 }
 
 /** One Diagnosis answer group as a table row: the category with its details, and its status and dates. */
-export function toDiagnosisRow(group: GroupedObs, key: string, encounterUuid: string): DiagnosisRow {
+export function toDiagnosisRow(
+  group: GroupedObs,
+  key: string,
+  encounterUuid: string,
+  onConsultation = true,
+): DiagnosisRow {
   const one = (concept: string) => answersIn(group.groupMembers, concept)[0]?.value;
   const category = answerText(one(diagnosisConcepts.category));
   const details = (group.groupMembers ?? [])
@@ -84,6 +113,7 @@ export function toDiagnosisRow(group: GroupedObs, key: string, encounterUuid: st
   return {
     key,
     encounterUuid,
+    onConsultation,
     diagnosis: details.length ? `${category} (${details.join(', ')})` : category,
     active: answerText(one(diagnosisConcepts.active)),
     started: one(diagnosisConcepts.started) ? String(one(diagnosisConcepts.started)) : null,
@@ -91,16 +121,21 @@ export function toDiagnosisRow(group: GroupedObs, key: string, encounterUuid: st
   };
 }
 
-/** Every Diagnosis with a Category in the patient's latest Patient Information that has one; earlier records are superseded. */
+/**
+ * Every Diagnosis with a Category in the patient's latest consultation or Patient Information that has one; earlier
+ * records are superseded.
+ */
 export function useDiagnoses(patientUuid: string | null) {
-  const { encounters, error, isLoading } = useChartEncounters(patientUuid, diagnosisConcepts.encounterType);
+  const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
   const withCategory = (encounter: ChartEncounter) =>
     answersIn(encounter.obs, diagnosisConcepts.group).filter(
       (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
     );
   const latest = encounters.find((encounter) => withCategory(encounter).length);
   const diagnoses = latest
-    ? withCategory(latest).map((group, index) => toDiagnosisRow(group, `${latest.uuid}-${index}`, latest.uuid))
+    ? withCategory(latest).map((group, index) =>
+        toDiagnosisRow(group, `${latest.uuid}-${index}`, latest.uuid, latest.onConsultation),
+      )
     : [];
   return { diagnoses, error, isLoading };
 }

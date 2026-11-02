@@ -178,6 +178,20 @@ describe('configSchema', () => {
         },
         vitaminKAntagonists: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
         penicillinAllergyAnswers: ['149071AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'b4e6c064-ab4f-5ee4-9837-094731ee23d4'],
+        vitals: [
+          {
+            label: 'BP',
+            concepts: ['5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+            unit: 'mmHg',
+          },
+          { label: 'Pulse', concepts: ['5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'bpm' },
+          { label: 'Temp', concepts: ['5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '°C' },
+          { label: 'RR', concepts: ['5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '/min' },
+          { label: 'SpO2', concepts: ['5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: '%' },
+          { label: 'Weight', concepts: ['5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'kg' },
+          { label: 'Height', concepts: ['5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'cm' },
+          { label: 'MUAC', concepts: ['1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], unit: 'cm' },
+        ],
       },
       medications: {
         encounterType: 'e3f1b6a8-5c2d-4f7e-9a41-6d8b2c0e7f53',
@@ -193,6 +207,17 @@ describe('configSchema', () => {
           value: '161482AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           newDose: 'f27f6ed2-48db-5be7-91da-3e2483915462',
           nextInr: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          doseChange: 'a72dadd1-27de-5578-9595-31d2b621870d',
+          indication: '6e8ed53f-15e6-5b00-9ed0-44b11bd2d638',
+        },
+        answers: {
+          yes: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          targets: [
+            { label: '1.5-2.5', uuid: '2822a113-1cd3-510e-b5bf-95b9279b1a4f' },
+            { label: '2.0-3.0', uuid: 'd894d89a-04bd-5fc0-91a0-5dc3ddd8802b' },
+            { label: '2.5-3.5', uuid: 'ea841a3a-f9cb-5761-aac6-939ffb158d94' },
+          ],
         },
       },
       contactCard: {

@@ -200,7 +200,7 @@ describe('Home quick action tiles', () => {
     { Tile: FacilityReportAction, label: 'Facility report', subtitle: 'Monthly · quarterly' },
     { Tile: FormsAndSitesAction, label: 'Forms & sites', subtitle: 'Configure instance' },
     { Tile: RolePermissionsAction, label: 'Role permissions', subtitle: 'Who sees what' },
-    { Tile: ResearchParticipationAction, label: 'Research participation', subtitle: 'Governed · OFF by default' },
+    { Tile: ResearchParticipationAction, label: 'Studies', subtitle: 'Governed · OFF by default' },
   ])('labels $label with $subtitle', ({ Tile, label, subtitle }) => {
     render(<Tile />);
 
@@ -235,7 +235,7 @@ describe('Home quick action tiles', () => {
     },
   );
 
-  it('links Register patient, Facility report, Forms & sites, Role permissions and Research participation to their configured screens', () => {
+  it('links Register patient, Facility report, Forms & sites, Role permissions and Studies to their configured screens', () => {
     window.openmrsBase = '/openmrs';
     render(
       <>
@@ -260,7 +260,7 @@ describe('Home quick action tiles', () => {
       'href',
       '/openmrs/spa/home/act-role-permissions',
     );
-    expect(screen.getByRole('link', { name: /Research participation/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Studies/ })).toHaveAttribute(
       'href',
       '/openmrs/spa/home/act-studies',
     );

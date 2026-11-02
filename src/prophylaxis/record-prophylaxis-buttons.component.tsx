@@ -40,7 +40,7 @@ export function RecordProphylaxisButtons({ patientUuid }: { patientUuid: string 
       {buttons.map(({ type, label, form }) =>
         type === 'BPG' && held ? (
           <span key={form} title={held.reason} data-testid="bpg-on-hold">
-            <Tag type="gray" size="sm">
+            <Tag type="red" size="sm">
               {t('bpgOnHold', 'BPG on hold')}
             </Tag>
           </span>
