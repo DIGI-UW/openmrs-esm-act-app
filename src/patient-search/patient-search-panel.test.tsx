@@ -34,7 +34,6 @@ const esther = patient('esther', 'Esther Nambi', 'rhd00001');
 // Each patient's next dose, in days from today.
 const dueIn: Record<string, number> = { grace: -3, esther: 20 };
 const bpgOnHold = new Set<string>();
-// The patients prescribed and given no dose yet.
 const undosed = new Set<string>();
 // ACT Core's status for a dose due in so many days.
 const statusIn = (days: number) => (days < 0 ? 'overdue' : days === 0 ? 'dueToday' : days <= 7 ? 'dueSoon' : 'ok');

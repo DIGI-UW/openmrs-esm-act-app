@@ -6,9 +6,7 @@ import { daysUntil, dueTone, fullDate, shortDate } from './due-tone';
 import { type PillTone, StatusPill } from './status-pill.component';
 
 /**
- * Prophylaxis by ACT Core's status, whose due soon is 7 days: BPG on hold after an unreviewed anaphylaxis, no
- * prescription, overdue, first dose not yet given (an oral regimen with no report included), due soon or up to date.
- * None for an oral regimen with a report whose supply end is unknown.
+ * A prescription with no dose yet, oral included, has its first dose due; an oral one with no known supply end, none.
  */
 export function ProphylaxisPill({
   summary,

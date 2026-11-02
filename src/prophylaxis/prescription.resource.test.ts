@@ -43,7 +43,7 @@ describe('prescriptionHistoryOf', () => {
     const history = prescriptionHistoryOf(
       [
         encounter('first', '2026-01-10T09:00:00.000+0000', [group(oral, '2026-01-10'), group(none, '2026-01-10')]),
-        // An update carries the oral course forward beside the new BPG one, then a later consultation stops both.
+        // An update carries the oral course beside the new BPG one; a later consultation stops both.
         encounter('update', '2026-03-02T09:00:00.000+0000', [group(q28, '2026-03-02'), group(oral, '2026-01-10')]),
         encounter('stop', '2026-08-01T09:00:00.000+0000', [
           consultation('2026-07-30'),

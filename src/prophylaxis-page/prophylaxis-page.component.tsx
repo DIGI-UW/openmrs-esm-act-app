@@ -62,7 +62,6 @@ interface SectionProps {
   leads: boolean;
 }
 
-/** Every course prescribed, newest start first, the ones in force marked Current. */
 function PrescriptionHistory({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
@@ -283,10 +282,6 @@ function OralEntries({ patientUuid, leads }: SectionProps) {
   );
 }
 
-/**
- * The current prescription as the Prophylaxis card shows it, with Update prophylaxis and the Record actions, then the
- * prescription history and the doses: the prescribed type's first, the other only when it has entries.
- */
 export default function ProphylaxisPage({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const oral = useProphylaxisSummary(patientUuid).summary?.type === 'Oral';

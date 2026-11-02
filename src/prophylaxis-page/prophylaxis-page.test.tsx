@@ -176,7 +176,6 @@ const course = (regimen: object, started: string, stop?: string) => ({
       : []),
   ],
 });
-// Yolanda's: oral penicillin from January, stopped in October on the consultation that starts BPG every 4 weeks.
 const yolanda = [
   {
     uuid: 'consult-jan',

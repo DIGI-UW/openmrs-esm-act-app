@@ -22,7 +22,6 @@ import styles from '../styles/summary-card.scss';
 
 interface ProphylaxisCardProps {
   patientUuid: string;
-  /** The heading, Prophylaxis by default. */
   title?: string;
   /** Whether to link to the Prophylaxis page, which the page itself does not. */
   historyLink?: boolean;

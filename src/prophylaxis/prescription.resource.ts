@@ -54,7 +54,6 @@ const answerOf = (value: unknown): Answer => {
 const memberOf = (group: PrescriptionObs, concept: string) =>
   (group.groupMembers ?? []).find((member) => member.concept.uuid === concept);
 
-/** An encounter's day: its Consultation Date when it has one, else its encounter date. */
 const dayOfEncounter = (encounter: PrescriptionEncounter, concepts: Concepts) =>
   dayOf(
     encounter.obs.find((one) => one.concept.uuid === concepts.consultationDate)?.value ?? encounter.encounterDatetime,
@@ -112,14 +111,12 @@ export interface PrescribedCourse {
   reasonStopped: string | null;
   /** The day of the first encounter that records the course. */
   recorded: string;
-  /** Whether the course is in force on the current prescription. */
   current: boolean;
 }
 
 /**
- * Every course of prophylaxis prescribed, a course being a regimen and its Date Started however many encounters carry
- * it forward, newest start first. A course takes the Date Stopped of the latest encounter that stops it; None is not a
- * course.
+ * Each course, a regimen and its Date Started however many encounters carry it, newest start first; None is skipped.
+ * A course takes the Date Stopped of the latest encounter that stops it.
  */
 export function prescriptionHistoryOf(
   encounters: Array<PrescriptionEncounter>,
