@@ -16,7 +16,8 @@ import { inrResult, targetRange, toInrReviews } from '../inr/inr.resource';
 import { InrPill } from '../patient-status/status-pills.component';
 import ConsultationCard from './consultation-card.component';
 import Consultations from './consultations.component';
-import { type ChartEncounter, toConsultation, warfarinOf } from './consultations.resource';
+import { type ChartEncounter, toConsultation } from './consultations.resource';
+import { warfarinOf } from '../medications/medications.resource';
 import { diagnosisConcepts } from './patient-details.resource';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 
@@ -70,6 +71,9 @@ const warfarinGroup = (stopped = false) =>
     ...(stopped ? [obs(c.dateStopped, '2026-09-01')] : []),
   ]);
 
+const medicationUpdate = (uuid: string, date: string, extra: Array<unknown>): ChartEncounter =>
+  ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, obs: extra }) as ChartEncounter;
+
 const inrEncounter = (uuid: string, tested: string, value: number, next: string): ChartEncounter =>
   ({
     uuid,
@@ -88,11 +92,13 @@ const inrEncounter = (uuid: string, tested: string, value: number, next: string)
 function serve({
   consultations = [] as Array<ChartEncounter>,
   inr = [] as Array<ChartEncounter>,
+  updates = [] as Array<ChartEncounter>,
   patientInformation = [] as Array<ChartEncounter>,
   mayEnter = true,
 }: {
   consultations?: Array<ChartEncounter>;
   inr?: Array<ChartEncounter>;
+  updates?: Array<ChartEncounter>;
   patientInformation?: Array<ChartEncounter>;
   mayEnter?: boolean;
 } = {}) {
@@ -102,6 +108,9 @@ function serve({
     }
     if (url.includes(`encounterType=${config.inrReviews.encounterType}`)) {
       return { data: { results: inr, totalCount: inr.length } };
+    }
+    if (url.includes(`encounterType=${config.medications.encounterType}`)) {
+      return { data: { results: updates, totalCount: updates.length } };
     }
     if (url.includes(`encounterType=${diagnosisConcepts.encounterTypes.patientInformation}`)) {
       return { data: { results: patientInformation, totalCount: patientInformation.length } };
@@ -177,6 +186,57 @@ describe('chart pages by role', () => {
     expect(
       warfarinOf([consultation('later', '2026-10-01'), consultation('old', '2026-09-01', [warfarinGroup()])], c, vkas),
     ).not.toBeNull();
+  });
+
+  it('reads warfarin from the Medication Update records too, the latest record of the medicine deciding', () => {
+    const vkas = config.consultations.vitaminKAntagonists;
+    const added = medicationUpdate('update', '2026-09-01', [warfarinGroup()]);
+    expect(warfarinOf([added], c, vkas)).toEqual({ dose: '5 mg daily' });
+    expect(warfarinOf([consultation('visit', '2026-10-01'), added], c, vkas)).toEqual({ dose: '5 mg daily' });
+    const stopped = medicationUpdate('stop', '2026-10-01', [warfarinGroup(true)]);
+    expect(warfarinOf([stopped, added], c, vkas)).toBeNull();
+  });
+
+  it('keeps warfarin active when a later record lists only another medicine', () => {
+    const vkas = config.consultations.vitaminKAntagonists;
+    const aspirin = obs(c.medication, null, [obs(c.medication, coded('aspirin', 'Aspirin'))]);
+    const added = medicationUpdate('update', '2026-09-01', [warfarinGroup()]);
+    expect(warfarinOf([consultation('later', '2026-10-01', [aspirin]), added], c, vkas)).toEqual({
+      dose: '5 mg daily',
+    });
+  });
+
+  it('keeps the dose when a later record of warfarin gives none, and stops it when that record has a Date Stopped', () => {
+    const vkas = config.consultations.vitaminKAntagonists;
+    const added = medicationUpdate('update', '2026-09-01', [warfarinGroup()]);
+    const noDose = (extra: Array<unknown> = []) =>
+      obs(c.medication, null, [obs(c.medication, coded(vkas[0], 'Warfarin')), ...extra]);
+    expect(warfarinOf([medicationUpdate('later', '2026-10-01', [noDose()]), added], c, vkas)).toEqual({
+      dose: '5 mg daily',
+    });
+    expect(
+      warfarinOf(
+        [medicationUpdate('later', '2026-10-01', [noDose([obs(c.dateStopped, '2026-10-01')])]), added],
+        c,
+        vkas,
+      ),
+    ).toBeNull();
+  });
+
+  it('is on warfarin while any vitamin K antagonist is active, with that medicine dose', () => {
+    const vkas = config.consultations.vitaminKAntagonists;
+    const acitrom = obs(c.medication, null, [
+      obs(c.medication, coded(vkas[1], 'Acitrom')),
+      obs(c.medicationDose, '3 mg daily'),
+    ]);
+    const stoppedWarfarin = medicationUpdate('stop', '2026-10-01', [warfarinGroup(true)]);
+    const switched = medicationUpdate('switch', '2026-10-02', [acitrom]);
+    expect(
+      warfarinOf([stoppedWarfarin, medicationUpdate('start', '2026-09-01', [warfarinGroup()])], c, vkas),
+    ).toBeNull();
+    expect(
+      warfarinOf([switched, stoppedWarfarin, medicationUpdate('start', '2026-09-01', [warfarinGroup()])], c, vkas),
+    ).toEqual({ dose: '3 mg daily' });
   });
 
   it('judges each INR against its target range', () => {
@@ -325,6 +385,23 @@ describe('chart pages by role', () => {
       'href',
       '/openmrs/spa/patient/winnie/chart/act-inr-reviews',
     );
+  });
+
+  it('treats a patient whose only warfarin is a Medication Update as on warfarin, with its dose', async () => {
+    serve({
+      updates: [medicationUpdate('update', '2026-09-01', [warfarinGroup()])],
+      inr: [inrEncounter('a', '2026-07-27', 1.6, '2026-08-24')],
+    });
+
+    renderIn(
+      <>
+        <InrCard patientUuid="winnie" />
+        <InrDashboardLink basePath="/openmrs/spa/patient/winnie/chart" />
+      </>,
+    );
+
+    expect(await screen.findByTestId('inr-dose')).toHaveTextContent('5 mg daily');
+    expect(await screen.findByRole('link', { name: /INR reviews/ })).toBeInTheDocument();
   });
 
   it("opens the INR editor from the card's reading and from a row of the INR reviews page, never the stock form", async () => {

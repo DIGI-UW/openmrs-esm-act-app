@@ -73,6 +73,15 @@ export function toMedications(encounters: Array<ChartEncounter>, concepts: Conce
 }
 
 /**
+ * Whether the patient is on warfarin, as the Medications page lists it: a vitamin K antagonist among the active
+ * medicines of the consultations and Medication Updates read together. With the dose it records.
+ */
+export function warfarinOf(encounters: Array<ChartEncounter>, concepts: Concepts, vkas: Array<string>) {
+  const current = toMedications(encounters, concepts).active.find((one) => vkas.includes(one.key));
+  return current ? { dose: current.dose || null } : null;
+}
+
+/**
  * The cardiac medications recorded in consultations and in Medication Update, read together, each with the form of
  * its latest record.
  */

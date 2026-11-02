@@ -5,9 +5,8 @@ import {
   answerText,
   type ChartEncounter,
   useChartEncounters,
-  useConsultations,
-  warfarinOf,
 } from '../consultations/consultations.resource';
+import { warfarinOf } from '../medications/medications.resource';
 
 export type InrResult = 'inRange' | 'below' | 'above' | 'unknown';
 
@@ -80,14 +79,19 @@ export function toInrReviews(encounters: Array<ChartEncounter>, concepts: Config
 
 /**
  * The patient's INR reviews and whether they are on warfarin, with the dose: the latest INR's new dose, else the one
- * the consultation records.
+ * a consultation or Medication Update records.
  */
 export function useInrReviews(patientUuid: string | null) {
-  const { inrReviews, consultations } = useConfig<Config>();
-  const consults = useConsultations(patientUuid);
+  const { inrReviews, consultations, medications } = useConfig<Config>();
+  const consults = useChartEncounters(patientUuid, consultations.encounterType);
+  const updates = useChartEncounters(patientUuid, medications.encounterType);
   const inr = useChartEncounters(patientUuid, inrReviews.encounterType);
   const reviews = toInrReviews(inr.encounters, inrReviews.concepts);
-  const warfarin = warfarinOf(consults.encounters, consultations.concepts, consultations.vitaminKAntagonists);
+  const warfarin = warfarinOf(
+    [...consults.encounters, ...updates.encounters],
+    consultations.concepts,
+    consultations.vitaminKAntagonists,
+  );
   const nextInr = inr.encounters.length ? (reviews.find((review) => review.nextInr)?.nextInr ?? null) : null;
   const indication = inr.encounters
     .map((encounter) => answerText(answersIn(encounter.obs, inrReviews.concepts.indication)[0]?.value ?? ''))
@@ -98,7 +102,7 @@ export function useInrReviews(patientUuid: string | null) {
     onWarfarin: Boolean(warfarin),
     dose: reviews.find((review) => review.newDose)?.newDose ?? warfarin?.dose ?? null,
     nextInr,
-    isLoading: consults.isLoading || inr.isLoading,
-    error: consults.error ?? inr.error,
+    isLoading: consults.isLoading || updates.isLoading || inr.isLoading,
+    error: consults.error ?? updates.error ?? inr.error,
   };
 }

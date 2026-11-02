@@ -120,32 +120,3 @@ export function useConsultations(patientUuid: string | null) {
     isLoading,
   };
 }
-
-/**
- * Whether the patient is on warfarin, as the INR flags read it: the latest consultation that answers Cardiac
- * Medication names warfarin or another vitamin K antagonist without a Date Stopped. With the dose it records.
- */
-export function warfarinOf(
-  encounters: Array<ChartEncounter>,
-  concepts: Config['consultations']['concepts'],
-  vkas: Array<string>,
-) {
-  const latest = encounters.find((encounter) =>
-    answersIn(encounter.obs, concepts.medication).some(
-      (group) => answersIn(group.groupMembers, concepts.medication).length,
-    ),
-  );
-  const current = answersIn(latest?.obs, concepts.medication).find((group) => {
-    const [medicine] = answersIn(group.groupMembers, concepts.medication);
-    return (
-      medicine &&
-      vkas.includes(answerUuid(medicine.value)) &&
-      !answersIn(group.groupMembers, concepts.dateStopped).length
-    );
-  });
-  if (!current) {
-    return null;
-  }
-  const [dose] = answersIn(current.groupMembers, concepts.medicationDose);
-  return { dose: dose ? answerText(dose.value) : null };
-}
