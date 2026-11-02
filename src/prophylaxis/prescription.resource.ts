@@ -26,6 +26,8 @@ export interface PrescriptionGroup {
   uuid: string;
   regimen: Answer;
   started: string;
+  /** The group's answers, which a void of the group row leaves live. */
+  memberUuids: Array<string>;
 }
 
 export interface CurrentPrescription {
@@ -90,7 +92,14 @@ export function currentPrescriptionOf(
       const started = memberOf(group, concepts.dateStarted)?.value;
       const stopped = memberOf(group, concepts.dateStopped);
       return started && !stopped && regimen.uuid !== concepts.none
-        ? [{ uuid: group.uuid, regimen, started: dayOf(started) }]
+        ? [
+            {
+              uuid: group.uuid,
+              regimen,
+              started: dayOf(started),
+              memberUuids: (group.groupMembers ?? []).map((member) => member.uuid),
+            },
+          ]
         : [];
     })
     .sort((a, b) => a.started.localeCompare(b.started));
@@ -233,8 +242,8 @@ export function prescriptionPayload(
 
 /**
  * Saves an update as a new encounter of the update type. ACT Core keeps only a day's first encounter, so one recorded
- * today is edited in place instead: its groups in force and duration voided, and the new answers added with the carried
- * groups in one request, so no earlier start is lost.
+ * today is edited in place instead: its groups in force, their answers and the duration voided, and the new answers
+ * added with the carried groups in one request, so no earlier start is lost.
  */
 export async function savePrescription({
   patient,
@@ -258,7 +267,10 @@ export async function savePrescription({
   const obs = prescriptionPayload(patient, concepts, current?.groups ?? [], edit, main);
   const headers = { 'Content-Type': 'application/json' };
   if (current && current.day === today) {
-    const voided = [...current.groups.map((one) => one.uuid), ...(current.duration ? [current.duration.obsUuid] : [])];
+    const voided = [
+      ...current.groups.flatMap((one) => [one.uuid, ...one.memberUuids]),
+      ...(current.duration ? [current.duration.obsUuid] : []),
+    ];
     await openmrsFetch(`${restBaseUrl}/encounter/${current.encounter.uuid}`, {
       method: 'POST',
       headers,

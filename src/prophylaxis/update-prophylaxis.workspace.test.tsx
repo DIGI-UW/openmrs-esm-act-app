@@ -189,7 +189,12 @@ describe('UpdateProphylaxisWorkspace', () => {
     await waitFor(() => expect(posts()).toHaveLength(1));
     const [[url, body]] = posts();
     expect(url).toBe(`${restBaseUrl}/encounter/todays`);
-    expect(body.obs.filter((one) => one.voided).map((one) => one.uuid)).toEqual(['todays-group', 'todays-duration']);
+    expect(body.obs.filter((one) => one.voided).map((one) => one.uuid)).toEqual([
+      'todays-group',
+      'm1',
+      'm2',
+      'todays-duration',
+    ]);
   });
 
   it('offers a patient with no prescription a first one, and no stop', async () => {
