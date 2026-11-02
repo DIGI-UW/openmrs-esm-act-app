@@ -66,7 +66,7 @@ function statusTag(name: RegExp) {
   const tag = within(status).getByTitle(/./).parentElement;
   return [
     tag.textContent,
-    tag.className.match(/cds--tag--(red|green|warm-gray)/)?.[0],
+    tag.className.match(/cds--tag--(red|green|warm-gray|blue)/)?.[0],
     tag.classList.contains('dueTag'),
   ];
 }
@@ -192,13 +192,22 @@ describe('Due for prophylaxis page', () => {
       '64%',
       'Record BPG',
     ]);
-    expect(cells(/rhd00021/)).toEqual(['Joan Apio', 'rhd00021', 'Penicillin V', '', 'Due today', '70%', 'Record oral']);
+    // Joan has no oral report yet, so her first supply is what is due.
+    expect(cells(/rhd00021/)).toEqual([
+      'Joan Apio',
+      'rhd00021',
+      'Penicillin V',
+      '',
+      'First dose due',
+      '70%',
+      'Record oral',
+    ]);
     expect(cells(/rhd00052/)).toEqual([
       'Peter Mugisha',
       'rhd00052',
       'BPG · every 28 days',
       '26-Aug-2026',
-      'Due in 48 h',
+      'Due soon',
       '',
       'Record BPG',
     ]);
@@ -208,7 +217,7 @@ describe('Due for prophylaxis page', () => {
     );
   });
 
-  it('tags Overdue red, Due today and Due in 48 h yellow, and Recorded today green', async () => {
+  it('tags Overdue red, First dose due blue as in the patient banner, Due soon yellow, and Recorded today green', async () => {
     dataset({ rows: dueRows });
     recorded(['patient-today']);
 
@@ -217,9 +226,9 @@ describe('Due for prophylaxis page', () => {
 
     expect([/rhd00012/, /rhd00021/, /rhd00003/, /rhd00052/].map(statusTag)).toEqual([
       ['Overdue', 'cds--tag--red', false],
-      ['Due today', 'cds--tag--warm-gray', true],
+      ['First dose due', 'cds--tag--blue', false],
       ['Recorded today', 'cds--tag--green', false],
-      ['Due in 48 h', 'cds--tag--warm-gray', true],
+      ['Due soon', 'cds--tag--warm-gray', true],
     ]);
   });
 
@@ -328,7 +337,7 @@ describe('Due for prophylaxis page', () => {
 
     await renderPage();
 
-    expect(cells(/rhd00052/)).toContain('Due in 48 h');
+    expect(cells(/rhd00052/)).toContain('Due soon');
     expect(screen.getByText('3 waiting')).toBeInTheDocument();
   });
 
@@ -346,7 +355,7 @@ describe('Due for prophylaxis page', () => {
     expect(vi.mocked(downloadCsv)).toHaveBeenCalledWith(
       expect.stringMatching(/^due-for-prophylaxis-oral-/),
       ['Patient', 'ACT ID', 'Prescription', 'Last dose', 'Status', 'Adherence'],
-      [['Joan Apio', 'rhd00021', 'Penicillin V', '', 'Due today', '70%']],
+      [['Joan Apio', 'rhd00021', 'Penicillin V', '', 'First dose due', '70%']],
     );
   });
 

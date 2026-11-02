@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
@@ -53,6 +54,14 @@ const answerOf = (value: unknown): Answer => {
 const memberOf = (group: PrescriptionObs, concept: string) =>
   (group.groupMembers ?? []).find((member) => member.concept.uuid === concept);
 
+const dayOfEncounter = (encounter: PrescriptionEncounter, concepts: Concepts) =>
+  dayOf(
+    encounter.obs.find((one) => one.concept.uuid === concepts.consultationDate)?.value ?? encounter.encounterDatetime,
+  );
+
+const groupsOf = (encounter: PrescriptionEncounter, concepts: Concepts) =>
+  encounter.obs.filter((one) => one.concept.uuid === concepts.prescription && memberOf(one, concepts.prescription));
+
 /**
  * The prescription ACT Core counts as current: the groups of the latest day's first encounter, a day being the
  * Consultation Date or else the encounter date. Groups without a Date Started, stopped or None are not in force.
@@ -61,15 +70,9 @@ export function currentPrescriptionOf(
   encounters: Array<PrescriptionEncounter>,
   concepts: Concepts,
 ): CurrentPrescription | null {
-  const dayOfEncounter = (encounter: PrescriptionEncounter) =>
-    dayOf(
-      encounter.obs.find((one) => one.concept.uuid === concepts.consultationDate)?.value ?? encounter.encounterDatetime,
-    );
-  const groupsOf = (encounter: PrescriptionEncounter) =>
-    encounter.obs.filter((one) => one.concept.uuid === concepts.prescription && memberOf(one, concepts.prescription));
   const firstOfDay = new Map<string, PrescriptionEncounter>();
-  for (const encounter of encounters.filter((one) => groupsOf(one).length)) {
-    const day = dayOfEncounter(encounter);
+  for (const encounter of encounters.filter((one) => groupsOf(one, concepts).length)) {
+    const day = dayOfEncounter(encounter, concepts);
     const first = firstOfDay.get(day);
     // Approximates ACT Core's smallest encounter id of the day, which REST does not expose.
     if (!first || encounter.encounterDatetime < first.encounterDatetime) {
@@ -81,7 +84,7 @@ export function currentPrescriptionOf(
     return null;
   }
   const encounter = firstOfDay.get(day)!;
-  const groups = groupsOf(encounter)
+  const groups = groupsOf(encounter, concepts)
     .flatMap((group) => {
       const regimen = answerOf(memberOf(group, concepts.prescription)!.value);
       const started = memberOf(group, concepts.dateStarted)?.value;
@@ -101,6 +104,71 @@ export function currentPrescriptionOf(
   };
 }
 
+export interface PrescribedCourse {
+  regimen: string;
+  started: string;
+  stopped: string | null;
+  reasonStopped: string | null;
+  /** The first later day whose prescription no longer carries the course; null while the latest day carries it. */
+  replaced: string | null;
+  /** The day of the first encounter that records the course. */
+  recorded: string;
+  current: boolean;
+}
+
+/**
+ * Each course, a regimen and its Date Started however many encounters carry it, newest start first; None is skipped.
+ * A course takes the Date Stopped of the latest encounter that stops it.
+ */
+export function prescriptionHistoryOf(
+  encounters: Array<PrescriptionEncounter>,
+  concepts: Concepts,
+  current = currentPrescriptionOf(encounters, concepts),
+): Array<PrescribedCourse> {
+  const inForce = new Set(current?.groups.map((one) => `${one.regimen.uuid} ${one.started}`));
+  const courses = new Map<string, PrescribedCourse>();
+  const lastCarried = new Map<string, string>();
+  const prescribedDays = new Set<string>();
+  const byDay = encounters
+    .map((encounter) => ({ encounter, day: dayOfEncounter(encounter, concepts) }))
+    .sort(
+      (a, b) =>
+        a.day.localeCompare(b.day) || a.encounter.encounterDatetime.localeCompare(b.encounter.encounterDatetime),
+    );
+  for (const { encounter, day } of byDay) {
+    for (const group of groupsOf(encounter, concepts)) {
+      prescribedDays.add(day);
+      const regimen = answerOf(memberOf(group, concepts.prescription)!.value);
+      const started = memberOf(group, concepts.dateStarted)?.value;
+      if (!started || regimen.uuid === concepts.none) {
+        continue;
+      }
+      const key = `${regimen.uuid} ${dayOf(started)}`;
+      const course = courses.get(key) ?? {
+        regimen: regimen.label,
+        started: dayOf(started),
+        stopped: null,
+        reasonStopped: null,
+        replaced: null,
+        recorded: day,
+        current: inForce.has(key),
+      };
+      const stopped = memberOf(group, concepts.dateStopped);
+      if (stopped) {
+        const reason = memberOf(group, concepts.reasonStopped);
+        course.stopped = dayOf(stopped.value);
+        course.reasonStopped = reason ? answerOf(reason.value).label : null;
+      }
+      courses.set(key, course);
+      lastCarried.set(key, day);
+    }
+  }
+  for (const [key, course] of courses) {
+    course.replaced = [...prescribedDays].find((day) => day > lastCarried.get(key)!) ?? null;
+  }
+  return [...courses.values()].sort((a, b) => b.started.localeCompare(a.started));
+}
+
 /** The patient's encounters with the answers that hold a prescription, for the Prophylaxis card and its update. */
 export function usePrescription(patientUuid: string | null, concepts: Concepts) {
   // Keyed under the patient's /encounter, which common-lib revalidates on every save.
@@ -108,7 +176,11 @@ export function usePrescription(patientUuid: string | null, concepts: Concepts) 
   const { data, error, isLoading } = useSWR<Array<PrescriptionEncounter>, Error>(url, () =>
     fetchAll<PrescriptionEncounter>(url),
   );
-  return { prescription: data ? currentPrescriptionOf(data, concepts) : null, error, isLoading };
+  const { prescription, history } = useMemo(() => {
+    const current = data ? currentPrescriptionOf(data, concepts) : null;
+    return { prescription: current, history: data ? prescriptionHistoryOf(data, concepts, current) : null };
+  }, [data, concepts]);
+  return { prescription, history, error, isLoading };
 }
 
 export interface NewObs {

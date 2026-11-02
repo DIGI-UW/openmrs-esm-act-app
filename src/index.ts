@@ -28,6 +28,7 @@ import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-pati
 import { trackActReturn } from './back-to-act/act-return';
 import { registerAllergies } from './allergies/allergies.resource';
 import { registerNextInjectionDue } from './prophylaxis/next-injection-due';
+import { registerVisitVitals } from './vitals/visit-vitals.resource';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
 const moduleName = '@act-registry/esm-act-app';
@@ -47,6 +48,7 @@ export function startupApp() {
   trackActReturn();
   registerNextInjectionDue();
   registerAllergies();
+  registerVisitVitals();
 }
 
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);
@@ -106,10 +108,16 @@ export const consultationCard = getAsyncLifecycle(() => import('./consultations/
 
 export const inrStatusFlag = getAsyncLifecycle(() => import('./inr/inr-status-flag.component'), options);
 export const allergiesPill = getAsyncLifecycle(() => import('./allergies/allergies-pill.component'), options);
+export const anaphylaxisAlert = getAsyncLifecycle(
+  () => import('./patient-status/anaphylaxis-alert.component'),
+  options,
+);
 
 export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/clinical-flags.component'), options);
 
 export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
+
+export const inrEditWorkspace = getAsyncLifecycle(() => import('./inr/inr-edit.workspace'), options);
 
 export const clinicsBanner = getAsyncLifecycle(() => import('./contact/clinics-banner.component'), options);
 

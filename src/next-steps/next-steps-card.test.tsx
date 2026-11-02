@@ -364,6 +364,67 @@ describe('NextStepsCard', () => {
     expect(within(refer).queryByTestId('step-on-hold')).not.toBeInTheDocument();
   });
 
+  it('draws an anaphylaxis review and the BPG it holds as alerts, apart from routine steps', async () => {
+    steps = [
+      {
+        key: 'consult',
+        form: 'consult',
+        title: 'Consultation visit',
+        reason: 'Anaphylaxis reported after BPG: review before the next dose',
+        isNew: true,
+        done: false,
+        alert: true,
+      },
+      {
+        key: 'bpg',
+        form: null,
+        title: 'Give BPG injection',
+        reason: 'On hold: complete the consultation before giving BPG',
+        isNew: false,
+        done: false,
+        onHold: true,
+        alert: true,
+      },
+      grace[1],
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Consultation visit');
+    const [consult, bpg, echo] = rows();
+    expect(consult).toHaveAttribute('data-alert', 'true');
+    expect(within(consult).getByTestId('step-alert-icon')).toBeInTheDocument();
+    expect(within(consult).getByText('New', { selector: '.cds--tag--red .cds--tag__label' })).toBeInTheDocument();
+    expect(bpg).toHaveAttribute('data-alert', 'true');
+    expect(within(bpg).getByTestId('step-on-hold')).toHaveClass('cds--tag--red');
+    expect(echo).not.toHaveAttribute('data-alert');
+    expect(within(echo).queryByTestId('step-alert-icon')).not.toBeInTheDocument();
+  });
+
+  it('keeps a new step that is no alert, such as an echo to review, in the routine style', async () => {
+    steps = [
+      {
+        key: 'consult',
+        form: 'consult',
+        title: 'Consultation visit',
+        reason: 'Review the new echo result and update the care plan',
+        isNew: true,
+        done: false,
+        alert: false,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Consultation visit');
+    const [consult] = rows();
+    expect(consult).toHaveAttribute('data-new', 'true');
+    expect(consult).not.toHaveAttribute('data-alert');
+    expect(within(consult).getByText('New', { selector: '.cds--tag--blue .cds--tag__label' })).toBeInTheDocument();
+  });
+
   it('says so when nothing is due', async () => {
     steps = [];
     respond();

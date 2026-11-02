@@ -483,6 +483,7 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByTestId('bpg-on-hold')).toHaveTextContent('BPG on hold');
     expect(screen.getByTestId('bpg-on-hold')).toHaveAttribute('title', reason);
+    expect(screen.getByText('BPG on hold', { selector: '.cds--tag--red .cds--tag__label' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Record BPG/ })).not.toBeInTheDocument();
   });
 
