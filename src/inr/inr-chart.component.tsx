@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '@openmrs/esm-framework';
 import { standardTarget } from './inr.resource';
@@ -27,13 +27,15 @@ const zoneBands: Array<[Tone, number, number]> = [
   ['orange', 1.5, 2],
   ['red', 0, 1.5],
 ];
-const plot = { left: 40, right: 750, top: 22, bottom: 160, inset: 40 };
+const minWidth = 760;
+const plotAt = (width: number) => ({ left: 40, right: width - 10, top: 22, bottom: 160, inset: 40 });
 const height = 190;
 const maxDateLabels = 8;
 const minLabelGap = 70;
 
 /** The chart's geometry: ACT 2.0's zones on a 0 to 5 axis, one dot per reading by date, and the patient's own target. */
-export function inrChartModel(points: Array<InrPoint>) {
+export function inrChartModel(points: Array<InrPoint>, width = minWidth) {
+  const plot = plotAt(width);
   const sorted = [...points].sort((a, b) => a.date.getTime() - b.date.getTime());
   const top = Math.max(5, Math.ceil(Math.max(...sorted.map((point) => point.value))));
   const y = (value: number) => plot.bottom - (value / top) * (plot.bottom - plot.top);
@@ -57,6 +59,22 @@ export function inrChartModel(points: Array<InrPoint>) {
   const latest = dots.at(-1);
   const valueLabel = latest ? { value: latest.value, x: latest.x, y: latest.y - 10 } : null;
   return { top, y, zones, dots, targetBox, valueLabel, dateLabels: thinned(dots.map((dot) => dot.x)) };
+}
+
+/** The width the chart fills, at least what its labels need. */
+function useWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(minWidth);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(minWidth, Math.floor(entry.contentRect.width))));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, width };
 }
 
 /** The indexes of the dates to label: the first, the last and an even spread, dropping one within a label's width of the one before. */
@@ -86,7 +104,9 @@ const range = (low: number, high: number) => `${low.toFixed(1)}-${high.toFixed(1
  */
 export default function InrChart({ readings }: { readings: Array<InrPoint> }) {
   const { t } = useTranslation();
-  const { top, y, zones, dots, targetBox, valueLabel, dateLabels } = inrChartModel(readings);
+  const { ref, width } = useWidth();
+  const plot = plotAt(width);
+  const { top, y, zones, dots, targetBox, valueLabel, dateLabels } = inrChartModel(readings, width);
   const day = (date: Date) => formatDate(date, { time: false, noToday: true });
   const reading = (dot: { value: number; date: Date }) =>
     t('inrReadingOn', '{{value}} on {{date}}', { value: dot.value, date: day(dot.date) });
@@ -98,10 +118,10 @@ export default function InrChart({ readings }: { readings: Array<InrPoint> }) {
     },
   );
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div ref={ref} style={{ overflowX: 'auto' }}>
       <svg
-        viewBox={`0 0 ${plot.right + 10} ${height}`}
-        style={{ width: '100%', minWidth: '760px', maxWidth: '760px', height: 'auto' }}
+        viewBox={`0 0 ${width} ${height}`}
+        style={{ width: `${width}px`, height: 'auto' }}
         role="img"
         aria-label={description}
       >

@@ -61,6 +61,15 @@ describe('inrChartModel', () => {
     expect(only.x).toBe(395);
   });
 
+  it('spreads the readings across a wider chart instead of leaving it empty', () => {
+    const spread = (width: number) => {
+      const xs = inrChartModel(points, width).dots.map((dot) => dot.x);
+      return xs[2] - xs[0];
+    };
+
+    expect(spread(1400)).toBeGreaterThan(spread(760) * 1.8);
+  });
+
   it('keeps the label of the highest reading inside the box', () => {
     for (const value of [5, 7.2]) {
       const { valueLabel } = inrChartModel([point('2026-10-05', 2.4), point('2026-10-12', value)]);
