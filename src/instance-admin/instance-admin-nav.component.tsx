@@ -5,8 +5,8 @@ import { useHoldsActHome } from '../access/holds-act-home';
 import { type Config } from '../config-schema';
 
 /**
- * The Instance admin's Forms & sites, Role permissions and Research participation, to their quick-action URLs; left out
- * for a user whose home is ACT home, as the Instance admin's Home link is.
+ * The Instance admin's Forms & sites and Role permissions, to their quick-action URLs; Studies is in the Admin section.
+ * Left out for a user whose home is ACT home, as the Instance admin's Home link is.
  */
 export default function InstanceAdminNav() {
   const { t } = useTranslation();
@@ -17,10 +17,6 @@ export default function InstanceAdminNav() {
   const links = [
     { to: instanceAdminQuickActions.formsAndSitesUrl, label: t('formsAndSites', 'Forms & sites') },
     { to: instanceAdminQuickActions.rolePermissionsUrl, label: t('rolePermissions', 'Role permissions') },
-    {
-      to: instanceAdminQuickActions.researchParticipationUrl,
-      label: t('researchParticipation', 'Research participation'),
-    },
   ];
   return (
     <div>
