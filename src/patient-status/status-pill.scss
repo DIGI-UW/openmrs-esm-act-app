@@ -47,6 +47,11 @@
   }
 }
 
+// A safety alert reads in full: Carbon caps a tag's width and cuts its label short.
+.alertTag:global(.cds--tag) {
+  max-inline-size: none;
+}
+
 .pills {
   display: inline-flex;
   flex-wrap: wrap;
