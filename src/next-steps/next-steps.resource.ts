@@ -16,6 +16,8 @@ export interface NextStep {
   onHold?: boolean;
   /** For a referral, the encounter type that records it; null when ACT Core has none mapped, so it cannot be sent. */
   referralType?: string | null;
+  /** A patient safety alert: an unreviewed anaphylaxis's review, or the BPG it holds. Absent from an older ACT Core. */
+  alert?: boolean;
 }
 
 /** The held BPG step among the patient's next steps, if ACT Core holds one. */

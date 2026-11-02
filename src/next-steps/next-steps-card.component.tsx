@@ -11,6 +11,7 @@ import {
   Stethoscope,
   UserFollow,
   UserMultiple,
+  WarningFilled,
 } from '@carbon/react/icons';
 import { useSWRConfig } from 'swr';
 import { CardHeader, showSnackbar, useConfig, usePatient, useSession, userHasAccess } from '@openmrs/esm-framework';
@@ -158,25 +159,32 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
       ) : (
         <ul className={styles.steps}>
           {steps.map((step) => {
-            const Icon = icons[step.key] ?? Activity;
+            const alert = step.alert && !step.done;
+            const Icon = alert ? WarningFilled : (icons[step.key] ?? Activity);
             return (
               <li
                 key={step.key}
                 className={styles.step}
                 data-new={step.isNew && !step.done ? 'true' : undefined}
+                data-alert={alert ? 'true' : undefined}
                 data-done={step.done ? 'true' : undefined}
               >
-                <Icon size={20} className={styles.icon} aria-hidden />
+                <Icon
+                  size={20}
+                  className={styles.icon}
+                  aria-hidden
+                  data-testid={alert ? 'step-alert-icon' : undefined}
+                />
                 <div className={styles.text}>
                   <span className={styles.title}>
                     {step.title}
                     {step.isNew && !step.done && (
-                      <Tag type="blue" size="sm" className={styles.newTag}>
+                      <Tag type={alert ? 'red' : 'blue'} size="sm" className={styles.newTag}>
                         {t('new', 'New')}
                       </Tag>
                     )}
                     {step.onHold && !step.done && (
-                      <Tag type="gray" size="sm" className={styles.newTag} data-testid="step-on-hold">
+                      <Tag type={alert ? 'red' : 'gray'} size="sm" className={styles.newTag} data-testid="step-on-hold">
                         {t('onHold', 'On hold')}
                       </Tag>
                     )}

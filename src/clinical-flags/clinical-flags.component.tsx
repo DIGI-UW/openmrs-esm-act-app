@@ -5,7 +5,6 @@ import { type Config } from '../config-schema';
 import { useChartEncounters } from '../consultations/consultations.resource';
 import { diagnosisConcepts } from '../consultations/patient-details.resource';
 import { pillsClassName, StatusPill } from '../patient-status/status-pill.component';
-import { useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { doneProcedures, needsConfirmatoryEcho, procedureStatus } from './clinical-flags';
 
 /** The Screen + question of Patient Information. */
@@ -13,8 +12,7 @@ const SCREEN_POSITIVE = '82a5fbb5-038d-57b8-82d1-3fd0ac95673d';
 
 /**
  * The prototype's other banner flags: Confirmatory echo needed, for everyone; and for a clinician, as the prototype
- * shows its clinician and site administrator, whether prophylaxis is prescribed and the procedural recommendation's
- * age. A deceased patient shows none.
+ * shows its clinician and site administrator, the procedural recommendation's age. A deceased patient shows none.
  */
 export default function ClinicalFlags({ patientUuid, patient }: { patientUuid: string; patient?: fhir.Patient }) {
   const { t } = useTranslation();
@@ -27,7 +25,6 @@ export default function ClinicalFlags({ patientUuid, patient }: { patientUuid: s
   const consults = useChartEncounters(clinician ? living : null, consultations.encounterType);
   // A procedure recorded on Procedures and Outcomes completes its recommendation (AR-162).
   const procedureEncounters = useChartEncounters(clinician ? living : null, procedures.encounterType);
-  const { summary } = useProphylaxisSummary(clinician ? living : null);
   if (deceased) {
     return null;
   }
@@ -53,17 +50,6 @@ export default function ClinicalFlags({ patientUuid, patient }: { patientUuid: s
           tone="yellow"
           label={t('confirmatoryEchoNeeded', 'Confirmatory echo needed')}
           testId="echo-status"
-        />
-      )}
-      {clinician && summary && (
-        <StatusPill
-          tone={summary.status === 'none' ? 'red' : 'green'}
-          label={
-            summary.status === 'none'
-              ? t('noProphylaxisPrescription', 'No prophylaxis prescription')
-              : t('prophylaxisPrescribed', 'Prophylaxis prescribed')
-          }
-          testId="prescription-status"
         />
       )}
       {procedure && (

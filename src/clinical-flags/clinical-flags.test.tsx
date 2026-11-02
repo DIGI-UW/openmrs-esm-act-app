@@ -105,7 +105,7 @@ describe('clinical banner flags', () => {
     expect(needsConfirmatoryEcho([], SCREEN)).toBe(false);
   });
 
-  function serve(prophylaxisStatus: string) {
+  function serve(prophylaxisStatus: string, bpgOnHold = false) {
     vi.mocked(openmrsFetch).mockImplementation((async (url: string) => {
       if (url.includes(`encounterType=${diagnosisConcepts.encounterTypes.patientInformation}`)) {
         return { data: { results: [patientInformation(YES, false)], totalCount: 1 } };
@@ -114,7 +114,7 @@ describe('clinical banner flags', () => {
         return { data: { results: [recommending('2026-09-01', MVR)], totalCount: 1 } };
       }
       if (url.includes('/actcore/prophylaxis')) {
-        return { data: { status: prophylaxisStatus, type: null, nextDue: null } };
+        return { data: { status: prophylaxisStatus, type: bpgOnHold ? 'BPG' : null, nextDue: null, bpgOnHold } };
       }
       return { data: { results: [] } };
     }) as never);
@@ -127,15 +127,18 @@ describe('clinical banner flags', () => {
       </SWRConfig>,
     );
 
-  it('shows a clinician every flag: the echo, no prescription, and the recent recommendation', async () => {
+  it('shows a clinician the echo and the recent recommendation, leaving prophylaxis to the prophylaxis pill', async () => {
     await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
     serve('none');
 
     renderFlags();
 
     expect(await screen.findByTestId('echo-status')).toHaveTextContent('Confirmatory echo needed');
-    expect(await screen.findByTestId('prescription-status')).toHaveTextContent('No prophylaxis prescription');
     expect(await screen.findByTestId('procedure-status')).toHaveTextContent('Procedural rec. < 12 months');
+    expect(screen.queryByText(/prophylaxis/i)).not.toBeInTheDocument();
+    expect(vi.mocked(openmrsFetch).mock.calls.some(([url]) => String(url).includes('/actcore/prophylaxis'))).toBe(
+      false,
+    );
   });
 
   it('shows anyone else only the echo flag', async () => {

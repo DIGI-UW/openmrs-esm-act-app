@@ -32,6 +32,7 @@ export const PRIVILEGE_ENTER_SCREENING_COUNTS = 'Task: act.enterScreeningCounts'
 export const PRIVILEGE_ADD_PATIENTS = 'Add Patients';
 export const PRIVILEGE_GET_PATIENTS = 'Get Patients';
 export const PRIVILEGE_ADD_ENCOUNTERS = 'Add Encounters';
+export const PRIVILEGE_EDIT_ENCOUNTERS = 'Edit Encounters';
 export const PRIVILEGE_EDIT_PEOPLE = 'Edit People';
 export const PRIVILEGE_EDIT_PATIENT_PROGRAMS = 'Edit Patient Programs';
 export const PRIVILEGE_EDIT_USERS = 'Edit Users';

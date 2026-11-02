@@ -75,12 +75,13 @@ export function dueColumns(t: TFunction, recorded: Set<string>): Array<DueColumn
   ];
 }
 
+/** As in the patient banner, a prescribed patient with no dose yet has a first dose due unless overdue. */
+export const firstDoseDue = (row: ReportRow) =>
+  Boolean(row.status) && row.status !== 'no_prescription' && row.status !== 'overdue' && !row.last_given;
+
 export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean) {
   if (recordedToday) {
     return t('recordedToday', 'Recorded today');
-  }
-  if (row.status === 'up_to_date') {
-    return t('upToDate', 'Up to date');
   }
   if (row.status === 'no_prescription') {
     return t('noPrescription', 'No prescription');
@@ -88,10 +89,16 @@ export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean
   if (!row.status) {
     return '';
   }
-  if (row.status === 'due_soon') {
-    return t('dueIn48Hours', 'Due in 48 h');
+  if (firstDoseDue(row)) {
+    return t('firstDoseDue', 'First dose due');
   }
-  return row.status === 'due_today' ? t('dueToday', 'Due today') : t('overdue', 'Overdue');
+  if (row.status === 'overdue') {
+    return t('overdue', 'Overdue');
+  }
+  if (row.status === 'up_to_date') {
+    return t('upToDate', 'Up to date');
+  }
+  return row.status === 'due_today' ? t('dueToday', 'Due today') : t('dueSoon', 'Due soon');
 }
 
 /** Why the patient is on the due worklist: its status, with the date the dose was or is due when not today. */

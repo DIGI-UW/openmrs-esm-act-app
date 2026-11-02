@@ -670,6 +670,15 @@
       "privileges": "Task: act.enterProphylaxis"
     },
     {
+      "name": "act-anaphylaxis-alert",
+      "slot": "patient-banner-tags-slot",
+      "component": "anaphylaxisAlert",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-patient-status-flags",
       "slot": "patient-banner-tags-slot",
       "component": "patientStatusFlags",
@@ -976,12 +985,28 @@
       "canMaximize": true
     },
     {
+      "name": "act-cardiac-test-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
       "name": "act-update-patient-status",
       "group": "patient-chart"
     },
     {
       "name": "act-update-prophylaxis",
       "group": "patient-chart"
+    },
+    {
+      "name": "act-inr-monitoring",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-inr-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
     },
     {
       "name": "act-vitals-form",
@@ -1036,6 +1061,11 @@
       "window": "act-screen-positive-form-entry"
     },
     {
+      "name": "act-cardiac-test-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-cardiac-test-form-entry"
+    },
+    {
       "name": "act-vitals-form-workspace",
       "component": "@openmrs/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
       "window": "act-vitals-form"
@@ -1049,6 +1079,16 @@
       "name": "act-update-prophylaxis-workspace",
       "component": "updateProphylaxisWorkspace",
       "window": "act-update-prophylaxis"
+    },
+    {
+      "name": "act-inr-edit-workspace",
+      "component": "inrEditWorkspace",
+      "window": "act-inr-monitoring"
+    },
+    {
+      "name": "act-inr-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#patientFormEntryWorkspace",
+      "window": "act-inr-form-entry"
     },
     {
       "name": "act-enrollment-workspace",
