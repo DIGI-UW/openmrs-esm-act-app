@@ -670,6 +670,15 @@
       "privileges": "Task: act.enterProphylaxis"
     },
     {
+      "name": "act-anaphylaxis-alert",
+      "slot": "patient-banner-tags-slot",
+      "component": "anaphylaxisAlert",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-patient-status-flags",
       "slot": "patient-banner-tags-slot",
       "component": "patientStatusFlags",

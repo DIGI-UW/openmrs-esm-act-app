@@ -4,6 +4,7 @@ import { type Config, configSchema } from '../config-schema';
 import {
   type PrescriptionEncounter,
   currentPrescriptionOf,
+  prescriptionHistoryOf,
   prescriptionPayload,
   savePrescription,
 } from './prescription.resource';
@@ -34,6 +35,98 @@ const group = (regimen: object, started: string | null, stopped?: string, uuid?:
 
 const encounter = (uuid: string, datetime: string, obsList: Array<unknown>): PrescriptionEncounter =>
   ({ uuid, encounterDatetime: datetime, encounterType: { uuid: 'type' }, obs: obsList }) as PrescriptionEncounter;
+
+describe('prescriptionHistoryOf', () => {
+  const consultation = (day: string) => obs(concepts.consultationDate, `${day}T00:00:00.000+0000`);
+
+  it('lists each course once, newest start first, with when it was first recorded and when it was stopped', () => {
+    const history = prescriptionHistoryOf(
+      [
+        encounter('first', '2026-01-10T09:00:00.000+0000', [group(oral, '2026-01-10'), group(none, '2026-01-10')]),
+        // An update carries the oral course beside the new BPG one; a later consultation stops both.
+        encounter('update', '2026-03-02T09:00:00.000+0000', [group(q28, '2026-03-02'), group(oral, '2026-01-10')]),
+        encounter('stop', '2026-08-01T09:00:00.000+0000', [
+          consultation('2026-07-30'),
+          group(q28, '2026-03-02', '2026-07-30'),
+          group(oral, '2026-01-10', '2026-07-30'),
+          group(q28, null),
+        ]),
+        encounter('other', '2026-09-01T09:00:00.000+0000', [obs('something-else', 1)]),
+      ],
+      concepts,
+    );
+
+    expect(history).toEqual([
+      {
+        regimen: 'Q28 day BPG',
+        started: '2026-03-02',
+        stopped: '2026-07-30',
+        reasonStopped: 'Allergy',
+        replaced: null,
+        recorded: '2026-03-02',
+        current: false,
+      },
+      {
+        regimen: 'Oral penicillin V',
+        started: '2026-01-10',
+        stopped: '2026-07-30',
+        reasonStopped: 'Allergy',
+        replaced: null,
+        recorded: '2026-01-10',
+        current: false,
+      },
+    ]);
+  });
+
+  it("marks the courses in force on the latest prescription's day as current", () => {
+    const history = prescriptionHistoryOf(
+      [
+        encounter('old', '2026-01-10T09:00:00.000+0000', [group(oral, '2026-01-10')]),
+        encounter('new', '2026-06-10T09:00:00.000+0000', [group(q28, '2026-06-10')]),
+      ],
+      concepts,
+    );
+
+    expect(history.map((course) => [course.regimen, course.stopped, course.current])).toEqual([
+      ['Q28 day BPG', null, true],
+      ['Oral penicillin V', null, false],
+    ]);
+  });
+
+  it('dates a course a later prescription drops without a stop by the first day that no longer carries it', () => {
+    const history = prescriptionHistoryOf(
+      [
+        encounter('start', '2026-01-10T09:00:00.000+0000', [group(oral, '2026-01-10')]),
+        encounter('carried', '2026-03-02T09:00:00.000+0000', [group(oral, '2026-01-10')]),
+        encounter('switch', '2026-06-10T09:00:00.000+0000', [group(q28, '2026-06-10')]),
+        encounter('later', '2026-08-01T09:00:00.000+0000', [group(q28, '2026-06-10')]),
+      ],
+      concepts,
+    );
+
+    expect(history.map((course) => [course.regimen, course.current, course.replaced])).toEqual([
+      ['Q28 day BPG', true, null],
+      ['Oral penicillin V', false, '2026-06-10'],
+    ]);
+  });
+
+  it('takes the stop of the latest encounter that stops a course, as a corrected stop date replaces the first', () => {
+    const history = prescriptionHistoryOf(
+      [
+        encounter('start', '2026-01-10T09:00:00.000+0000', [group(q28, '2026-01-10')]),
+        encounter('stop', '2026-05-01T09:00:00.000+0000', [group(q28, '2026-01-10', '2026-05-01')]),
+        encounter('corrected', '2026-05-02T09:00:00.000+0000', [group(q28, '2026-01-10', '2026-04-20')]),
+      ],
+      concepts,
+    );
+
+    expect(history.map((course) => course.stopped)).toEqual(['2026-04-20']);
+  });
+
+  it('is empty for a patient never prescribed', () => {
+    expect(prescriptionHistoryOf([encounter('other', '2026-09-01T09:00:00.000+0000', [])], concepts)).toEqual([]);
+  });
+});
 
 describe('currentPrescriptionOf', () => {
   it('reads the unstopped groups of the latest day that holds a prescription, and its duration', () => {

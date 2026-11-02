@@ -2,6 +2,7 @@
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
 
 .subtitle {
   @include type.type-style('label-01');
@@ -35,6 +36,18 @@
 
     .icon {
       fill: colors.$blue-60;
+    }
+  }
+
+  &[data-alert='true'] {
+    background-color: $act-risk-background;
+
+    .icon {
+      fill: $act-risk;
+    }
+
+    .title {
+      color: $act-risk;
     }
   }
 }
