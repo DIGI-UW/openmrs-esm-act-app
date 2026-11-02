@@ -118,6 +118,23 @@ describe('PatientStatusFlags', () => {
     expect(pill).toHaveAttribute('data-tone', tone);
   });
 
+  it.each(['2026-10-01', '2026-11-03'])(
+    'says BPG on hold in red, whatever the dose date (%s), while an anaphylaxis is unreviewed',
+    async (nextDue) => {
+      respondWith({ nextDue, bpgOnHold: true });
+
+      renderFlags();
+
+      const pill = await screen.findByTestId('prophylaxis-status');
+      expect(pill).toHaveTextContent('BPG on hold');
+      expect(pill).toHaveAttribute('data-tone', 'red');
+      expect(pill).toHaveAttribute(
+        'title',
+        'Anaphylaxis reported after BPG: a clinician must review before the next dose',
+      );
+    },
+  );
+
   it('shows both pills side by side, as in the banner design', async () => {
     respondWith({ nextDue: '2026-10-13' }, '2026-10-15');
 

@@ -19,6 +19,8 @@ export interface ProphylaxisSummary {
   adherence?: number | null;
   /** Every BPG injection, newest first; onTime is null when no injection course was in force that day. */
   injections?: Array<{ date: string; onTime: boolean | null }>;
+  /** Whether BPG is held after an anaphylaxis no consultation has reviewed. Absent from an older ACT Core. */
+  bpgOnHold?: boolean;
 }
 
 export function useProphylaxisSummary(patientUuid: string | null) {

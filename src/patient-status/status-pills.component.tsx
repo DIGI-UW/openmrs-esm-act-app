@@ -5,9 +5,22 @@ import { type ProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { daysUntil, dueTone, fullDate, shortDate } from './due-tone';
 import { StatusPill } from './status-pill.component';
 
-/** Prophylaxis by its next dose; none without a regimen in force or for an oral one whose supply end is unknown. */
+/**
+ * Prophylaxis by its next dose, or BPG on hold after an unreviewed anaphylaxis; none without a regimen in force or for
+ * an oral one whose supply end is unknown.
+ */
 export function ProphylaxisPill({ summary }: { summary: ProphylaxisSummary | undefined }) {
   const { t } = useTranslation();
+  if (summary?.bpgOnHold) {
+    return (
+      <StatusPill
+        tone="red"
+        label={t('bpgOnHold', 'BPG on hold')}
+        title={t('bpgOnHoldReason', 'Anaphylaxis reported after BPG: a clinician must review before the next dose')}
+        testId="prophylaxis-status"
+      />
+    );
+  }
   if (!summary?.nextDue || summary.status === 'none') {
     return null;
   }

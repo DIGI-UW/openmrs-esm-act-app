@@ -55,7 +55,7 @@ export default function ClinicalFlags({ patientUuid, patient }: { patientUuid: s
           testId="echo-status"
         />
       )}
-      {clinician && summary && (
+      {clinician && summary && !summary.bpgOnHold && (
         <StatusPill
           tone={summary.status === 'none' ? 'red' : 'green'}
           label={

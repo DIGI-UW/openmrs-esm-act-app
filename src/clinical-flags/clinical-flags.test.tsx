@@ -105,7 +105,7 @@ describe('clinical banner flags', () => {
     expect(needsConfirmatoryEcho([], SCREEN)).toBe(false);
   });
 
-  function serve(prophylaxisStatus: string) {
+  function serve(prophylaxisStatus: string, bpgOnHold = false) {
     vi.mocked(openmrsFetch).mockImplementation((async (url: string) => {
       if (url.includes(`encounterType=${diagnosisConcepts.encounterType}`)) {
         return { data: { results: [patientInformation(YES, false)], totalCount: 1 } };
@@ -114,7 +114,7 @@ describe('clinical banner flags', () => {
         return { data: { results: [recommending('2026-09-01', MVR)], totalCount: 1 } };
       }
       if (url.includes('/actcore/prophylaxis')) {
-        return { data: { status: prophylaxisStatus, type: null, nextDue: null } };
+        return { data: { status: prophylaxisStatus, type: bpgOnHold ? 'BPG' : null, nextDue: null, bpgOnHold } };
       }
       return { data: { results: [] } };
     }) as never);
@@ -136,6 +136,16 @@ describe('clinical banner flags', () => {
     expect(await screen.findByTestId('echo-status')).toHaveTextContent('Confirmatory echo needed');
     expect(await screen.findByTestId('prescription-status')).toHaveTextContent('No prophylaxis prescription');
     expect(await screen.findByTestId('procedure-status')).toHaveTextContent('Procedural rec. < 12 months');
+  });
+
+  it('shows a clinician no Prophylaxis prescribed while BPG is on hold, which the prophylaxis pill says', async () => {
+    await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
+    serve('overdue', true);
+
+    renderFlags();
+
+    await screen.findByTestId('procedure-status');
+    expect(screen.queryByTestId('prescription-status')).not.toBeInTheDocument();
   });
 
   it('shows anyone else only the echo flag', async () => {
