@@ -837,11 +837,11 @@ export const configSchema = {
         { uuid: '50be4b26-6c5b-5aaa-9254-3bfd313b4522', label: 'Q28 day BPG' },
         { uuid: '2f3ee632-dd14-51b0-a4ec-de10e7958019', label: 'Q21 day BPG' },
         { uuid: '91230c88-6a90-5d45-af50-fa6155fe5dd7', label: 'Q14 day BPG' },
-        { uuid: 'b9884219-358a-594b-94f5-f8a8863a25f3', label: 'Oral penicillin V' },
-        { uuid: 'f2e06eb2-5c25-5e53-9e01-246112d05976', label: 'Oral sulfadiazine' },
-        { uuid: 'fb8b6676-689b-5daa-83f7-1456210c587f', label: 'Oral erythromycin' },
-        { uuid: 'f6f25d63-bd1a-51cb-9596-e74a19759429', label: 'Oral clarithromycin' },
-        { uuid: '1af922b8-acee-56c8-b184-eaef4e58e23a', label: 'Oral azithromycin' },
+        { uuid: 'b9884219-358a-594b-94f5-f8a8863a25f3', label: 'Oral Penicillin V' },
+        { uuid: 'f2e06eb2-5c25-5e53-9e01-246112d05976', label: 'Oral Sulfadiazine' },
+        { uuid: 'fb8b6676-689b-5daa-83f7-1456210c587f', label: 'Oral Erythromycin' },
+        { uuid: 'f6f25d63-bd1a-51cb-9596-e74a19759429', label: 'Oral Clarithromycin' },
+        { uuid: '1af922b8-acee-56c8-b184-eaef4e58e23a', label: 'Oral Azithromycin' },
         { uuid: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Other non-coded' },
       ],
       _description:
@@ -872,8 +872,8 @@ export const configSchema = {
       _default: [
         { uuid: '121689AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Allergy' },
         { uuid: '148888AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Anaphylaxis' },
-        { uuid: 'eaf16fa9-03d7-5846-94c3-b02805889ed9', label: 'Provider stopped' },
-        { uuid: '39af49bd-5dd0-5acd-8ffb-260bc83dbfd7', label: 'Patient preference' },
+        { uuid: 'eaf16fa9-03d7-5846-94c3-b02805889ed9', label: 'Provider Stopped' },
+        { uuid: '39af49bd-5dd0-5acd-8ffb-260bc83dbfd7', label: 'Patient Preference' },
         { uuid: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Other non-coded' },
       ],
       _description:
