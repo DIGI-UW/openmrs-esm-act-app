@@ -41,6 +41,7 @@ const rows = [
     bpg_status: 'Covered',
     days_until_due: 19,
     prophylaxis_regimen: 'Q21 day BPG',
+    last_injection_date: '2026-09-15',
     adherence: 96,
   }),
   registryRow(3, { bpg_status: 'No prescription' }),
@@ -48,6 +49,7 @@ const rows = [
     prophylaxis_type: 'Oral',
     prophylaxis_regimen: 'Oral penicillin',
     days_until_due: 0,
+    last_injection_date: '2026-08-04',
     adherence: 88,
   }),
   registryRow(5, {}),
@@ -83,13 +85,20 @@ describe('asProphylaxisRow', () => {
     ]);
   });
 
-  it("says a BPG dose is due as the due list does, though the registry calls 0 to 7 days 'Deadline approaching'", () => {
+  it("says a BPG dose is due soon up to 7 days ahead, the registry's 'Deadline approaching' and the banner's window", () => {
     const approaching = (days: number) =>
       asProphylaxisRow(
         registryRow(8, { prophylaxis_type: 'BPG', bpg_status: 'Deadline approaching', days_until_due: days }),
       ).status;
 
-    expect([0, 1, 2, 3, 7].map(approaching)).toEqual(['due_today', 'due_soon', 'due_soon', 'up_to_date', 'up_to_date']);
+    expect([0, 1, 2, 3, 7, 8].map(approaching)).toEqual([
+      'due_today',
+      'due_soon',
+      'due_soon',
+      'due_soon',
+      'due_soon',
+      'up_to_date',
+    ]);
   });
 });
 
@@ -113,10 +122,28 @@ describe('Enter prophylaxis', () => {
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
     expect(tableRows()).toEqual([
       ['Patient 1', 'rhd00001', 'BPG · every 28 days', '', 'Overdue', '62%', 'Record BPG'],
-      ['Patient 2', 'rhd00002', 'Q21 day BPG', '', 'Up to date', '96%', 'Record BPG'],
+      ['Patient 2', 'rhd00002', 'Q21 day BPG', '15-Sept-2026', 'Up to date', '96%', 'Record BPG'],
       ['Patient 3', 'rhd00003', 'None', '', 'No prescription', '', 'Needs prescription'],
-      ['Patient 4', 'rhd00004', 'Oral penicillin', '', 'Due today', '88%', 'Record oral'],
+      ['Patient 4', 'rhd00004', 'Oral penicillin', '04-Aug-2026', 'Due today', '88%', 'Record oral'],
     ]);
+  });
+
+  it.each([
+    ['First dose due', { bpg_status: 'First dose due', days_until_due: 19 }],
+    ['First dose due', { bpg_status: 'First dose due', days_until_due: 2 }],
+    ['Overdue', { bpg_status: 'Not covered', days_until_due: -3 }],
+  ])('says %s for a BPG patient prescribed and given no dose yet (%o)', (status, value) => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [registryRow(9, { prophylaxis_type: 'BPG', prophylaxis_regimen: 'Q28 day BPG', ...value })],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<EnterProphylaxis />);
+
+    expect(tableRows()[0][4]).toBe(status);
   });
 
   it("lists only the patients of the session's primary care clinic", async () => {

@@ -124,6 +124,23 @@ describe('Registry BPG status and adherence', () => {
     expect(tag).toHaveClass('cds--tag--gray');
   });
 
+  it('shows a BPG patient given no dose yet as a blue First dose due tag, as the patient banner says', async () => {
+    await signInWith(['App: act.registry'], bpgOn);
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [{ ...withBpg[0], bpg_status: 'First dose due', days_until_due: 19 }],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<Registry />);
+
+    const tag = within(bpgCell('Patient 1')).getByTestId('bpg-status');
+    expect(tag).toHaveTextContent(/^First dose due$/);
+    expect(tag).toHaveClass('cds--tag--blue');
+  });
+
   it('narrows the rows to the patients on oral prophylaxis', async () => {
     await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
@@ -179,6 +196,7 @@ describe('Registry BPG status and adherence', () => {
       { ...withBpg[4], bpg_status: 'No prescription', days_until_due: null },
       { ...withBpg[5], bpg_status: 'Not covered', days_until_due: -40 },
       { ...withBpg[6], bpg_status: null, days_until_due: 61 },
+      { ...withBpg[7], bpg_status: 'First dose due', days_until_due: 25 },
     ];
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
@@ -199,6 +217,7 @@ describe('Registry BPG status and adherence', () => {
       'Patient 6',
       'Patient 3',
       'Patient 4',
+      'Patient 8',
       'Patient 1',
       'Patient 2',
       'Patient 5',
@@ -210,6 +229,7 @@ describe('Registry BPG status and adherence', () => {
       'Patient 5',
       'Patient 2',
       'Patient 1',
+      'Patient 8',
       'Patient 4',
       'Patient 3',
       'Patient 6',
@@ -217,7 +237,7 @@ describe('Registry BPG status and adherence', () => {
     ]);
   });
 
-  it('offers the five statuses as the tags word them, whichever the rows have', async () => {
+  it('offers the six statuses as the tags word them, whichever the rows have', async () => {
     await signInWith(['App: act.registry'], bpgOn);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
@@ -234,6 +254,7 @@ describe('Registry BPG status and adherence', () => {
       'All',
       'Covered',
       'Due within 7 days',
+      'First dose due',
       'Not covered',
       'No prescription',
       'On oral',

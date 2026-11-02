@@ -127,25 +127,18 @@ describe('clinical banner flags', () => {
       </SWRConfig>,
     );
 
-  it('shows a clinician every flag: the echo, no prescription, and the recent recommendation', async () => {
+  it('shows a clinician the echo and the recent recommendation, leaving prophylaxis to the prophylaxis pill', async () => {
     await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
     serve('none');
 
     renderFlags();
 
     expect(await screen.findByTestId('echo-status')).toHaveTextContent('Confirmatory echo needed');
-    expect(await screen.findByTestId('prescription-status')).toHaveTextContent('No prophylaxis prescription');
     expect(await screen.findByTestId('procedure-status')).toHaveTextContent('Procedural rec. < 12 months');
-  });
-
-  it('shows a clinician no Prophylaxis prescribed while BPG is on hold, which the prophylaxis pill says', async () => {
-    await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
-    serve('overdue', true);
-
-    renderFlags();
-
-    await screen.findByTestId('procedure-status');
-    expect(screen.queryByTestId('prescription-status')).not.toBeInTheDocument();
+    expect(screen.queryByText(/prophylaxis/i)).not.toBeInTheDocument();
+    expect(vi.mocked(openmrsFetch).mock.calls.some(([url]) => String(url).includes('/actcore/prophylaxis'))).toBe(
+      false,
+    );
   });
 
   it('shows anyone else only the echo flag', async () => {

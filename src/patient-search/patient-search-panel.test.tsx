@@ -34,6 +34,9 @@ const esther = patient('esther', 'Esther Nambi', 'rhd00001');
 // Each patient's next dose, in days from today.
 const dueIn: Record<string, number> = { grace: -3, esther: 20 };
 const bpgOnHold = new Set<string>();
+const undosed = new Set<string>();
+// ACT Core's status for a dose due in so many days.
+const statusIn = (days: number) => (days < 0 ? 'overdue' : days === 0 ? 'dueToday' : days <= 7 ? 'dueSoon' : 'ok');
 let searchTotal: number | undefined;
 
 let visited = 'esther';
@@ -54,7 +57,8 @@ function serve() {
         data:
           uuid in dueIn
             ? {
-                status: 'ok',
+                status: statusIn(dueIn[uuid]),
+                lastGiven: undosed.has(uuid) ? null : dayjs().subtract(21, 'day').format('YYYY-MM-DD'),
                 nextDue: dayjs().add(dueIn[uuid], 'day').format('YYYY-MM-DD'),
                 bpgOnHold: bpgOnHold.has(uuid),
               }
@@ -91,6 +95,8 @@ describe('PatientSearchPanel', () => {
     searchTotal = undefined;
     posted.length = 0;
     bpgOnHold.clear();
+    undosed.clear();
+    dueIn.esther = 20;
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
     vi.mocked(useSession).mockReturnValue({ user: { uuid: 'clinician' } } as never);
@@ -194,13 +200,12 @@ describe('PatientSearchPanel', () => {
     expect(screen.queryByText('Sorry, no patient charts were found')).not.toBeInTheDocument();
   });
 
-  it('marks a dose due in the next 48 hours yellow, as the patient banner does', async () => {
-    dueIn.esther = 2;
+  it('marks a dose due in the next 7 days yellow, as the patient banner does', async () => {
+    dueIn.esther = 5;
     renderPanel();
 
     const row = await screen.findByRole('button', { name: /Esther Nambi/ });
     expect(await within(row).findByTestId('prophylaxis-status')).toHaveAttribute('data-tone', 'yellow');
-    dueIn.esther = 20;
   });
 
   it('shows BPG on hold in red, in place of the due date, while an anaphylaxis awaits review', async () => {
@@ -212,6 +217,28 @@ describe('PatientSearchPanel', () => {
     expect(pill).toHaveTextContent('BPG on hold');
     expect(pill).toHaveAttribute('data-tone', 'red');
     expect(within(row).queryByText('Prophylaxis up to date')).not.toBeInTheDocument();
+  });
+
+  it('says Prescribed, first dose due for a patient given no dose yet, as the patient banner does', async () => {
+    undosed.add('esther');
+    renderPanel();
+
+    const row = await screen.findByRole('button', { name: /Esther Nambi/ });
+    expect(await within(row).findByTestId('prophylaxis-status')).toHaveTextContent('Prescribed, first dose due');
+  });
+
+  it('leaves a patient without a prescription with no prophylaxis status, as ACT 2.0 listed them', async () => {
+    delete dueIn.esther;
+    renderPanel();
+
+    const row = await screen.findByRole('button', { name: /Esther Nambi/ });
+    await waitFor(() =>
+      expect(
+        vi.mocked(openmrsFetch).mock.calls.some(([url]) => String(url).includes('/actcore/prophylaxis?patient=esther')),
+      ).toBe(true),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(within(row).queryByTestId('prophylaxis-status')).not.toBeInTheDocument();
   });
 
   it('keeps listing recently viewed patients, and searches nothing, for one character', async () => {

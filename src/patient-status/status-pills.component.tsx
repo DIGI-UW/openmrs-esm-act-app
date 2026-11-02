@@ -3,13 +3,19 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { type ProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { daysUntil, dueTone, fullDate, shortDate } from './due-tone';
-import { StatusPill } from './status-pill.component';
+import { type PillTone, StatusPill } from './status-pill.component';
 
 /**
- * Prophylaxis by its next dose, or BPG on hold after an unreviewed anaphylaxis; none without a regimen in force or for
- * an oral one whose supply end is unknown.
+ * A prescription with no dose yet, oral included, has its first dose due; an oral one with a report but no known supply
+ * end shows none.
  */
-export function ProphylaxisPill({ summary }: { summary: ProphylaxisSummary | undefined }) {
+export function ProphylaxisPill({
+  summary,
+  showNoPrescription = true,
+}: {
+  summary: ProphylaxisSummary | undefined;
+  showNoPrescription?: boolean;
+}) {
   const { t } = useTranslation();
   if (summary?.bpgOnHold) {
     return (
@@ -21,25 +27,36 @@ export function ProphylaxisPill({ summary }: { summary: ProphylaxisSummary | und
       />
     );
   }
-  if (!summary?.nextDue || summary.status === 'none') {
+  if (!summary) {
     return null;
   }
-  const days = daysUntil(summary.nextDue);
-  const tone = dueTone(days);
-  const label =
-    tone === 'red'
-      ? t('prophylaxisOverdue', 'Prophylaxis overdue')
-      : tone === 'green'
-        ? t('prophylaxisUpToDate', 'Prophylaxis up to date')
-        : days === 0
-          ? t('prophylaxisDueToday', 'Prophylaxis due today')
-          : t('prophylaxisDueOn', 'Prophylaxis due {{date}}', { date: shortDate(summary.nextDue) });
-
+  if (summary.status === 'none') {
+    return showNoPrescription ? (
+      <StatusPill
+        tone="red"
+        label={t('noProphylaxisPrescription', 'No prophylaxis prescription')}
+        testId="prophylaxis-status"
+      />
+    ) : null;
+  }
+  const pill: { tone: PillTone; label: string } | null =
+    summary.status === 'overdue'
+      ? { tone: 'red', label: t('prophylaxisOverdue', 'Prophylaxis overdue') }
+      : !summary.lastGiven
+        ? { tone: 'blue', label: t('prescribedFirstDoseDue', 'Prescribed, first dose due') }
+        : summary.status === 'dueToday' || summary.status === 'dueSoon'
+          ? { tone: 'yellow', label: t('prophylaxisDueSoon', 'Prophylaxis due soon') }
+          : summary.status === 'ok'
+            ? { tone: 'green', label: t('prophylaxisUpToDate', 'Prophylaxis up to date') }
+            : null;
+  if (!pill) {
+    return null;
+  }
   return (
     <StatusPill
-      tone={tone}
-      label={label}
-      title={t('dueOn', 'Due {{date}}', { date: fullDate(summary.nextDue) })}
+      tone={pill.tone}
+      label={pill.label}
+      title={summary.nextDue ? t('dueOn', 'Due {{date}}', { date: fullDate(summary.nextDue) }) : undefined}
       testId="prophylaxis-status"
     />
   );

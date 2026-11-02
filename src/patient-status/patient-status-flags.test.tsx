@@ -87,13 +87,13 @@ describe('PatientStatusFlags', () => {
   });
 
   it.each([
-    ['2026-10-12', 'red', 'Prophylaxis overdue'],
-    ['2026-10-13', 'yellow', 'Prophylaxis due today'],
-    ['2026-10-14', 'yellow', 'Prophylaxis due 14 Oct'],
-    ['2026-10-15', 'yellow', 'Prophylaxis due 15 Oct'],
-    ['2026-10-16', 'green', 'Prophylaxis up to date'],
-  ])('colours a dose due %s %s: %s', async (nextDue, tone, label) => {
-    respondWith({ nextDue });
+    ['2026-10-12', 'overdue', 'red', 'Prophylaxis overdue'],
+    ['2026-10-13', 'dueToday', 'yellow', 'Prophylaxis due soon'],
+    ['2026-10-18', 'dueSoon', 'yellow', 'Prophylaxis due soon'],
+    ['2026-10-20', 'dueSoon', 'yellow', 'Prophylaxis due soon'],
+    ['2026-10-21', 'ok', 'green', 'Prophylaxis up to date'],
+  ])("words a dose due %s by ACT Core's status %s, %s: %s", async (nextDue, status, tone, label) => {
+    respondWith({ nextDue, status });
 
     renderFlags();
 
@@ -135,20 +135,58 @@ describe('PatientStatusFlags', () => {
     },
   );
 
+  it('says Prescribed, first dose due in blue for a patient prescribed and given no dose yet', async () => {
+    respondWith({ lastGiven: null, nextDue: '2026-11-10', status: 'ok', onTime: { given: 0, total: 0, months: 6 } });
+
+    renderFlags();
+
+    const pill = await screen.findByTestId('prophylaxis-status');
+    expect(pill).toHaveTextContent('Prescribed, first dose due');
+    expect(pill).toHaveAttribute('data-tone', 'blue');
+    expect(pill).toHaveAttribute('title', 'Due 10-Nov-2026');
+  });
+
+  it('says Prescribed, first dose due for an oral regimen with no report yet, whose supply end ACT Core cannot know', async () => {
+    respondWith({ type: 'Oral', intervalDays: 0, lastGiven: null, nextDue: null, status: null, onTime: null });
+
+    renderFlags();
+
+    const pill = await screen.findByTestId('prophylaxis-status');
+    expect(pill).toHaveTextContent('Prescribed, first dose due');
+    expect(pill).not.toHaveAttribute('title');
+  });
+
+  it('says overdue for a patient never given the first dose once its due date has passed', async () => {
+    respondWith({ lastGiven: null, nextDue: '2026-10-01', status: 'overdue' });
+
+    renderFlags();
+
+    const pill = await screen.findByTestId('prophylaxis-status');
+    expect(pill).toHaveTextContent('Prophylaxis overdue');
+    expect(pill).toHaveAttribute('data-tone', 'red');
+  });
+
+  it('says No prophylaxis prescription in red without a regimen in force', async () => {
+    respondWith({ regimen: null, type: null, intervalDays: null, lastGiven: null, nextDue: null, status: 'none' });
+
+    renderFlags();
+
+    const pill = await screen.findByTestId('prophylaxis-status');
+    expect(pill).toHaveTextContent('No prophylaxis prescription');
+    expect(pill).toHaveAttribute('data-tone', 'red');
+  });
+
   it('shows both pills side by side, as in the banner design', async () => {
     respondWith({ nextDue: '2026-10-13' }, '2026-10-15');
 
     renderFlags();
 
-    expect(await screen.findByTestId('prophylaxis-status')).toHaveTextContent('Prophylaxis due today');
+    expect(await screen.findByTestId('prophylaxis-status')).toHaveTextContent('Prophylaxis due soon');
     expect(await screen.findByTestId('cardiology-status')).toHaveTextContent('Cardiology visit due 15 Oct');
   });
 
-  it.each([
-    ['no regimen', { status: 'none', nextDue: null }],
-    ['an oral regimen whose supply end is unknown', { type: 'Oral', status: null, nextDue: null }],
-  ])('shows no prophylaxis pill for %s', async (_, prophylaxis) => {
-    respondWith(prophylaxis);
+  it('shows no prophylaxis pill for an oral regimen with a report whose supply end is unknown', async () => {
+    respondWith({ type: 'Oral', lastGiven: '2026-09-22', status: null, nextDue: null });
 
     renderFlags();
     await settled();
@@ -166,11 +204,11 @@ describe('PatientStatusFlags', () => {
   });
 
   it('turns green when a form save moves the next dose on', async () => {
-    respondWith({ nextDue: '2026-10-10' });
+    respondWith({ nextDue: '2026-10-10', status: 'overdue' });
     renderFlags();
     expect(await screen.findByTestId('prophylaxis-status')).toHaveAttribute('data-tone', 'red');
 
-    respondWith({ nextDue: '2026-11-03', lastGiven: '2026-10-13' });
+    respondWith({ nextDue: '2026-11-03', lastGiven: '2026-10-13', status: 'ok' });
     await invalidateEncounters();
 
     await waitFor(() => expect(screen.getByTestId('prophylaxis-status')).toHaveAttribute('data-tone', 'green'));

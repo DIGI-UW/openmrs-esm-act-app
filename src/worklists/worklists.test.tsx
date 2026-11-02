@@ -419,6 +419,7 @@ describe('Due for prophylaxis worklist', () => {
     prophylaxis_type: type,
     injection_interval_days: type === 'BPG' ? 28 : null,
     regimen: type === 'BPG' ? null : 'Penicillin V',
+    last_given: '2026-08-01',
     next_due: nextDue,
     status,
   });
@@ -454,7 +455,7 @@ describe('Due for prophylaxis worklist', () => {
     expect(rows[0]).toEqual(['Patient 1rhd00001', '11 M', 'RHD B', 'BPG · every 28 days', 'Recorded today']);
     expect(rows[1].slice(3)).toEqual(['BPG · every 28 days', expect.stringMatching(/^Overdue · was due \S/)]);
     // Not on the registry, so who they are comes from the due list.
-    expect(rows[2]).toEqual(['Patient 3rhd00003', '', '', 'Penicillin V', expect.stringMatching(/^Due in 48 h · \S/)]);
+    expect(rows[2]).toEqual(['Patient 3rhd00003', '', '', 'Penicillin V', expect.stringMatching(/^Due soon · \S/)]);
     expect(screen.getByRole('link', { name: 'View chart' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Record BPG' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Record oral' })).toBeInTheDocument();
