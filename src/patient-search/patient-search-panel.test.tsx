@@ -96,6 +96,7 @@ describe('PatientSearchPanel', () => {
     searchTotal = undefined;
     posted.length = 0;
     bpgOnHold.clear();
+    undosed.clear();
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
     vi.mocked(useSession).mockReturnValue({ user: { uuid: 'clinician' } } as never);
@@ -225,7 +226,6 @@ describe('PatientSearchPanel', () => {
 
     const row = await screen.findByRole('button', { name: /Esther Nambi/ });
     expect(await within(row).findByTestId('prophylaxis-status')).toHaveTextContent('Prescribed, first dose due');
-    undosed.delete('esther');
   });
 
   it('leaves a patient without a prescription with no prophylaxis status, as ACT 2.0 listed them', async () => {
