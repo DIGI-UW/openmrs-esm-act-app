@@ -11,16 +11,21 @@ import {
 
 export type InrResult = 'inRange' | 'below' | 'above' | 'unknown';
 
+/** The target ACT 2.0 draws as its green zone, used when an INR records none. */
+export const standardTarget: [number, number] = [2, 3];
+
 export interface InrReview {
   key: string;
   /** The RHD INR Monitoring that records it, which Edit reopens. */
   encounterUuid: string;
+  groupUuid: string | null;
   date: Date;
   inr: number | null;
   target: string;
   result: InrResult;
   nextInr: Date | null;
   newDose: string | null;
+  doseChange: string | null;
 }
 
 /** The low and high of a target range such as "2.0 - 3.0" or "2.5-3.5"; null when it names no range. */
@@ -54,16 +59,19 @@ export function toInrReviews(encounters: Array<ChartEncounter>, concepts: Config
         const [tested] = answersIn(group?.groupMembers, concepts.dateTested);
         const [value] = answersIn(group?.groupMembers, concepts.value);
         const [dose] = answersIn(group?.groupMembers, concepts.newDose);
+        const [change] = answersIn(group?.groupMembers, concepts.doseChange);
         const inr = value ? Number(value.value) : null;
         return {
           key: `${encounter.uuid}-${index}`,
           encounterUuid: encounter.uuid,
+          groupUuid: group?.uuid ?? null,
           date: parseDate(String(tested?.value ?? encounter.encounterDatetime)),
           inr,
           target,
           result: inrResult(inr, target),
           nextInr,
           newDose: dose ? answerText(dose.value) : null,
+          doseChange: change ? answerText(change.value) : null,
         };
       });
     })
@@ -81,8 +89,12 @@ export function useInrReviews(patientUuid: string | null) {
   const reviews = toInrReviews(inr.encounters, inrReviews.concepts);
   const warfarin = warfarinOf(consults.encounters, consultations.concepts, consultations.vitaminKAntagonists);
   const nextInr = inr.encounters.length ? (reviews.find((review) => review.nextInr)?.nextInr ?? null) : null;
+  const indication = inr.encounters
+    .map((encounter) => answerText(answersIn(encounter.obs, inrReviews.concepts.indication)[0]?.value ?? ''))
+    .find(Boolean);
   return {
     reviews,
+    indication: indication || null,
     onWarfarin: Boolean(warfarin),
     dose: reviews.find((review) => review.newDose)?.newDose ?? warfarin?.dose ?? null,
     nextInr,

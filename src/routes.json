@@ -993,6 +993,16 @@
       "group": "patient-chart"
     },
     {
+      "name": "act-inr-monitoring",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-inr-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
       "name": "act-vitals-form",
       "group": "patient-chart",
       "width": "wider"
@@ -1058,6 +1068,16 @@
       "name": "act-update-prophylaxis-workspace",
       "component": "updateProphylaxisWorkspace",
       "window": "act-update-prophylaxis"
+    },
+    {
+      "name": "act-inr-edit-workspace",
+      "component": "inrEditWorkspace",
+      "window": "act-inr-monitoring"
+    },
+    {
+      "name": "act-inr-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#patientFormEntryWorkspace",
+      "window": "act-inr-form-entry"
     },
     {
       "name": "act-enrollment-workspace",

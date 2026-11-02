@@ -2,6 +2,8 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { type ProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
+import { inrTone } from '../inr/inr-chart.component';
+import { standardTarget, targetRange } from '../inr/inr.resource';
 import { daysUntil, dueTone, fullDate, shortDate } from './due-tone';
 import { type PillTone, StatusPill } from './status-pill.component';
 
@@ -83,6 +85,28 @@ export function CardiologyPill({ nextDue }: { nextDue: string | null }) {
       label={label}
       title={t('dueOn', 'Due {{date}}', { date: fullDate(nextDue) })}
       testId="cardiology-status"
+    />
+  );
+}
+
+/** The latest INR with its direction, when it falls outside its target; none when it is in range. */
+export function InrValuePill({ inr, target }: { inr: number; target: string }) {
+  const { t } = useTranslation();
+  const range = targetRange(target);
+  const tone = inrTone(inr, range);
+  if (tone === 'green') {
+    return null;
+  }
+  const [low] = range ?? standardTarget;
+  return (
+    <StatusPill
+      tone={tone === 'red' ? 'red' : 'yellow'}
+      label={
+        inr < low
+          ? t('inrBelowTarget', 'INR {{inr}} below target', { inr })
+          : t('inrAboveTargetPill', 'INR {{inr}} above target', { inr })
+      }
+      testId="inr-value-status"
     />
   );
 }
