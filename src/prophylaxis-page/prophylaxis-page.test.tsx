@@ -7,9 +7,11 @@ import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
 import {
   ErrorState,
   getDefaultsFromConfigSchema,
+  type AssignedExtension,
   launchWorkspace2,
   openmrsFetch,
   restBaseUrl,
+  useAssignedExtensions,
   useConfig,
 } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
@@ -462,6 +464,10 @@ describe('ProphylaxisPage', () => {
   });
 
   it('leads with the current prescription as the Prophylaxis card shows it, with its actions and no link to itself', async () => {
+    // The chart's nav has this page, which the summary card would link to.
+    vi.mocked(useAssignedExtensions).mockReturnValue([
+      { name: 'act-prophylaxis-dashboard-link', meta: { path: 'act-prophylaxis' }, config: {} },
+    ] as unknown as Array<AssignedExtension>);
     serve({ injections: [], summary: newlyPrescribed, prescriptions: yolanda });
 
     renderPage();

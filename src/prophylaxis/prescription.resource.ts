@@ -117,7 +117,8 @@ export interface PrescribedCourse {
 
 /**
  * Every course of prophylaxis prescribed, a course being a regimen and its Date Started however many encounters carry
- * it forward, newest start first. A course takes the Date Stopped of any encounter that stops it; None is not a course.
+ * it forward, newest start first. A course takes the Date Stopped of the latest encounter that stops it; None is not a
+ * course.
  */
 export function prescriptionHistoryOf(
   encounters: Array<PrescriptionEncounter>,
@@ -149,7 +150,7 @@ export function prescriptionHistoryOf(
         current: inForce.has(key),
       };
       const stopped = memberOf(group, concepts.dateStopped);
-      if (stopped && !course.stopped) {
+      if (stopped) {
         const reason = memberOf(group, concepts.reasonStopped);
         course.stopped = dayOf(stopped.value);
         course.reasonStopped = reason ? answerOf(reason.value).label : null;

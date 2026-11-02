@@ -91,6 +91,19 @@ describe('prescriptionHistoryOf', () => {
     ]);
   });
 
+  it('takes the stop of the latest encounter that stops a course, as a corrected stop date replaces the first', () => {
+    const history = prescriptionHistoryOf(
+      [
+        encounter('start', '2026-01-10T09:00:00.000+0000', [group(q28, '2026-01-10')]),
+        encounter('stop', '2026-05-01T09:00:00.000+0000', [group(q28, '2026-01-10', '2026-05-01')]),
+        encounter('corrected', '2026-05-02T09:00:00.000+0000', [group(q28, '2026-01-10', '2026-04-20')]),
+      ],
+      concepts,
+    );
+
+    expect(history.map((course) => course.stopped)).toEqual(['2026-04-20']);
+  });
+
   it('is empty for a patient never prescribed', () => {
     expect(prescriptionHistoryOf([encounter('other', '2026-09-01T09:00:00.000+0000', [])], concepts)).toEqual([]);
   });
