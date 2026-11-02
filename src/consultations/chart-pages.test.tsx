@@ -197,6 +197,48 @@ describe('chart pages by role', () => {
     expect(warfarinOf([stopped, added], c, vkas)).toBeNull();
   });
 
+  it('keeps warfarin active when a later record lists only another medicine', () => {
+    const vkas = config.consultations.vitaminKAntagonists;
+    const aspirin = obs(c.medication, null, [obs(c.medication, coded('aspirin', 'Aspirin'))]);
+    const added = medicationUpdate('update', '2026-09-01', [warfarinGroup()]);
+    expect(warfarinOf([consultation('later', '2026-10-01', [aspirin]), added], c, vkas)).toEqual({
+      dose: '5 mg daily',
+    });
+  });
+
+  it('keeps the dose when a later record of warfarin gives none, and stops it when that record has a Date Stopped', () => {
+    const vkas = config.consultations.vitaminKAntagonists;
+    const added = medicationUpdate('update', '2026-09-01', [warfarinGroup()]);
+    const noDose = (extra: Array<unknown> = []) =>
+      obs(c.medication, null, [obs(c.medication, coded(vkas[0], 'Warfarin')), ...extra]);
+    expect(warfarinOf([medicationUpdate('later', '2026-10-01', [noDose()]), added], c, vkas)).toEqual({
+      dose: '5 mg daily',
+    });
+    expect(
+      warfarinOf(
+        [medicationUpdate('later', '2026-10-01', [noDose([obs(c.dateStopped, '2026-10-01')])]), added],
+        c,
+        vkas,
+      ),
+    ).toBeNull();
+  });
+
+  it('is on warfarin while any vitamin K antagonist is active, with that medicine dose', () => {
+    const vkas = config.consultations.vitaminKAntagonists;
+    const acitrom = obs(c.medication, null, [
+      obs(c.medication, coded(vkas[1], 'Acitrom')),
+      obs(c.medicationDose, '3 mg daily'),
+    ]);
+    const stoppedWarfarin = medicationUpdate('stop', '2026-10-01', [warfarinGroup(true)]);
+    const switched = medicationUpdate('switch', '2026-10-02', [acitrom]);
+    expect(
+      warfarinOf([stoppedWarfarin, medicationUpdate('start', '2026-09-01', [warfarinGroup()])], c, vkas),
+    ).toBeNull();
+    expect(
+      warfarinOf([switched, stoppedWarfarin, medicationUpdate('start', '2026-09-01', [warfarinGroup()])], c, vkas),
+    ).toEqual({ dose: '3 mg daily' });
+  });
+
   it('judges each INR against its target range', () => {
     expect(targetRange('2.0 - 3.0')).toEqual([2, 3]);
     expect(targetRange('2.5-3.5')).toEqual([2.5, 3.5]);

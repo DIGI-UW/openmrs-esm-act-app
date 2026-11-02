@@ -55,13 +55,15 @@ function reading(
   } as ChartEncounter;
 }
 
-function serve(consultations: Array<ChartEncounter>, inr: Array<ChartEncounter>) {
+function serve(consultations: Array<ChartEncounter>, inr: Array<ChartEncounter>, updates: Array<ChartEncounter> = []) {
   vi.mocked(openmrsFetch).mockImplementation((async (url: string) => {
     const results = url.includes(`encounterType=${config.consultations.encounterType}`)
       ? consultations
       : url.includes(`encounterType=${config.inrReviews.encounterType}`)
         ? inr
-        : [];
+        : url.includes(`encounterType=${config.medications.encounterType}`)
+          ? updates
+          : [];
     return { data: { results, totalCount: results.length } };
   }) as never);
 }
@@ -213,6 +215,12 @@ describe('InrStatusFlag', () => {
     unmount();
 
     serve([onWarfarin], [reading(ago(60), 3.1)]);
+    renderIn(<InrStatusFlag patientUuid="grace" />);
+    expect(await screen.findByTestId('inr-value-status')).toHaveTextContent('INR 3.1 above target');
+  });
+
+  it('flags a patient whose only warfarin is a Medication Update', async () => {
+    serve([], [reading(ago(10), 3.1)], [onWarfarin]);
     renderIn(<InrStatusFlag patientUuid="grace" />);
     expect(await screen.findByTestId('inr-value-status')).toHaveTextContent('INR 3.1 above target');
   });
