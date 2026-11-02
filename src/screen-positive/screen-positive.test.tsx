@@ -57,16 +57,16 @@ describe('Diagnosis to confirm', () => {
     expect(screen.getByText(/Record diagnosis opens their Consultation visits/)).toBeInTheDocument();
   });
 
-  it('lists each patient with their age and sex, the date of positive screen, screening site and follow-up status', () => {
+  it('lists each patient with their age and sex, the date of positive screen and screening site', () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositive />);
 
-    expect(columnHeaders()).toEqual(['Patient', 'Screened', 'Screening site', 'Status', '']);
+    expect(columnHeaders()).toEqual(['Patient', 'Screened', 'Screening site', '']);
     const cells = within(screen.getByRole('row', { name: /Patient 2\b/ }))
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
-    expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Echo booked', 'Record diagnosis']);
+    expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Record diagnosis']);
   });
 
   it('sorts by any column, the date of positive screen by its day, then returns to the report order', async () => {
@@ -112,28 +112,13 @@ describe('Diagnosis to confirm', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it.each([
-    ['Patient 1', 'Not contacted', 'notContacted'],
-    ['Patient 2', 'Echo booked', 'cds--tag--blue'],
-    ['Patient 3', 'Urgent', 'cds--tag--red'],
-  ])("tags %s's follow-up status %s", (name, status, colour) => {
-    dataset({ rows: screenPositiveRows });
-
-    render(<ScreenPositive />);
-
-    const tag = within(screen.getByRole('row', { name: new RegExp(`${name}\\b`) })).getByText(status);
-    // The tag has no role, so it is found around its label.
-    // eslint-disable-next-line testing-library/no-node-access
-    expect(tag.closest('.cds--tag')).toHaveClass(colour);
-  });
-
-  it('leaves the site and status empty for a patient with neither recorded', () => {
+  it('leaves the site empty for a patient with none recorded', () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositive />);
 
     const cells = within(screen.getByRole('row', { name: /Patient 4\b/ })).getAllByRole('cell');
-    expect([cells[2].textContent, cells[3].textContent]).toEqual(['', '']);
+    expect(cells[2].textContent).toBe('');
   });
 
   it("links each patient's name to their chart", () => {

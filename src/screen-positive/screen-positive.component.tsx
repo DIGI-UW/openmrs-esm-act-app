@@ -11,7 +11,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Tag,
 } from '@carbon/react';
 import {
   CardiologyPictogram,
@@ -55,10 +54,7 @@ const sortValues: Record<string, (row: ReportRow) => SortValue> = {
   patient: reportText('full_name'),
   screened: (row) => String(row.screen_date ?? '').slice(0, 10) || null,
   screeningSite: reportText('screening_site'),
-  status: reportText('follow_up_status'),
 };
-
-const statusTags = { 'Not contacted': 'warm-gray', 'Echo booked': 'blue', Urgent: 'red' } as const;
 
 export function ScreenPositiveTable() {
   const { t } = useTranslation();
@@ -88,11 +84,6 @@ export function ScreenPositiveTable() {
     />
   );
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
-  const statusLabel = {
-    'Not contacted': t('notContacted', 'Not contacted'),
-    'Echo booked': t('echoBooked', 'Echo booked'),
-    Urgent: t('urgent', 'Urgent'),
-  };
   const columns: Array<{ key: string; header: string; render: (row: ReportRow) => React.ReactNode }> = [
     {
       key: 'patient',
@@ -108,23 +99,7 @@ export function ScreenPositiveTable() {
     },
     { key: 'screened', header: t('screened', 'Screened'), render: screenDate },
     { key: 'screeningSite', header: t('screeningSite', 'Screening site'), render: text('screening_site') },
-    {
-      key: 'status',
-      header: t('status', 'Status'),
-      render: (row) => {
-        const status = String(row.follow_up_status ?? '');
-        return status in statusTags ? (
-          <Tag
-            as="span"
-            size="sm"
-            type={statusTags[status]}
-            className={status === 'Not contacted' ? styles.notContacted : undefined}
-          >
-            {statusLabel[status]}
-          </Tag>
-        ) : null;
-      },
-    },
+    // The follow-up status column went with the question, which AR-167 took off Patient Information.
   ];
 
   // Where the session location's kind cannot be read, opening on every clinic would show patients not its own.
