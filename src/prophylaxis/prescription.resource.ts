@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
@@ -123,8 +124,8 @@ export interface PrescribedCourse {
 export function prescriptionHistoryOf(
   encounters: Array<PrescriptionEncounter>,
   concepts: Concepts,
+  current = currentPrescriptionOf(encounters, concepts),
 ): Array<PrescribedCourse> {
-  const current = currentPrescriptionOf(encounters, concepts);
   const inForce = new Set(current?.groups.map((one) => `${one.regimen.uuid} ${one.started}`));
   const courses = new Map<string, PrescribedCourse>();
   const byDay = encounters
@@ -168,12 +169,11 @@ export function usePrescription(patientUuid: string | null, concepts: Concepts) 
   const { data, error, isLoading } = useSWR<Array<PrescriptionEncounter>, Error>(url, () =>
     fetchAll<PrescriptionEncounter>(url),
   );
-  return {
-    prescription: data ? currentPrescriptionOf(data, concepts) : null,
-    history: data ? prescriptionHistoryOf(data, concepts) : null,
-    error,
-    isLoading,
-  };
+  const { prescription, history } = useMemo(() => {
+    const current = data ? currentPrescriptionOf(data, concepts) : null;
+    return { prescription: current, history: data ? prescriptionHistoryOf(data, concepts, current) : null };
+  }, [data, concepts]);
+  return { prescription, history, error, isLoading };
 }
 
 export interface NewObs {

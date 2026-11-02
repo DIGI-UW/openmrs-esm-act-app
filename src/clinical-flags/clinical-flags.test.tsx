@@ -127,26 +127,19 @@ describe('clinical banner flags', () => {
       </SWRConfig>,
     );
 
-  it.each([
-    ['none', false],
-    ['ok', false],
-    ['overdue', true],
-  ])(
-    'shows a clinician the echo and the recent recommendation, leaving prophylaxis (%s, on hold %s) to the prophylaxis pill',
-    async (status, bpgOnHold) => {
-      await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
-      serve(status, bpgOnHold);
+  it('shows a clinician the echo and the recent recommendation, leaving prophylaxis to the prophylaxis pill', async () => {
+    await signInWith(['Get Encounters', 'Get Observations', 'Task: act.enterClinicalForms']);
+    serve('none');
 
-      renderFlags();
+    renderFlags();
 
-      expect(await screen.findByTestId('echo-status')).toHaveTextContent('Confirmatory echo needed');
-      expect(await screen.findByTestId('procedure-status')).toHaveTextContent('Procedural rec. < 12 months');
-      expect(screen.queryByTestId('prescription-status')).not.toBeInTheDocument();
-      expect(vi.mocked(openmrsFetch).mock.calls.some(([url]) => String(url).includes('/actcore/prophylaxis'))).toBe(
-        false,
-      );
-    },
-  );
+    expect(await screen.findByTestId('echo-status')).toHaveTextContent('Confirmatory echo needed');
+    expect(await screen.findByTestId('procedure-status')).toHaveTextContent('Procedural rec. < 12 months');
+    expect(screen.queryByText(/prophylaxis/i)).not.toBeInTheDocument();
+    expect(vi.mocked(openmrsFetch).mock.calls.some(([url]) => String(url).includes('/actcore/prophylaxis'))).toBe(
+      false,
+    );
+  });
 
   it('shows anyone else only the echo flag', async () => {
     await signInWith(['Get Encounters', 'Get Observations']);

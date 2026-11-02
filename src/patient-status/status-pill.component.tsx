@@ -2,8 +2,10 @@ import React from 'react';
 import { type DueTone } from './due-tone';
 import styles from './status-pill.scss';
 
+export type PillTone = DueTone | 'blue';
+
 interface StatusPillProps {
-  tone: DueTone | 'blue';
+  tone: PillTone;
   label: string;
   /** The full due date, on hover. */
   title?: string;

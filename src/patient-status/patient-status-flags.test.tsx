@@ -146,6 +146,16 @@ describe('PatientStatusFlags', () => {
     expect(pill).toHaveAttribute('title', 'Due 10-Nov-2026');
   });
 
+  it('says Prescribed, first dose due for an oral regimen with no report yet, whose supply end ACT Core cannot know', async () => {
+    respondWith({ type: 'Oral', intervalDays: 0, lastGiven: null, nextDue: null, status: null, onTime: null });
+
+    renderFlags();
+
+    const pill = await screen.findByTestId('prophylaxis-status');
+    expect(pill).toHaveTextContent('Prescribed, first dose due');
+    expect(pill).not.toHaveAttribute('title');
+  });
+
   it('says overdue for a patient never given the first dose once its due date has passed', async () => {
     respondWith({ lastGiven: null, nextDue: '2026-10-01', status: 'overdue' });
 
@@ -175,8 +185,8 @@ describe('PatientStatusFlags', () => {
     expect(await screen.findByTestId('cardiology-status')).toHaveTextContent('Cardiology visit due 15 Oct');
   });
 
-  it('shows no prophylaxis pill for an oral regimen whose supply end is unknown', async () => {
-    respondWith({ type: 'Oral', status: null, nextDue: null });
+  it('shows no prophylaxis pill for an oral regimen with a report whose supply end is unknown', async () => {
+    respondWith({ type: 'Oral', lastGiven: '2026-09-22', status: null, nextDue: null });
 
     renderFlags();
     await settled();

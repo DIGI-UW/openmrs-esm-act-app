@@ -75,7 +75,7 @@ export function dueColumns(t: TFunction, recorded: Set<string>): Array<DueColumn
   ];
 }
 
-/** The patient's status as the patient banner words it: a prescribed patient with no dose yet has a first dose due. */
+/** The row's status; as in the patient banner, a prescribed patient with no dose yet has a first dose due unless overdue. */
 export function statusLabel(t: TFunction, row: ReportRow, recordedToday: boolean) {
   if (recordedToday) {
     return t('recordedToday', 'Recorded today');

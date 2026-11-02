@@ -12,8 +12,7 @@ const SCREEN_POSITIVE = '82a5fbb5-038d-57b8-82d1-3fd0ac95673d';
 
 /**
  * The prototype's other banner flags: Confirmatory echo needed, for everyone; and for a clinician, as the prototype
- * shows its clinician and site administrator, the procedural recommendation's age. Prophylaxis is the prophylaxis
- * pill's alone (AR-177). A deceased patient shows none.
+ * shows its clinician and site administrator, the procedural recommendation's age. A deceased patient shows none.
  */
 export default function ClinicalFlags({ patientUuid, patient }: { patientUuid: string; patient?: fhir.Patient }) {
   const { t } = useTranslation();

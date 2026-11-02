@@ -97,6 +97,7 @@ describe('PatientSearchPanel', () => {
     posted.length = 0;
     bpgOnHold.clear();
     undosed.clear();
+    dueIn.esther = 20;
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
     vi.mocked(useSession).mockReturnValue({ user: { uuid: 'clinician' } } as never);
@@ -206,7 +207,6 @@ describe('PatientSearchPanel', () => {
 
     const row = await screen.findByRole('button', { name: /Esther Nambi/ });
     expect(await within(row).findByTestId('prophylaxis-status')).toHaveAttribute('data-tone', 'yellow');
-    dueIn.esther = 20;
   });
 
   it('shows BPG on hold in red, in place of the due date, while an anaphylaxis awaits review', async () => {
@@ -240,7 +240,6 @@ describe('PatientSearchPanel', () => {
     );
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(within(row).queryByTestId('prophylaxis-status')).not.toBeInTheDocument();
-    dueIn.esther = 20;
   });
 
   it('keeps listing recently viewed patients, and searches nothing, for one character', async () => {
