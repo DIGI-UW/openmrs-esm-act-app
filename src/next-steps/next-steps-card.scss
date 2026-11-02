@@ -39,7 +39,6 @@
     }
   }
 
-  // A patient safety alert, such as an anaphylaxis to review, stands apart from the routine steps.
   &[data-alert='true'] {
     background-color: $act-risk-background;
 

@@ -33,6 +33,7 @@ const grace = patient('grace', 'Grace Achieng', 'rhd00008');
 const esther = patient('esther', 'Esther Nambi', 'rhd00001');
 // Each patient's next dose, in days from today.
 const dueIn: Record<string, number> = { grace: -3, esther: 20 };
+const bpgOnHold = new Set<string>();
 let searchTotal: number | undefined;
 
 let visited = 'esther';
@@ -52,7 +53,11 @@ function serve() {
       return Promise.resolve({
         data:
           uuid in dueIn
-            ? { status: 'ok', nextDue: dayjs().add(dueIn[uuid], 'day').format('YYYY-MM-DD') }
+            ? {
+                status: 'ok',
+                nextDue: dayjs().add(dueIn[uuid], 'day').format('YYYY-MM-DD'),
+                bpgOnHold: bpgOnHold.has(uuid),
+              }
             : { status: 'none', nextDue: null },
       });
     }
@@ -85,6 +90,7 @@ describe('PatientSearchPanel', () => {
     visited = 'esther';
     searchTotal = undefined;
     posted.length = 0;
+    bpgOnHold.clear();
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
     vi.mocked(useSession).mockReturnValue({ user: { uuid: 'clinician' } } as never);
@@ -195,6 +201,17 @@ describe('PatientSearchPanel', () => {
     const row = await screen.findByRole('button', { name: /Esther Nambi/ });
     expect(await within(row).findByTestId('prophylaxis-status')).toHaveAttribute('data-tone', 'yellow');
     dueIn.esther = 20;
+  });
+
+  it('shows BPG on hold in red, in place of the due date, while an anaphylaxis awaits review', async () => {
+    bpgOnHold.add('esther');
+    renderPanel();
+
+    const row = await screen.findByRole('button', { name: /Esther Nambi/ });
+    const pill = await within(row).findByTestId('prophylaxis-status');
+    expect(pill).toHaveTextContent('BPG on hold');
+    expect(pill).toHaveAttribute('data-tone', 'red');
+    expect(within(row).queryByText('Prophylaxis up to date')).not.toBeInTheDocument();
   });
 
   it('keeps listing recently viewed patients, and searches nothing, for one character', async () => {
