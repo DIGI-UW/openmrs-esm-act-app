@@ -242,8 +242,8 @@ export function prescriptionPayload(
 
 /**
  * Saves an update as a new encounter of the update type. ACT Core keeps only a day's first encounter, so one recorded
- * today is edited in place instead: its groups in force, their answers and the duration voided, and the new answers added with the carried
- * groups in one request, so no earlier start is lost.
+ * today is edited in place instead: its groups in force, their answers and the duration voided, and the new answers
+ * added with the carried groups in one request, so no earlier start is lost.
  */
 export async function savePrescription({
   patient,
