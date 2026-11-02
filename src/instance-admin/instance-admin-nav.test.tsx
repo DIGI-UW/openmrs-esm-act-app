@@ -10,7 +10,7 @@ describe('InstanceAdminNav', () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
   });
 
-  it('offers Forms & sites, Role permissions and Research participation to the Instance Administrator, each to the quick-action URL', async () => {
+  it('offers Forms & sites and Role permissions to the Instance Administrator, each to the quick-action URL, leaving Studies to the Admin section', async () => {
     await signInWith(['App: act.instanceAdmin']);
 
     render(<InstanceAdminNav />);
@@ -20,10 +20,7 @@ describe('InstanceAdminNav', () => {
       'href',
       '/openmrs/spa/home/act-role-permissions',
     );
-    expect(screen.getByRole('link', { name: 'Research participation' })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-studies',
-    );
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Forms & sites', 'Role permissions']);
   });
 
   it('shows nothing to a user whose home is ACT home, as the Instance admin Home link does', async () => {

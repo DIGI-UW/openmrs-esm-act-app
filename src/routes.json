@@ -984,6 +984,11 @@
       "group": "patient-chart"
     },
     {
+      "name": "act-vitals-form",
+      "group": "patient-chart",
+      "width": "wider"
+    },
+    {
       "name": "act-research-form",
       "group": "patient-chart",
       "width": "narrow"
@@ -1029,6 +1034,11 @@
       "name": "act-screen-positive-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-vitals-form-workspace",
+      "component": "@openmrs/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
+      "window": "act-vitals-form"
     },
     {
       "name": "act-update-patient-status-workspace",
