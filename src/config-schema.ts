@@ -501,7 +501,7 @@ export const configSchema = {
       _elements: { _type: Type.UUID },
       _default: ['5e97fe35-58df-4925-bba7-7c49d75268a1', '3c7f8916-3ab5-5678-83c5-be7c7bb1f5e7'],
       _description:
-        'The Cardiac Medication answers that put a patient on warfarin, as the INR flags read them: warfarin and the other vitamin K antagonist. A patient whose latest consultation records one, not stopped, has the INR reviews page and card.',
+        'The Cardiac Medication answers that put a patient on warfarin, as the INR flags read them: warfarin and the other vitamin K antagonist. A patient with one active on the Medications page (recorded in a consultation or a Medication Update, not stopped) has the INR reviews page and card.',
     },
     penicillinAllergyAnswers: {
       _type: Type.Array,
