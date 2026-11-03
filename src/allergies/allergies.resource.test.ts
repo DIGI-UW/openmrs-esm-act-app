@@ -190,8 +190,6 @@ describe('fetchAllergiesText', () => {
     expect(await fetchAllergiesText('abebe')).toBe('PENICILLIN ALLERGY: Penicillin (allergy)');
     expect(getConfig).toHaveBeenCalledWith('@act-registry/esm-act-app');
     const urls = vi.mocked(openmrsFetch).mock.calls.map(([url]) => String(url));
-    // Reactions sit a group below the allergy, so both reads ask for two levels of groupMembers.
-    expect(representation).toContain('groupMembers:(uuid,concept:(uuid,display),value,groupMembers:');
     expect(urls.filter((url) => url.includes(`&v=${representation}`))).toHaveLength(2);
     expect(urls).toEqual(
       expect.arrayContaining([

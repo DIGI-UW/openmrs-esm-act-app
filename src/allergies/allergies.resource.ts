@@ -42,8 +42,8 @@ const penicillinFirst = <T extends { isPenicillin: boolean }>(allergies: Array<T
 ];
 
 /**
- * The allergies the consultations and RHD Allergies record, each once, penicillin first. The latest record of an
- * allergy decides it: with a Date Resolved it is past, otherwise current. Its date is the earliest Date Added.
+ * The allergies the consultations and RHD Allergies record, each once, penicillin first. The latest record decides
+ * if one is current or, with a Date Resolved, past; its date is the earliest Date Added, else record date.
  */
 export function allergiesOf(
   consultationEncounters: Array<ChartEncounter>,

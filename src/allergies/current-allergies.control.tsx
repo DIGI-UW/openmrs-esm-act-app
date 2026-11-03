@@ -27,8 +27,10 @@ export default function CurrentAllergies({ field, value, setFieldValue }: Contro
     if (text === null || (error && lastRead.current !== null)) {
       return;
     }
-    // Setting the value marks the form changed, so only a change after the form opened is passed on.
-    if (lastRead.current !== null && text !== lastRead.current && text !== value) {
+    // Setting the value marks the form changed, so only a change after the form opened, or a line where the form's
+    // own read failed, is passed on.
+    const changed = lastRead.current !== null && text !== lastRead.current;
+    if (text !== value && (changed || value === allergiesUnavailable)) {
       setFieldValue(text);
     }
     lastRead.current = text;

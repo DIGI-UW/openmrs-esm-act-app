@@ -74,6 +74,13 @@ describe('the consultation form’s Current allergies', () => {
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 
+  it("replaces the form's failed line with the allergies it reads, so the penicillin warning can show", async () => {
+    records = [encounter('saved', [allergy(penicillin)])];
+    const setFieldValue = mountControl('Allergies unavailable');
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('PENICILLIN ALLERGY: Penicillin (allergy)'));
+  });
+
   it('keeps the line it read when a later refresh fails, so the penicillin warning stays', async () => {
     records = [encounter('saved', [allergy(penicillin)])];
     const setFieldValue = mountControl('PENICILLIN ALLERGY: Penicillin (allergy)');
