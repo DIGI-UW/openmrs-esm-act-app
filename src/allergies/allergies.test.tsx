@@ -1,7 +1,7 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
@@ -154,5 +154,27 @@ describe('the Allergies page', () => {
 
     expect(await screen.findByText(/There are no current allergies to display/)).toBeInTheDocument();
     expect(screen.getByText(/There are no past allergies to display/)).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Record past allergies' }));
+    expect(openForm).toHaveBeenLastCalledWith(config.allergies.form);
+    expect(screen.getByRole('button', { name: 'Record current allergies' })).toBeInTheDocument();
+  });
+
+  it('offers Record past allergies on an empty Past card beside a Current card with rows', async () => {
+    serve({ records: [encounter('new', '2026-10-12', [allergy(other, '2026-10-12')])] });
+
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Record past allergies' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Add/ })).toHaveLength(1);
+  });
+
+  it('shows the empty cards without Record links to a user who may not record RHD Allergies', async () => {
+    serve({ mayEnter: false });
+
+    renderPage();
+
+    expect(await screen.findByText(/There are no past allergies to display/)).toBeInTheDocument();
+    await waitFor(() => expect(openmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/form/')));
+    expect(screen.queryByRole('button', { name: /^Record/ })).not.toBeInTheDocument();
   });
 });

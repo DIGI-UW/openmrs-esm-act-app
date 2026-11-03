@@ -86,6 +86,8 @@ export default function Allergies({ patientUuid }: { patientUuid: string }) {
         rows={past}
         isLoading={isLoading}
         error={error}
+        // Record on the empty card only: past allergies with rows are changed through Edit.
+        add={isLoading || past.length ? null : add}
       />
     </div>
   );

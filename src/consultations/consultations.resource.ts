@@ -19,7 +19,7 @@ export interface ChartEncounter {
   obs: Array<GroupedObs>;
 }
 
-// Keep two group levels (an allergy's Reaction) and one shared string, so SWR fetches each type once.
+// Keep the second group level: an allergy's Reaction is a group inside the allergy's group.
 export const representation =
   'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value))))';
 
