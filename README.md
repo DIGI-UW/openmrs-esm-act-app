@@ -1,5 +1,7 @@
 # OpenMRS ACT frontend module
 
+[![OpenMRS CI](https://github.com/DIGI-UW/openmrs-esm-act-app/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DIGI-UW/openmrs-esm-act-app/actions/workflows/ci.yml)
+
 The screens of ACT 3.0, the OpenMRS 3 edition of the ACT rheumatic heart disease (RHD) registry.
 Published to npm as `@act-registry/esm-act-app`.
 
@@ -95,12 +97,3 @@ yarn build    # build to dist/
 ```
 
 On Node 25 or later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`.
-
-## Releasing
-
-CI publishes with the `NPM_AUTH_TOKEN` secret.
-
-- **Prerelease**: every push to main publishes one (such as `1.0.1-pre.42`) under `next`.
-- **Release**: bump the version in `package.json` on main with a commit starting `(chore) Release`,
-  then publish a GitHub release with its tag. It goes out under `latest`, or `next` if marked
-  pre-release. Promoting a pre-release later publishes nothing, so give the stable release its own version.
