@@ -323,7 +323,8 @@ describe('routes.json workspaces', () => {
     const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
     expect(workspace?.component).toBe('@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace');
     expect(window?.group).toBe(patientChartGroup);
-    expect(window?.name).not.toBe('act-cardiac-test-form-entry');
+    expect(window?.name).toBe('act-allergy-form-entry');
+    expect(workspaceRoutes.workspaces2.filter((candidate) => candidate.window === window.name)).toHaveLength(1);
   });
 
   it('opens the enrolment workspace in the patient chart group', () => {

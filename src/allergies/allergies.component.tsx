@@ -16,10 +16,7 @@ function Details({ allergy }: { allergy: Allergy }) {
   const { t } = useTranslation();
   return (
     <>
-      <strong
-        className={allergy.isPenicillin ? styles.penicillin : undefined}
-        data-tone={allergy.isPenicillin ? 'penicillin' : undefined}
-      >
+      <strong className={styles.name} data-tone={allergy.isPenicillin ? 'penicillin' : undefined}>
         {allergy.name}
       </strong>
       {allergy.reactions.length > 0 && (
@@ -34,9 +31,8 @@ function Details({ allergy }: { allergy: Allergy }) {
 }
 
 /**
- * The patient chart's Allergies page, laid out as the Medications page: the current allergies and those resolved,
- * from consultations and RHD Allergies. Add opens RHD Allergies; Edit reopens a row's RHD Allergies record, and for a
- * row a consultation recorded opens a new one, as the consultation no longer asks for allergies.
+ * The patient chart's Allergies page, laid out as the Medications page. Edit reopens a row's RHD Allergies record, or
+ * for a row from a consultation, which has no allergy fields to edit, records a new one.
  */
 export default function Allergies({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -91,7 +87,6 @@ export default function Allergies({ patientUuid }: { patientUuid: string }) {
         rows={past}
         isLoading={isLoading}
         error={error}
-        add={add}
       />
     </div>
   );

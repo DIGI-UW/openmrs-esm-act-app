@@ -6,7 +6,6 @@ import {
   answerUuid,
   type ChartEncounter,
   fetchChartEncounters,
-  nestedGroupsRepresentation,
   useChartEncounters,
 } from '../consultations/consultations.resource';
 import { registerControl, registerExpressionHelper } from '../forms-engine-registry';
@@ -17,6 +16,9 @@ export const allergiesHelper = 'actAllergies';
 /** The rendering of the RHD Consultation Visit's Current allergies, which keeps the line up to date. */
 export const currentAllergiesControl = 'act-current-allergies';
 
+/** The line when the allergies cannot be read, as nothing read is not none. */
+export const allergiesUnavailable = 'Allergies unavailable';
+
 export type AllergyConfig = Pick<Config, 'consultations' | 'allergies'>;
 
 export interface Allergy {
@@ -26,8 +28,9 @@ export interface Allergy {
   isPenicillin: boolean;
   reactions: Array<string>;
   resolved: string | null;
-  /** The latest record of the allergy, which decides it, and its form. */
+  /** The latest record of the allergy, which decides it. */
   encounterUuid: string;
+  /** That record's form: the consultation or RHD Allergies. */
   form: string;
 }
 
@@ -43,15 +46,15 @@ const penicillinFirst = <T extends { isPenicillin: boolean }>(allergies: Array<T
  * allergy decides it: with a Date Resolved it is past, otherwise current. Its date is the earliest Date Added.
  */
 export function allergiesOf(
-  consultations: Array<ChartEncounter>,
-  records: Array<ChartEncounter>,
-  { consultations: consultation, allergies }: AllergyConfig,
+  consultationEncounters: Array<ChartEncounter>,
+  allergyRecords: Array<ChartEncounter>,
+  { consultations, allergies }: AllergyConfig,
 ): { current: Array<Allergy>; past: Array<Allergy> } {
-  const c = consultation.concepts;
+  const c = consultations.concepts;
   const a = allergies.concepts;
   const oldestFirst = [
-    ...consultations.map((encounter) => ({ encounter, form: consultation.form })),
-    ...records.map((encounter) => ({ encounter, form: allergies.form })),
+    ...consultationEncounters.map((encounter) => ({ encounter, form: consultations.form })),
+    ...allergyRecords.map((encounter) => ({ encounter, form: allergies.form })),
   ].sort((x, y) => time(x.encounter.encounterDatetime) - time(y.encounter.encounterDatetime));
   const byKey = new Map<string, Allergy>();
   for (const { encounter, form } of oldestFirst) {
@@ -72,7 +75,7 @@ export function allergiesOf(
         key,
         name: displayName,
         added: earlier && time(earlier.added) < time(recorded) ? earlier.added : recorded,
-        isPenicillin: consultation.penicillinAllergyAnswers.includes(key) || /penicillin/i.test(displayName),
+        isPenicillin: consultations.penicillinAllergyAnswers.includes(key) || /penicillin/i.test(displayName),
         reactions: answersIn(group.groupMembers, a.reaction)
           .flatMap((reactions) => answersIn(reactions.groupMembers, a.reaction))
           .map((reaction) => answerText(reaction.value)),
@@ -99,8 +102,8 @@ export function allergiesText(allergies: Array<Pick<Allergy, 'name' | 'isPenicil
 
 /** A patient's current and past allergies, revalidated when a form is saved. */
 export function useAllergies(patientUuid: string | null, config: AllergyConfig) {
-  const consultations = useChartEncounters(patientUuid, config.consultations.encounterType, nestedGroupsRepresentation);
-  const records = useChartEncounters(patientUuid, config.allergies.encounterType, nestedGroupsRepresentation);
+  const consultations = useChartEncounters(patientUuid, config.consultations.encounterType);
+  const records = useChartEncounters(patientUuid, config.allergies.encounterType);
   return {
     ...allergiesOf(consultations.encounters, records.encounters, config),
     error: consultations.error ?? records.error,
@@ -108,10 +111,7 @@ export function useAllergies(patientUuid: string | null, config: AllergyConfig) 
   };
 }
 
-/**
- * The patient's current allergies as one line for the consultation form. A failure says so, as nothing read is not
- * none.
- */
+/** The patient's current allergies as one line for the consultation form. */
 export async function fetchAllergiesText(patientUuid: string): Promise<string> {
   try {
     if (!patientUuid) {
@@ -119,12 +119,12 @@ export async function fetchAllergiesText(patientUuid: string): Promise<string> {
     }
     const config = (await getConfig('@act-registry/esm-act-app')) as Config;
     const [consultations, records] = await Promise.all([
-      fetchChartEncounters(patientUuid, config.consultations.encounterType, nestedGroupsRepresentation),
-      fetchChartEncounters(patientUuid, config.allergies.encounterType, nestedGroupsRepresentation),
+      fetchChartEncounters(patientUuid, config.consultations.encounterType),
+      fetchChartEncounters(patientUuid, config.allergies.encounterType),
     ]);
     return allergiesText(allergiesOf(consultations, records, config).current);
   } catch {
-    return 'Allergies unavailable';
+    return allergiesUnavailable;
   }
 }
 

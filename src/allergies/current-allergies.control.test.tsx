@@ -66,6 +66,25 @@ describe('the consultation form’s Current allergies', () => {
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 
+  it('leaves the form untouched on its first read, even when that differs from the line the form calculated', async () => {
+    const setFieldValue = mountControl('Allergies: Other');
+
+    await waitFor(() => expect(openmrsFetch).toHaveBeenCalled());
+    await act(() => revalidate());
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('keeps the line it read when a later refresh fails, so the penicillin warning stays', async () => {
+    records = [encounter('saved', [allergy(penicillin)])];
+    const setFieldValue = mountControl('PENICILLIN ALLERGY: Penicillin (allergy)');
+    await waitFor(() => expect(openmrsFetch).toHaveBeenCalled());
+
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('offline'));
+    await act(() => revalidate());
+
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
   it('tells the form when an allergy is recorded while the consultation is open', async () => {
     const setFieldValue = mountControl('Allergies not recorded');
     await waitFor(() => expect(openmrsFetch).toHaveBeenCalled());

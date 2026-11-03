@@ -45,7 +45,7 @@ function Details({ medication }: { medication: Medication }) {
   );
 }
 
-/** A card of the Medications page, which the Allergies page shares: its title, Add, and a table or the empty card. */
+/** A chart page's card, as the Medications page lays one out: its title, Add, and a table or the empty card. */
 export function ChartListCard<Row extends { key: string }>({
   title,
   lowercase,

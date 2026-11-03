@@ -19,11 +19,9 @@ export interface ChartEncounter {
   obs: Array<GroupedObs>;
 }
 
-const representation =
-  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value)))';
-
-/** As `representation`, one level deeper, for a group inside a group such as an allergy's Reaction. */
-export const nestedGroupsRepresentation =
+// Two levels of groupMembers, for a group inside a group such as an allergy's Reaction. Every reader shares the one
+// representation, so the encounters of a type are fetched once per patient.
+export const representation =
   'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value))))';
 
 /** A coded answer's name, or a plain answer as text. */
@@ -40,16 +38,16 @@ export const answersIn = (obs: Array<GroupedObs> | null | undefined, concept: st
   (obs ?? []).filter((one) => one.concept.uuid === concept);
 
 // Under the patient's /encounter, which common-lib revalidates after a form is saved.
-const encountersUrl = (patientUuid: string, encounterType: string, rep = representation) =>
-  `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=${rep}`;
+const encountersUrl = (patientUuid: string, encounterType: string) =>
+  `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=${representation}`;
 
 /** Every encounter of one type for a patient, with each answer group's members, outside a component. */
-export const fetchChartEncounters = (patientUuid: string, encounterType: string, rep = representation) =>
-  fetchAll<ChartEncounter>(encountersUrl(patientUuid, encounterType, rep));
+export const fetchChartEncounters = (patientUuid: string, encounterType: string) =>
+  fetchAll<ChartEncounter>(encountersUrl(patientUuid, encounterType));
 
 /** A patient's encounters of one type, newest first, with each answer group's members. */
-export function useChartEncounters(patientUuid: string | null, encounterType: string, rep = representation) {
-  const url = patientUuid ? encountersUrl(patientUuid, encounterType, rep) : null;
+export function useChartEncounters(patientUuid: string | null, encounterType: string) {
+  const url = patientUuid ? encountersUrl(patientUuid, encounterType) : null;
   const { data, error, isLoading } = useSWR<Array<ChartEncounter>, Error>(url, () => fetchAll<ChartEncounter>(url));
   const encounters = [...(data ?? [])].sort(
     (a, b) => parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),

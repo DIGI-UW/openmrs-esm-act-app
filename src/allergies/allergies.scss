@@ -1,5 +1,5 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
-.penicillin {
+.name[data-tone='penicillin'] {
   color: $danger;
 }
