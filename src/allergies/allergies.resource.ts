@@ -56,6 +56,7 @@ export function allergiesOf(
     ...allergyRecords.map((encounter) => ({ encounter, form: allergies.form })),
   ].sort((x, y) => time(x.encounter.encounterDatetime) - time(y.encounter.encounterDatetime));
   const byKey = new Map<string, Allergy>();
+  const decidedAt = new Map<string, number>();
   for (const { encounter, form } of oldestFirst) {
     for (const group of answersIn(encounter.obs, c.allergy)) {
       const [name] = answersIn(group.groupMembers, c.allergy);
@@ -69,16 +70,25 @@ export function allergiesOf(
       const key = answerUuid(name.value) || answerText(name.value);
       const recorded = text(c.dateAdded) || encounter.encounterDatetime;
       const earlier = byKey.get(key);
+      const added = earlier && time(earlier.added) < time(recorded) ? earlier.added : recorded;
+      const resolved = text(a.dateResolved) || null;
+      const at = time(encounter.encounterDatetime);
+      // Keeps the app agreeing with the penicillin flag's SQL, where a resolved record wins a same-time tie.
+      if (earlier?.resolved && !resolved && decidedAt.get(key) === at) {
+        byKey.set(key, { ...earlier, added });
+        continue;
+      }
+      decidedAt.set(key, at);
       const displayName = answerText(name.value);
       byKey.set(key, {
         key,
         name: displayName,
-        added: earlier && time(earlier.added) < time(recorded) ? earlier.added : recorded,
+        added,
         isPenicillin: consultations.penicillinAllergyAnswers.includes(key) || /penicillin/i.test(displayName),
         reactions: answersIn(group.groupMembers, a.reaction)
           .flatMap((reactions) => answersIn(reactions.groupMembers, a.reaction))
           .map((reaction) => answerText(reaction.value)),
-        resolved: text(a.dateResolved) || null,
+        resolved,
         encounterUuid: encounter.uuid,
         form,
       });

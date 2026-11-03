@@ -132,6 +132,22 @@ describe('allergiesOf', () => {
     expect(current[0]).toMatchObject({ resolved: null, added: '2025-10-01', encounterUuid: 'again' });
   });
 
+  it('lets a resolved record decide over another of the same allergy saved at the same time, in either order', () => {
+    const open = consultation('open', '2026-03-05', [allergy(penicillin, '2026-03-05')]);
+    const resolved = consultation('resolved', '2026-03-05', [
+      allergy(penicillin, '2026-03-05', { resolved: '2026-03-05' }),
+    ]);
+
+    for (const records of [
+      [open, resolved],
+      [resolved, open],
+    ]) {
+      const { current, past } = allergiesOf([], records, config);
+      expect(current).toEqual([]);
+      expect(past.map((one) => one.encounterUuid)).toEqual(['resolved']);
+    }
+  });
+
   it("reads each allergy's reactions and the form of the record that decides it", () => {
     const { current } = allergiesOf(
       [consultation('visit', '2025-10-01', [allergy(other)])],
