@@ -15,7 +15,7 @@ const shown = 2;
 export default function AllergiesPill({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const config = useConfig<Config>();
-  const { current: allergies, error, isLoading } = useAllergies(patientUuid, config);
+  const { current: allergies, noKnownAllergies, error, isLoading } = useAllergies(patientUuid, config);
   if (isLoading) {
     return null;
   }
@@ -24,6 +24,15 @@ export default function AllergiesPill({ patientUuid }: { patientUuid: string }) 
       <span className={pillsClassName}>
         <Tag type="outline" size="md" data-testid="allergies-pill" data-tone="unavailable">
           {t('allergiesUnavailable', 'Allergies unavailable')}
+        </Tag>
+      </span>
+    );
+  }
+  if (!allergies.length && noKnownAllergies) {
+    return (
+      <span className={pillsClassName}>
+        <Tag type="outline" size="md" data-testid="allergies-pill" data-tone="no-known-allergies">
+          {t('noKnownAllergies', 'No known allergies')}
         </Tag>
       </span>
     );

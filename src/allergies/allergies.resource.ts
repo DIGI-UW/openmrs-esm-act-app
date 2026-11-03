@@ -43,12 +43,13 @@ const penicillinFirst = <T extends { isPenicillin: boolean }>(allergies: Array<T
 /**
  * The allergies the consultations and RHD Allergies record, each once, penicillin first. The latest record decides
  * if one is current or, with a Date Resolved, past; its date is the earliest Date Added, else record date.
+ * `noKnownAllergies` is true when No known allergies was recorded after every allergy record and none is current.
  */
 export function allergiesOf(
   consultationEncounters: Array<ChartEncounter>,
   allergyRecords: Array<ChartEncounter>,
   { consultations, allergies }: AllergyConfig,
-): { current: Array<Allergy>; past: Array<Allergy> } {
+): { current: Array<Allergy>; past: Array<Allergy>; noKnownAllergies: boolean } {
   const c = consultations.concepts;
   const a = allergies.concepts;
   const oldestFirst = [
@@ -57,6 +58,8 @@ export function allergiesOf(
   ].sort((x, y) => time(x.encounter.encounterDatetime) - time(y.encounter.encounterDatetime));
   const byKey = new Map<string, Allergy>();
   const decidedAt = new Map<string, number>();
+  let noKnownAt = -Infinity;
+  let allergyAt = -Infinity;
   for (const { encounter, form } of oldestFirst) {
     for (const group of answersIn(encounter.obs, c.allergy)) {
       const [name] = answersIn(group.groupMembers, c.allergy);
@@ -68,11 +71,16 @@ export function allergiesOf(
         return one ? answerText(one.value) : '';
       };
       const key = answerUuid(name.value) || answerText(name.value);
+      const at = time(encounter.encounterDatetime);
+      if (key === a.noKnownAllergies) {
+        noKnownAt = Math.max(noKnownAt, at);
+        continue;
+      }
+      allergyAt = Math.max(allergyAt, at);
       const recorded = text(c.dateAdded) || encounter.encounterDatetime;
       const earlier = byKey.get(key);
       const added = earlier && time(earlier.added) < time(recorded) ? earlier.added : recorded;
       const resolved = text(a.dateResolved) || null;
-      const at = time(encounter.encounterDatetime);
       // Keeps the app agreeing with the penicillin flag's SQL, where a resolved record wins a same-time tie.
       if (earlier?.resolved && !resolved && decidedAt.get(key) === at) {
         byKey.set(key, { ...earlier, added });
@@ -95,13 +103,18 @@ export function allergiesOf(
     }
   }
   const all = penicillinFirst([...byKey.values()].sort((x, y) => time(y.added) - time(x.added)));
-  return { current: all.filter((one) => !one.resolved), past: all.filter((one) => one.resolved) };
+  const current = all.filter((one) => !one.resolved);
+  return {
+    current,
+    past: all.filter((one) => one.resolved),
+    noKnownAllergies: !current.length && noKnownAt > allergyAt,
+  };
 }
 
 /** The allergies as one line, led by a capitalised warning when any is to penicillin. */
-export function allergiesText(allergies: Array<Pick<Allergy, 'name' | 'isPenicillin'>>) {
+export function allergiesText(allergies: Array<Pick<Allergy, 'name' | 'isPenicillin'>>, noKnownAllergies = false) {
   if (!allergies.length) {
-    return 'Allergies not recorded';
+    return noKnownAllergies ? 'No known allergies' : 'Allergies not recorded';
   }
   const names = penicillinFirst(allergies)
     .map((one) => one.name)
@@ -129,7 +142,8 @@ export async function fetchAllergiesText(patientUuid: string): Promise<string> {
       fetchChartEncounters(patientUuid, config.consultations.encounterType),
       fetchChartEncounters(patientUuid, config.allergies.encounterType),
     ]);
-    return allergiesText(allergiesOf(consultations, records, config).current);
+    const { current, noKnownAllergies } = allergiesOf(consultations, records, config);
+    return allergiesText(current, noKnownAllergies);
   } catch {
     return allergiesUnavailable;
   }

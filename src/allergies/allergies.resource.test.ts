@@ -46,6 +46,7 @@ const consultation = (uuid: string, date: string, obsList: Array<unknown> = []):
 
 const penicillin = coded(penicillinAllergy, 'Penicillin (allergy)');
 const other = coded('5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'Other');
+const noKnown = coded(a.noKnownAllergies, 'No known allergies');
 
 describe('allergiesOf', () => {
   it('flags the two penicillin answers the patients report counts, and no other', () => {
@@ -95,8 +96,12 @@ describe('allergiesOf', () => {
   });
 
   it('has none for a patient whose consultations record no allergy', () => {
-    expect(allergiesOf([consultation('one', '2026-04-01')], [], config)).toEqual({ current: [], past: [] });
-    expect(allergiesOf([], [], config)).toEqual({ current: [], past: [] });
+    expect(allergiesOf([consultation('one', '2026-04-01')], [], config)).toEqual({
+      current: [],
+      past: [],
+      noKnownAllergies: false,
+    });
+    expect(allergiesOf([], [], config)).toEqual({ current: [], past: [], noKnownAllergies: false });
   });
 
   it('lets the latest record of an allergy decide: a Date Resolved on RHD Allergies moves it to past', () => {
@@ -148,6 +153,52 @@ describe('allergiesOf', () => {
     }
   });
 
+  it('reads No known allergies as no allergy, and says so while no allergy record is later', () => {
+    const records = [consultation('nka', '2026-03-01', [allergy(noKnown, '2026-03-01')])];
+
+    expect(allergiesOf([], records, config)).toEqual({ current: [], past: [], noKnownAllergies: true });
+  });
+
+  it('lets an allergy recorded after No known allergies replace it', () => {
+    const { current, noKnownAllergies } = allergiesOf(
+      [],
+      [
+        consultation('nka', '2026-03-01', [allergy(noKnown, '2026-03-01')]),
+        consultation('penicillin', '2026-04-01', [allergy(penicillin, '2026-04-01')]),
+      ],
+      config,
+    );
+
+    expect(current.map((one) => one.name)).toEqual(['Penicillin (allergy)']);
+    expect(noKnownAllergies).toBe(false);
+  });
+
+  it('never lets a later No known allergies hide an allergy that is still current', () => {
+    const { current, noKnownAllergies } = allergiesOf(
+      [consultation('penicillin', '2026-03-01', [allergy(penicillin, '2026-03-01')])],
+      [consultation('nka', '2026-04-01', [allergy(noKnown, '2026-04-01')])],
+      config,
+    );
+
+    expect(current.map((one) => one.name)).toEqual(['Penicillin (allergy)']);
+    expect(noKnownAllergies).toBe(false);
+  });
+
+  it('says No known allergies when it was recorded after the last allergy was resolved', () => {
+    const { current, past, noKnownAllergies } = allergiesOf(
+      [],
+      [
+        consultation('resolved', '2026-03-01', [allergy(penicillin, '2026-01-01', { resolved: '2026-03-01' })]),
+        consultation('nka', '2026-04-01', [allergy(noKnown, '2026-04-01')]),
+      ],
+      config,
+    );
+
+    expect(current).toEqual([]);
+    expect(past.map((one) => one.encounterUuid)).toEqual(['resolved']);
+    expect(noKnownAllergies).toBe(true);
+  });
+
   it("reads each allergy's reactions and the form of the record that decides it", () => {
     const { current } = allergiesOf(
       [consultation('visit', '2025-10-01', [allergy(other)])],
@@ -187,6 +238,11 @@ describe('allergiesText', () => {
 
   it('says no allergy is recorded, not that there is none, when no consultation lists one', () => {
     expect(allergiesText([])).toBe('Allergies not recorded');
+  });
+
+  it('says No known allergies only when that was recorded', () => {
+    expect(allergiesText([], true)).toBe('No known allergies');
+    expect(allergiesText(list([['Other', false]]), true)).toBe('Allergies: Other');
   });
 });
 
