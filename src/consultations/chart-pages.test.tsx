@@ -3,7 +3,13 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { getDefaultsFromConfigSchema, launchWorkspace2, openmrsFetch } from '@openmrs/esm-framework';
+import {
+  type AssignedExtension,
+  getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  openmrsFetch,
+  useAssignedExtensions,
+} from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import CliniciansOnlyNote from '../chart-note/clinicians-only-note.component';
@@ -38,6 +44,8 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   DashboardExtension: ({ basePath, path, title }: { basePath: string; path: string; title: string }) => (
     <a href={`${basePath}/${path}`}>{title}</a>
   ),
+  // The framework's test mock has no getAssignedExtensions, which reads a dashboard group's slot.
+  getAssignedExtensions: vi.fn(() => []),
 }));
 
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
@@ -158,6 +166,8 @@ describe('chart pages by role', () => {
       'Get Observations',
       'Task: act.enterClinicalForms',
     ]);
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    vi.mocked(useAssignedExtensions).mockReturnValue([]);
   });
 
   it("reads a consultation's provider, NYHA class, prophylaxis plan and next review", () => {
@@ -294,6 +304,31 @@ describe('chart pages by role', () => {
     expect(await screen.findByTestId('consultation-cardiac-clinic')).toHaveTextContent('Gulu RRH');
     expect(screen.getByTestId('consultation-last')).toHaveTextContent(/Apr.*2026/);
     expect(screen.getByTestId('consultation-next')).toHaveAttribute('data-overdue', 'true');
+  });
+
+  it('links Details to the Consultation visits page, for a user who may not record one too', async () => {
+    const pageLink = { name: 'act-consultations-dashboard-link', meta: { path: 'act-consultations' }, config: {} };
+    vi.mocked(useAssignedExtensions).mockReturnValue([pageLink] as unknown as Array<AssignedExtension>);
+    for (const mayEnter of [true, false]) {
+      serve({ consultations: [consultation('new', '2026-04-01')], mayEnter });
+      const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
+
+      expect(await screen.findByRole('link', { name: 'Details' })).toHaveAttribute(
+        'href',
+        '/openmrs/spa/patient/winnie/chart/act-consultations',
+      );
+      unmount();
+    }
+  });
+
+  it('offers no Details when the chart has no Consultation visits page', async () => {
+    vi.mocked(useAssignedExtensions).mockReturnValue([]);
+    serve({ consultations: [consultation('new', '2026-04-01')] });
+
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+
+    await screen.findByTestId('consultation-cardiac-clinic');
+    expect(screen.queryByRole('link', { name: 'Details' })).not.toBeInTheDocument();
   });
 
   it('reopens the last consultation from Edit under it, and offers no Edit to a user who may not record one', async () => {
