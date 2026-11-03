@@ -123,6 +123,8 @@ export const clinicsBanner = getAsyncLifecycle(() => import('./contact/clinics-b
 
 export const medicationsCard = getAsyncLifecycle(() => import('./medications/medications-card.component'), options);
 
+export const conditionsCard = getAsyncLifecycle(() => import('./consultations/conditions-card.component'), options);
+
 export const cliniciansOnlyNote = getAsyncLifecycle(
   () => import('./chart-note/clinicians-only-note.component'),
   options,

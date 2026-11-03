@@ -218,3 +218,16 @@ export default function ConsultationsPage({ patientUuid }: { patientUuid: string
     </div>
   );
 }
+
+/** The patient summary's chronic health conditions: the same list as the Consultation visits page. */
+export function ChronicConditions({ patientUuid }: { patientUuid: string }) {
+  const { t } = useTranslation();
+  return (
+    <ListedItems
+      patientUuid={patientUuid}
+      list="chronicCondition"
+      title={t('chronicConditions', 'Chronic health conditions')}
+      lowercase={t('chronicConditionsLowercase', 'chronic health conditions')}
+    />
+  );
+}

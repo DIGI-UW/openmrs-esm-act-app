@@ -8,7 +8,7 @@ import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from './consultations.resource';
 import { diagnosisConcepts } from './patient-details.resource';
-import ConsultationsPage, { Diagnoses } from './repeated-lists.component';
+import ConsultationsPage, { ChronicConditions, Diagnoses } from './repeated-lists.component';
 import { toListedItems } from './repeated-lists.resource';
 
 // Opening a form in a visit is open-form-in-visit's own test; here it records which form was opened.
@@ -180,6 +180,37 @@ describe('the Consultation visits page tables', () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the summary's chronic conditions once each, from every consultation, with Edit", async () => {
+    const item = (name: string) => obs(c.chronicCondition, null, [obs(c.chronicCondition, coded(name, name))]);
+    serve({
+      consultations: [
+        consultation('new', '2026-04-01', [item('Sickle Cell Disease')]),
+        consultation('old', '2025-10-01', [item('Sickle Cell Disease'), item('Asthma')]),
+      ],
+    });
+
+    renderIn(<ChronicConditions patientUuid="winnie" />);
+
+    const table = await screen.findByRole('table', { name: 'Chronic health conditions' });
+    const rows = within(table).getAllByTestId('repeated-row');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Sickle Cell Disease'),
+      expect.stringContaining('Asthma'),
+    ]);
+    await userEvent.click(
+      screen.getByRole('button', { name: /^Edit Sickle Cell Disease in the consultation of .*Apr.*2026$/ }),
+    );
+    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
+  });
+
+  it('says the summary has no chronic conditions when no consultation records one', async () => {
+    serve({ consultations: [consultation('new', '2026-04-01')] });
+
+    renderIn(<ChronicConditions patientUuid="winnie" />);
+
+    expect(await screen.findByText(/There are no chronic health conditions to display/)).toBeInTheDocument();
+  });
+
   it("reopens a diagnosis's consultation, and an item's latest consultation, from its Edit", async () => {
     const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
     const diagnosis = obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded('rhd', 'RHD'))]);
@@ -202,7 +233,7 @@ describe('the Consultation visits page tables', () => {
     expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'old');
   });
 
-  it("reopens the Patient Information that recorded a diagnosis before AR-167, from its Edit", async () => {
+  it('reopens the Patient Information that recorded a diagnosis before AR-167, from its Edit', async () => {
     serve({
       patientInformation: [
         {

@@ -879,6 +879,16 @@
       ]
     },
     {
+      "name": "act-conditions-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "conditionsCard",
+      "meta": { "fullWidth": true },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-update-patient-status",
       "slot": "patient-actions-slot",
       "component": "updatePatientStatusButton",
