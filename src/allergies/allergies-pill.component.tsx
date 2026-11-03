@@ -10,8 +10,7 @@ import { useAllergies } from './allergies.resource';
 const shown = 2;
 
 /**
- * The patient banner's current allergies: the first two named, the rest behind a click with the dates they were
- * added, and a penicillin allergy in red. Nothing while they load, and never none when unread.
+ * The patient banner's current allergies: nothing while they load, and never "none" when they could not be read.
  */
 export default function AllergiesPill({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();

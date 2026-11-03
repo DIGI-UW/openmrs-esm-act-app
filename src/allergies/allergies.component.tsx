@@ -11,7 +11,6 @@ import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { type Allergy, useAllergies } from './allergies.resource';
 import styles from './allergies.scss';
 
-/** An allergy as the Medications page reads a medicine: its name in bold, red for penicillin, then its reactions. */
 function Details({ allergy }: { allergy: Allergy }) {
   const { t } = useTranslation();
   return (
@@ -31,8 +30,8 @@ function Details({ allergy }: { allergy: Allergy }) {
 }
 
 /**
- * The patient chart's Allergies page, laid out as the Medications page. Edit reopens a row's RHD Allergies record, or
- * for a row from a consultation, which has no allergy fields to edit, records a new one.
+ * The chart's Allergies page. Edit on a consultation's row records a new RHD Allergies, as the consultation has no
+ * allergy fields.
  */
 export default function Allergies({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();

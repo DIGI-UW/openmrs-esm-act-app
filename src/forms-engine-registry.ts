@@ -35,7 +35,6 @@ export function registerExpressionHelper(name: string, helper: Function) {
   registry().expressionHelpers[name] = helper;
 }
 
-/** Lets a form's question name the control as its rendering. */
 export function registerControl(name: string, load: ControlRegistration['load']) {
   const { controls } = registry();
   if (!controls.some((control) => control.name === name)) {

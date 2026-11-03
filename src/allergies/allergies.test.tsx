@@ -128,13 +128,12 @@ describe('the Allergies page', () => {
     renderPage();
 
     const adds = await screen.findAllByRole('button', { name: /^Add/ });
-    // As the issue asks, Add sits in the Current card's header only.
+    // Only the Current card has Add; past allergies are changed through Edit.
     expect(adds).toHaveLength(1);
     await userEvent.click(adds[0]);
     expect(openForm).toHaveBeenLastCalledWith(config.allergies.form);
     await userEvent.click(screen.getByRole('button', { name: 'Edit Penicillin (anaphylaxis)' }));
     expect(openForm).toHaveBeenLastCalledWith(config.allergies.form, undefined, 'new');
-    // The consultation has no allergy fields, so its allergy is updated on a new RHD Allergies record.
     await userEvent.click(screen.getByRole('button', { name: 'Edit Other' }));
     expect(openForm).toHaveBeenLastCalledWith(config.allergies.form);
   });

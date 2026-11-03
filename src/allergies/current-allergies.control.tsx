@@ -15,11 +15,11 @@ interface ControlProps {
  * saved while the consultation is open, so the penicillin warning reads it.
  */
 export default function CurrentAllergies({ field, value, setFieldValue }: ControlProps) {
-  // Rendered inside the forms app, so the patient comes from the chart's URL and the config by the app's name.
+  // Inside the forms app: keep reading the patient from the URL and the config by the app's name.
   const config = useConfig<Config>({ externalModuleName: '@act-registry/esm-act-app' });
   const { patientUuid } = usePatient();
   const { current, error, isLoading } = useAllergies(patientUuid, config);
-  const text = isLoading ? null : error ? allergiesUnavailable : allergiesText(current);
+  const text = !patientUuid || isLoading ? null : error ? allergiesUnavailable : allergiesText(current);
   const lastRead = useRef<string | null>(null);
 
   useEffect(() => {
@@ -27,8 +27,7 @@ export default function CurrentAllergies({ field, value, setFieldValue }: Contro
     if (text === null || (error && lastRead.current !== null)) {
       return;
     }
-    // Setting the value marks the form changed, so only a change after the form opened, or a line where the form's
-    // own read failed, is passed on.
+    // Setting the value marks the form changed: pass on only a later change, or a fix for a failed line.
     const changed = lastRead.current !== null && text !== lastRead.current;
     if (text !== value && (changed || value === allergiesUnavailable)) {
       setFieldValue(text);

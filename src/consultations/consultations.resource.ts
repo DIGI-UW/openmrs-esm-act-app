@@ -19,8 +19,7 @@ export interface ChartEncounter {
   obs: Array<GroupedObs>;
 }
 
-// Two levels of groupMembers, for a group inside a group such as an allergy's Reaction. One representation for every
-// reader, so the SWR readers of a type share one fetch per patient.
+// Keep two group levels (an allergy's Reaction) and one shared string, so SWR fetches each type once.
 export const representation =
   'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value))))';
 

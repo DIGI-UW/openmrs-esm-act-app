@@ -81,6 +81,14 @@ describe('the consultation form’s Current allergies', () => {
     await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('PENICILLIN ALLERGY: Penicillin (allergy)'));
   });
 
+  it('leaves a failed line alone when the chart URL names no patient, so it never reads none', async () => {
+    vi.mocked(usePatient).mockReturnValue({ patientUuid: null, patient: null, isLoading: false, error: null } as never);
+    const setFieldValue = mountControl('Allergies unavailable');
+
+    await act(() => revalidate());
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
   it('keeps the line it read when a later refresh fails, so the penicillin warning stays', async () => {
     records = [encounter('saved', [allergy(penicillin)])];
     const setFieldValue = mountControl('PENICILLIN ALLERGY: Penicillin (allergy)');

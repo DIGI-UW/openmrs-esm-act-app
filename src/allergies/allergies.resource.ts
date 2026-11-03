@@ -13,7 +13,7 @@ import { registerControl, registerExpressionHelper } from '../forms-engine-regis
 /** The name the RHD Consultation Visit's Current allergies calls in its calculate expression. */
 export const allergiesHelper = 'actAllergies';
 
-/** The rendering of the RHD Consultation Visit's Current allergies, which keeps the line up to date. */
+/** The rendering the RHD Consultation Visit's Current allergies question names in the form JSON. */
 export const currentAllergiesControl = 'act-current-allergies';
 
 /** The line when the allergies cannot be read, as nothing read is not none. */
@@ -30,7 +30,6 @@ export interface Allergy {
   resolved: string | null;
   /** The latest record of the allergy, which decides it. */
   encounterUuid: string;
-  /** That record's form: the consultation or RHD Allergies. */
   form: string;
 }
 
@@ -100,7 +99,6 @@ export function allergiesText(allergies: Array<Pick<Allergy, 'name' | 'isPenicil
   return allergies.some((one) => one.isPenicillin) ? `PENICILLIN ALLERGY: ${names}` : `Allergies: ${names}`;
 }
 
-/** A patient's current and past allergies, revalidated when a form is saved. */
 export function useAllergies(patientUuid: string | null, config: AllergyConfig) {
   const consultations = useChartEncounters(patientUuid, config.consultations.encounterType);
   const records = useChartEncounters(patientUuid, config.allergies.encounterType);
@@ -111,7 +109,6 @@ export function useAllergies(patientUuid: string | null, config: AllergyConfig) 
   };
 }
 
-/** The patient's current allergies as one line for the consultation form. */
 export async function fetchAllergiesText(patientUuid: string): Promise<string> {
   try {
     if (!patientUuid) {
@@ -128,7 +125,7 @@ export async function fetchAllergiesText(patientUuid: string): Promise<string> {
   }
 }
 
-/** Lets the consultation form's Current allergies call actAllergies(patient.id) and render as the app's control. */
+/** Lets the consultation form's Current allergies call actAllergies(patient.id). */
 export const registerAllergies = () => {
   registerExpressionHelper(allergiesHelper, fetchAllergiesText);
   registerControl(currentAllergiesControl, () => import('./current-allergies.control'));
