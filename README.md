@@ -7,48 +7,15 @@ Published to npm as `@act-registry/esm-act-app`.
 
 ## What it adds
 
-### Home pages
-
-| Page | Route | For |
-| --- | --- | --- |
-| ACT home | `/home/act-home` | Clinicians and administrators: quick actions, due for prophylaxis, worklists, overdue consultations, care cascade |
-| Home | `/home/act-community-home` | Community clinicians and data clerks: quick actions and due for prophylaxis |
-| Instance admin | `/home/act-instance-admin` | Instance administrators: quick actions and KPIs |
-
-### Registry and worklists
-
-- **Registry**: every RHD patient, with filters, flags and BPG adherence.
-- **Worklists**: due for prophylaxis, confirmatory echo, cardiology follow-up, lost to follow-up,
-  post-procedural follow-up, pregnancy outcome, INR review, referred to clinician and the waiting list.
-- **Procedural waiting list**: open interventional recommendations, coloured by urgency deadline.
-- **Screen positive**: patients who screened positive and are waiting for a diagnosis.
-- **Due for prophylaxis**, **Enter prophylaxis** and **Scan patient card** (find a patient by the barcode on their ACT card).
-
-### Reports and data
-
-- **Dashboard** and **Run charts**: programme indicators, by clinic and over time, with export.
-- **Reports** and **Facility reports**: the report catalogue and per-facility programme reports.
-- **Screening counts**: monthly screening totals entered per clinic.
-- **Download data**: saved forms exported as CSV, field by field.
-
-### Administration
-
-Users and roles, Clinics, Role permissions, Studies, Flags and adherence (re-run the RHD flags) and Logs
-(what users changed, read or downloaded).
-
-### Patient chart
-
-- **Pages** (the distro adds them to the chart's nav): Prophylaxis, Consultation visits, Medications,
-  INR reviews, Cardiac tests and Research participation.
-- **Summary cards**: consultation, prophylaxis, medications, INR and next steps (with referrals).
-- **Banner tags**: anaphylaxis alert, patient status, INR status, allergies and clinical flags; the
-  patient's clinics below the banner.
-- **Actions and workspaces**: update patient status, vitals, the missing data behind a critical data flag
-  (`rhd-flag-gaps-workspace`) and study enrolment.
-
-### Everywhere
-
-A session timeout warning in the top nav, and Contact and Docs links in the help menu.
+| Area | Screens |
+| --- | --- |
+| Home pages | ACT home, Home (community clinicians and data clerks), Instance admin |
+| Patient lists | Registry, Worklists, Procedural waiting list, Screen positive, Due for prophylaxis |
+| Data entry | Enter prophylaxis, Scan patient card, Screening counts |
+| Reports | Dashboard, Run charts, Reports, Facility reports, Download data |
+| Administration | Users and roles, Clinics, Role permissions, Studies, Flags and adherence, Logs |
+| Patient chart | Pages, summary cards, banner tags and workspaces for RHD care |
+| Every page | Session timeout warning, help menu links |
 
 ## Who sees what
 
