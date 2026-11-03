@@ -19,8 +19,9 @@ export interface ChartEncounter {
   obs: Array<GroupedObs>;
 }
 
-const representation =
-  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value)))';
+// Keep the second group level: an allergy's Reaction is a group inside the allergy's group.
+export const representation =
+  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value))))';
 
 /** A coded answer's name, or a plain answer as text. */
 export const answerText = (value: unknown) =>

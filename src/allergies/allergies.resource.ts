@@ -1,44 +1,120 @@
-import { getConfig } from '@openmrs/esm-framework';
+import { getConfig, parseDate } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { type ChartEncounter, fetchChartEncounters } from '../consultations/consultations.resource';
-import { registerExpressionHelper } from '../forms-engine-registry';
-import { toListedItems } from '../consultations/repeated-lists.resource';
-
-type Consultations = Config['consultations'];
+import {
+  answersIn,
+  answerText,
+  answerUuid,
+  type ChartEncounter,
+  fetchChartEncounters,
+  useChartEncounters,
+} from '../consultations/consultations.resource';
+import { registerControl, registerExpressionHelper } from '../forms-engine-registry';
 
 /** The name the RHD Consultation Visit's Current allergies calls in its calculate expression. */
 export const allergiesHelper = 'actAllergies';
+
+/** The rendering the RHD Consultation Visit's Current allergies question names in the form JSON. */
+export const currentAllergiesControl = 'act-current-allergies';
+
+/** The line when the allergies cannot be read, as nothing read is not none. */
+export const allergiesUnavailable = 'Allergies unavailable';
+
+export type AllergyConfig = Pick<Config, 'consultations' | 'allergies'>;
 
 export interface Allergy {
   key: string;
   name: string;
   added: string;
   isPenicillin: boolean;
+  reactions: Array<string>;
+  resolved: string | null;
+  /** The latest record of the allergy, which decides it. */
+  encounterUuid: string;
+  form: string;
 }
 
-/**
- * The allergies any consultation records, each once, penicillin first, as the Consultation visits page lists them: one
- * an older consultation recorded stays until that consultation is edited.
- */
-export function allergiesOf(encounters: Array<ChartEncounter>, consultations: Consultations): Array<Allergy> {
-  const allergies = toListedItems(encounters, consultations.concepts, consultations.concepts.allergy).map((one) => ({
-    key: one.key,
-    name: one.name,
-    added: one.added,
-    isPenicillin: consultations.penicillinAllergyAnswers.includes(one.key) || /penicillin/i.test(one.name),
-  }));
-  return penicillinFirst(allergies);
-}
+const time = (date: string) => parseDate(date).getTime();
 
-const penicillinFirst = (allergies: Array<Allergy>) => [
+const penicillinFirst = <T extends { isPenicillin: boolean }>(allergies: Array<T>) => [
   ...allergies.filter((one) => one.isPenicillin),
   ...allergies.filter((one) => !one.isPenicillin),
 ];
 
+/**
+ * The allergies the consultations and RHD Allergies record, each once, penicillin first. The latest record decides
+ * if one is current or, with a Date Resolved, past; its date is the earliest Date Added, else record date.
+ * `noKnownAllergies` is true when No known allergies was recorded after every allergy record and none is current.
+ */
+export function allergiesOf(
+  consultationEncounters: Array<ChartEncounter>,
+  allergyRecords: Array<ChartEncounter>,
+  { consultations, allergies }: AllergyConfig,
+): { current: Array<Allergy>; past: Array<Allergy>; noKnownAllergies: boolean } {
+  const c = consultations.concepts;
+  const a = allergies.concepts;
+  const oldestFirst = [
+    ...consultationEncounters.map((encounter) => ({ encounter, form: consultations.form })),
+    ...allergyRecords.map((encounter) => ({ encounter, form: allergies.form })),
+  ].sort((x, y) => time(x.encounter.encounterDatetime) - time(y.encounter.encounterDatetime));
+  const byKey = new Map<string, Allergy>();
+  const decidedAt = new Map<string, number>();
+  let noKnownAt = -Infinity;
+  let allergyAt = -Infinity;
+  for (const { encounter, form } of oldestFirst) {
+    for (const group of answersIn(encounter.obs, c.allergy)) {
+      const [name] = answersIn(group.groupMembers, c.allergy);
+      if (!name) {
+        continue;
+      }
+      const text = (concept: string) => {
+        const [one] = answersIn(group.groupMembers, concept);
+        return one ? answerText(one.value) : '';
+      };
+      const key = answerUuid(name.value) || answerText(name.value);
+      const at = time(encounter.encounterDatetime);
+      if (key === a.noKnownAllergies) {
+        noKnownAt = Math.max(noKnownAt, at);
+        continue;
+      }
+      allergyAt = Math.max(allergyAt, at);
+      const recorded = text(c.dateAdded) || encounter.encounterDatetime;
+      const earlier = byKey.get(key);
+      const added = earlier && time(earlier.added) < time(recorded) ? earlier.added : recorded;
+      const resolved = text(a.dateResolved) || null;
+      // Keeps the app agreeing with the penicillin flag's SQL, where a resolved record wins a same-time tie.
+      if (earlier?.resolved && !resolved && decidedAt.get(key) === at) {
+        byKey.set(key, { ...earlier, added });
+        continue;
+      }
+      decidedAt.set(key, at);
+      const displayName = answerText(name.value);
+      byKey.set(key, {
+        key,
+        name: displayName,
+        added,
+        isPenicillin: consultations.penicillinAllergyAnswers.includes(key) || /penicillin/i.test(displayName),
+        reactions: answersIn(group.groupMembers, a.reaction)
+          .flatMap((reactions) => answersIn(reactions.groupMembers, a.reaction))
+          .map((reaction) => answerText(reaction.value)),
+        resolved,
+        encounterUuid: encounter.uuid,
+        form,
+      });
+    }
+  }
+  const all = penicillinFirst([...byKey.values()].sort((x, y) => time(y.added) - time(x.added)));
+  const current = all.filter((one) => !one.resolved);
+  return {
+    current,
+    past: all.filter((one) => one.resolved),
+    noKnownAllergies: !current.length && noKnownAt > allergyAt,
+  };
+}
+
 /** The allergies as one line, led by a capitalised warning when any is to penicillin. */
-export function allergiesText(allergies: Array<Allergy>) {
+export function allergiesText(allergies: Array<Pick<Allergy, 'name' | 'isPenicillin'>>, noKnownAllergies = false) {
   if (!allergies.length) {
-    return 'Allergies not recorded';
+    return noKnownAllergies ? 'No known allergies' : 'Allergies not recorded';
   }
   const names = penicillinFirst(allergies)
     .map((one) => one.name)
@@ -46,21 +122,35 @@ export function allergiesText(allergies: Array<Allergy>) {
   return allergies.some((one) => one.isPenicillin) ? `PENICILLIN ALLERGY: ${names}` : `Allergies: ${names}`;
 }
 
-/**
- * The patient's allergies as one line for the consultation form. A failure says so, as nothing read is not none.
- */
+export function useAllergies(patientUuid: string | null, config: AllergyConfig) {
+  const consultations = useChartEncounters(patientUuid, config.consultations.encounterType);
+  const records = useChartEncounters(patientUuid, config.allergies.encounterType);
+  return {
+    ...allergiesOf(consultations.encounters, records.encounters, config),
+    error: consultations.error ?? records.error,
+    isLoading: consultations.isLoading || records.isLoading,
+  };
+}
+
 export async function fetchAllergiesText(patientUuid: string): Promise<string> {
   try {
     if (!patientUuid) {
       throw new Error('No patient');
     }
-    const { consultations } = (await getConfig('@act-registry/esm-act-app')) as Config;
-    const encounters = await fetchChartEncounters(patientUuid, consultations.encounterType);
-    return allergiesText(allergiesOf(encounters, consultations));
+    const config = (await getConfig('@act-registry/esm-act-app')) as Config;
+    const [consultations, records] = await Promise.all([
+      fetchChartEncounters(patientUuid, config.consultations.encounterType),
+      fetchChartEncounters(patientUuid, config.allergies.encounterType),
+    ]);
+    const { current, noKnownAllergies } = allergiesOf(consultations, records, config);
+    return allergiesText(current, noKnownAllergies);
   } catch {
-    return 'Allergies unavailable';
+    return allergiesUnavailable;
   }
 }
 
-/** Lets the consultation form's Current allergies call actAllergies(patient.id). */
-export const registerAllergies = () => registerExpressionHelper(allergiesHelper, fetchAllergiesText);
+/** Lets the consultation form's Current allergies call actAllergies(patient.id) and render as the app's control. */
+export const registerAllergies = () => {
+  registerExpressionHelper(allergiesHelper, fetchAllergiesText);
+  registerControl(currentAllergiesControl, () => import('./current-allergies.control'));
+};

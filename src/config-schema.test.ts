@@ -197,6 +197,15 @@ describe('configSchema', () => {
         encounterType: 'e3f1b6a8-5c2d-4f7e-9a41-6d8b2c0e7f53',
         form: '6fc2cd4c-3bd8-3888-88ae-53e6eb7debb3',
       },
+      allergies: {
+        encounterType: '8a687651-3554-4255-941c-812d7a21312e',
+        form: 'baeb5cfb-8433-3ad7-a1e6-1e7f449e9dbe',
+        concepts: {
+          reaction: '8200713e-8647-52f0-b93d-841e4e9687b7',
+          dateResolved: '8fbebbea-16dd-5dc5-98f0-c522cab26e19',
+          noKnownAllergies: '160557AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+      },
       inrReviews: {
         encounterType: 'b4bb88a3-9a04-5142-85bd-bb63c270f632',
         form: 'fe4848b2-a0b4-329f-a6a3-6ffc298e09a9',

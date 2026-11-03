@@ -141,7 +141,7 @@ function ListedItems({
   lowercase,
 }: {
   patientUuid: string;
-  list: 'chronicCondition' | 'allergy' | 'complication';
+  list: 'chronicCondition' | 'complication';
   title: string;
   lowercase: string;
 }) {
@@ -202,12 +202,6 @@ export default function ConsultationsPage({ patientUuid }: { patientUuid: string
         list="chronicCondition"
         title={t('chronicConditions', 'Chronic health conditions')}
         lowercase={t('chronicConditionsLowercase', 'chronic health conditions')}
-      />
-      <ListedItems
-        patientUuid={patientUuid}
-        list="allergy"
-        title={t('allergies', 'Allergies')}
-        lowercase={t('allergiesLowercase', 'allergies')}
       />
       <ListedItems
         patientUuid={patientUuid}

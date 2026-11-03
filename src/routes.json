@@ -789,6 +789,32 @@
       ]
     },
     {
+      "name": "act-allergies-dashboard-link",
+      "component": "allergiesDashboardLink",
+      "meta": {
+        "slot": "act-allergies-dashboard-slot",
+        "path": "act-allergies",
+        "title": "Allergies",
+        "icon": "omrs-icon-warning"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-allergies-dashboard",
+      "slot": "act-allergies-dashboard-slot",
+      "component": "allergiesDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-medications-dashboard-link",
       "component": "medicationsDashboardLink",
       "meta": {
@@ -991,6 +1017,12 @@
       "canMaximize": true
     },
     {
+      "name": "act-allergy-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
       "name": "act-update-patient-status",
       "group": "patient-chart"
     },
@@ -1064,6 +1096,11 @@
       "name": "act-cardiac-test-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-cardiac-test-form-entry"
+    },
+    {
+      "name": "act-allergy-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-allergy-form-entry"
     },
     {
       "name": "act-vitals-form-workspace",

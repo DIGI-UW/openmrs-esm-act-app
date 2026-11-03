@@ -13,6 +13,7 @@ import waitingListDashboardLinkComponent from './waiting-list/waiting-list-dashb
 import { cardiacTestsDashboardMeta } from './cardiac-tests/cardiac-tests.meta';
 import { consultationsDashboardMeta } from './consultations/consultations.meta';
 import { medicationsDashboardMeta } from './medications/medications.meta';
+import { allergiesDashboardMeta } from './allergies/allergies.meta';
 import { prophylaxisPageDashboardMeta } from './prophylaxis-page/prophylaxis-page.meta';
 import { researchPageDashboardMeta } from './research/research-page.meta';
 import screenPositiveDashboardLinkComponent from './screen-positive/screen-positive-dashboard-link.component';
@@ -99,6 +100,8 @@ export const consultationsDashboard = getAsyncLifecycle(
 export const medicationsDashboardLink = getSyncLifecycle(createDashboard(medicationsDashboardMeta), options);
 
 export const medicationsDashboard = getAsyncLifecycle(() => import('./medications/medications.component'), options);
+export const allergiesDashboardLink = getSyncLifecycle(createDashboard(allergiesDashboardMeta), options);
+export const allergiesDashboard = getAsyncLifecycle(() => import('./allergies/allergies.component'), options);
 
 export const inrReviewsDashboardLink = getAsyncLifecycle(() => import('./inr/inr-dashboard-link.component'), options);
 
