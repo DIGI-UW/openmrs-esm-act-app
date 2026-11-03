@@ -1,195 +1,69 @@
 # OpenMRS ACT frontend module
 
-RHD-specific screens for ACT 3.0, the OpenMRS 3 edition of the ACT rheumatic heart disease registry.
+The screens of ACT 3.0, the OpenMRS 3 edition of the ACT rheumatic heart disease (RHD) registry.
+Published to npm as `@act-registry/esm-act-app`.
 
-## Missing data behind a flag
+## What it adds
 
-A critical data flag says a patient is missing something, such as "Perfusion Issues missing on
-Procedures and Outcomes". This module adds a workspace, `rhd-flag-gaps-workspace`, that lists
-what is missing behind the patient's flags, one table per flag and one row per form and field, with
-the form's date and the days since. **Open form** opens that encounter in the patient chart's form entry workspace, ready to
-complete.
+### Home pages
 
-The rows come from the [ACT Core](https://github.com/DIGI-UW/openmrs-module-actcore) module's
-gap look-up, `GET /ws/rest/v1/actcore/gap?patient=<uuid>&flag=<uuid>`, which needs a gap query
-configured for the flag; a flag without one is left out. When the missing data has no saved form to go
-on yet, the workspace offers Clinical forms to start one.
+| Page | Route | For |
+| --- | --- | --- |
+| ACT home | `/home/act-home` | Clinicians and administrators: quick actions, due for prophylaxis, worklists, overdue consultations, care cascade |
+| Home | `/home/act-community-home` | Community clinicians and data clerks: quick actions and due for prophylaxis |
+| Instance admin | `/home/act-instance-admin` | Instance administrators: quick actions and KPIs |
 
-The workspace opens in the patient chart's Clinical forms window, so it needs the patient chart and
-forms apps. It is launched by a flag or tag action in the patient flags app, and takes the patient
-from the patient chart:
+### Registry and worklists
 
-```json
-"@openmrs/esm-patient-flags-app": {
-  "tagActions": [{ "tagName": "Critical data", "workspace": "rhd-flag-gaps-workspace" }]
-}
-```
+- **Registry**: every RHD patient, with filters, flags and BPG adherence.
+- **Worklists**: due for prophylaxis, confirmatory echo, cardiology follow-up, lost to follow-up,
+  post-procedural follow-up, pregnancy outcome, INR review, referred to clinician and the waiting list.
+- **Procedural waiting list**: open interventional recommendations, coloured by urgency deadline.
+- **Screen positive**: patients who screened positive and are waiting for a diagnosis.
+- **Due for prophylaxis**, **Enter prophylaxis** and **Scan patient card** (find a patient by the barcode on their ACT card).
 
-A flags app that passes the clicked flag as the workspace's props (`patientUuid`, `patientFlagUuid`,
-`flagUuid`, `flagName`) narrows the workspace to that flag.
+### Reports and data
 
-## Quick actions
+- **Dashboard** and **Run charts**: programme indicators, by clinic and over time, with export.
+- **Reports** and **Facility reports**: the report catalogue and per-facility programme reports.
+- **Screening counts**: monthly screening totals entered per clinic.
+- **Download data**: saved forms exported as CSV, field by field.
 
-Each home has a Quick actions card that draws whatever extensions are in its slot: `act-home-quick-actions-slot`
-on ACT home, `act-community-home-quick-actions-slot` on Home. Every action is one shared component, a tile with an
-icon, a label and a subtitle, registered in `routes.json` once per home it belongs on, with the privilege its action
-needs. So what each user sees follows their privileges, and a distro plugs actions into a home in its frontend
-config, the O3 way, without code:
+### Administration
 
-```json
-"@act-registry/esm-act-app": {
-  "extensionSlots": {
-    "act-home-quick-actions-slot": { "add": ["act-community-home-record-bpg"], "order": ["act-home-register-patient"] }
-  }
-}
-```
+Users and roles, Clinics, Role permissions, Studies, Flags and adherence (re-run the RHD flags) and Logs
+(what users changed, read or downloaded).
 
-The actions: Register patient, Enter prophylaxis (BPG or oral), Record BPG injection, Record oral prophylaxis, Find a
-patient and Facility report. Register patient, Enter prophylaxis and Find a patient read `quickActions`, so a change
-there changes every home; Facility report reads `dataClerkQuickActions`.
+### Patient chart
 
-## Home
+- **Pages** (the distro adds them to the chart's nav): Prophylaxis, Consultation visits, Medications,
+  INR reviews, Cardiac tests and Research participation.
+- **Summary cards**: consultation, prophylaxis, medications, INR and next steps (with referrals).
+- **Banner tags**: anaphylaxis alert, patient status, INR status, allergies and clinical flags; the
+  patient's clinics below the banner.
+- **Actions and workspaces**: update patient status, vitals, the missing data behind a critical data flag
+  (`rhd-flag-gaps-workspace`) and study enrolment.
 
-The community clinician's and data clerk's home, at `/home/act-community-home` behind `App: act.communityHome`:
-the session location and today's date, then Quick actions and Due for prophylaxis in
-`act-community-home-widgets-slot`. Its quick actions (see Quick actions) are Record BPG injection, Record oral
-prophylaxis, Register patient, Find a patient and, with `App: act.dataClerk`, Facility report. To land these roles on it, map
-them to `act-community-home` in `defaultDashboardPerRole`, and send `loginSuccess` to `/home`, the only route on
-which the home app reads that map.
+### Everywhere
 
-## ACT home
+A session timeout warning in the top nav, and Contact and Docs links in the help menu.
 
-An ACT home dashboard in the home app's left nav, at `/home/act-home`. Its widgets go in
-`rhd-home-widgets-slot`; until one is added it says so. To make it the page its users land on, set the home
-app's `defaultDashboardPerRole` in the distro's frontend config, for each ACT role that lands there (the clinician
-and the administrators; community clinicians and data clerks land on Home), and send the login app's
-`loginSuccess` to `/home`, the only route on which the home app reads that map:
+## Who sees what
 
-```json
-"@openmrs/esm-home-app": {
-  "defaultDashboardPerRole": { "<ACT role>": "act-home" }
-}
-```
-
-Its quick actions (see Quick actions) are Register patient, Enter prophylaxis and Find a patient.
-Enter prophylaxis opens ACT's patient search, which asks BPG or oral and opens the form in the chart. With
-`quickActions.enterProphylaxisInFastDataEntry`, it offers the choices in `quickActions.prophylaxisForms`, as ACT 2.0 offered BPG and oral
-prophylaxis: by default Enter BPG and Enter oral prophylaxis, which open the RHD BPG Delivery and RHD Oral
-Adherence forms in fast data entry, where the patient is picked. Each choice has a `label` and a `url`; with
-none, Enter prophylaxis links to `enterProphylaxisUrl`. Fast data entry always opens on all forms, so a
-Prophylaxis category in its own config (`formCategories`) only adds a tab there.
-
-## Procedural waiting list
-
-A Procedural waiting list dashboard in the home app's left nav, at `/home/act-waiting-list`. It lists the rows of
-the report set in `waitingList.report`, by default the distro's Procedural Waiting List: the open interventional
-recommendations from each RHD Registry patient's latest consultation.
-
-Days pending counts from the report's `date_added`. A row turns red once its days pending pass the deadline of its
-urgency band, set in `urgencyBands` by the Urgency answer's concept. The defaults are ACT 2.0's three urgencies,
-Emergent, Urgent and Elective, due in 1, 60 and 180 days, and the four answers they replaced, due in 7, 30, 90 and
-180 days, for recommendations saved before, all in deadline order. Overdue rows come first, then the bands in the
-order they are listed. The list and its Urgency filter name each band by its `label`, such as `urgencyEmergent`,
-shown as "1: Emergent (24 hours)", and ACT home's widget by its `shortLabel`, such as "1: Emergent", or its `label` without one; an answer no
-band names shows the report's name for it.
-
-Its filters are kept in the URL, and Download CSV saves the filtered rows. Open form opens that consultation for
-editing in a workspace on the list itself, the forms app's `exportedPatientFormEntryWorkspace`, registered in this
-app's own `act-waiting-list` workspace group as Service Queues registers it; saving it evaluates the list again.
-
-## Patient chart pages
-
-Pages for the patient chart's left nav, whose links are registered in no slot so that the distro chooses the chart's
-pages. A distro adds a page's link to the chart's `patient-chart-dashboard-slot` in its frontend config:
-
-```json
-"@openmrs/esm-patient-chart-app": {
-  "extensionSlots": {
-    "patient-chart-dashboard-slot": { "add": ["act-prophylaxis-dashboard-link", "act-cardiac-tests-dashboard-link"] }
-  }
-}
-```
-
-- **Prophylaxis** (`act-prophylaxis-dashboard-link`): the patient's BPG injections, newest first, with the facility
-  and a tag saying whether each was on time, timed by ACT Core as the Prophylaxis card's on-time count is; then their
-  oral adherence entries, if any. Record BPG and Record oral open the forms set in `prophylaxisCard`. The encounter
-  types and concepts are in `prophylaxisPage`. The Prophylaxis card's History link opens this page, and shows only
-  when the chart's nav has it, directly or in a dashboard group.
-- **Cardiac tests** (`act-cardiac-tests-dashboard-link`): the patient's echocardiograms, newest first, with the
-  mitral and aortic valve findings and left ventricular ejection fraction; Add opens the echo form, starting a visit
-  when the patient has none. The form, its encounter type and the concepts are in `cardiacTests`.
-
-## Session timeout warning
-
-The server ends a session left idle for its timeout (Tomcat's default is 30 minutes), and the app learns of it only
-from the next request, which lands on the login page with any open form lost. The `act-session-timeout` extension, in
-the top navigation's `top-nav-actions-slot` on every page, warns before that: once the user has been idle for the idle
-time less the warning time, a modal counts the warning time down and signs them out at zero unless they choose Stay
-signed in, which asks the server for the session so its clock starts again. While the user is active it also keeps
-the session alive every few minutes, as a long form entered without saving makes no request of its own. Activity in
-one tab counts in every tab, since signing out in one ends the session they share, and a tab that signs out sends the
-others to the login page. The times are
-`sessionTimeout.idleMinutes` (30; 0 switches the warning off), `warningMinutes` (3) and `keepAliveMinutes` (10), and
-`idleMinutes` should match the server's session timeout.
-
-## Clinics and Role permissions
-
-Clinics (`/home/act-clinics`, the left nav's Admin > Clinics, for a user holding Manage Locations) is ACT 2.0's
-Clinic Management. It lists the locations that carry a clinic level tag (`clinics.levels`: RHD Tertiary, District
-and Community), with the type and level their description holds as the distro seeds it ("Public, District level"),
-the parent clinic and whether it is enabled; Enabled shows by default and All adds the disabled ones. A clinic is
-added and edited here: its level sets its level tag, its type and level are written back to its description, a new
-clinic also gets `clinics.newClinicTags` (Visit, Queue and Login Location) so users can sign in and record visits
-there, and disabling it retires the location. Clinics from the distro's locations file return to what that file says
-when it is updated (Initializer reapplies it), so lasting changes to them belong in the distro; clinics added here keep
-theirs. Keep the tags in `clinics.levels` the same as `clinicLocationTags`, which the rest of ACT reads.
-
-Role permissions (`/home/act-role-permissions`, the Instance admin's Role permissions, for a user holding Manage
-Roles) shows each ACT role (`Organizational: ACT …`) against the ACT capabilities it is built from
-(`Application: ACT …`), with the ones it inherits directly ticked, and saves them. A capability a role has through
-another ACT role shows ticked and is changed on that role. OpenMRS saves a role only for a user holding every
-privilege the role has directly, so such a role is read only here. A user gives only a capability whose privileges
-they hold, and may take away one the role has directly, unless it is on one of their own roles and is how they hold
-Get Roles, which OpenMRS needs to save any role. OpenMRS also lets an administrator save a user only when the
-administrator holds every privilege of the user's roles, so a capability given to a clinician role must be held by the
-administrators who assign it, or they cannot save anyone who has that role. The roles come from the distro's roles
-file, and an update to that file replaces changes made here.
+Each screen is gated by a privilege in [`src/routes.json`](src/routes.json), mostly ACT app privileges
+such as `App: act.registry` or `App: act.dataClerk`. The distro's roles decide which of these each user
+holds, so menus and quick actions follow the user's role.
 
 ## Requirements
 
-- Backend: webservices.rest 2.40.0 or later, ACT Core with the gap look-up, cohort 3.7.3 or later for the RHD flag
-  lists, and reportingrest 2.0.0 or later for the report datasets.
-- Frontend: the patient chart, forms and patient flags apps; ACT home needs the home app.
-
-## Privileges for ACT roles
-
-The ACT screens (the home page, registry, waiting list and screen positive page, still to come) are to be shown
-only to users with the privilege set for each in `screenPrivileges`, by default `View Patient Flags`, using
-`ScreenAccess`. To read their data, a role also needs these privileges:
-
-| Data | Privileges to grant |
+| | |
 | --- | --- |
-| The RHD flag lists and their members | `Get Patient Cohorts`, `View Cohorts In Cohort Module` |
-| Report datasets, such as the registry and the waiting list | `View Reports`, `Run Reports`, `Get Patients` |
-
-`Run Reports` lets a user evaluate any report on the server.
-
-## Running this code
-
-```sh
-yarn        # install dependencies
-yarn start  # serve it against a backend: openmrs develop --backend <url>
-```
-
-`yarn verify` runs lint, typecheck and the tests; `yarn build` produces `dist/`.
-
-On Node 25 or later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`: Node's own
-`localStorage` otherwise replaces the test DOM's.
+| Backend modules | webservices.rest 2.40.0+, [ACT Core](https://github.com/DIGI-UW/openmrs-module-actcore), cohort 3.7.3+, reportingrest 2.0.0+, patientflags 3.0.10+ |
+| Frontend apps | home, patient chart, forms and patient flags |
 
 ## Adding it to a distro
 
-The module is published to npm as `@act-registry/esm-act-app`. A distro lists it in
-`frontend/spa-assemble-config.json`, taking `next` for the newest prerelease or a release version:
+List it in `frontend/spa-assemble-config.json`, taking `next` for the newest prerelease or a release version:
 
 ```json
 "frontendModules": {
@@ -197,15 +71,36 @@ The module is published to npm as `@act-registry/esm-act-app`. A distro lists it
 }
 ```
 
+Then, in the distro's frontend config:
+
+- **Land users on their home**: map each role to `act-home` or `act-community-home` in the home app's
+  `defaultDashboardPerRole`, and send the login app's `loginSuccess` to `/home`.
+- **Add chart pages** to `patient-chart-dashboard-slot`, for example `act-prophylaxis-dashboard-link`.
+- **Change quick actions** through each home's slot (`act-home-quick-actions-slot`,
+  `act-community-home-quick-actions-slot`).
+
+## Configuration
+
+Everything else (forms, encounter types, concepts, reports, urgency bands, session timeout and so on) is
+set under `@act-registry/esm-act-app` in the frontend config. Each option and its default is described in
+[`src/config-schema.ts`](src/config-schema.ts).
+
+## Development
+
+```sh
+yarn          # install
+yarn start    # run against a backend: openmrs develop --backend <url>
+yarn verify   # lint, typecheck and tests
+yarn build    # build to dist/
+```
+
+On Node 25 or later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`.
+
 ## Releasing
 
-CI publishes with the `NPM_AUTH_TOKEN` repository secret, an npm token that can publish to the
-`@act-registry` scope.
+CI publishes with the `NPM_AUTH_TOKEN` secret.
 
-- A push to main publishes a prerelease, such as `1.0.1-pre.42`, under the `next` tag. Runs on main
-  queue in push order, and a run still waiting when a newer push lands is skipped.
-- Publishing a GitHub release publishes the version in `package.json` under `latest`, or under `next`
-  when the release is marked as a pre-release. Promoting a pre-release to a full release later
-  publishes nothing, so give the stable release its own version. Commit the version bump to main
-  first, as a direct push or squash merge, with a commit message starting `(chore) Release` so it
-  does not also publish a prerelease. Then publish the release with its tag.
+- **Prerelease**: every push to main publishes one (such as `1.0.1-pre.42`) under `next`.
+- **Release**: bump the version in `package.json` on main with a commit starting `(chore) Release`,
+  then publish a GitHub release with its tag. It goes out under `latest`, or `next` if marked
+  pre-release. Promoting a pre-release later publishes nothing, so give the stable release its own version.
