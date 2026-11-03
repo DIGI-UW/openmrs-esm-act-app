@@ -125,7 +125,7 @@ export async function fetchAllergiesText(patientUuid: string): Promise<string> {
   }
 }
 
-/** Lets the consultation form's Current allergies call actAllergies(patient.id). */
+/** Lets the consultation form's Current allergies call actAllergies(patient.id) and render as the app's control. */
 export const registerAllergies = () => {
   registerExpressionHelper(allergiesHelper, fetchAllergiesText);
   registerControl(currentAllergiesControl, () => import('./current-allergies.control'));
