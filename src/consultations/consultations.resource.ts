@@ -22,6 +22,10 @@ export interface ChartEncounter {
 const representation =
   'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value)))';
 
+/** As `representation`, one level deeper, for a group inside a group such as an allergy's Reaction. */
+export const nestedGroupsRepresentation =
+  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value))))';
+
 /** A coded answer's name, or a plain answer as text. */
 export const answerText = (value: unknown) =>
   typeof value === 'object' && value !== null
@@ -36,16 +40,16 @@ export const answersIn = (obs: Array<GroupedObs> | null | undefined, concept: st
   (obs ?? []).filter((one) => one.concept.uuid === concept);
 
 // Under the patient's /encounter, which common-lib revalidates after a form is saved.
-const encountersUrl = (patientUuid: string, encounterType: string) =>
-  `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=${representation}`;
+const encountersUrl = (patientUuid: string, encounterType: string, rep = representation) =>
+  `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=${rep}`;
 
 /** Every encounter of one type for a patient, with each answer group's members, outside a component. */
-export const fetchChartEncounters = (patientUuid: string, encounterType: string) =>
-  fetchAll<ChartEncounter>(encountersUrl(patientUuid, encounterType));
+export const fetchChartEncounters = (patientUuid: string, encounterType: string, rep = representation) =>
+  fetchAll<ChartEncounter>(encountersUrl(patientUuid, encounterType, rep));
 
 /** A patient's encounters of one type, newest first, with each answer group's members. */
-export function useChartEncounters(patientUuid: string | null, encounterType: string) {
-  const url = patientUuid ? encountersUrl(patientUuid, encounterType) : null;
+export function useChartEncounters(patientUuid: string | null, encounterType: string, rep = representation) {
+  const url = patientUuid ? encountersUrl(patientUuid, encounterType, rep) : null;
   const { data, error, isLoading } = useSWR<Array<ChartEncounter>, Error>(url, () => fetchAll<ChartEncounter>(url));
   const encounters = [...(data ?? [])].sort(
     (a, b) => parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),

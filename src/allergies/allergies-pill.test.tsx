@@ -87,9 +87,9 @@ describe('the patient banner allergies pill', () => {
     expect(list).toHaveTextContent(`Latex (added ${day('2026-03-01')})`);
     expect(list).toHaveTextContent(`Dust (added ${day('2026-01-01')})`);
     expect(day('2026-03-01')).not.toBe(day('2026-01-01'));
-    expect(screen.getByRole('link', { name: 'Review in Consultation visits' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Review in Allergies' })).toHaveAttribute(
       'href',
-      '/openmrs/spa/patient/abebe/chart/act-consultations',
+      '/openmrs/spa/patient/abebe/chart/act-allergies',
     );
   });
 

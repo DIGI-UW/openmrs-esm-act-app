@@ -316,6 +316,16 @@ describe('routes.json workspaces', () => {
     expect(pattern.test(`/openmrs/spa${page}`)).toBe(false);
   });
 
+  it('opens the RHD Allergies form, from the consultation, in a patient chart window of its own', () => {
+    const workspace = workspaceRoutes.workspaces2.find(
+      (candidate) => candidate.name === 'act-allergy-form-entry-workspace',
+    );
+    const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
+    expect(workspace?.component).toBe('@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace');
+    expect(window?.group).toBe(patientChartGroup);
+    expect(window?.name).not.toBe('act-cardiac-test-form-entry');
+  });
+
   it('opens the enrolment workspace in the patient chart group', () => {
     const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === 'act-enrollment-workspace');
     const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);

@@ -4,20 +4,20 @@ import { Tag, Toggletip, ToggletipButton, ToggletipContent } from '@carbon/react
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { day } from '../consultations/repeated-lists.component';
-import { useConsultations } from '../consultations/consultations.resource';
 import { pillsClassName } from '../patient-status/status-pill.component';
-import { allergiesOf } from './allergies.resource';
+import { useAllergies } from './allergies.resource';
 
 const shown = 2;
 
 /**
- * The patient banner's allergies, which the consultations record: the first two named, the rest behind a click with
- * the dates they were added, and a penicillin allergy in red. Nothing while they load, and never none when unread.
+ * The patient banner's current allergies, from the consultations and RHD Allergies: the first two named, the rest
+ * behind a click with the dates they were added, and a penicillin allergy in red. Nothing while they load, and never
+ * none when unread.
  */
 export default function AllergiesPill({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { consultations } = useConfig<Config>();
-  const { encounters, error, isLoading } = useConsultations(patientUuid);
+  const config = useConfig<Config>();
+  const { current: allergies, error, isLoading } = useAllergies(patientUuid, config);
   if (isLoading) {
     return null;
   }
@@ -30,7 +30,6 @@ export default function AllergiesPill({ patientUuid }: { patientUuid: string }) 
       </span>
     );
   }
-  const allergies = allergiesOf(encounters, consultations);
   if (!allergies.length) {
     return (
       <span className={pillsClassName}>
@@ -64,8 +63,8 @@ export default function AllergiesPill({ patientUuid }: { patientUuid: string }) 
               </li>
             ))}
           </ul>
-          <ConfigurableLink to={`\${openmrsSpaBase}/patient/${patientUuid}/chart/act-consultations`}>
-            {t('reviewInConsultationVisits', 'Review in Consultation visits')}
+          <ConfigurableLink to={`\${openmrsSpaBase}/patient/${patientUuid}/chart/act-allergies`}>
+            {t('reviewInAllergies', 'Review in Allergies')}
           </ConfigurableLink>
         </ToggletipContent>
       </Toggletip>
