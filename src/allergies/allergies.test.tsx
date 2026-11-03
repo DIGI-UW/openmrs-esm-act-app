@@ -119,7 +119,7 @@ describe('the Allergies page', () => {
     expect(within(current).getByText('Other')).not.toHaveAttribute('data-tone', 'penicillin');
   });
 
-  it('opens the RHD Allergies form from Add, and from Edit reopens the record or, for a consultation, records anew', async () => {
+  it("opens the RHD Allergies form from Add and Edit, and records a consultation's allergy again", async () => {
     serve({
       consultations: [encounter('visit', '2025-03-03', [allergy(other, '2025-03-03')])],
       records: [encounter('new', '2026-10-12', [allergy(anaphylaxis, '2026-10-12')])],
@@ -134,7 +134,10 @@ describe('the Allergies page', () => {
     expect(openForm).toHaveBeenLastCalledWith(config.allergies.form);
     await userEvent.click(screen.getByRole('button', { name: 'Edit Penicillin (anaphylaxis)' }));
     expect(openForm).toHaveBeenLastCalledWith(config.allergies.form, undefined, 'new');
-    await userEvent.click(screen.getByRole('button', { name: 'Edit Other' }));
+    expect(screen.queryByRole('button', { name: 'Edit Other' })).not.toBeInTheDocument();
+    const again = screen.getByRole('button', { name: 'Record Other again' });
+    expect(again).toHaveTextContent('Record again');
+    await userEvent.click(again);
     expect(openForm).toHaveBeenLastCalledWith(config.allergies.form);
   });
 
@@ -144,7 +147,7 @@ describe('the Allergies page', () => {
     renderPage();
 
     expect(await screen.findByRole('table', { name: 'Current allergies' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Add|^Edit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Add|^Edit|^Record/ })).not.toBeInTheDocument();
   });
 
   it('shows the empty cards the Medications page shows when no allergy is recorded', async () => {

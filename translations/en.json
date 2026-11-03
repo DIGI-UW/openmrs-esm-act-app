@@ -749,6 +749,8 @@
   "recentlyViewedPatients": "Recently viewed patients",
   "recommendationsCount_one": "{{count}} recommendation",
   "recommendationsCount_other": "{{count}} recommendations",
+  "recordAgain": "Record again",
+  "recordAllergyAgain": "Record {{allergy}} again",
   "recordBpg": "Record BPG",
   "recordBpgInjection": "Record BPG injection",
   "recordDiagnosis": "Record diagnosis",

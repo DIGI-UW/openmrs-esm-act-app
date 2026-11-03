@@ -30,8 +30,8 @@ function Details({ allergy }: { allergy: Allergy }) {
 }
 
 /**
- * The chart's Allergies page. Edit on a consultation's row records a new RHD Allergies, as the consultation has no
- * allergy fields.
+ * The chart's Allergies page. A consultation's row offers Record again, a new RHD Allergies, as the consultation has
+ * no allergy fields.
  */
 export default function Allergies({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -48,25 +48,33 @@ export default function Allergies({ patientUuid }: { patientUuid: string }) {
   };
   const edit: Column<Allergy> = {
     header: '',
-    text: (one) =>
-      mayRecord && (
+    text: (one) => {
+      if (!mayRecord) {
+        return null;
+      }
+      const names = { allergy: one.name, interpolation: { escapeValue: false } };
+      return one.form === config.allergies.form ? (
         <Button
           kind="ghost"
           size="sm"
           disabled={isOpening}
-          aria-label={t('editAllergy', 'Edit {{allergy}}', {
-            allergy: one.name,
-            interpolation: { escapeValue: false },
-          })}
-          onClick={() =>
-            one.form === config.allergies.form
-              ? open(config.allergies.form, undefined, one.encounterUuid)
-              : open(config.allergies.form)
-          }
+          aria-label={t('editAllergy', 'Edit {{allergy}}', names)}
+          onClick={() => open(config.allergies.form, undefined, one.encounterUuid)}
         >
           {t('edit', 'Edit')}
         </Button>
-      ),
+      ) : (
+        <Button
+          kind="ghost"
+          size="sm"
+          disabled={isOpening}
+          aria-label={t('recordAllergyAgain', 'Record {{allergy}} again', names)}
+          onClick={() => open(config.allergies.form)}
+        >
+          {t('recordAgain', 'Record again')}
+        </Button>
+      );
+    },
   };
   return (
     <div className={medicationStyles.cards}>
