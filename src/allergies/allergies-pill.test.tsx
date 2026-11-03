@@ -119,6 +119,20 @@ describe('the patient banner allergies pill', () => {
     expect(screen.queryByText(/No known allergies/)).not.toBeInTheDocument();
   });
 
+  it('says No known allergies when that was recorded and no allergy since', async () => {
+    serve([
+      consultation('one', '2026-04-01', [
+        allergy(coded(config.allergies.concepts.noKnownAllergies, 'No known allergies')),
+      ]),
+    ]);
+
+    renderPill();
+
+    const pill = await screen.findByTestId('allergies-pill');
+    expect(pill).toHaveTextContent('No known allergies');
+    expect(pill).toHaveAttribute('data-tone', 'no-known-allergies');
+  });
+
   it('leaves a resolved penicillin allergy off the banner', async () => {
     serve([consultation('one', '2026-04-01', [allergy(penicillin, '2026-01-01', '2026-03-01')])]);
 

@@ -18,8 +18,9 @@ export default function CurrentAllergies({ field, value, setFieldValue }: Contro
   // Inside the forms app, the config is read by this app's name.
   const config = useConfig<Config>({ externalModuleName: '@act-registry/esm-act-app' });
   const { patientUuid } = usePatient();
-  const { current, error, isLoading } = useAllergies(patientUuid, config);
-  const text = !patientUuid || isLoading ? null : error ? allergiesUnavailable : allergiesText(current);
+  const { current, noKnownAllergies, error, isLoading } = useAllergies(patientUuid, config);
+  const text =
+    !patientUuid || isLoading ? null : error ? allergiesUnavailable : allergiesText(current, noKnownAllergies);
   const lastRead = useRef<string | null>(null);
 
   useEffect(() => {

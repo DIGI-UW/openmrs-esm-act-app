@@ -203,6 +203,7 @@ describe('configSchema', () => {
         concepts: {
           reaction: '8200713e-8647-52f0-b93d-841e4e9687b7',
           dateResolved: '8fbebbea-16dd-5dc5-98f0-c522cab26e19',
+          noKnownAllergies: '160557AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         },
       },
       inrReviews: {
