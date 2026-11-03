@@ -508,7 +508,7 @@ export const configSchema = {
       _elements: { _type: Type.UUID },
       _default: ['149071AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'b4e6c064-ab4f-5ee4-9837-094731ee23d4'],
       _description:
-        "The consultation's Allergy answers that are an allergy to penicillin, which the patient banner and the consultation form mark: Penicillin (allergy) and Penicillin (anaphylaxis), as the patients report counts them. An answer named penicillin is marked whatever its uuid.",
+        'The Allergy answers, on consultations and RHD Allergies, that are an allergy to penicillin, which the patient banner and the consultation form mark: Penicillin (allergy) and Penicillin (anaphylaxis), as the patients report counts them. An answer named penicillin is marked whatever its uuid.',
     },
     vitals: {
       _type: Type.Array,

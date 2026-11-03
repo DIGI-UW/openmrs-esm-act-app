@@ -157,7 +157,7 @@ describe('the Consultation visits page tables', () => {
     expect(rows[0]).toHaveTextContent('Rheumatic Heart Disease');
   });
 
-  it('shows chronic conditions, allergies and RHD complications each once', async () => {
+  it('shows chronic conditions and RHD complications each once, and leaves allergies to the Allergies page', async () => {
     const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
     serve({
       consultations: [
@@ -174,7 +174,8 @@ describe('the Consultation visits page tables', () => {
 
     const conditions = await screen.findByRole('table', { name: 'Chronic health conditions' });
     expect(within(conditions).getAllByTestId('repeated-row')).toHaveLength(1);
-    expect(within(screen.getByRole('table', { name: 'Allergies' })).getByText('Penicillin')).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Allergies' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Penicillin')).not.toBeInTheDocument();
     expect(
       within(screen.getByRole('table', { name: 'RHD complications' })).getByText('Atrial fibrillation'),
     ).toBeInTheDocument();
@@ -185,8 +186,8 @@ describe('the Consultation visits page tables', () => {
     const diagnosis = obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded('rhd', 'RHD'))]);
     serve({
       consultations: [
-        consultation('new', '2026-04-01', [item(c.allergy, 'Penicillin'), diagnosis]),
-        consultation('old', '2025-10-01', [item(c.allergy, 'Penicillin'), item(c.complication, 'Stroke')]),
+        consultation('new', '2026-04-01', [item(c.chronicCondition, 'Asthma'), diagnosis]),
+        consultation('old', '2025-10-01', [item(c.chronicCondition, 'Asthma'), item(c.complication, 'Stroke')]),
       ],
     });
 
@@ -195,7 +196,7 @@ describe('the Consultation visits page tables', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Edit RHD' }));
     expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
     await userEvent.click(
-      await screen.findByRole('button', { name: /^Edit Penicillin in the consultation of .*Apr.*2026$/ }),
+      await screen.findByRole('button', { name: /^Edit Asthma in the consultation of .*Apr.*2026$/ }),
     );
     expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
     await userEvent.click(screen.getByRole('button', { name: /^Edit Stroke in the consultation of .*Oct.*2025$/ }));
@@ -222,7 +223,7 @@ describe('the Consultation visits page tables', () => {
   it('shows the tables without Edit to a user who may not record the forms', async () => {
     const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
     serve({
-      consultations: [consultation('new', '2026-04-01', [item(c.allergy, 'Penicillin')])],
+      consultations: [consultation('new', '2026-04-01', [item(c.chronicCondition, 'Asthma')])],
       patientInformation: [
         {
           uuid: 'pi',
@@ -235,7 +236,7 @@ describe('the Consultation visits page tables', () => {
 
     renderIn(<ConsultationsPage patientUuid="winnie" />);
 
-    await within(await screen.findByRole('table', { name: 'Allergies' })).findByText('Penicillin');
+    await within(await screen.findByRole('table', { name: 'Chronic health conditions' })).findByText('Asthma');
     await screen.findByText('RHD');
     expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
   });
