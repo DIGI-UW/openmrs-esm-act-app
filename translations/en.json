@@ -1004,7 +1004,7 @@
   "waitingForAProcedure": "Waiting for a procedure",
   "waitingList": "Procedural waiting list",
   "waitingListDescription": "Open procedural recommendations from the latest consultation · red rows are past the deadline for their urgency",
-  "waitlistDescription": "Open recommendations in each active patient's latest consultation, by urgency",
+  "waitlistDescription": "Open recommendations in each active patient's latest consultation by urgency, and how many recommended procedures are done",
   "waitlistFiguresCouldNotLoad": "{{open}} and {{done}} could not load",
   "warfarinDose": "Warfarin dose",
   "warningIcon": "warning icon",

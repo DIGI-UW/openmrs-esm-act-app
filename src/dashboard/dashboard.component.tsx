@@ -844,7 +844,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           name={t('proceduralWaitlist', 'Procedural waitlist')}
           description={t(
             'waitlistDescription',
-            "Open recommendations in each active patient's latest consultation, by urgency",
+            "Open recommendations in each active patient's latest consultation by urgency, and how many recommended procedures are done",
           )}
           state={
             onlyWaitlistFigures

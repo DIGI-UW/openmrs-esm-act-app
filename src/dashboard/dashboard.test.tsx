@@ -561,6 +561,11 @@ describe('Dashboard', () => {
     expect(
       within(waitlist).getByText(/^Of the 3 active registrants, unless a row says otherwise$/),
     ).toBeInTheDocument();
+    expect(
+      within(waitlist).getByText(
+        "Open recommendations in each active patient's latest consultation by urgency, and how many recommended procedures are done",
+      ),
+    ).toBeInTheDocument();
     expect(segmentsOf('dashboard-procedure-measure')[0]).toEqual(['Done: 2', 'Not done: 8']);
   });
 
