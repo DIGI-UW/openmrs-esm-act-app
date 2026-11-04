@@ -37,7 +37,13 @@ const schema = {
 };
 
 const forms = [
-  { uuid: 'echo', name: 'RHD Echocardiogram', retired: false, resources: [{ name: 'JSON schema' }] },
+  {
+    uuid: 'echo',
+    name: 'RHD Echocardiogram',
+    display: 'Echocardiogram',
+    retired: false,
+    resources: [{ name: 'JSON schema' }],
+  },
   { uuid: 'old', name: 'Old form', retired: true, resources: [{ name: 'JSON schema' }] },
   { uuid: 'html', name: 'HTML form', retired: false, resources: [] },
 ];
@@ -106,11 +112,21 @@ describe('DownloadData', () => {
         endDate: '2026-06-30',
       },
     ]);
-    expect(vi.mocked(downloadCsv).mock.calls[0][0]).toMatch(/^rhd-echocardiogram-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(vi.mocked(downloadCsv).mock.calls[0][0]).toMatch(/^echocardiogram-\d{4}-\d{2}-\d{2}\.csv$/);
     expect(vi.mocked(downloadCsv).mock.calls[0].slice(1)).toEqual([
       ['ACT ID', 'Date of Echocardiogram'],
       [['rhd00037', '2026-03-14']],
     ]);
+  });
+
+  it('lists each form by the name users see, as the server displays it', async () => {
+    await signInWith(['Task: act.downloadResearchData']);
+    backendAnswers();
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
+    expect(screen.getByRole('option', { name: 'Echocardiogram' })).toHaveValue('echo');
+    expect(screen.queryByRole('option', { name: 'RHD Echocardiogram' })).not.toBeInTheDocument();
   });
 
   it('says a clinician gets the identifiers', async () => {

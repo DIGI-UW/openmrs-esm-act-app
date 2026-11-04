@@ -24,6 +24,7 @@ export interface DownloadResult {
 interface FormResource {
   uuid: string;
   name: string;
+  display?: string;
   retired: boolean;
   resources: Array<{ name: string }>;
 }
@@ -39,14 +40,15 @@ interface FormSchema {
   pages?: Array<{ sections?: Array<{ questions?: Array<SchemaQuestion> }> }>;
 }
 
-const formsUrl = `${restBaseUrl}/form?v=custom:(uuid,name,retired,resources:(name))`;
+const formsUrl = `${restBaseUrl}/form?v=custom:(uuid,name,display,retired,resources:(name))`;
 
 /** The forms the chart's form engine opens: those with a JSON schema, as O3 lists them. */
 export function useDownloadForms() {
   const { data, error, isLoading } = useSWR<Array<DownloadForm>, Error>(formsUrl, async () =>
     (await openmrsFetch<{ results: Array<FormResource> }>(formsUrl)).data.results
       .filter((form) => !form.retired && form.resources?.some((resource) => resource.name === 'JSON schema'))
-      .map(({ uuid, name }) => ({ uuid, name }))
+      // The name users see: the server's display, which a ui.i18n.Form.name message can set (AR-184).
+      .map(({ uuid, name, display }) => ({ uuid, name: display || name }))
       .sort((a, b) => a.name.localeCompare(b.name)),
   );
   return { forms: data ?? [], error, isLoading };
