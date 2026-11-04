@@ -386,7 +386,7 @@ describe('Dashboard', () => {
     // Each column reads its count, its share of the whole and its band.
     expect(texts('dashboard-age')).toEqual(['267%10-19', '133%20-39']);
     expect(screen.getByRole('list', { name: 'Age' })).toBeInTheDocument();
-    expect(texts('dashboard-category')).toEqual(['RHD B2', 'RHD A1']);
+    expect(texts('dashboard-category')).toEqual(['RHD A1', 'RHD B2']);
   });
 
   it("draws the RHD care cascade's steps as bars, printing each step's count and share of the step before", async () => {
@@ -456,10 +456,10 @@ describe('Dashboard', () => {
     ).toEqual(['0%', '100%']);
 
     const diseases = screen.getAllByTestId('dashboard-category');
-    expect(fills().slice(0, 2)).toEqual(['100%', '50%']);
-    await userEvent.click(within(diseases[1]).getByRole('button', { name: 'RHD A' }));
+    expect(fills().slice(0, 2)).toEqual(['50%', '100%']);
+    await userEvent.click(within(diseases[0]).getByRole('button', { name: 'RHD A' }));
     // The one disease left drawn fills the width.
-    expect(fills().slice(0, 2)).toEqual(['0%', '100%']);
+    expect(fills().slice(0, 2)).toEqual(['100%', '0%']);
 
     await userEvent.click(within(screen.getByRole('list', { name: 'Urgency' })).getByRole('button', { name: URGENT }));
     expect(segmentsOf('dashboard-waitlist-total')).toEqual([[], [`${URGENT}: 1`]]);
@@ -1651,6 +1651,8 @@ describe('Dashboard', () => {
       );
       // The sections in the order the page shows them.
       expect([...new Set(rows.map(([section]) => section))].slice(0, 2)).toEqual(['Key figures', 'Registrant status']);
+      // The diseases in the order the Dashboard lists them.
+      expect(rows.filter(([, group]) => group === 'Disease').map(([, , label]) => label)).toEqual(['RHD A', 'RHD B']);
       expect(rows.at(-1)[0]).toBe('Screening, from registrations');
       const groupsOf = (name: string) => [
         ...new Set(rows.filter(([section]) => section === name).map(([, group]) => group)),
