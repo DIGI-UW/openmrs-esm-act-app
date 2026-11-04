@@ -26,6 +26,46 @@ describe('dashboard counts', () => {
     expect(counts.category.map(({ label }) => label)).toEqual(['RHD A', 'RHD, details not recorded']);
   });
 
+  it('lists the RHD stages A to D, then RHD with no stage or no details recorded, then the other diseases by name, whatever their counts', () => {
+    const counts = registrantCounts(
+      Object.entries({
+        'Other heart disease': 9,
+        'Acute rheumatic fever': 8,
+        'RHD, details not recorded': 7,
+        'Congenital heart disease': 6,
+        'RHD C/RHD D': 5,
+        'No diagnosis yet': 4,
+        'RHD, stage not recorded': 3,
+        'RHD A': 2,
+        Normal: 1,
+      }).map(([label, patients]) => ({ breakdown: 'disease', label, patients })),
+    );
+
+    expect(counts.category.map(({ label }) => label)).toEqual([
+      'RHD A',
+      'RHD C/RHD D',
+      'RHD, stage not recorded',
+      'RHD, details not recorded',
+      'Acute rheumatic fever',
+      'Congenital heart disease',
+      'No diagnosis yet',
+      'Normal',
+      'Other heart disease',
+    ]);
+  });
+
+  it('keeps the RHD stages in order A, B, C/D when the later stages have more patients', () => {
+    const counts = registrantCounts(
+      Object.entries({ 'RHD C/RHD D': 3, 'RHD B': 2, 'RHD A': 1 }).map(([label, patients]) => ({
+        breakdown: 'disease',
+        label,
+        patients,
+      })),
+    );
+
+    expect(counts.category.map(({ label }) => label)).toEqual(['RHD A', 'RHD B', 'RHD C/RHD D']);
+  });
+
   it('counts nobody active when the report has no Active row', () => {
     expect(registrantCounts([]).active).toBe(0);
     expect(registrantCounts([]).registered).toBe(0);
