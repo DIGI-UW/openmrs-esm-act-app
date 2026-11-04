@@ -1,16 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
-import {
-  CardHeader,
-  ConfigurableLink,
-  formatDate,
-  getAssignedExtensions,
-  parseDate,
-  useAssignedExtensions,
-  useConfig,
-  useExtensionStore,
-} from '@openmrs/esm-framework';
+import { CardHeader, ConfigurableLink, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { useChartPagePath } from '../chart-page-path';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useOralEntries } from '../prophylaxis-page/prophylaxis-page.resource';
@@ -42,16 +34,6 @@ function useRegimenLabel() {
   };
 }
 
-/** The Prophylaxis page's path, found in the chart's nav as ChartReview finds dashboards, or null when it is not there. */
-function useProphylaxisPagePath() {
-  // Re-renders when a dashboard group's slot fills, which getAssignedExtensions does not subscribe to.
-  useExtensionStore();
-  const page = useAssignedExtensions('patient-chart-dashboard-slot')
-    .flatMap((link) => (link.config?.slotName ? getAssignedExtensions(link.config.slotName) : [link]))
-    .find((link) => link.name === 'act-prophylaxis-dashboard-link');
-  return page ? ({ ...page.meta, ...page.config }.path as string) : null;
-}
-
 const date = (value: string | null) => (value ? formatDate(parseDate(value), { time: false }) : '--');
 
 /** A fraction as a whole percentage, as ACT 2.0 showed adherence. */
@@ -65,7 +47,7 @@ export default function ProphylaxisCard({ patientUuid, title, historyLink = true
   const { prescription } = usePrescription(patientUuid, prophylaxisUpdate.concepts);
   const prescribed = prescription?.main;
   const regimenLabel = useRegimenLabel();
-  const pagePath = useProphylaxisPagePath();
+  const pagePath = useChartPagePath('act-prophylaxis-dashboard-link');
   // An oral regimen has no doses to count on time, so the card shows the latest reported adherence instead.
   const oral = summary?.type === 'Oral';
   const { entries } = useOralEntries(oral ? patientUuid : null);
