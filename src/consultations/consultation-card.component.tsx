@@ -1,8 +1,18 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText } from '@carbon/react';
-import { AddIcon, CardHeader, EditIcon, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import {
+  AddIcon,
+  CardHeader,
+  ConfigurableLink,
+  EditIcon,
+  formatDate,
+  parseDate,
+  useConfig,
+} from '@openmrs/esm-framework';
+import { useChartPagePath } from '../chart-page-path';
 import { type Config } from '../config-schema';
+import { patientChartUrl } from '../patient-chart-url';
 import { useNextCardiologyVisit } from '../patient-status/cardiology.resource';
 import { daysUntil } from '../patient-status/due-tone';
 import { useStartConsultation } from './consultations.component';
@@ -13,7 +23,7 @@ import styles from '../styles/summary-card.scss';
 /**
  * The patient summary's Consultation visits card, as the prototype's: the last consultation, the next cardiology
  * review (red once overdue), the diagnosis and the cardiac clinic, with Start consultation for the clinician and Edit
- * under the last consultation, which reopens it.
+ * under the last consultation, which reopens it. Details opens the Consultation visits page, which lists the conditions.
  */
 export default function ConsultationCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -23,6 +33,7 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
   const { diagnosis, isLoading: diagnosisLoading } = useLatestDiagnosis(patientUuid);
   const { attributes } = usePersonDetails(patientUuid);
   const start = useStartConsultation(patientUuid);
+  const pagePath = useChartPagePath('act-consultations-dashboard-link');
   const [last] = consultations;
   // The clinician records the diagnosis on the consultation (AR-167): the latest one, edited, or a first one.
   const updateDiagnosis = () => (last ? start.edit(last.uuid) : start.start());
@@ -50,17 +61,24 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
   return (
     <div className={styles.card}>
       <CardHeader title={t('consultationVisits', 'Consultation visits')}>
-        {start && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            disabled={start.isOpening}
-            onClick={start.start}
-          >
-            {t('startConsultation', 'Start consultation')}
-          </Button>
-        )}
+        <div className={styles.actions}>
+          {pagePath && (
+            <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`} className={styles.headerLink}>
+              {t('details', 'Details')}
+            </ConfigurableLink>
+          )}
+          {start && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={(props) => <AddIcon size={16} {...props} />}
+              disabled={start.isOpening}
+              onClick={start.start}
+            >
+              {t('startConsultation', 'Start consultation')}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       {isLoading || diagnosisLoading ? (
         <SkeletonText paragraph lineCount={2} />
