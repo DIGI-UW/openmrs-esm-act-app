@@ -236,6 +236,25 @@ interface SectionState {
   isEmpty: boolean;
 }
 
+function SectionError({ name, retry }: { name: string; retry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.state}>
+      <InlineNotification
+        kind="error"
+        statusIconDescription={t('errorIcon', 'error icon')}
+        lowContrast
+        hideCloseButton
+        title={t('couldNotLoadSection', '{{section}} could not load', { section: name })}
+        subtitle={t('restOfDashboardUpToDate', 'The rest of the Dashboard is up to date.')}
+      />
+      <Button size="md" onClick={() => retry()}>
+        {t('tryAgain', 'Try again')}
+      </Button>
+    </div>
+  );
+}
+
 function Section({
   title,
   name = title,
@@ -279,19 +298,7 @@ function Section({
       {description && <p className={styles.description}>{description}</p>}
       {controls}
       {state.error ? (
-        <div className={styles.state}>
-          <InlineNotification
-            kind="error"
-            statusIconDescription={t('errorIcon', 'error icon')}
-            lowContrast
-            hideCloseButton
-            title={t('couldNotLoadSection', '{{section}} could not load', { section: name })}
-            subtitle={t('restOfDashboardUpToDate', 'The rest of the Dashboard is up to date.')}
-          />
-          <Button size="md" onClick={() => state.retry()}>
-            {t('tryAgain', 'Try again')}
-          </Button>
-        </div>
+        <SectionError name={name} retry={state.retry} />
       ) : state.isLoading ? (
         <SkeletonText paragraph lineCount={5} />
       ) : state.isEmpty ? (
@@ -536,6 +543,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
     })
     .sort((a, b) => (measureOrder.indexOf(a.measure) + 1 || 99) - (measureOrder.indexOf(b.measure) + 1 || 99));
   const waitlistFigures = measures.filter((measure) => waitlistMeasures.includes(measure.measure));
+  const onlyWaitlistFigures = Boolean(waitlistReport.error) && !optimisationReport.error && waitlistFigures.length > 0;
   const optimisationMeasures = measures.filter((measure) => !waitlistMeasures.includes(measure.measure));
 
   // The report's first step is active RHD, which is not part of screening; the rest are named as the design reads them.
@@ -664,7 +672,9 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           asOf,
         ),
       ),
-      ...loaded(optimisationReport, () => measureRows(waitlistSection, waitlistFigures)),
+    ]),
+    ...loaded(optimisationReport, () => measureRows(waitlistSection, waitlistFigures)),
+    ...loaded(waitlistReport, () => [
       ...countRows(
         waitlistSection,
         t('performedLast12Months', 'Performed in the last 12 months'),
@@ -836,20 +846,26 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             'waitlistDescription',
             "Open recommendations in each active patient's latest consultation, by urgency",
           )}
-          state={stateOf(
-            waitlistReport,
-            !waitlist.total &&
-              !waitlist.performed.bmv &&
-              !waitlist.performed.surgery &&
-              !optimisationReport.error &&
-              waitlistFigures.every((measure) => !measure.done && !measure.notDone),
-          )}
+          state={
+            onlyWaitlistFigures
+              ? stateOf(optimisationReport, false)
+              : stateOf(
+                  waitlistReport,
+                  !waitlist.total &&
+                    !waitlist.performed.bmv &&
+                    !waitlist.performed.surgery &&
+                    !optimisationReport.error &&
+                    waitlistFigures.every((measure) => !measure.done && !measure.notDone),
+                )
+          }
           wide
           collapse={collapsible('waitlist')}
           exportId="waitlist"
           {...section}
         >
-          {waitlistAsTable ? (
+          {onlyWaitlistFigures ? (
+            <SectionError name={waitlistSection} retry={() => void waitlistReport.mutate()} />
+          ) : waitlistAsTable ? (
             <div className={styles.tableContainer}>
               <Table size="sm" aria-label={t('proceduralWaitlist', 'Procedural waitlist')}>
                 <TableHead>
@@ -919,10 +935,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           )}
           {optimisationReport.error ? (
             <p className={styles.performed}>
-              {t(
-                'waitlistFiguresCouldNotLoad',
-                'Open procedural recommendation and Recommended procedures done could not load',
-              )}
+              {t('waitlistFiguresCouldNotLoad', '{{open}} and {{done}} could not load', {
+                open: measureLabel(t, waitlistMeasures[0]),
+                done: measureLabel(t, waitlistMeasures[1]),
+              })}
             </p>
           ) : (
             waitlistFigures.length > 0 && (
@@ -936,33 +952,39 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               </>
             )
           )}
-          <div className={styles.sectionFooter}>
-            <p className={styles.performed} data-testid="dashboard-performed">
-              <Trans
-                t={t}
-                i18nKey="performedInYear"
-                defaults="Performed in the 12 months to the date shown: mitral balloon valvuloplasty <bmv>{{bmv}}</bmv>, surgery <surgery>{{surgery}}</surgery>"
-                values={waitlist.performed}
-                components={{
-                  bmv: (
-                    <CountLink
-                      value={waitlist.performed.bmv}
-                      figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Mitral balloon valvuloplasty' }}
-                    />
-                  ),
-                  surgery: (
-                    <CountLink
-                      value={waitlist.performed.surgery}
-                      figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' }}
-                    />
-                  ),
-                }}
-              />
-            </p>
-            <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
-              {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
-            </Button>
-          </div>
+          {!onlyWaitlistFigures && (
+            <div className={styles.sectionFooter}>
+              <p className={styles.performed} data-testid="dashboard-performed">
+                <Trans
+                  t={t}
+                  i18nKey="performedInYear"
+                  defaults="Performed in the 12 months to the date shown: mitral balloon valvuloplasty <bmv>{{bmv}}</bmv>, surgery <surgery>{{surgery}}</surgery>"
+                  values={waitlist.performed}
+                  components={{
+                    bmv: (
+                      <CountLink
+                        value={waitlist.performed.bmv}
+                        figure={{
+                          figure: 'waitlist',
+                          breakdown: 'performed',
+                          procedure: 'Mitral balloon valvuloplasty',
+                        }}
+                      />
+                    ),
+                    surgery: (
+                      <CountLink
+                        value={waitlist.performed.surgery}
+                        figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' }}
+                      />
+                    ),
+                  }}
+                />
+              </p>
+              <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
+                {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
+              </Button>
+            </div>
+          )}
         </Section>
         <Section
           title={t('medicalOptimisation', 'Medical optimisation')}

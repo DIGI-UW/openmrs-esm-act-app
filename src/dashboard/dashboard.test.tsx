@@ -802,6 +802,59 @@ describe('Dashboard', () => {
     expect(texts('dashboard-tile')[3]).toBe('–Waiting for a procedurecould not load');
   });
 
+  it('still draws the recommendation figures in the waitlist when only the waitlist counts fail', async () => {
+    await signIn(DASHBOARD_WAITLIST);
+    renderPage();
+
+    await screen.findByText('Procedural waitlist could not load');
+    const waitlist = exportSection('waitlist');
+    expect(within(waitlist).getByText('Procedural waitlist could not load')).toBeInTheDocument();
+    expect(
+      within(waitlist)
+        .getAllByTestId('dashboard-procedure-measure')
+        .map((row) => row.textContent),
+    ).toEqual([
+      'Open procedural recommendation20%2 done, 8 not done, of 10',
+      'Recommended procedures done25%1 done, 3 not done, of 4',
+    ]);
+    expect(within(waitlist).queryByTestId('dashboard-performed')).not.toBeInTheDocument();
+
+    await userEvent.click(within(waitlist).getByRole('button', { name: 'Try again' }));
+
+    expect(mutates[DASHBOARD_WAITLIST]).toHaveBeenCalledTimes(1);
+    expect(mutates[OPTIMISATION]).not.toHaveBeenCalled();
+  });
+
+  it('draws no recommendation figures from a failed optimisation report that kept its earlier rows', async () => {
+    await signIn(DASHBOARD_WAITLIST);
+    const loaded = vi.mocked(useReportDataset).getMockImplementation();
+    vi.mocked(useReportDataset).mockImplementation((report, params) => ({
+      ...loaded(report, params),
+      ...(report === OPTIMISATION && { error: new Error('The server did not answer') }),
+    }));
+    renderPage();
+
+    expect(await screen.findByText('Medical optimisation could not load')).toBeInTheDocument();
+    expect(screen.getByText('Procedural waitlist could not load')).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-procedure-measure')).not.toBeInTheDocument();
+
+    await userEvent.click(within(exportSection('waitlist')).getByRole('button', { name: 'Try again' }));
+
+    expect(mutates[DASHBOARD_WAITLIST]).toHaveBeenCalledTimes(1);
+  });
+
+  it('says the waitlist could not load while the optimisation report is still loading', async () => {
+    await signIn(DASHBOARD_WAITLIST);
+    const loaded = vi.mocked(useReportDataset).getMockImplementation();
+    vi.mocked(useReportDataset).mockImplementation((report, params) => ({
+      ...loaded(report, params),
+      ...(report === OPTIMISATION && { rows: [], isLoading: true }),
+    }));
+    renderPage();
+
+    expect(await screen.findByText('Procedural waitlist could not load')).toBeInTheDocument();
+  });
+
   it('says a chart within a section has nobody to count, rather than drawing it empty', async () => {
     await signIn(undefined, {
       [DIAGNOSES]: [{ breakdown: 'category', category: 'Normal', details: null, patients: 1 }],
@@ -1624,12 +1677,14 @@ describe('Dashboard', () => {
       expect(written.has('Procedural waitlist')).toBe(true);
     });
 
-    it('leaves the recommendation figures out with the waitlist when the waitlist could not load', async () => {
+    it('keeps only the recommendation figures in the waitlist when the waitlist could not load', async () => {
       const opened = await openExport(DASHBOARD_WAITLIST);
       await act(() => opened.run({ format: 'csv', sections: allButRunCharts, orientation: 'portrait' }, close));
 
       const rows = downloaded()[2];
-      expect(rows.filter(([section]) => section === 'Procedural waitlist')).toEqual([]);
+      expect([
+        ...new Set(rows.filter(([section]) => section === 'Procedural waitlist').map(([, group]) => group)),
+      ]).toEqual(['Open procedural recommendation', 'Recommended procedures done']);
       expect(rows.some(([section]) => section === 'Medical optimisation')).toBe(true);
     });
 
