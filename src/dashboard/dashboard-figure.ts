@@ -67,6 +67,9 @@ const withStep = (figure: Figure): Figure =>
 export const isWidened = (figure: Figure) =>
   JSON.stringify(figureParams(withStep(figure))) === JSON.stringify(figureParams(withStep(widened(figure))));
 
+/** Optimisation report measures the Procedural waitlist draws instead of Medical optimisation. */
+export const waitlistMeasures = ['interventionAssigned', 'interventions'];
+
 export function measureLabel(t: TFunction, measure: string) {
   const labels: Record<string, string> = {
     consultations: t('consultationsLastYear', 'Consultations in the last year'),
@@ -127,7 +130,9 @@ export function figureNames(t: TFunction, figure: Figure, cascadeSteps: Config['
     }
     case 'optimisation':
       return {
-        section: t('medicalOptimisation', 'Medical optimisation'),
+        section: waitlistMeasures.includes(figure.measure)
+          ? t('proceduralWaitlist', 'Procedural waitlist')
+          : t('medicalOptimisation', 'Medical optimisation'),
         label: [measureLabel(t, figure.measure), figure.outcome === 'notDone' ? t('notDone', 'Not done') : undefined]
           .filter(Boolean)
           .join(', '),
