@@ -72,6 +72,7 @@ import {
   type Section as FigureSection,
   sections,
   useCountParams,
+  waitlistMeasures,
 } from './dashboard-figure';
 import { RunChartCard } from '../run-charts/run-chart-card.component';
 import { DashboardFigure } from './dashboard-figure.component';
@@ -435,6 +436,57 @@ const earliestAsOf = '1900-01-01';
 // The design's order; a measure it does not name, such as consultations, comes last.
 const measureOrder = ['retainedInCare', 'echocardiogram', 'interventionAssigned', 'interventions', 'warfarin'];
 
+type Measure = { measure: string; label: string; done: number; notDone: number | null };
+
+function MeasureBars({ measures, name, testId }: { measures: Array<Measure>; name: string; testId: string }) {
+  const { t } = useTranslation();
+  return (
+    <SegmentedBars
+      name={name}
+      segments={[
+        { label: t('done', 'Done'), colour: doneColours[0] },
+        { label: t('notDone', 'Not done'), colour: doneColours[1] },
+      ]}
+      rows={measures
+        .filter((measure): measure is Measure & { notDone: number } => measure.notDone !== null)
+        .map((measure) => ({
+          key: measure.measure,
+          label: measure.label,
+          values: [measure.done, measure.notDone],
+          end: (
+            <>
+              <span className={styles.share}>{share(measure.done, measure.done + measure.notDone)}%</span>
+              <span className={styles.doneNotDone}>
+                <Trans
+                  t={t}
+                  i18nKey="doneNotDoneOf"
+                  defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
+                  values={{ done: measure.done, notDone: measure.notDone, total: measure.done + measure.notDone }}
+                  components={{
+                    done: (
+                      <CountLink
+                        value={measure.done}
+                        figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
+                      />
+                    ),
+                    notDone: (
+                      <CountLink
+                        value={measure.notDone}
+                        figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
+                      />
+                    ),
+                  }}
+                />
+              </span>
+            </>
+          ),
+        }))}
+      whole
+      testId={testId}
+    />
+  );
+}
+
 function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onShowAll: () => void }) {
   const { t } = useTranslation();
   const { careCascade, dashboard } = useConfig<Config>();
@@ -483,6 +535,8 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       return { measure: String(row.measure), label: measureLabel(t, String(row.measure)), done, notDone };
     })
     .sort((a, b) => (measureOrder.indexOf(a.measure) + 1 || 99) - (measureOrder.indexOf(b.measure) + 1 || 99));
+  const waitlistFigures = measures.filter((measure) => waitlistMeasures.includes(measure.measure));
+  const optimisationMeasures = measures.filter((measure) => !waitlistMeasures.includes(measure.measure));
 
   // The report's first step is active RHD, which is not part of screening; the rest are named as the design reads them.
   const screeningStepNames: Record<string, string> = {
@@ -533,6 +587,25 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const loaded = (report: { error?: Error }, rows: () => Array<CountRow>) => (report.error ? [] : rows());
   const waitlistSection = t('proceduralWaitlist', 'Procedural waitlist');
   const activeName = t('activeRegistrants', 'Active registrants');
+  const ofTheActive = t(
+    'medicalOptimisationDescription',
+    'Of the {{count}} active registrants, unless a row says otherwise',
+    { count: registrants.active },
+  );
+  const measureRows = (sectionName: string, list: Array<Measure>) =>
+    list.flatMap((measure) =>
+      countRows(
+        sectionName,
+        measure.label,
+        measure.notDone === null
+          ? [{ label: '', value: measure.done }]
+          : [
+              { label: t('done', 'Done'), value: measure.done },
+              { label: t('notDone', 'Not done'), value: measure.notDone },
+            ],
+        asOf,
+      ),
+    );
   const csvRows: Array<CountRow> = [
     ...loaded(registrantsReport, () =>
       countRows(
@@ -591,6 +664,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           asOf,
         ),
       ),
+      ...loaded(optimisationReport, () => measureRows(waitlistSection, waitlistFigures)),
       ...countRows(
         waitlistSection,
         t('performedLast12Months', 'Performed in the last 12 months'),
@@ -602,19 +676,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       ),
     ]),
     ...loaded(optimisationReport, () =>
-      measures.flatMap((measure) =>
-        countRows(
-          t('medicalOptimisation', 'Medical optimisation'),
-          measure.label,
-          measure.notDone === null
-            ? [{ label: '', value: measure.done }]
-            : [
-                { label: t('done', 'Done'), value: measure.done },
-                { label: t('notDone', 'Not done'), value: measure.notDone },
-              ],
-          asOf,
-        ),
-      ),
+      measureRows(t('medicalOptimisation', 'Medical optimisation'), optimisationMeasures),
     ),
     ...(dashboard.showScreening && !screeningReport.error && !diagnosesReport.error
       ? [
@@ -774,7 +836,14 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             'waitlistDescription',
             "Open recommendations in each active patient's latest consultation, by urgency",
           )}
-          state={stateOf(waitlistReport, !waitlist.total && !waitlist.performed.bmv && !waitlist.performed.surgery)}
+          state={stateOf(
+            waitlistReport,
+            !waitlist.total &&
+              !waitlist.performed.bmv &&
+              !waitlist.performed.surgery &&
+              !optimisationReport.error &&
+              waitlistFigures.every((measure) => !measure.done && !measure.notDone),
+          )}
           wide
           collapse={collapsible('waitlist')}
           exportId="waitlist"
@@ -848,6 +917,25 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               testId="dashboard-waitlist-total"
             />
           )}
+          {optimisationReport.error ? (
+            <p className={styles.performed}>
+              {t(
+                'waitlistFiguresCouldNotLoad',
+                'Open procedural recommendation and Recommended procedures done could not load',
+              )}
+            </p>
+          ) : (
+            waitlistFigures.length > 0 && (
+              <>
+                <MeasureBars
+                  measures={waitlistFigures}
+                  name={t('recommendationOutcome', 'Recommendation outcome')}
+                  testId="dashboard-procedure-measure"
+                />
+                <p className={styles.performed}>{ofTheActive}</p>
+              </>
+            )
+          )}
           <div className={styles.sectionFooter}>
             <p className={styles.performed} data-testid="dashboard-performed">
               <Trans
@@ -878,64 +966,18 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         </Section>
         <Section
           title={t('medicalOptimisation', 'Medical optimisation')}
-          description={t(
-            'medicalOptimisationDescription',
-            'Of the {{count}} active registrants, unless a row says otherwise',
-            { count: registrants.active },
-          )}
+          description={ofTheActive}
           state={stateOf(
             optimisationReport,
-            measures.every((measure) => !measure.done && !measure.notDone),
+            optimisationMeasures.every((measure) => !measure.done && !measure.notDone),
           )}
           wide
           collapse={collapsible('optimisation')}
           exportId="optimisation"
           {...section}
         >
-          <SegmentedBars
-            name={t('outcome', 'Outcome')}
-            segments={[
-              { label: t('done', 'Done'), colour: doneColours[0] },
-              { label: t('notDone', 'Not done'), colour: doneColours[1] },
-            ]}
-            rows={measures
-              .filter((measure): measure is (typeof measures)[number] & { notDone: number } => measure.notDone !== null)
-              .map((measure) => ({
-                key: measure.measure,
-                label: measure.label,
-                values: [measure.done, measure.notDone],
-                end: (
-                  <>
-                    <span className={styles.share}>{share(measure.done, measure.done + measure.notDone)}%</span>
-                    <span className={styles.doneNotDone}>
-                      <Trans
-                        t={t}
-                        i18nKey="doneNotDoneOf"
-                        defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
-                        values={{ done: measure.done, notDone: measure.notDone, total: measure.done + measure.notDone }}
-                        components={{
-                          done: (
-                            <CountLink
-                              value={measure.done}
-                              figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
-                            />
-                          ),
-                          notDone: (
-                            <CountLink
-                              value={measure.notDone}
-                              figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
-                            />
-                          ),
-                        }}
-                      />
-                    </span>
-                  </>
-                ),
-              }))}
-            whole
-            testId="dashboard-measure"
-          />
-          {measures
+          <MeasureBars measures={optimisationMeasures} name={t('outcome', 'Outcome')} testId="dashboard-measure" />
+          {optimisationMeasures
             .filter((measure) => measure.notDone === null)
             .map((measure) => (
               <p key={measure.measure} className={styles.sectionFooter} data-testid="dashboard-measure-count">

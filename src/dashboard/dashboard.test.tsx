@@ -272,6 +272,10 @@ const summaryUrls = () =>
 
 const texts = (testId: string) => screen.getAllByTestId(testId).map((element) => element.textContent);
 
+const exportSection = (section: string) =>
+  // eslint-disable-next-line testing-library/no-node-access
+  document.querySelector<HTMLElement>(`[data-export-section="${section}"]`);
+
 function chartData(chart: unknown, title: string) {
   const calls = vi.mocked(chart as typeof DonutChart).mock.calls.map(([props]) => props);
   return calls.filter((props) => props.options?.accessibility?.svgAriaLabel === title).at(-1)?.data;
@@ -525,18 +529,82 @@ describe('Dashboard', () => {
 
     renderPage();
 
-    expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(5);
+    expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(3);
     expect(texts('dashboard-measure')).toEqual([
       'Retained in care (seen in the last 7 months)80%8 done, 2 not done, of 10',
       'Echocardiogram in the last 13 months30%3 done, 7 not done, of 10',
-      'Open procedural recommendation20%2 done, 8 not done, of 10',
-      'Recommended procedures done25%1 done, 3 not done, of 4',
       'On warfarin, with an INR in the last 90 days50%1 done, 1 not done, of 2',
     ]);
     expect(texts('dashboard-measure-count')).toEqual(['Consultations in the last year12']);
-    expect(screen.getByText(/^Of the \d+ active registrants, unless a row says otherwise$/)).toBeInTheDocument();
+    expect(
+      within(exportSection('optimisation')).getByText(/^Of the \d+ active registrants, unless a row says otherwise$/),
+    ).toBeInTheDocument();
     expect(segmentsOf('dashboard-measure')[1]).toEqual(['Done: 3', 'Not done: 7']);
     expect(keyColours('Outcome')).toEqual({ Done: '#009d9a', 'Not done': '#d0e2ff' });
+  });
+
+  it('draws the open and done procedural recommendations in the Procedural waitlist, with their counts', async () => {
+    await signIn();
+
+    renderPage();
+
+    await screen.findAllByTestId('dashboard-procedure-measure');
+    const waitlist = exportSection('waitlist');
+    expect(
+      within(waitlist)
+        .getAllByTestId('dashboard-procedure-measure')
+        .map((row) => row.textContent),
+    ).toEqual([
+      'Open procedural recommendation20%2 done, 8 not done, of 10',
+      'Recommended procedures done25%1 done, 3 not done, of 4',
+    ]);
+    expect(
+      within(waitlist).getByText(/^Of the 3 active registrants, unless a row says otherwise$/),
+    ).toBeInTheDocument();
+    expect(segmentsOf('dashboard-procedure-measure')[0]).toEqual(['Done: 2', 'Not done: 8']);
+  });
+
+  describe('when nobody is waiting for a procedure', () => {
+    const nobodyWaiting = {
+      [DASHBOARD_WAITLIST]: [
+        { breakdown: 'total', procedure: 'All', urgency: null, patients: 0, recommendations: 0 },
+        ...performed(0, 0),
+      ],
+    };
+
+    it('still draws the recommendation figures in the Procedural waitlist', async () => {
+      await signIn(undefined, nobodyWaiting);
+      renderPage();
+
+      expect(await screen.findAllByTestId('dashboard-procedure-measure')).toHaveLength(2);
+    });
+
+    it('still says the recommendation figures could not load when their report fails', async () => {
+      await signIn(OPTIMISATION, nobodyWaiting);
+      renderPage();
+
+      expect(
+        await screen.findByText('Open procedural recommendation and Recommended procedures done could not load'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('says Medical optimisation has nobody to count when only the recommendation figures have patients', async () => {
+    await signIn(undefined, {
+      [OPTIMISATION]: [
+        { measure: 'consultations', done: 0, not_done: null },
+        { measure: 'echocardiogram', done: 0, not_done: 0 },
+        { measure: 'retainedInCare', done: 0, not_done: 0 },
+        { measure: 'interventionAssigned', done: 2, not_done: 8 },
+        { measure: 'interventions', done: 1, not_done: 3 },
+        { measure: 'warfarin', done: 0, not_done: 0 },
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findAllByTestId('dashboard-procedure-measure')).toHaveLength(2);
+    expect(within(exportSection('optimisation')).getByText('No patients to count')).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-measure')).not.toBeInTheDocument();
   });
 
   it('draws the screening cascade as bars and the diagnoses as a donut, each printing its counts', async () => {
@@ -700,7 +768,12 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findByText('Medical optimisation could not load')).toBeInTheDocument();
-    expect(screen.getAllByText(/ could not load$/)).toHaveLength(1);
+    // The waitlist draws two of this report's figures, so it flags them and keeps its own counts.
+    expect(
+      screen.getByText('Open procedural recommendation and Recommended procedures done could not load'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/ could not load$/)).toHaveLength(2);
+    expect(screen.getAllByTestId('dashboard-waitlist-total')).toHaveLength(2);
     expect(texts('dashboard-status')).toEqual(['Active375%', 'Voluntary inactivity125%']);
     expect(texts('dashboard-cascade-step')).toHaveLength(5);
 
@@ -1090,6 +1163,7 @@ describe('Dashboard', () => {
       expect(
         await screen.findByText(/^Opened from the Dashboard: Registrant status, Active, 1 patient/),
       ).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toContain('Registrant status');
       expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({
         endDate: today,
         cardiacClinic: 'lira',
@@ -1189,6 +1263,28 @@ describe('Dashboard', () => {
       ).toBeInTheDocument();
       expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual({ endDate: today, measure: 'consultations' });
       expect(screen.queryByRole('button', { name: /^Medical optimisation: / })).not.toBeInTheDocument();
+      const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+      expect(headers).toContain('Consultations in the last year');
+      expect(headers).not.toContain('Medical optimisation');
+    });
+
+    it('names the Procedural waitlist as where a list opened from its recommendation figures came from', async () => {
+      await signIn(undefined, figureRows);
+      renderPage();
+
+      const [, done] = await screen.findAllByTestId('dashboard-procedure-measure');
+      await userEvent.click(within(done).getByRole('link', { name: '1' }));
+
+      expect(
+        await screen.findByText(/^Opened from the Dashboard: Procedural waitlist, Recommended procedures done, /),
+      ).toBeInTheDocument();
+      expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual(
+        expect.objectContaining({ measure: 'interventions', outcome: 'done' }),
+      );
+      // Its Done and Not done values are the measure's, so the column is headed by the measure.
+      const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+      expect(headers).toContain('Recommended procedures done');
+      expect(headers).not.toContain('Procedural waitlist');
     });
 
     it('widens a performed figure to every procedure performed, not to the open waitlist', async () => {
@@ -1475,6 +1571,8 @@ describe('Dashboard', () => {
         expect.arrayContaining([
           ['Key figures', '', 'Registered', '4', today, 'every clinic'],
           ['Registrant status', '', 'Voluntary inactivity', '1', today, 'every clinic'],
+          ['Procedural waitlist', 'Open procedural recommendation', 'Done', '2', today, 'every clinic'],
+          ['Procedural waitlist', 'Recommended procedures done', 'Not done', '3', today, 'every clinic'],
           [
             'Procedural waitlist',
             'Performed in the last 12 months',
@@ -1496,6 +1594,22 @@ describe('Dashboard', () => {
       // The sections in the order the page shows them.
       expect([...new Set(rows.map(([section]) => section))].slice(0, 2)).toEqual(['Key figures', 'Registrant status']);
       expect(rows.at(-1)[0]).toBe('Screening, from registrations');
+      const groupsOf = (name: string) => [
+        ...new Set(rows.filter(([section]) => section === name).map(([, group]) => group)),
+      ];
+      expect(groupsOf('Procedural waitlist')).toEqual([
+        'Balloon valvuloplasty',
+        'Mitral valve repair/replacement',
+        'Open procedural recommendation',
+        'Recommended procedures done',
+        'Performed in the last 12 months',
+      ]);
+      expect(groupsOf('Medical optimisation')).toEqual([
+        'Retained in care (seen in the last 7 months)',
+        'Echocardiogram in the last 13 months',
+        'On warfarin, with an INR in the last 90 days',
+        'Consultations in the last year',
+      ]);
     });
 
     it('gives only the sections chosen, and leaves out one that could not load rather than giving zeros', async () => {
@@ -1508,6 +1622,15 @@ describe('Dashboard', () => {
       expect(written.has('Active registrants')).toBe(false);
       expect(written.has('Medical optimisation')).toBe(false);
       expect(written.has('Procedural waitlist')).toBe(true);
+    });
+
+    it('leaves the recommendation figures out with the waitlist when the waitlist could not load', async () => {
+      const opened = await openExport(DASHBOARD_WAITLIST);
+      await act(() => opened.run({ format: 'csv', sections: allButRunCharts, orientation: 'portrait' }, close));
+
+      const rows = downloaded()[2];
+      expect(rows.filter(([section]) => section === 'Procedural waitlist')).toEqual([]);
+      expect(rows.some(([section]) => section === 'Medical optimisation')).toBe(true);
     });
 
     it("records and makes nothing once a figure's patients are open in the Dashboard's place", async () => {
