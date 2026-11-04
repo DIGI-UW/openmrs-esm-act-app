@@ -28,8 +28,8 @@ export function usePersonDetails(patientUuid: string | null) {
 }
 
 /**
- * The questions a diagnosis reads. A clinician records it on the RHD Consultation Visit (AR-167); one a Patient
- * Information recorded before then still counts, so both encounter types are read.
+ * The questions a diagnosis reads. A clinician records it on RHD Patient Information; one a consultation recorded
+ * during the AR-167 interim still counts, so both encounter types are read.
  */
 export const diagnosisConcepts = {
   encounterTypes: {
@@ -89,7 +89,7 @@ export interface DiagnosisRow {
   key: string;
   /** The consultation or Patient Information that records it, which Edit reopens. */
   encounterUuid: string;
-  /** Whether a consultation records it; otherwise a Patient Information from before AR-167. */
+  /** Whether a consultation records it (an AR-167-interim record); otherwise Patient Information. */
   onConsultation: boolean;
   diagnosis: string;
   active: string;

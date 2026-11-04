@@ -77,9 +77,9 @@ export function CompactTable<Row extends { key: string }>({
 }
 
 /**
- * Every diagnosis the patient's latest consultation records, as a table, with Edit, which reopens that consultation,
- * for a user who may record one. A diagnosis a Patient Information recorded before AR-167 is listed until a
- * consultation records one, and its Edit reopens that Patient Information.
+ * Every diagnosis the patient's latest Patient Information records, as a table, with Edit, which reopens that record,
+ * for a user who may edit one. A diagnosis an AR-167-interim consultation recorded is listed until a newer Patient
+ * Information records one, and its Edit reopens that consultation.
  */
 export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();

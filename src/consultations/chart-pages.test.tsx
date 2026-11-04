@@ -345,7 +345,7 @@ describe('chart pages by role', () => {
     expect(screen.queryByRole('button', { name: 'Edit last consultation' })).not.toBeInTheDocument();
   });
 
-  it('shows the diagnosis, from a Patient Information too, with Update diagnosis, which edits the last consultation', async () => {
+  it('shows the diagnosis, from Patient Information, with Update diagnosis, which opens that form', async () => {
     serve({
       consultations: [consultation('new', '2026-04-01')],
       patientInformation: [
@@ -368,15 +368,15 @@ describe('chart pages by role', () => {
       'Rheumatic Heart Disease/Rheumatic Fever (RHD B)',
     );
     await userEvent.click(await screen.findByRole('button', { name: /Update diagnosis/ }));
-    expect(openForm).toHaveBeenCalledWith(config.consultations.form, undefined, 'new');
+    expect(openForm).toHaveBeenCalledWith(config.patientInformationForm);
     expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie');
   });
 
-  it('offers Record diagnosis when there is none, which starts a consultation, and nothing to a user who may not record one', async () => {
+  it('offers Record diagnosis when there is none, which opens Patient Information, and nothing to a user who may not record one', async () => {
     serve();
     const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
     await userEvent.click(await screen.findByRole('button', { name: /Record diagnosis/ }));
-    expect(openForm).toHaveBeenCalledWith(config.consultations.form);
+    expect(openForm).toHaveBeenCalledWith(config.patientInformationForm);
     unmount();
 
     serve({ consultations: [consultation('new', '2026-04-01')], mayEnter: false });

@@ -203,7 +203,7 @@ describe('the Consultation visits page tables', () => {
     expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'old');
   });
 
-  it("reopens the Patient Information that recorded a diagnosis before AR-167, from its Edit", async () => {
+  it('reopens the Patient Information that recorded a diagnosis, from its Edit', async () => {
     serve({
       patientInformation: [
         {

@@ -61,10 +61,10 @@ export function ScreenPositiveTable() {
   const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
-  // The diagnosis is recorded on the RHD Consultation Visit (AR-167), so the row opens the patient's Consultation
-  // visits page, where Start consultation records it; the saved consultation takes the patient off the list.
+  // The diagnosis is recorded on Patient Information; the row opens the patient's chart, where the Consultation visits
+  // card's Record diagnosis button opens that form. A saved diagnosis takes the patient off the list.
   const recordDiagnosis = (row: ReportRow) =>
-    navigate({ to: `${window.getOpenmrsSpaBase()}patient/${String(row.patient_uuid)}/chart/act-consultations` });
+    navigate({ to: `${window.getOpenmrsSpaBase()}patient/${String(row.patient_uuid)}/chart` });
   const [filters, setFilters, filtersPending] = useScreenPositiveFilters();
   const clinicKind = useSessionClinicKind();
   const [sort, setSort] = useState<ColumnSort | null>(null);
@@ -99,7 +99,6 @@ export function ScreenPositiveTable() {
     },
     { key: 'screened', header: t('screened', 'Screened'), render: screenDate },
     { key: 'screeningSite', header: t('screeningSite', 'Screening site'), render: text('screening_site') },
-    // The follow-up status column went with the question, which AR-167 took off Patient Information.
   ];
 
   // Where the session location's kind cannot be read, opening on every clinic would show patients not its own.
@@ -192,7 +191,7 @@ export default function ScreenPositive() {
         <p className={styles.description}>
           {t(
             'diagnosisToConfirmDescription',
-            'Screen-positive patients with no diagnosis yet. Record diagnosis opens their Consultation visits, where a saved consultation with a diagnosis takes them off this list.',
+            'Screen-positive patients with no diagnosis yet. Record diagnosis opens their chart, where the Consultation visits card records one; a saved diagnosis takes them off this list.',
           )}
         </p>
         <ScreenPositiveTable />

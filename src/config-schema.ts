@@ -927,7 +927,7 @@ export const configSchema = {
     _type: Type.UUID,
     _default: 'a6646c51-130d-3b59-a442-959bea93487d',
     _description:
-      "The RHD Patient Information form: the patient's latest is edited, when it is in singleRecordForms, as by default. A diagnosis it recorded before AR-167 is listed until a consultation records one.",
+      "The RHD Patient Information form: the patient's latest is edited, when it is in singleRecordForms, as by default. A diagnosis an AR-167-interim consultation recorded is listed until a newer Patient Information records one.",
   },
   singleRecordForms: {
     _type: Type.Array,

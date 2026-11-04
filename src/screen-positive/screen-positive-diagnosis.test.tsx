@@ -40,12 +40,12 @@ describe('Screen positive, Record diagnosis', () => {
     });
   });
 
-  it("opens the patient's Consultation visits page, where Start consultation records the diagnosis", async () => {
+  it("opens the patient's chart, where the Consultation visits card records the diagnosis on Patient Information", async () => {
     render(<ScreenPositive />);
 
     await recordDiagnosis('Patient 2');
 
-    expect(navigate).toHaveBeenCalledWith({ to: '/openmrs/spa/patient/patient-2/chart/act-consultations' });
+    expect(navigate).toHaveBeenCalledWith({ to: '/openmrs/spa/patient/patient-2/chart' });
   });
 
   it('offers no action for a Screen + recorded without a form', () => {
