@@ -430,7 +430,7 @@ export const configSchema = {
       _type: Type.String,
       _default: '733a512c-3243-4e91-a44a-06a8e5384606',
       _description:
-        "The RHD Medical Optimisation report, by uuid or name: one row per measure (its measure, done and not_done columns), for the Dashboard's Medical optimisation.",
+        "The RHD Medical Optimisation report, by uuid or name: one row per measure (its measure, done and not_done columns), for the Dashboard's Medical optimisation and the two recommendation figures in its Procedural waitlist.",
     },
     screeningCascadeReport: {
       _type: Type.String,

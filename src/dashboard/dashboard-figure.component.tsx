@@ -23,6 +23,7 @@ import {
   figureNames,
   figureParams,
   isWidened,
+  measureLabel,
   patientsReport,
   rowUnit,
   useCountParams,
@@ -78,7 +79,8 @@ export function DashboardFigure({
     t('sex', 'Sex'),
     t('cardiacClinic', 'Cardiac clinic'),
     t('primaryCareClinic', 'Primary care clinic'),
-    names.section,
+    // An optimisation figure's value is its measure's Done or Not done, whichever section draws it.
+    figure.figure === 'optimisation' ? measureLabel(t, figure.measure) : names.section,
     ...(dated ? [t('date', 'Date')] : []),
   ];
   const cells = (row: Record<string, unknown>) => [

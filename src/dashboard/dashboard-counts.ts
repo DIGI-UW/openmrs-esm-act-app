@@ -10,6 +10,7 @@ export interface Count {
 }
 
 const ageBandOrder = ['0-9', '10-19', '20-39', '40+', 'Age unknown'];
+const diseaseOrder = ['RHD A', 'RHD B', 'RHD C/RHD D', 'RHD, stage not recorded', 'RHD, details not recorded'];
 
 function breakdownOf(rows: Array<ReportRow>, breakdown: string): Array<Count> {
   return rows
@@ -28,7 +29,11 @@ export function registrantCounts(rows: Array<ReportRow>) {
     age: [...ages].sort(
       (a, b) => (ageBandOrder.indexOf(a.label) + 1 || 99) - (ageBandOrder.indexOf(b.label) + 1 || 99),
     ),
-    category: breakdownOf(rows, 'disease'),
+    category: breakdownOf(rows, 'disease').sort(
+      (a, b) =>
+        (diseaseOrder.indexOf(a.label) + 1 || 99) - (diseaseOrder.indexOf(b.label) + 1 || 99) ||
+        a.label.localeCompare(b.label),
+    ),
     registered: status.reduce((sum, count) => sum + count.value, 0),
     active: status.find((count) => count.label === 'Active')?.value ?? 0,
   };
