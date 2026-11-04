@@ -45,7 +45,7 @@ function Details({ medication }: { medication: Medication }) {
   );
 }
 
-function MedicationsCard({
+export function ChartListCard<Row extends { key: string }>({
   title,
   lowercase,
   columns,
@@ -60,7 +60,7 @@ function MedicationsCard({
   rows: Array<Row>;
   isLoading: boolean;
   error?: Error;
-  add?: ReturnType<typeof useMedicationForms>['add'];
+  add?: { add: () => void; isOpening: boolean } | null;
 }) {
   const { t } = useTranslation();
   if (error) {
@@ -128,7 +128,7 @@ export default function Medications({ patientUuid }: { patientUuid: string }) {
   };
   return (
     <div className={styles.cards}>
-      <MedicationsCard
+      <ChartListCard
         title={t('activeMedications', 'Active medications')}
         lowercase={t('activeMedicationsLowercase', 'active medications')}
         columns={[startDate, details, endDate, edit]}
@@ -137,7 +137,7 @@ export default function Medications({ patientUuid }: { patientUuid: string }) {
         error={error}
         add={forms.add}
       />
-      <MedicationsCard
+      <ChartListCard
         title={t('pastMedications', 'Past medications')}
         lowercase={t('pastMedicationsLowercase', 'past medications')}
         columns={[startDate, details, endDate, edit]}

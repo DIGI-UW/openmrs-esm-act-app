@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getConfig, getDefaultsFromConfigSchema, getGlobalStore, openmrsFetch } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
-import { type ChartEncounter } from '../consultations/consultations.resource';
+import { type ChartEncounter, representation } from '../consultations/consultations.resource';
 import {
   allergiesHelper,
   allergiesOf,
   allergiesText,
+  currentAllergiesControl,
   fetchAllergiesText,
   registerAllergies,
 } from './allergies.resource';
@@ -24,13 +25,28 @@ const obs = (concept: string, value: unknown, groupMembers?: Array<unknown>) => 
   value,
   groupMembers,
 });
-const allergy = (answer: object, added?: string) =>
-  obs(c.allergy, null, [obs(c.allergy, answer), ...(added ? [obs(c.dateAdded, added)] : [])]);
+const a = config.allergies.concepts;
+const allergy = (answer: object, added?: string, { reactions = [] as Array<string>, resolved = '' } = {}) =>
+  obs(c.allergy, null, [
+    obs(c.allergy, answer),
+    ...(reactions.length
+      ? [
+          obs(
+            a.reaction,
+            null,
+            reactions.map((name) => obs(a.reaction, coded(name, name))),
+          ),
+        ]
+      : []),
+    ...(added ? [obs(c.dateAdded, added)] : []),
+    ...(resolved ? [obs(a.dateResolved, resolved)] : []),
+  ]);
 const consultation = (uuid: string, date: string, obsList: Array<unknown> = []): ChartEncounter =>
   ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, encounterProviders: [], obs: obsList }) as ChartEncounter;
 
 const penicillin = coded(penicillinAllergy, 'Penicillin (allergy)');
 const other = coded('5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'Other');
+const noKnown = coded(a.noKnownAllergies, 'No known allergies');
 
 describe('allergiesOf', () => {
   it('flags the two penicillin answers the patients report counts, and no other', () => {
@@ -42,8 +58,9 @@ describe('allergiesOf', () => {
           allergy(other),
         ]),
       ],
-      config.consultations,
-    );
+      [],
+      config,
+    ).current;
 
     expect(found.map((one) => [one.name, one.isPenicillin])).toEqual(
       expect.arrayContaining([
@@ -58,8 +75,9 @@ describe('allergiesOf', () => {
   it('flags an answer named penicillin whatever its uuid', () => {
     const found = allergiesOf(
       [consultation('one', '2026-04-01', [allergy(coded('another-concept', 'Allergy to penicillin'))])],
-      config.consultations,
-    );
+      [],
+      config,
+    ).current;
 
     expect(found.map((one) => one.isPenicillin)).toEqual([true]);
   });
@@ -70,15 +88,132 @@ describe('allergiesOf', () => {
         consultation('new', '2026-04-01', [allergy(other)]),
         consultation('old', '2025-10-01', [allergy(penicillin), allergy(other)]),
       ],
-      config.consultations,
-    );
+      [],
+      config,
+    ).current;
 
     expect(found.map((one) => one.name).sort()).toEqual(['Other', 'Penicillin (allergy)']);
   });
 
   it('has none for a patient whose consultations record no allergy', () => {
-    expect(allergiesOf([consultation('one', '2026-04-01')], config.consultations)).toEqual([]);
-    expect(allergiesOf([], config.consultations)).toEqual([]);
+    expect(allergiesOf([consultation('one', '2026-04-01')], [], config)).toEqual({
+      current: [],
+      past: [],
+      noKnownAllergies: false,
+    });
+    expect(allergiesOf([], [], config)).toEqual({ current: [], past: [], noKnownAllergies: false });
+  });
+
+  it('lets the latest record of an allergy decide: a Date Resolved on RHD Allergies moves it to past', () => {
+    const { current, past } = allergiesOf(
+      [consultation('visit', '2025-10-01', [allergy(penicillin, '2025-10-01'), allergy(other)])],
+      [consultation('resolved', '2026-03-05', [allergy(penicillin, '2025-10-01', { resolved: '2026-03-01' })])],
+      config,
+    );
+
+    expect(current.map((one) => one.name)).toEqual(['Other']);
+    expect(past).toHaveLength(1);
+    expect(past[0]).toMatchObject({
+      name: 'Penicillin (allergy)',
+      resolved: '2026-03-01',
+      added: '2025-10-01',
+      encounterUuid: 'resolved',
+      form: config.allergies.form,
+    });
+  });
+
+  it('makes a resolved allergy current again when a later record has no Date Resolved', () => {
+    const { current, past } = allergiesOf(
+      [],
+      [
+        consultation('again', '2026-05-01', [allergy(penicillin, '2026-05-01')]),
+        consultation('resolved', '2026-03-05', [allergy(penicillin, '2025-10-01', { resolved: '2026-03-01' })]),
+      ],
+      config,
+    );
+
+    expect(past).toEqual([]);
+    expect(current).toHaveLength(1);
+    expect(current[0]).toMatchObject({ resolved: null, added: '2025-10-01', encounterUuid: 'again' });
+  });
+
+  it('lets a resolved record decide over another of the same allergy saved at the same time, in either order', () => {
+    const open = consultation('open', '2026-03-05', [allergy(penicillin, '2026-03-05')]);
+    const resolved = consultation('resolved', '2026-03-05', [
+      allergy(penicillin, '2026-03-05', { resolved: '2026-03-05' }),
+    ]);
+
+    for (const records of [
+      [open, resolved],
+      [resolved, open],
+    ]) {
+      const { current, past } = allergiesOf([], records, config);
+      expect(current).toEqual([]);
+      expect(past.map((one) => one.encounterUuid)).toEqual(['resolved']);
+    }
+  });
+
+  it('reads No known allergies as no allergy, and says so while no allergy record is later', () => {
+    const records = [consultation('nka', '2026-03-01', [allergy(noKnown, '2026-03-01')])];
+
+    expect(allergiesOf([], records, config)).toEqual({ current: [], past: [], noKnownAllergies: true });
+  });
+
+  it('lets an allergy recorded after No known allergies replace it', () => {
+    const { current, noKnownAllergies } = allergiesOf(
+      [],
+      [
+        consultation('nka', '2026-03-01', [allergy(noKnown, '2026-03-01')]),
+        consultation('penicillin', '2026-04-01', [allergy(penicillin, '2026-04-01')]),
+      ],
+      config,
+    );
+
+    expect(current.map((one) => one.name)).toEqual(['Penicillin (allergy)']);
+    expect(noKnownAllergies).toBe(false);
+  });
+
+  it('never lets a later No known allergies hide an allergy that is still current', () => {
+    const { current, noKnownAllergies } = allergiesOf(
+      [consultation('penicillin', '2026-03-01', [allergy(penicillin, '2026-03-01')])],
+      [consultation('nka', '2026-04-01', [allergy(noKnown, '2026-04-01')])],
+      config,
+    );
+
+    expect(current.map((one) => one.name)).toEqual(['Penicillin (allergy)']);
+    expect(noKnownAllergies).toBe(false);
+  });
+
+  it('says No known allergies when it was recorded after the last allergy was resolved', () => {
+    const { current, past, noKnownAllergies } = allergiesOf(
+      [],
+      [
+        consultation('resolved', '2026-03-01', [allergy(penicillin, '2026-01-01', { resolved: '2026-03-01' })]),
+        consultation('nka', '2026-04-01', [allergy(noKnown, '2026-04-01')]),
+      ],
+      config,
+    );
+
+    expect(current).toEqual([]);
+    expect(past.map((one) => one.encounterUuid)).toEqual(['resolved']);
+    expect(noKnownAllergies).toBe(true);
+  });
+
+  it("reads each allergy's reactions and the form of the record that decides it", () => {
+    const { current } = allergiesOf(
+      [consultation('visit', '2025-10-01', [allergy(other)])],
+      [
+        consultation('record', '2026-03-05', [
+          allergy(penicillin, '2026-03-05', { reactions: ['Anaphylaxis', 'Wheezing'] }),
+        ]),
+      ],
+      config,
+    );
+
+    expect(current.map((one) => [one.name, one.reactions, one.form, one.encounterUuid])).toEqual([
+      ['Penicillin (allergy)', ['Anaphylaxis', 'Wheezing'], config.allergies.form, 'record'],
+      ['Other', [], config.consultations.form, 'visit'],
+    ]);
   });
 });
 
@@ -104,6 +239,11 @@ describe('allergiesText', () => {
   it('says no allergy is recorded, not that there is none, when no consultation lists one', () => {
     expect(allergiesText([])).toBe('Allergies not recorded');
   });
+
+  it('says No known allergies only when that was recorded', () => {
+    expect(allergiesText([], true)).toBe('No known allergies');
+    expect(allergiesText(list([['Other', false]]), true)).toBe('Allergies: Other');
+  });
 });
 
 describe('fetchAllergiesText', () => {
@@ -116,14 +256,25 @@ describe('fetchAllergiesText', () => {
       .mocked(openmrsFetch)
       .mockResolvedValue({ data: { results: encounters, totalCount: encounters.length } } as never);
 
-  it("reads the patient's consultations with the app's own config", async () => {
+  it("reads the patient's consultations and RHD Allergies with the app's own config", async () => {
     serve([consultation('one', '2026-04-01', [allergy(penicillin)])]);
 
     expect(await fetchAllergiesText('abebe')).toBe('PENICILLIN ALLERGY: Penicillin (allergy)');
     expect(getConfig).toHaveBeenCalledWith('@act-registry/esm-act-app');
-    expect(vi.mocked(openmrsFetch).mock.calls[0][0]).toContain(
-      `/encounter?patient=abebe&encounterType=${config.consultations.encounterType}`,
+    const urls = vi.mocked(openmrsFetch).mock.calls.map(([url]) => String(url));
+    expect(urls.filter((url) => url.includes(`&v=${representation}`))).toHaveLength(2);
+    expect(urls).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(`/encounter?patient=abebe&encounterType=${config.consultations.encounterType}`),
+        expect.stringContaining(`/encounter?patient=abebe&encounterType=${config.allergies.encounterType}`),
+      ]),
     );
+  });
+
+  it('leaves out a resolved allergy', async () => {
+    serve([consultation('one', '2026-04-01', [allergy(penicillin, '2026-01-01', { resolved: '2026-03-01' })])]);
+
+    expect(await fetchAllergiesText('abebe')).toBe('Allergies not recorded');
   });
 
   it('says allergies are not recorded for a patient with no consultation', async () => {
@@ -146,17 +297,35 @@ describe('fetchAllergiesText', () => {
 });
 
 describe('registerAllergies', () => {
-  it("adds the helper to the form engine's registry, keeping the helpers and lists already there", () => {
+  it("adds the helper and the control to the form engine's registry, keeping what is already there", async () => {
     getGlobalStore<Record<string, unknown>>('forms-engine-store', {
-      controls: [],
+      controls: [{ name: 'other-control' }],
       expressionHelpers: { other: 1 },
     } as never);
 
     registerAllergies();
 
-    const registry = getGlobalStore<{ expressionHelpers: Record<string, unknown> }>('forms-engine-store').getState();
+    const registry = getGlobalStore<{
+      expressionHelpers: Record<string, unknown>;
+      controls: Array<{ name: string; type?: string; load?: () => Promise<{ default: unknown }> }>;
+    }>('forms-engine-store').getState();
     expect(registry.expressionHelpers[allergiesHelper]).toBe(fetchAllergiesText);
     expect(registry.expressionHelpers.other).toBe(1);
     expect(allergiesHelper).toBe('actAllergies');
+    expect(registry.controls.map((one) => one.name)).toEqual(['other-control', currentAllergiesControl]);
+    expect(currentAllergiesControl).toBe('act-current-allergies');
+    const control = registry.controls.find((one) => one.name === currentAllergiesControl);
+    expect(control.type).toBe(currentAllergiesControl);
+    expect(typeof (await control.load()).default).toBe('function');
+  });
+
+  it('registers the control once however often the app starts', () => {
+    getGlobalStore<Record<string, unknown>>('forms-engine-store').setState({ controls: [], expressionHelpers: {} });
+
+    registerAllergies();
+    registerAllergies();
+
+    const { controls } = getGlobalStore<{ controls: Array<{ name: string }> }>('forms-engine-store').getState();
+    expect(controls.filter((one) => one.name === currentAllergiesControl)).toHaveLength(1);
   });
 });

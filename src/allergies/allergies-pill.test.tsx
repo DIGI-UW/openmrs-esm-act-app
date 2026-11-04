@@ -19,8 +19,12 @@ const obs = (concept: string, value: unknown, groupMembers?: Array<unknown>) => 
   value,
   groupMembers,
 });
-const allergy = (answer: object, added?: string) =>
-  obs(c.allergy, null, [obs(c.allergy, answer), ...(added ? [obs(c.dateAdded, added)] : [])]);
+const allergy = (answer: object, added?: string, resolved?: string) =>
+  obs(c.allergy, null, [
+    obs(c.allergy, answer),
+    ...(added ? [obs(c.dateAdded, added)] : []),
+    ...(resolved ? [obs(config.allergies.concepts.dateResolved, resolved)] : []),
+  ]);
 const consultation = (uuid: string, date: string, obsList: Array<unknown> = []): ChartEncounter =>
   ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, encounterProviders: [], obs: obsList }) as ChartEncounter;
 
@@ -87,9 +91,9 @@ describe('the patient banner allergies pill', () => {
     expect(list).toHaveTextContent(`Latex (added ${day('2026-03-01')})`);
     expect(list).toHaveTextContent(`Dust (added ${day('2026-01-01')})`);
     expect(day('2026-03-01')).not.toBe(day('2026-01-01'));
-    expect(screen.getByRole('link', { name: 'Review in Consultation visits' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Review in Allergies' })).toHaveAttribute(
       'href',
-      '/openmrs/spa/patient/abebe/chart/act-consultations',
+      '/openmrs/spa/patient/abebe/chart/act-allergies',
     );
   });
 
@@ -113,6 +117,33 @@ describe('the patient banner allergies pill', () => {
     expect(pill).toHaveTextContent('Allergies not recorded');
     expect(pill).toHaveAttribute('data-tone', 'none');
     expect(screen.queryByText(/No known allergies/)).not.toBeInTheDocument();
+  });
+
+  it('says No known allergies when that was recorded and no allergy since', async () => {
+    serve([
+      consultation('one', '2026-04-01', [
+        allergy(coded(config.allergies.concepts.noKnownAllergies, 'No known allergies')),
+      ]),
+    ]);
+
+    renderPill();
+
+    const pill = await screen.findByTestId('allergies-pill');
+    expect(pill).toHaveTextContent('No known allergies');
+    expect(pill).toHaveAttribute('data-tone', 'no-known-allergies');
+  });
+
+  it('leaves a resolved penicillin allergy off the banner', async () => {
+    serve([consultation('one', '2026-04-01', [allergy(penicillin, '2026-01-01', '2026-03-01')])]);
+
+    renderPill();
+
+    const pill = await screen.findByTestId('allergies-pill');
+    expect(pill).toHaveTextContent('Allergies not recorded');
+    expect(pill).toHaveAttribute('data-tone', 'none');
+    expect(
+      within(pill).queryByText(/^Allergies/, { selector: '.cds--tag--red .cds--tag__label' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows nothing while the allergies load, so a patient is never shown as having none', async () => {

@@ -508,7 +508,7 @@ export const configSchema = {
       _elements: { _type: Type.UUID },
       _default: ['149071AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'b4e6c064-ab4f-5ee4-9837-094731ee23d4'],
       _description:
-        "The consultation's Allergy answers that are an allergy to penicillin, which the patient banner and the consultation form mark: Penicillin (allergy) and Penicillin (anaphylaxis), as the patients report counts them. An answer named penicillin is marked whatever its uuid.",
+        'The Allergy answers, on consultations and RHD Allergies, that are an allergy to penicillin, which the patient banner and the consultation form mark: Penicillin (allergy) and Penicillin (anaphylaxis), as the patients report counts them. An answer named penicillin is marked whatever its uuid.',
     },
     vitals: {
       _type: Type.Array,
@@ -552,6 +552,30 @@ export const configSchema = {
       _default: '6fc2cd4c-3bd8-3888-88ae-53e6eb7debb3',
       _description:
         "The RHD Medication Update form, which the Medications page's Add opens. Who may record it is its encounter type's edit privilege.",
+    },
+  },
+  allergies: {
+    encounterType: {
+      _type: Type.UUID,
+      _default: '8a687651-3554-4255-941c-812d7a21312e',
+      _description:
+        "The RHD Allergies encounter type. Its allergies are read with the consultations', the latest record of an allergy deciding whether it is current or past.",
+    },
+    form: {
+      _type: Type.UUID,
+      _default: 'baeb5cfb-8433-3ad7-a1e6-1e7f449e9dbe',
+      _description:
+        "The RHD Allergies form, which the Allergies page's Add and Edit open. Who may record it is its encounter type's edit privilege.",
+    },
+    concepts: {
+      _type: Type.Object,
+      _default: {
+        reaction: '8200713e-8647-52f0-b93d-841e4e9687b7',
+        dateResolved: '8fbebbea-16dd-5dc5-98f0-c522cab26e19',
+        noKnownAllergies: '160557AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      _description:
+        "The Allergy group's Reaction (a group and its answers share the concept) and Date Resolved, which moves an allergy to past, and the Allergy Name answer No known allergies, which is not an allergy. The allergy and its Date Added are the consultation's concepts.",
     },
   },
   inrReviews: {
@@ -1091,6 +1115,11 @@ export interface Config {
     vitals: Array<{ label: string; concepts: Array<string>; unit: string }>;
   };
   medications: { encounterType: string; form: string };
+  allergies: {
+    encounterType: string;
+    form: string;
+    concepts: Record<'reaction' | 'dateResolved' | 'noKnownAllergies', string>;
+  };
   inrReviews: {
     encounterType: string;
     form: string;
