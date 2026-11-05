@@ -89,6 +89,7 @@ function serve({
   consultations = [] as Array<ChartEncounter>,
   patientInformation = [] as Array<ChartEncounter>,
   mayEnter = true,
+  mayEnterConsultation = mayEnter,
 } = {}) {
   vi.mocked(openmrsFetch).mockImplementation((async (url: string) => {
     if (url.includes(`encounterType=${config.consultations.encounterType}`)) {
@@ -98,8 +99,9 @@ function serve({
       return { data: { results: patientInformation, totalCount: patientInformation.length } };
     }
     if (url.includes('/form/')) {
+      const may = url.includes(config.consultations.form) ? mayEnterConsultation : mayEnter;
       return {
-        data: { uuid: 'form', encounterType: { editPrivilege: mayEnter ? null : { display: 'Task: nobody' } } },
+        data: { uuid: 'form', encounterType: { editPrivilege: may ? null : { display: 'Task: nobody' } } },
       };
     }
     return { data: { results: [], totalCount: 0 } };
@@ -140,11 +142,13 @@ describe('the Consultation visits page tables', () => {
     expect(rows[1]).toHaveTextContent(/Congenital.*No/);
   });
 
-  it('shows only the diagnoses of the latest consultation or Patient Information that records one', async () => {
-    const diagnosis = (name: string) =>
-      obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded(name, name))]);
+  it('shows only the diagnoses of the consultation or Patient Information that saved one last', async () => {
+    const diagnosis = (name: string, saved: string) => ({
+      ...obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded(name, name))]),
+      auditInfo: { dateCreated: `${saved}T09:00:00.000+0000` },
+    });
     const record = (uuid: string, date: string, name: string) =>
-      ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, obs: [diagnosis(name)] }) as ChartEncounter;
+      ({ uuid, encounterDatetime: `${date}T09:00:00.000+0300`, obs: [diagnosis(name, date)] }) as ChartEncounter;
     serve({
       consultations: [record('latest', '2026-03-01', 'Rheumatic Heart Disease'), consultation('bare', '2026-04-01')],
       patientInformation: [record('older', '2025-03-01', 'Congenital')],
@@ -181,7 +185,7 @@ describe('the Consultation visits page tables', () => {
     ).toBeInTheDocument();
   });
 
-  it("reopens a diagnosis's consultation, and an item's latest consultation, from its Edit", async () => {
+  it("opens Patient Information from a consultation diagnosis's Edit, and an item's latest consultation from its", async () => {
     const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
     const diagnosis = obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded('rhd', 'RHD'))]);
     serve({
@@ -194,7 +198,7 @@ describe('the Consultation visits page tables', () => {
     renderIn(<ConsultationsPage patientUuid="winnie" />);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit RHD' }));
-    expect(openForm).toHaveBeenLastCalledWith(config.consultations.form, undefined, 'new');
+    expect(openForm).toHaveBeenLastCalledWith(config.patientInformationForm);
     await userEvent.click(
       await screen.findByRole('button', { name: /^Edit Asthma in the consultation of .*Apr.*2026$/ }),
     );
@@ -239,5 +243,22 @@ describe('the Consultation visits page tables', () => {
     await within(await screen.findByRole('table', { name: 'Chronic health conditions' })).findByText('Asthma');
     await screen.findByText('RHD');
     expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
+  });
+
+  it("offers a consultation diagnosis's Edit to whoever may record Patient Information, and to no one else", async () => {
+    const diagnosis = obs(diagnosisConcepts.group, null, [obs(diagnosisConcepts.category, coded('rhd', 'RHD'))]);
+    serve({ consultations: [consultation('interim', '2026-04-01', [diagnosis])], mayEnterConsultation: false });
+    const { unmount } = renderIn(<Diagnoses patientUuid="winnie" />);
+    expect(await screen.findByRole('button', { name: 'Edit RHD' })).toBeInTheDocument();
+    unmount();
+
+    serve({
+      consultations: [consultation('interim', '2026-04-01', [diagnosis])],
+      mayEnter: false,
+      mayEnterConsultation: true,
+    });
+    renderIn(<Diagnoses patientUuid="winnie" />);
+    await screen.findByText('RHD');
+    expect(screen.queryByRole('button', { name: 'Edit RHD' })).not.toBeInTheDocument();
   });
 });

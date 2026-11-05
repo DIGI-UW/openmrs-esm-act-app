@@ -49,15 +49,33 @@ export const diagnosisConcepts = {
   ],
 };
 
-/** The patient's consultations and Patient Information together, newest first. */
+const withCategory = (encounter: ChartEncounter) =>
+  answersIn(encounter.obs, diagnosisConcepts.group).filter(
+    (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
+  );
+
+// An edit replaces each changed answer, so an edited diagnosis is dated by its newest answer.
+const savedAt = (groups: Array<GroupedObs>) =>
+  Math.max(
+    0,
+    ...groups
+      .flatMap((group) => [group, ...(group.groupMembers ?? [])])
+      .filter((one) => one.auditInfo?.dateCreated)
+      .map((one) => parseDate(one.auditInfo.dateCreated).getTime()),
+  );
+
+/**
+ * The patient's consultations and Patient Information that record a Diagnosis with a Category, with those Diagnoses,
+ * the one whose Diagnoses were saved last first.
+ */
 function useDiagnosisEncounters(patientUuid: string | null) {
   const consultations = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.consultation);
   const information = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.patientInformation);
   const tag = (list: Array<ChartEncounter>, onConsultation: boolean) =>
-    list.map((encounter) => ({ ...encounter, onConsultation }));
-  const encounters = [...tag(consultations.encounters, true), ...tag(information.encounters, false)].sort(
-    (a, b) => parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),
-  );
+    list.map((encounter) => ({ ...encounter, onConsultation, diagnoses: withCategory(encounter) }));
+  const encounters = [...tag(consultations.encounters, true), ...tag(information.encounters, false)]
+    .filter((encounter) => encounter.diagnoses.length)
+    .sort((a, b) => savedAt(b.diagnoses) - savedAt(a.diagnoses));
   return {
     encounters,
     error: consultations.error ?? information.error,
@@ -66,14 +84,12 @@ function useDiagnosisEncounters(patientUuid: string | null) {
 }
 
 /**
- * The diagnosis of the patient's latest consultation or Patient Information that records one, as the registry reads
+ * The diagnosis of the patient's consultation or Patient Information that saved one last, as the registry reads
  * it: the first Diagnosis with a Category, and its details in name order. Null with none.
  */
 export function useLatestDiagnosis(patientUuid: string | null) {
   const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
-  const group = encounters
-    .flatMap((encounter) => answersIn(encounter.obs, diagnosisConcepts.group))
-    .find((one) => answersIn(one.groupMembers, diagnosisConcepts.category).length);
+  const group = encounters[0]?.diagnoses[0];
   if (!group) {
     return { diagnosis: null, error, isLoading };
   }
@@ -87,7 +103,7 @@ export function useLatestDiagnosis(patientUuid: string | null) {
 
 export interface DiagnosisRow {
   key: string;
-  /** The consultation or Patient Information that records it, which Edit reopens. */
+  /** The consultation or Patient Information that records it; Edit reopens a Patient Information. */
   encounterUuid: string;
   /** Whether a consultation records it (an AR-167-interim record); otherwise Patient Information. */
   onConsultation: boolean;
@@ -122,18 +138,14 @@ export function toDiagnosisRow(
 }
 
 /**
- * Every Diagnosis with a Category in the patient's latest consultation or Patient Information that has one; earlier
+ * Every Diagnosis with a Category in the patient's consultation or Patient Information that saved one last; other
  * records are superseded.
  */
 export function useDiagnoses(patientUuid: string | null) {
   const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
-  const withCategory = (encounter: ChartEncounter) =>
-    answersIn(encounter.obs, diagnosisConcepts.group).filter(
-      (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
-    );
-  const latest = encounters.find((encounter) => withCategory(encounter).length);
+  const [latest] = encounters;
   const diagnoses = latest
-    ? withCategory(latest).map((group, index) =>
+    ? latest.diagnoses.map((group, index) =>
         toDiagnosisRow(group, `${latest.uuid}-${index}`, latest.uuid, latest.onConsultation),
       )
     : [];

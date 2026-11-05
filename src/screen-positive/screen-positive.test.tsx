@@ -54,7 +54,7 @@ describe('Diagnosis to confirm', () => {
     render(<ScreenPositive />);
 
     expect(screen.getByRole('heading', { name: 'Diagnosis to confirm' })).toBeInTheDocument();
-    expect(screen.getByText(/Record diagnosis opens their chart/)).toBeInTheDocument();
+    expect(screen.getByText(/Record diagnosis opens their form beside this list/)).toBeInTheDocument();
   });
 
   it('lists each patient with their age and sex, the date of positive screen and screening site', () => {

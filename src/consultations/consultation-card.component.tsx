@@ -39,7 +39,7 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
   const mayUpdateDiagnosis = useMayEnterForm(patientInformationForm);
   const pagePath = useChartPagePath('act-consultations-dashboard-link');
   const [last] = consultations;
-  // Diagnoses live on Patient Information, which is a singleRecordForm, so opening it edits the patient's record.
+  // Patient Information is a singleRecordForm, so opening it edits the patient's record.
   const updateDiagnosis = () => openForm(patientInformationForm);
 
   const fields = [

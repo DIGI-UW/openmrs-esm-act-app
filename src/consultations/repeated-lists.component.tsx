@@ -77,19 +77,18 @@ export function CompactTable<Row extends { key: string }>({
 }
 
 /**
- * Every diagnosis the patient's latest Patient Information records, as a table, with Edit, which reopens that record,
- * for a user who may edit one. A diagnosis an AR-167-interim consultation recorded is listed until a newer Patient
- * Information records one, and its Edit reopens that consultation.
+ * The patient's diagnoses as a table, with Edit, which opens Patient Information, for a user who may record it. An
+ * AR-167-interim consultation's are listed while saved after Patient Information's; saving one there replaces them.
  */
 export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { consultations, patientInformationForm } = useConfig<Config>();
+  const { patientInformationForm } = useConfig<Config>();
   const { diagnoses, error, isLoading } = useDiagnoses(patientUuid);
-  const mayEditConsultation = useMayEnterForm(consultations.form);
-  const mayEditInformation = useMayEnterForm(patientInformationForm);
-  const formOf = (one: DiagnosisRow) => (one.onConsultation ? consultations.form : patientInformationForm);
-  const mayEdit = diagnoses.every((one) => (one.onConsultation ? mayEditConsultation : mayEditInformation));
+  const mayEdit = useMayEnterForm(patientInformationForm);
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
+  // The consultation form no longer asks the diagnosis; Patient Information replaces an interim one.
+  const edit = (one: DiagnosisRow) =>
+    one.onConsultation ? open(patientInformationForm) : open(patientInformationForm, undefined, one.encounterUuid);
   const title = t('diagnoses', 'Diagnoses');
   type Row = (typeof diagnoses)[number];
   const columns: Array<Column<Row>> = [
@@ -108,7 +107,7 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
                   interpolation: { escapeValue: false },
                 })}
                 disabled={isOpening}
-                onClick={() => open(formOf(one), undefined, one.encounterUuid)}
+                onClick={() => edit(one)}
               />
             ),
           },

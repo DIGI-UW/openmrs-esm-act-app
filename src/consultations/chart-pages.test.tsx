@@ -372,6 +372,34 @@ describe('chart pages by role', () => {
     expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie');
   });
 
+  it('shows the diagnosis saved last, so one saved on an older Patient Information supersedes a newer consultation', async () => {
+    const saved = (one: object, dateCreated: string) => ({ ...one, auditInfo: { dateCreated } });
+    const diagnosis = (detail: string, categorySaved: string) =>
+      saved(
+        obs(diagnosisConcepts.group, null, [
+          saved(obs(diagnosisConcepts.category, coded('rhd', 'RHD/RF')), categorySaved),
+          saved(obs(diagnosisConcepts.details[0], coded(detail, detail)), '2026-01-10T09:00:00.000+0000'),
+        ]),
+        '2026-01-10T09:00:00.000+0000',
+      );
+    const interim = consultation('interim', '2026-11-03', [diagnosis('RHD B', '2026-11-03T09:00:00.000+0000')]);
+    const information = (categorySaved: string) =>
+      ({
+        uuid: 'pi',
+        encounterDatetime: '2026-01-10T09:00:00.000+0300',
+        obs: [diagnosis('RHD C', categorySaved)],
+      }) as ChartEncounter;
+
+    serve({ consultations: [interim], patientInformation: [information('2026-11-04T09:00:00.000+0000')] });
+    const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
+    expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD C)');
+    unmount();
+
+    serve({ consultations: [interim], patientInformation: [information('2026-01-10T09:00:00.000+0000')] });
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+    expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD B)');
+  });
+
   it('offers Record diagnosis when there is none, which opens Patient Information, and nothing to a user who may not record one', async () => {
     serve();
     const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);

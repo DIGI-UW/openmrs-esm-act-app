@@ -10,6 +10,7 @@ export interface GroupedObs {
   concept: { uuid: string; display?: string };
   value: unknown;
   groupMembers?: Array<GroupedObs> | null;
+  auditInfo?: { dateCreated: string };
 }
 
 export interface ChartEncounter {
@@ -21,7 +22,7 @@ export interface ChartEncounter {
 
 // Keep the second group level: an allergy's Reaction is a group inside the allergy's group.
 export const representation =
-  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value,groupMembers:(uuid,concept:(uuid,display),value))))';
+  'custom:(uuid,encounterDatetime,encounterProviders:(provider:(display)),obs:(uuid,concept:(uuid,display),value,auditInfo:(dateCreated),groupMembers:(uuid,concept:(uuid,display),value,auditInfo:(dateCreated),groupMembers:(uuid,concept:(uuid,display),value))))';
 
 /** A coded answer's name, or a plain answer as text. */
 export const answerText = (value: unknown) =>
