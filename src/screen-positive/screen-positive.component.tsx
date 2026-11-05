@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -66,6 +66,10 @@ export function ScreenPositiveTable() {
   const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
+  // Stable, and not mutate itself, which would store the saved encounter as the list's data.
+  const refreshList = useCallback(() => {
+    mutate();
+  }, [mutate]);
   // Same objects on a second click, so the open workspace does not prompt to close the form.
   const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
   // Opens the row's form to edit beside the list, where saved Diagnosis Details take the patient off it.
@@ -80,11 +84,11 @@ export function ScreenPositiveTable() {
     }
     try {
       const [form, patient] = await loaded.current.get(encounterUuid);
-      // An edit loads its own visit, so none is passed; mutateVisitContext refreshes the list on save.
+      // An edit loads its own visit; the workspace calls handlePostResponse, not mutateVisitContext.
       launchWorkspace2(
         screenPositiveFormEntryWorkspace,
-        { form, encounterUuid },
-        { patient, patientUuid, visitContext: null, mutateVisitContext: mutate },
+        { form, encounterUuid, handlePostResponse: refreshList },
+        { patient, patientUuid, visitContext: null },
       );
     } catch (e) {
       loaded.current.delete(encounterUuid);

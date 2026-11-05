@@ -400,6 +400,27 @@ describe('chart pages by role', () => {
     expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD B)');
   });
 
+  it('shows the later-dated diagnosis of two saved in the same second, as the registry reports rank them', async () => {
+    const savedAt = { auditInfo: { dateCreated: '2026-11-04T09:00:00.000+0000' } };
+    const diagnosis = (detail: string) => ({
+      ...obs(diagnosisConcepts.group, null, [
+        { ...obs(diagnosisConcepts.category, coded('rhd', 'RHD/RF')), ...savedAt },
+        { ...obs(diagnosisConcepts.details[0], coded(detail, detail)), ...savedAt },
+      ]),
+      ...savedAt,
+    });
+    serve({
+      consultations: [consultation('interim', '2026-01-10', [diagnosis('RHD B')])],
+      patientInformation: [
+        { uuid: 'pi', encounterDatetime: '2026-03-01T09:00:00.000+0300', obs: [diagnosis('RHD C')] } as ChartEncounter,
+      ],
+    });
+
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+
+    expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD C)');
+  });
+
   it('offers Record diagnosis when there is none, which opens Patient Information, and nothing to a user who may not record one', async () => {
     serve();
     const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);

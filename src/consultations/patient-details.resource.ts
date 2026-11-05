@@ -54,7 +54,7 @@ const withCategory = (encounter: ChartEncounter) =>
     (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
   );
 
-// An edit replaces each changed answer, so an edited diagnosis is dated by its newest answer.
+// An edit re-creates a changed answer, or the group if one is added: the newest dates the save.
 const savedAt = (groups: Array<GroupedObs>) =>
   Math.max(
     0,
@@ -65,8 +65,8 @@ const savedAt = (groups: Array<GroupedObs>) =>
   );
 
 /**
- * The patient's consultations and Patient Information that record a Diagnosis with a Category, with those Diagnoses,
- * the one whose Diagnoses were saved last first.
+ * Encounters recording a Diagnosis with a Category, saved last first, then the later encounter on a tie,
+ * as the registry's reports rank them.
  */
 function useDiagnosisEncounters(patientUuid: string | null) {
   const consultations = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.consultation);
@@ -75,7 +75,11 @@ function useDiagnosisEncounters(patientUuid: string | null) {
     list.map((encounter) => ({ ...encounter, onConsultation, diagnoses: withCategory(encounter) }));
   const encounters = [...tag(consultations.encounters, true), ...tag(information.encounters, false)]
     .filter((encounter) => encounter.diagnoses.length)
-    .sort((a, b) => savedAt(b.diagnoses) - savedAt(a.diagnoses));
+    .sort(
+      (a, b) =>
+        savedAt(b.diagnoses) - savedAt(a.diagnoses) ||
+        parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),
+    );
   return {
     encounters,
     error: consultations.error ?? information.error,

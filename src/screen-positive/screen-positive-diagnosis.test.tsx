@@ -54,9 +54,25 @@ describe('Screen positive, Record diagnosis', () => {
     expect(saveVisit).not.toHaveBeenCalled();
     expect(launchWorkspace2).toHaveBeenCalledWith(
       'act-screen-positive-form-entry-workspace',
-      { form: informationForm, encounterUuid: 'information-2' },
-      { patient: fhirPatient, patientUuid: 'patient-2', visitContext: null, mutateVisitContext: mutate },
+      { form: informationForm, encounterUuid: 'information-2', handlePostResponse: expect.any(Function) },
+      { patient: fhirPatient, patientUuid: 'patient-2', visitContext: null },
     );
+  });
+
+  it('refreshes the list once the form is saved, through the callback the form entry workspace calls', async () => {
+    render(<ScreenPositive />);
+
+    await recordDiagnosis('Patient 2');
+
+    await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalled());
+    const [, workspaceProps] = vi.mocked(launchWorkspace2).mock.lastCall as unknown as [
+      string,
+      { handlePostResponse: (encounter: object) => void },
+    ];
+    expect(mutate).not.toHaveBeenCalled();
+    workspaceProps.handlePostResponse({ uuid: 'saved-encounter' });
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith();
   });
 
   it('opens the same form again for a second click, so the open form is not replaced', async () => {
@@ -66,8 +82,11 @@ describe('Screen positive, Record diagnosis', () => {
     await recordDiagnosis('Patient 2');
 
     await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
-    const [first, second] = vi.mocked(launchWorkspace2).mock.calls as unknown as Array<[string, { form: object }]>;
+    const [first, second] = vi.mocked(launchWorkspace2).mock.calls as unknown as Array<
+      [string, { form: object; handlePostResponse: unknown }]
+    >;
     expect(second[1].form).toBe(first[1].form);
+    expect(second[1].handlePostResponse).toBe(first[1].handlePostResponse);
   });
 
   it('tries again on a later click after opening failed', async () => {
