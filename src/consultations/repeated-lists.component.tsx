@@ -78,7 +78,7 @@ export function CompactTable<Row extends { key: string }>({
 
 /**
  * The patient's diagnoses, with Edit opening Patient Information. An AR-167-interim consultation's are listed
- * until an answer changed on Patient Information replaces them.
+ * until a Patient Information diagnosis saved later, not answered inactive or secondary, replaces them.
  */
 export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
@@ -86,7 +86,7 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   const { diagnoses, error, isLoading } = useDiagnoses(patientUuid);
   const mayEdit = useMayEnterForm(patientInformationForm);
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
-  // The consultation form no longer asks the diagnosis, so an interim one is replaced there.
+  // The consultation no longer asks the diagnosis, so an interim one is replaced on Patient Information.
   const edit = (one: DiagnosisRow) =>
     one.onConsultation ? open(patientInformationForm) : open(patientInformationForm, undefined, one.encounterUuid);
   const title = t('diagnoses', 'Diagnoses');

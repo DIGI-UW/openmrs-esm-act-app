@@ -161,6 +161,41 @@ describe('the Consultation visits page tables', () => {
     expect(rows[0]).toHaveTextContent('Rheumatic Heart Disease');
   });
 
+  it('lists the record holding the diagnosis the registry reads, else the one that saved an inactive one last', async () => {
+    const diagnosis = (name: string, saved: string, active?: string) => ({
+      ...obs(diagnosisConcepts.group, null, [
+        obs(diagnosisConcepts.category, coded(name, name)),
+        ...(active ? [obs(diagnosisConcepts.active, coded(active, 'No'))] : []),
+      ]),
+      auditInfo: { dateCreated: `${saved}T09:00:00.000+0000` },
+    });
+    const information = (...groups: Array<unknown>) =>
+      ({ uuid: 'pi', encounterDatetime: '2026-01-10T09:00:00.000+0300', obs: groups }) as ChartEncounter;
+    const interim = {
+      uuid: 'interim',
+      encounterDatetime: '2026-02-01T09:00:00.000+0300',
+      obs: [diagnosis('Congenital', '2026-02-01')],
+    } as ChartEncounter;
+    serve({
+      consultations: [interim],
+      patientInformation: [
+        information(
+          diagnosis('Rheumatic Heart Disease', '2026-01-10'),
+          diagnosis('Cardiomyopathy', '2026-03-01', diagnosisConcepts.no),
+        ),
+      ],
+    });
+    const { unmount } = renderIn(<Diagnoses patientUuid="winnie" />);
+    const rows = await screen.findAllByTestId('repeated-row');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent('Congenital');
+    unmount();
+
+    serve({ patientInformation: [information(diagnosis('Cardiomyopathy', '2026-03-01', diagnosisConcepts.no))] });
+    renderIn(<Diagnoses patientUuid="winnie" />);
+    expect(await screen.findByTestId('repeated-row')).toHaveTextContent(/Cardiomyopathy.*No/);
+  });
+
   it('shows chronic conditions and RHD complications each once, and leaves allergies to the Allergies page', async () => {
     const item = (list: string, name: string) => obs(list, null, [obs(list, coded(name, name))]);
     serve({

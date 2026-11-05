@@ -3,6 +3,7 @@ import { type FetchResponse, openmrsFetch, parseDate, restBaseUrl } from '@openm
 import {
   answersIn,
   answerText,
+  answerUuid,
   type ChartEncounter,
   type GroupedObs,
   useChartEncounters,
@@ -39,6 +40,9 @@ export const diagnosisConcepts = {
   group: '594b4495-36dc-52a6-9810-15a9e2e2dcb9',
   category: '1a5aa050-661d-5e89-95d7-c1eba476df22',
   active: 'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
+  no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  priority: '97c025b2-f42c-5c53-8aaa-0506c8dd3774',
+  secondary: 'af45fb2a-ed18-5beb-935e-8e4d92df2dac',
   started: '62321320-695e-5319-a306-40dfd6ad94b7',
   ended: 'e9f2fceb-05be-577f-bf76-dde0647f01db',
   details: [
@@ -55,45 +59,51 @@ const withCategory = (encounter: ChartEncounter) =>
   );
 
 // An edit re-creates a changed answer, or the group if one is added: the newest dates the save.
-const savedAt = (groups: Array<GroupedObs>) =>
+const savedAt = (group: GroupedObs) =>
   Math.max(
     0,
-    ...groups
-      .flatMap((group) => [group, ...(group.groupMembers ?? [])])
+    ...[group, ...(group.groupMembers ?? [])]
       .filter((one) => one.auditInfo?.dateCreated)
       .map((one) => parseDate(one.auditInfo.dateCreated).getTime()),
   );
 
+const answered = (group: GroupedObs, concept: string, answer: string) =>
+  answersIn(group.groupMembers, concept).some((one) => answerUuid(one.value) === answer);
+
+/** Whether the registry's reports count this Diagnosis: not answered inactive, nor secondary. */
+const counted = (group: GroupedObs) =>
+  !answered(group, diagnosisConcepts.active, diagnosisConcepts.no) &&
+  !answered(group, diagnosisConcepts.priority, diagnosisConcepts.secondary);
+
 /**
- * Encounters recording a Diagnosis with a Category, saved last first, then the later encounter on a tie,
- * as the registry's reports rank them.
+ * The Diagnosis the registry's reports read, the one counted that saved last, with its encounter; with none counted,
+ * the Diagnosis saved last. Two saved in the same second in one encounter tie, which the reports break by obs id.
  */
-function useDiagnosisEncounters(patientUuid: string | null) {
+function useLatestDiagnosisGroup(patientUuid: string | null) {
   const consultations = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.consultation);
   const information = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.patientInformation);
   const tag = (list: Array<ChartEncounter>, onConsultation: boolean) =>
-    list.map((encounter) => ({ ...encounter, onConsultation, diagnoses: withCategory(encounter) }));
-  const encounters = [...tag(consultations.encounters, true), ...tag(information.encounters, false)]
-    .filter((encounter) => encounter.diagnoses.length)
-    .sort(
-      (a, b) =>
-        savedAt(b.diagnoses) - savedAt(a.diagnoses) ||
-        parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),
-    );
+    list.flatMap((encounter) => {
+      const diagnoses = withCategory(encounter);
+      return diagnoses.map((group) => ({ group, encounter: { ...encounter, onConsultation, diagnoses } }));
+    });
+  const [latest] = [...tag(consultations.encounters, true), ...tag(information.encounters, false)].sort(
+    (a, b) =>
+      Number(counted(b.group)) - Number(counted(a.group)) ||
+      savedAt(b.group) - savedAt(a.group) ||
+      parseDate(b.encounter.encounterDatetime).getTime() - parseDate(a.encounter.encounterDatetime).getTime(),
+  );
   return {
-    encounters,
+    latest,
     error: consultations.error ?? information.error,
     isLoading: consultations.isLoading || information.isLoading,
   };
 }
 
-/**
- * The diagnosis of the patient's consultation or Patient Information that saved one last, as the registry reads
- * it: the first Diagnosis with a Category, and its details in name order. Null with none.
- */
+/** The Diagnosis the registry's reports read, as its category with its details in name order. Null with none. */
 export function useLatestDiagnosis(patientUuid: string | null) {
-  const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
-  const group = encounters[0]?.diagnoses[0];
+  const { latest, error, isLoading } = useLatestDiagnosisGroup(patientUuid);
+  const group = latest && counted(latest.group) ? latest.group : null;
   if (!group) {
     return { diagnosis: null, error, isLoading };
   }
@@ -142,15 +152,15 @@ export function toDiagnosisRow(
 }
 
 /**
- * Every Diagnosis with a Category in the patient's consultation or Patient Information that saved one last; other
- * records are superseded.
+ * Every Diagnosis with a Category, inactive ones too, of the record holding the one the registry's reports read, else
+ * of the record that saved one last; other records are superseded.
  */
 export function useDiagnoses(patientUuid: string | null) {
-  const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
-  const [latest] = encounters;
-  const diagnoses = latest
-    ? latest.diagnoses.map((group, index) =>
-        toDiagnosisRow(group, `${latest.uuid}-${index}`, latest.uuid, latest.onConsultation),
+  const { latest, error, isLoading } = useLatestDiagnosisGroup(patientUuid);
+  const record = latest?.encounter;
+  const diagnoses = record
+    ? record.diagnoses.map((group, index) =>
+        toDiagnosisRow(group, `${record.uuid}-${index}`, record.uuid, record.onConsultation),
       )
     : [];
   return { diagnoses, error, isLoading };

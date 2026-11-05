@@ -421,6 +421,50 @@ describe('chart pages by role', () => {
     expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD C)');
   });
 
+  describe('ranking each Diagnosis by its own save, skipping one answered inactive or secondary', () => {
+    const at = (day: string) => ({ auditInfo: { dateCreated: `2026-${day}T09:00:00.000+0000` } });
+    const diagnosis = (detail: string, day: string, extra: Array<unknown> = []) => ({
+      ...obs(diagnosisConcepts.group, null, [
+        { ...obs(diagnosisConcepts.category, coded('rhd', 'RHD/RF')), ...at(day) },
+        { ...obs(diagnosisConcepts.details[0], coded(detail, detail)), ...at(day) },
+        ...extra.map((one) => ({ ...(one as object), ...at(day) })),
+      ]),
+      ...at(day),
+    });
+    const inactive = obs(diagnosisConcepts.active, coded(diagnosisConcepts.no, 'No'));
+    const secondary = obs(diagnosisConcepts.priority, coded(diagnosisConcepts.secondary, 'Secondary'));
+    const information = (...groups: Array<unknown>) =>
+      ({ uuid: 'pi', encounterDatetime: '2026-01-10T09:00:00.000+0300', obs: groups }) as ChartEncounter;
+    const shows = async (text: string) => {
+      const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
+      expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent(text);
+      unmount();
+    };
+
+    it('shows the entry of one Patient Information edited last, wherever it is listed', async () => {
+      serve({ patientInformation: [information(diagnosis('RHD A', '01-10'), diagnosis('RHD B', '03-01'))] });
+      await shows('RHD/RF (RHD B)');
+    });
+
+    it('passes over an inactive entry added later, to the interim diagnosis saved after the active one', async () => {
+      serve({
+        consultations: [consultation('interim', '2026-02-01', [diagnosis('RHD C', '02-01')])],
+        patientInformation: [information(diagnosis('RHD A', '01-10'), diagnosis('RHD B', '03-01', [inactive]))],
+      });
+      await shows('RHD/RF (RHD C)');
+    });
+
+    it('falls back from a Patient Information entry edited to inactive or secondary, and shows none with nothing else', async () => {
+      const interim = consultation('interim', '2026-02-01', [diagnosis('RHD C', '02-01')]);
+      serve({ consultations: [interim], patientInformation: [information(diagnosis('RHD A', '03-01', [inactive]))] });
+      await shows('RHD/RF (RHD C)');
+      serve({ consultations: [interim], patientInformation: [information(diagnosis('RHD A', '03-01', [secondary]))] });
+      await shows('RHD/RF (RHD C)');
+      serve({ patientInformation: [information(diagnosis('RHD A', '03-01', [inactive]))] });
+      await shows('--');
+    });
+  });
+
   it('offers Record diagnosis when there is none, which opens Patient Information, and nothing to a user who may not record one', async () => {
     serve();
     const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
