@@ -345,7 +345,7 @@ describe('chart pages by role', () => {
     expect(screen.queryByRole('button', { name: 'Edit last consultation' })).not.toBeInTheDocument();
   });
 
-  it('shows the diagnosis, from a Patient Information too, with Update diagnosis, which edits the last consultation', async () => {
+  it('shows the diagnosis, from Patient Information, with Update diagnosis, which opens that form', async () => {
     serve({
       consultations: [consultation('new', '2026-04-01')],
       patientInformation: [
@@ -368,15 +368,118 @@ describe('chart pages by role', () => {
       'Rheumatic Heart Disease/Rheumatic Fever (RHD B)',
     );
     await userEvent.click(await screen.findByRole('button', { name: /Update diagnosis/ }));
-    expect(openForm).toHaveBeenCalledWith(config.consultations.form, undefined, 'new');
+    expect(openForm).toHaveBeenCalledWith(config.patientInformationForm);
     expect(useOpenFormInVisit).toHaveBeenCalledWith('winnie');
   });
 
-  it('offers Record diagnosis when there is none, which starts a consultation, and nothing to a user who may not record one', async () => {
+  it('shows the diagnosis saved last, so one saved on an older Patient Information supersedes a newer consultation', async () => {
+    const saved = (one: object, dateCreated: string) => ({ ...one, auditInfo: { dateCreated } });
+    const diagnosis = (detail: string, categorySaved: string) =>
+      saved(
+        obs(diagnosisConcepts.group, null, [
+          saved(obs(diagnosisConcepts.category, coded('rhd', 'RHD/RF')), categorySaved),
+          saved(obs(diagnosisConcepts.details[0], coded(detail, detail)), '2026-01-10T09:00:00.000+0000'),
+        ]),
+        '2026-01-10T09:00:00.000+0000',
+      );
+    const interim = consultation('interim', '2026-11-03', [diagnosis('RHD B', '2026-11-03T09:00:00.000+0000')]);
+    const information = (categorySaved: string) =>
+      ({
+        uuid: 'pi',
+        encounterDatetime: '2026-01-10T09:00:00.000+0300',
+        obs: [diagnosis('RHD C', categorySaved)],
+      }) as ChartEncounter;
+
+    serve({ consultations: [interim], patientInformation: [information('2026-11-04T09:00:00.000+0000')] });
+    const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
+    expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD C)');
+    unmount();
+
+    serve({ consultations: [interim], patientInformation: [information('2026-01-10T09:00:00.000+0000')] });
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+    expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD B)');
+  });
+
+  it('shows the later-dated diagnosis of two saved in the same second, as the registry reports rank them', async () => {
+    const savedAt = { auditInfo: { dateCreated: '2026-11-04T09:00:00.000+0000' } };
+    const diagnosis = (detail: string) => ({
+      ...obs(diagnosisConcepts.group, null, [
+        { ...obs(diagnosisConcepts.category, coded('rhd', 'RHD/RF')), ...savedAt },
+        { ...obs(diagnosisConcepts.details[0], coded(detail, detail)), ...savedAt },
+      ]),
+      ...savedAt,
+    });
+    serve({
+      consultations: [consultation('interim', '2026-01-10', [diagnosis('RHD B')])],
+      patientInformation: [
+        { uuid: 'pi', encounterDatetime: '2026-03-01T09:00:00.000+0300', obs: [diagnosis('RHD C')] } as ChartEncounter,
+      ],
+    });
+
+    renderIn(<ConsultationCard patientUuid="winnie" />);
+
+    expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent('RHD/RF (RHD C)');
+  });
+
+  describe('ranking each Diagnosis by its own save, skipping one answered inactive or secondary', () => {
+    const at = (day: string) => ({ auditInfo: { dateCreated: `2026-${day}T09:00:00.000+0000` } });
+    const diagnosis = (detail: string, day: string, extra: Array<unknown> = []) => ({
+      ...obs(diagnosisConcepts.group, null, [
+        { ...obs(diagnosisConcepts.category, coded('rhd', 'RHD/RF')), ...at(day) },
+        { ...obs(diagnosisConcepts.details[0], coded(detail, detail)), ...at(day) },
+        ...extra.map((one) => ({ ...(one as object), ...at(day) })),
+      ]),
+      ...at(day),
+    });
+    const inactive = obs(diagnosisConcepts.active, coded(diagnosisConcepts.no, 'No'));
+    const secondary = obs(diagnosisConcepts.priority, coded(diagnosisConcepts.secondary, 'Secondary'));
+    const information = (...groups: Array<unknown>) =>
+      ({ uuid: 'pi', encounterDatetime: '2026-01-10T09:00:00.000+0300', obs: groups }) as ChartEncounter;
+    const shows = async (text: string) => {
+      const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
+      expect(await screen.findByTestId('consultation-diagnosis')).toHaveTextContent(text);
+      unmount();
+    };
+
+    it('shows the entry of one Patient Information edited last, wherever it is listed', async () => {
+      serve({ patientInformation: [information(diagnosis('RHD A', '01-10'), diagnosis('RHD B', '03-01'))] });
+      await shows('RHD/RF (RHD B)');
+    });
+
+    it('breaks a tie of two entries saved together by the higher obs uuid, as the reports do', async () => {
+      const entry = (detail: string, uuid: string) => ({ ...diagnosis(detail, '03-01'), uuid });
+      const high = entry('RHD B', 'f0000000-0000-4000-8000-000000000000');
+      const low = entry('RHD A', '10000000-0000-4000-8000-000000000000');
+      serve({ patientInformation: [information(low, high)] });
+      await shows('RHD/RF (RHD B)');
+      serve({ patientInformation: [information(high, low)] });
+      await shows('RHD/RF (RHD B)');
+    });
+
+    it('passes over an inactive entry added later, to the interim diagnosis saved after the active one', async () => {
+      serve({
+        consultations: [consultation('interim', '2026-02-01', [diagnosis('RHD C', '02-01')])],
+        patientInformation: [information(diagnosis('RHD A', '01-10'), diagnosis('RHD B', '03-01', [inactive]))],
+      });
+      await shows('RHD/RF (RHD C)');
+    });
+
+    it('falls back from a Patient Information entry edited to inactive or secondary, and shows none with nothing else', async () => {
+      const interim = consultation('interim', '2026-02-01', [diagnosis('RHD C', '02-01')]);
+      serve({ consultations: [interim], patientInformation: [information(diagnosis('RHD A', '03-01', [inactive]))] });
+      await shows('RHD/RF (RHD C)');
+      serve({ consultations: [interim], patientInformation: [information(diagnosis('RHD A', '03-01', [secondary]))] });
+      await shows('RHD/RF (RHD C)');
+      serve({ patientInformation: [information(diagnosis('RHD A', '03-01', [inactive]))] });
+      await shows('--');
+    });
+  });
+
+  it('offers Record diagnosis when there is none, which opens Patient Information, and nothing to a user who may not record one', async () => {
     serve();
     const { unmount } = renderIn(<ConsultationCard patientUuid="winnie" />);
     await userEvent.click(await screen.findByRole('button', { name: /Record diagnosis/ }));
-    expect(openForm).toHaveBeenCalledWith(config.consultations.form);
+    expect(openForm).toHaveBeenCalledWith(config.patientInformationForm);
     unmount();
 
     serve({ consultations: [consultation('new', '2026-04-01')], mayEnter: false });

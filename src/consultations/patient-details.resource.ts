@@ -3,6 +3,7 @@ import { type FetchResponse, openmrsFetch, parseDate, restBaseUrl } from '@openm
 import {
   answersIn,
   answerText,
+  answerUuid,
   type ChartEncounter,
   type GroupedObs,
   useChartEncounters,
@@ -28,8 +29,8 @@ export function usePersonDetails(patientUuid: string | null) {
 }
 
 /**
- * The questions a diagnosis reads. A clinician records it on the RHD Consultation Visit (AR-167); one a Patient
- * Information recorded before then still counts, so both encounter types are read.
+ * The questions a diagnosis reads. A clinician records it on RHD Patient Information; one a consultation recorded
+ * during the AR-167 interim still counts, so both encounter types are read.
  */
 export const diagnosisConcepts = {
   encounterTypes: {
@@ -39,6 +40,9 @@ export const diagnosisConcepts = {
   group: '594b4495-36dc-52a6-9810-15a9e2e2dcb9',
   category: '1a5aa050-661d-5e89-95d7-c1eba476df22',
   active: 'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
+  no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  priority: '97c025b2-f42c-5c53-8aaa-0506c8dd3774',
+  secondary: 'af45fb2a-ed18-5beb-935e-8e4d92df2dac',
   started: '62321320-695e-5319-a306-40dfd6ad94b7',
   ended: 'e9f2fceb-05be-577f-bf76-dde0647f01db',
   details: [
@@ -49,31 +53,62 @@ export const diagnosisConcepts = {
   ],
 };
 
-/** The patient's consultations and Patient Information together, newest first. */
-function useDiagnosisEncounters(patientUuid: string | null) {
+const withCategory = (encounter: ChartEncounter) =>
+  answersIn(encounter.obs, diagnosisConcepts.group).filter(
+    (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
+  );
+
+// An edit re-creates a changed answer, or the group if one is added: the newest dates the save.
+const savedAt = (group: GroupedObs) =>
+  Math.max(
+    0,
+    ...[group, ...(group.groupMembers ?? [])]
+      .filter((one) => one.auditInfo?.dateCreated)
+      .map((one) => parseDate(one.auditInfo.dateCreated).getTime()),
+  );
+
+// A code-unit compare, which orders lowercase hex as MariaDB's obs.uuid collation does.
+const byUuidDescending = (a: GroupedObs, b: GroupedObs) =>
+  Number((b.uuid ?? '') > (a.uuid ?? '')) - Number((b.uuid ?? '') < (a.uuid ?? ''));
+
+const answered = (group: GroupedObs, concept: string, answer: string) =>
+  answersIn(group.groupMembers, concept).some((one) => answerUuid(one.value) === answer);
+
+/** Whether the registry's reports count this Diagnosis: not answered inactive, nor secondary. */
+const counted = (group: GroupedObs) =>
+  !answered(group, diagnosisConcepts.active, diagnosisConcepts.no) &&
+  !answered(group, diagnosisConcepts.priority, diagnosisConcepts.secondary);
+
+/**
+ * The Diagnosis the registry's reports read, the one counted that saved last, with its encounter; with none counted,
+ * the Diagnosis saved last. A tie, as when saved together, goes to the higher obs uuid, as in the reports.
+ */
+function useLatestDiagnosisGroup(patientUuid: string | null) {
   const consultations = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.consultation);
   const information = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.patientInformation);
   const tag = (list: Array<ChartEncounter>, onConsultation: boolean) =>
-    list.map((encounter) => ({ ...encounter, onConsultation }));
-  const encounters = [...tag(consultations.encounters, true), ...tag(information.encounters, false)].sort(
-    (a, b) => parseDate(b.encounterDatetime).getTime() - parseDate(a.encounterDatetime).getTime(),
+    list.flatMap((encounter) => {
+      const diagnoses = withCategory(encounter);
+      return diagnoses.map((group) => ({ group, encounter: { ...encounter, onConsultation, diagnoses } }));
+    });
+  const [latest] = [...tag(consultations.encounters, true), ...tag(information.encounters, false)].sort(
+    (a, b) =>
+      Number(counted(b.group)) - Number(counted(a.group)) ||
+      savedAt(b.group) - savedAt(a.group) ||
+      parseDate(b.encounter.encounterDatetime).getTime() - parseDate(a.encounter.encounterDatetime).getTime() ||
+      byUuidDescending(a.group, b.group),
   );
   return {
-    encounters,
+    latest,
     error: consultations.error ?? information.error,
     isLoading: consultations.isLoading || information.isLoading,
   };
 }
 
-/**
- * The diagnosis of the patient's latest consultation or Patient Information that records one, as the registry reads
- * it: the first Diagnosis with a Category, and its details in name order. Null with none.
- */
+/** The Diagnosis the registry's reports read, as its category with its details in name order. Null with none. */
 export function useLatestDiagnosis(patientUuid: string | null) {
-  const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
-  const group = encounters
-    .flatMap((encounter) => answersIn(encounter.obs, diagnosisConcepts.group))
-    .find((one) => answersIn(one.groupMembers, diagnosisConcepts.category).length);
+  const { latest, error, isLoading } = useLatestDiagnosisGroup(patientUuid);
+  const group = latest && counted(latest.group) ? latest.group : null;
   if (!group) {
     return { diagnosis: null, error, isLoading };
   }
@@ -87,9 +122,9 @@ export function useLatestDiagnosis(patientUuid: string | null) {
 
 export interface DiagnosisRow {
   key: string;
-  /** The consultation or Patient Information that records it, which Edit reopens. */
+  /** The consultation or Patient Information that records it; Edit reopens a Patient Information. */
   encounterUuid: string;
-  /** Whether a consultation records it; otherwise a Patient Information from before AR-167. */
+  /** Whether a consultation records it (an AR-167-interim record); otherwise Patient Information. */
   onConsultation: boolean;
   diagnosis: string;
   active: string;
@@ -122,19 +157,15 @@ export function toDiagnosisRow(
 }
 
 /**
- * Every Diagnosis with a Category in the patient's latest consultation or Patient Information that has one; earlier
- * records are superseded.
+ * Every Diagnosis with a Category, inactive ones too, of the record holding the one the registry's reports read, else
+ * of the record that saved one last; other records are superseded.
  */
 export function useDiagnoses(patientUuid: string | null) {
-  const { encounters, error, isLoading } = useDiagnosisEncounters(patientUuid);
-  const withCategory = (encounter: ChartEncounter) =>
-    answersIn(encounter.obs, diagnosisConcepts.group).filter(
-      (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
-    );
-  const latest = encounters.find((encounter) => withCategory(encounter).length);
-  const diagnoses = latest
-    ? withCategory(latest).map((group, index) =>
-        toDiagnosisRow(group, `${latest.uuid}-${index}`, latest.uuid, latest.onConsultation),
+  const { latest, error, isLoading } = useLatestDiagnosisGroup(patientUuid);
+  const record = latest?.encounter;
+  const diagnoses = record
+    ? record.diagnoses.map((group, index) =>
+        toDiagnosisRow(group, `${record.uuid}-${index}`, record.uuid, record.onConsultation),
       )
     : [];
   return { diagnoses, error, isLoading };

@@ -2,7 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { navigate, openmrsFetch } from '@openmrs/esm-framework';
+import { fetchCurrentPatient, launchWorkspace2, openmrsFetch, saveVisit } from '@openmrs/esm-framework';
 import routes from '../routes.json';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -16,10 +16,12 @@ vi.mock('../access/may-enter-form', () => ({
 }));
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  navigate: vi.fn(),
+  fetchCurrentPatient: vi.fn(),
 }));
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 
+const informationForm = { uuid: 'a6646c51-130d-3b59-a442-959bea93487d', display: 'RHD Patient Information' };
+const fhirPatient = { resourceType: 'Patient', id: 'patient-2' };
 const mutate = vi.fn();
 
 async function recordDiagnosis(name: string) {
@@ -31,6 +33,8 @@ describe('Screen positive, Record diagnosis', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     await signInWith(['App: act.screenPositive', 'Add Encounters']);
+    vi.mocked(fetchCurrentPatient).mockResolvedValue(fhirPatient as never);
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: informationForm } as never);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],
       rows: screenPositiveRows,
@@ -40,12 +44,61 @@ describe('Screen positive, Record diagnosis', () => {
     });
   });
 
-  it("opens the patient's Consultation visits page, where Start consultation records the diagnosis", async () => {
+  it('opens the form that recorded the Screen + to edit, beside the list, starting no visit', async () => {
     render(<ScreenPositive />);
 
     await recordDiagnosis('Patient 2');
 
-    expect(navigate).toHaveBeenCalledWith({ to: '/openmrs/spa/patient/patient-2/chart/act-consultations' });
+    await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalled());
+    expect(vi.mocked(openmrsFetch).mock.calls[0][0]).toContain(informationForm.uuid);
+    expect(saveVisit).not.toHaveBeenCalled();
+    expect(launchWorkspace2).toHaveBeenCalledWith(
+      'act-screen-positive-form-entry-workspace',
+      { form: informationForm, encounterUuid: 'information-2', handlePostResponse: expect.any(Function) },
+      { patient: fhirPatient, patientUuid: 'patient-2', visitContext: null },
+    );
+  });
+
+  it('refreshes the list once the form is saved, through the callback the form entry workspace calls', async () => {
+    render(<ScreenPositive />);
+
+    await recordDiagnosis('Patient 2');
+
+    await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalled());
+    const [, workspaceProps] = vi.mocked(launchWorkspace2).mock.lastCall as unknown as [
+      string,
+      { handlePostResponse: (encounter: object) => void },
+    ];
+    expect(mutate).not.toHaveBeenCalled();
+    workspaceProps.handlePostResponse({ uuid: 'saved-encounter' });
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith();
+  });
+
+  it('opens the same form again for a second click, so the open form is not replaced', async () => {
+    render(<ScreenPositive />);
+
+    await recordDiagnosis('Patient 2');
+    await recordDiagnosis('Patient 2');
+
+    await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
+    const [first, second] = vi.mocked(launchWorkspace2).mock.calls as unknown as Array<
+      [string, { form: object; handlePostResponse: unknown }]
+    >;
+    expect(second[1].form).toBe(first[1].form);
+    expect(second[1].handlePostResponse).toBe(first[1].handlePostResponse);
+  });
+
+  it('tries again on a later click after opening failed', async () => {
+    vi.mocked(fetchCurrentPatient).mockRejectedValueOnce(new Error('forbidden'));
+    render(<ScreenPositive />);
+
+    await recordDiagnosis('Patient 2');
+    await vi.waitFor(() => expect(vi.mocked(fetchCurrentPatient)).toHaveBeenCalledTimes(1));
+    await recordDiagnosis('Patient 2');
+
+    await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(fetchCurrentPatient)).toHaveBeenCalledTimes(2);
   });
 
   it('offers no action for a Screen + recorded without a form', () => {

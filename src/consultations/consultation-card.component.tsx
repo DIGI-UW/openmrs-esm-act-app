@@ -10,11 +10,13 @@ import {
   parseDate,
   useConfig,
 } from '@openmrs/esm-framework';
+import { useMayEnterForm } from '../access/may-enter-form';
 import { useChartPagePath } from '../chart-page-path';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useNextCardiologyVisit } from '../patient-status/cardiology.resource';
 import { daysUntil } from '../patient-status/due-tone';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { useStartConsultation } from './consultations.component';
 import { useConsultations } from './consultations.resource';
 import { useLatestDiagnosis, usePersonDetails } from './patient-details.resource';
@@ -27,16 +29,18 @@ import styles from '../styles/summary-card.scss';
  */
 export default function ConsultationCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { contactCard } = useConfig<Config>();
+  const { contactCard, patientInformationForm } = useConfig<Config>();
   const { consultations, isLoading } = useConsultations(patientUuid);
   const { nextDue } = useNextCardiologyVisit(patientUuid);
   const { diagnosis, isLoading: diagnosisLoading } = useLatestDiagnosis(patientUuid);
   const { attributes } = usePersonDetails(patientUuid);
   const start = useStartConsultation(patientUuid);
+  const { open: openForm, isOpening: isOpeningForm } = useOpenFormInVisit(patientUuid);
+  const mayUpdateDiagnosis = useMayEnterForm(patientInformationForm);
   const pagePath = useChartPagePath('act-consultations-dashboard-link');
   const [last] = consultations;
-  // The clinician records the diagnosis on the consultation (AR-167): the latest one, edited, or a first one.
-  const updateDiagnosis = () => (last ? start.edit(last.uuid) : start.start());
+  // Patient Information is a singleRecordForm, so opening it edits the patient's record.
+  const updateDiagnosis = () => openForm(patientInformationForm);
 
   const fields = [
     {
@@ -109,13 +113,13 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
                     {t('edit', 'Edit')}
                   </Button>
                 )}
-                {field.id === 'diagnosis' && start && (
+                {field.id === 'diagnosis' && mayUpdateDiagnosis && (
                   <Button
                     kind="ghost"
                     size="sm"
                     className={styles.fieldAction}
                     renderIcon={(props) => <EditIcon size={16} {...props} />}
-                    disabled={start.isOpening}
+                    disabled={isOpeningForm}
                     onClick={updateDiagnosis}
                   >
                     {diagnosis ? t('updateDiagnosis', 'Update diagnosis') : t('recordDiagnosis', 'Record diagnosis')}

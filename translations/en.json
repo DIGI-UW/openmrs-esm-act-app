@@ -267,7 +267,7 @@
   "diagnosisCategory": "Diagnosis category",
   "diagnosisDetails": "Diagnosis details",
   "diagnosisToConfirm": "Diagnosis to confirm",
-  "diagnosisToConfirmDescription": "Screen-positive patients whose diagnosis has no details yet. Enter diagnosis takes a patient off this list.",
+  "diagnosisToConfirmDescription": "Screen-positive patients whose diagnosis has no details yet. Record diagnosis opens their form beside this list, where saved details take them off it.",
   "diagnosisToConfirmTileDescription": "Screened positive, no diagnosis details yet",
   "disable": "Disable",
   "disabled": "Disabled",

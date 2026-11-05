@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -15,14 +15,17 @@ import {
 import {
   CardiologyPictogram,
   ConfigurableLink,
+  fetchCurrentPatient,
   formatDate,
   isDesktop,
-  navigate,
+  launchWorkspace2,
+  showSnackbar,
   useConfig,
   useLayoutType,
   UserHasAccess,
 } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
+import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -56,15 +59,42 @@ const sortValues: Record<string, (row: ReportRow) => SortValue> = {
   screeningSite: reportText('screening_site'),
 };
 
+const screenPositiveFormEntryWorkspace = 'act-screen-positive-form-entry-workspace';
+
 export function ScreenPositiveTable() {
   const { t } = useTranslation();
   const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
-  // The diagnosis is recorded on the RHD Consultation Visit (AR-167), so the row opens the patient's Consultation
-  // visits page, where Start consultation records it; the saved consultation takes the patient off the list.
-  const recordDiagnosis = (row: ReportRow) =>
-    navigate({ to: `${window.getOpenmrsSpaBase()}patient/${String(row.patient_uuid)}/chart/act-consultations` });
+  // Stable, and not mutate itself, which would store the saved encounter as the list's data.
+  const refreshList = useCallback(() => {
+    mutate();
+  }, [mutate]);
+  // Same objects on a second click, so the open workspace does not prompt to close the form.
+  const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
+  // Opens the row's form to edit beside the list, where saved Diagnosis Details take the patient off it.
+  const recordDiagnosis = async (row: ReportRow) => {
+    const patientUuid = String(row.patient_uuid);
+    const encounterUuid = String(row.encounter_uuid);
+    if (!loaded.current.has(encounterUuid)) {
+      loaded.current.set(
+        encounterUuid,
+        Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]),
+      );
+    }
+    try {
+      const [form, patient] = await loaded.current.get(encounterUuid);
+      // An edit loads its own visit; the workspace calls handlePostResponse, not mutateVisitContext.
+      launchWorkspace2(
+        screenPositiveFormEntryWorkspace,
+        { form, encounterUuid, handlePostResponse: refreshList },
+        { patient, patientUuid, visitContext: null },
+      );
+    } catch (e) {
+      loaded.current.delete(encounterUuid);
+      showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
+    }
+  };
   const [filters, setFilters, filtersPending] = useScreenPositiveFilters();
   const clinicKind = useSessionClinicKind();
   const [sort, setSort] = useState<ColumnSort | null>(null);
@@ -192,7 +222,7 @@ export default function ScreenPositive() {
         <p className={styles.description}>
           {t(
             'diagnosisToConfirmDescription',
-            'Screen-positive patients with no diagnosis yet. Record diagnosis opens their Consultation visits, where a saved consultation with a diagnosis takes them off this list.',
+            'Screen-positive patients whose diagnosis has no details yet. Record diagnosis opens their form beside this list, where saved details take them off it.',
           )}
         </p>
         <ScreenPositiveTable />

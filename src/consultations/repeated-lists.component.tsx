@@ -77,19 +77,18 @@ export function CompactTable<Row extends { key: string }>({
 }
 
 /**
- * Every diagnosis the patient's latest consultation records, as a table, with Edit, which reopens that consultation,
- * for a user who may record one. A diagnosis a Patient Information recorded before AR-167 is listed until a
- * consultation records one, and its Edit reopens that Patient Information.
+ * The patient's diagnoses, with Edit opening Patient Information. An AR-167-interim consultation's are listed
+ * until a Patient Information diagnosis saved later, not answered inactive or secondary, replaces them.
  */
 export function Diagnoses({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
-  const { consultations, patientInformationForm } = useConfig<Config>();
+  const { patientInformationForm } = useConfig<Config>();
   const { diagnoses, error, isLoading } = useDiagnoses(patientUuid);
-  const mayEditConsultation = useMayEnterForm(consultations.form);
-  const mayEditInformation = useMayEnterForm(patientInformationForm);
-  const formOf = (one: DiagnosisRow) => (one.onConsultation ? consultations.form : patientInformationForm);
-  const mayEdit = diagnoses.every((one) => (one.onConsultation ? mayEditConsultation : mayEditInformation));
+  const mayEdit = useMayEnterForm(patientInformationForm);
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
+  // The consultation no longer asks the diagnosis, so an interim one is replaced on Patient Information.
+  const edit = (one: DiagnosisRow) =>
+    one.onConsultation ? open(patientInformationForm) : open(patientInformationForm, undefined, one.encounterUuid);
   const title = t('diagnoses', 'Diagnoses');
   type Row = (typeof diagnoses)[number];
   const columns: Array<Column<Row>> = [
@@ -108,7 +107,7 @@ export function Diagnoses({ patientUuid }: { patientUuid: string }) {
                   interpolation: { escapeValue: false },
                 })}
                 disabled={isOpening}
-                onClick={() => open(formOf(one), undefined, one.encounterUuid)}
+                onClick={() => edit(one)}
               />
             ),
           },
