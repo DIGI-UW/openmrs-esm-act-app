@@ -446,6 +446,16 @@ describe('chart pages by role', () => {
       await shows('RHD/RF (RHD B)');
     });
 
+    it('breaks a tie of two entries saved together by the higher obs uuid, as the reports do', async () => {
+      const entry = (detail: string, uuid: string) => ({ ...diagnosis(detail, '03-01'), uuid });
+      const high = entry('RHD B', 'f0000000-0000-4000-8000-000000000000');
+      const low = entry('RHD A', '10000000-0000-4000-8000-000000000000');
+      serve({ patientInformation: [information(low, high)] });
+      await shows('RHD/RF (RHD B)');
+      serve({ patientInformation: [information(high, low)] });
+      await shows('RHD/RF (RHD B)');
+    });
+
     it('passes over an inactive entry added later, to the interim diagnosis saved after the active one', async () => {
       serve({
         consultations: [consultation('interim', '2026-02-01', [diagnosis('RHD C', '02-01')])],

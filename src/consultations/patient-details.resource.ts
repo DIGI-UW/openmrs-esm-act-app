@@ -67,6 +67,10 @@ const savedAt = (group: GroupedObs) =>
       .map((one) => parseDate(one.auditInfo.dateCreated).getTime()),
   );
 
+// A code-unit compare, which orders lowercase hex as MariaDB's obs.uuid collation does.
+const byUuidDescending = (a: GroupedObs, b: GroupedObs) =>
+  Number((b.uuid ?? '') > (a.uuid ?? '')) - Number((b.uuid ?? '') < (a.uuid ?? ''));
+
 const answered = (group: GroupedObs, concept: string, answer: string) =>
   answersIn(group.groupMembers, concept).some((one) => answerUuid(one.value) === answer);
 
@@ -77,7 +81,7 @@ const counted = (group: GroupedObs) =>
 
 /**
  * The Diagnosis the registry's reports read, the one counted that saved last, with its encounter; with none counted,
- * the Diagnosis saved last. Two saved in the same second in one encounter tie, which the reports break by obs id.
+ * the Diagnosis saved last. A tie, as when saved together, goes to the higher obs uuid, as in the reports.
  */
 function useLatestDiagnosisGroup(patientUuid: string | null) {
   const consultations = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.consultation);
@@ -91,7 +95,8 @@ function useLatestDiagnosisGroup(patientUuid: string | null) {
     (a, b) =>
       Number(counted(b.group)) - Number(counted(a.group)) ||
       savedAt(b.group) - savedAt(a.group) ||
-      parseDate(b.encounter.encounterDatetime).getTime() - parseDate(a.encounter.encounterDatetime).getTime(),
+      parseDate(b.encounter.encounterDatetime).getTime() - parseDate(a.encounter.encounterDatetime).getTime() ||
+      byUuidDescending(a.group, b.group),
   );
   return {
     latest,
