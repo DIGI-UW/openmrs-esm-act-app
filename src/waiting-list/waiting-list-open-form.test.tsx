@@ -53,8 +53,12 @@ describe('Opening a recommendation consultation from the waiting list', () => {
     await waitFor(() => expect(vi.mocked(launchWorkspace2)).toHaveBeenCalled());
     const [workspace, workspaceProps, windowProps] = vi.mocked(launchWorkspace2).mock.calls[0];
     expect(workspace).toBe('act-waiting-list-form-entry-workspace');
-    expect(workspaceProps).toEqual(expect.objectContaining({ form: consultationForm, encounterUuid: 'encounter-3' }));
-    expect(windowProps).toEqual(expect.objectContaining({ patient, patientUuid: 'patient-3', visitContext: null }));
+    expect(workspaceProps).toEqual({
+      form: consultationForm,
+      encounterUuid: 'encounter-3',
+      handlePostResponse: expect.any(Function),
+    });
+    expect(windowProps).toEqual({ patient, patientUuid: 'patient-3', visitContext: null });
     expect(vi.mocked(fetchCurrentPatient)).toHaveBeenCalledWith('patient-3');
     expect(vi.mocked(navigate)).not.toHaveBeenCalled();
   });
@@ -65,19 +69,21 @@ describe('Opening a recommendation consultation from the waiting list', () => {
     await waitFor(() => expect(vi.mocked(launchWorkspace2)).toHaveBeenCalled());
     const [, workspaceProps, windowProps] = vi.mocked(launchWorkspace2).mock.calls[0] as [
       string,
+      { handlePostResponse: (encounter: unknown) => void },
       Record<string, unknown>,
-      { mutateVisitContext: () => void },
     ];
 
-    // Both form engines report a save through the visit context, so that alone evaluates the list again.
-    windowProps.mutateVisitContext();
+    expect(mutate).not.toHaveBeenCalled();
+    workspaceProps.handlePostResponse({ uuid: 'encounter-3' });
     expect(mutate).toHaveBeenCalledTimes(1);
-    expect(workspaceProps).not.toHaveProperty('handlePostResponse');
+    expect(mutate).toHaveBeenCalledWith();
+    expect(windowProps).not.toHaveProperty('mutateVisitContext');
   });
 
   it('launches the same props when a row is opened again, so the open form is left as it is', async () => {
-    render(<WaitingList />);
+    const { rerender } = render(<WaitingList />);
     await openFormOf('rhd00003');
+    rerender(<WaitingList />);
     await openFormOf('rhd00003');
 
     await waitFor(() => expect(vi.mocked(launchWorkspace2)).toHaveBeenCalledTimes(2));
