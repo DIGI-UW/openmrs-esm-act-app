@@ -1,105 +1,69 @@
 import React from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { type AssignedExtension, useAssignedExtensions } from '@openmrs/esm-framework';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import routes from '../routes.json';
 import AdminNav from './admin-nav.component';
 
+const homeExtensions = routes.extensions.filter((extension) => extension.slot === 'homepage-dashboard-slot');
+const assign = (...names: Array<string>) =>
+  vi
+    .mocked(useAssignedExtensions)
+    .mockReturnValue(homeExtensions.filter(({ name }) => names.includes(name)) as unknown as Array<AssignedExtension>);
+const links = () => screen.queryAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')]);
+
 describe('AdminNav', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     window.openmrsBase = '/openmrs';
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    await signInWith([homePrivilege]);
   });
 
-  it('offers Users and roles, Clinics, Studies, and Flags and adherence under Admin to a user who may use them all', async () => {
-    await signInWith([homePrivilege, 'Edit Users', 'Manage Locations', 'App: act.studies', 'Task: act.refreshFlags']);
+  it('offers each Admin page whose link the home dashboard assigns, under Admin, leading to it', () => {
+    assign(...homeExtensions.map(({ name }) => name));
 
     render(<AdminNav />);
 
     expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Users and roles' })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-users',
-    );
-    expect(screen.getByRole('link', { name: 'Clinics' })).toHaveAttribute('href', '/openmrs/spa/home/act-clinics');
-    expect(screen.getByRole('link', { name: 'Studies' })).toHaveAttribute('href', '/openmrs/spa/home/act-studies');
-    expect(screen.getByRole('link', { name: 'Flags and adherence' })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-refresh-flags',
-    );
-  });
-
-  it("leads Logs to ACT's Logs page, one item in place of User activity, Patients opened and Download log", async () => {
-    await signInWith([homePrivilege, 'View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs']);
-
-    render(<AdminNav />);
-
-    expect(screen.getByRole('link', { name: 'Logs' })).toHaveAttribute('href', '/openmrs/spa/home/act-logs');
-    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Logs']);
+    expect(links()).toEqual([
+      ['Users and roles', '/openmrs/spa/home/act-users'],
+      ['Logs', '/openmrs/spa/home/act-logs'],
+      ['Clinics', '/openmrs/spa/home/act-clinics'],
+      ['Studies', '/openmrs/spa/home/act-studies'],
+      ['Screening counts', '/openmrs/spa/home/act-screening-counts'],
+      ['Flags and adherence', '/openmrs/spa/home/act-refresh-flags'],
+      ['Download data', '/openmrs/spa/home/act-download'],
+    ]);
   });
 
   it.each([
-    { privilege: 'Edit Users', shown: ['Users and roles'], hidden: ['Clinics', 'Studies', 'Flags and adherence'] },
-    {
-      privilege: 'Manage Locations',
-      shown: ['Clinics'],
-      hidden: ['Users and roles', 'Studies', 'Flags and adherence'],
-    },
-    {
-      privilege: 'App: act.studies',
-      shown: ['Studies'],
-      hidden: ['Users and roles', 'Clinics', 'Flags and adherence'],
-    },
-    {
-      privilege: 'Task: act.refreshFlags',
-      shown: ['Flags and adherence'],
-      hidden: ['Users and roles', 'Clinics', 'Studies'],
-    },
-    {
-      privilege: 'View Audit Logs',
-      shown: ['Logs'],
-      hidden: ['Users and roles', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
-    },
-    {
-      privilege: 'View Read Audit Logs',
-      shown: ['Logs'],
-      hidden: ['Users and roles', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
-    },
-    {
-      privilege: 'View Security Audit Logs',
-      shown: ['Logs'],
-      hidden: ['Users and roles', 'Clinics', 'Studies', 'Flags and adherence', 'Download data'],
-    },
-    {
-      privilege: 'Task: act.downloadData',
-      shown: ['Download data'],
-      hidden: ['Users and roles', 'Logs', 'Clinics', 'Studies', 'Flags and adherence'],
-    },
-    {
-      privilege: 'Task: act.downloadResearchData',
-      shown: ['Download data'],
-      hidden: ['Users and roles', 'Logs', 'Clinics', 'Studies', 'Flags and adherence'],
-    },
-  ])('offers only $shown to a user holding $privilege', async ({ privilege, shown, hidden }) => {
-    await signInWith([homePrivilege, privilege]);
+    ['act-users-dashboard-link', 'Users and roles'],
+    ['act-logs-dashboard-link', 'Logs'],
+    ['act-clinics-dashboard-link', 'Clinics'],
+    ['act-studies-dashboard-link', 'Studies'],
+    ['act-screening-counts-dashboard-link', 'Screening counts'],
+    ['act-refresh-flags-dashboard-link', 'Flags and adherence'],
+    ['act-download-dashboard-link', 'Download data'],
+  ])('offers only %s, as %s, when it alone is assigned', (name, label) => {
+    assign(name);
 
     render(<AdminNav />);
 
-    shown.forEach((name) => expect(screen.getByRole('link', { name })).toBeInTheDocument());
-    hidden.forEach((name) => expect(screen.queryByRole('link', { name })).not.toBeInTheDocument());
+    expect(links().map(([text]) => text)).toEqual([label]);
   });
 
-  it('offers Admin to an administrator whose home is not ACT home, such as the Instance Administrator', async () => {
-    await signInWith(['App: act.instanceAdmin', 'Edit Users', 'Task: act.refreshFlags']);
+  it("follows the home dashboard's assignment rather than the user's privileges", async () => {
+    await signInWith(['Edit Users', 'Manage Locations', 'App: act.studies', 'Task: act.refreshFlags']);
+    assign('act-studies-dashboard-link');
 
     render(<AdminNav />);
 
-    expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Users and roles' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Flags and adherence' })).toBeInTheDocument();
+    expect(links().map(([text]) => text)).toEqual(['Studies']);
   });
 
-  it('shows nothing, not even its heading, to a user who may manage neither', async () => {
-    await signInWith([homePrivilege]);
+  it('shows nothing, not even its heading, when no Admin page is assigned', () => {
+    assign();
 
     const { container } = render(<AdminNav />);
 

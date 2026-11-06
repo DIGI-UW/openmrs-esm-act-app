@@ -91,6 +91,9 @@ describe('routes.json privileges', () => {
     ['act-instance-admin-research-participation', screenPrivileges.instanceAdmin],
     ['act-instance-admin-nav', screenPrivileges.instanceAdmin],
     ['act-studies-dashboard-link', 'App: act.studies'],
+    ['act-users-dashboard-link', 'Edit Users'],
+    ['act-clinics-dashboard-link', 'Manage Locations'],
+    ['act-screening-counts-dashboard-link', 'App: act.screeningCounts'],
     ['act-studies-dashboard', 'App: act.studies'],
     ['act-research-dashboard-link', 'App: act.studies'],
     ['act-research-dashboard', 'App: act.studies'],
@@ -257,23 +260,35 @@ describe('routes.json privileges', () => {
     ]);
   });
 
+  const auditSession = (privileges: Array<string>, roles: Array<string> = []) => ({
+    session: {
+      user: {
+        privileges: privileges.map((display) => ({ display })),
+        roles: roles.map((display) => ({ display })),
+      },
+    },
+  });
+
   it.each(['act-logs-dashboard-link', 'act-logs-dashboard'])(
     'shows %s to a user holding any of the three audit privileges, or to a super user, and to no one else',
     (name) => {
       const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
-      const session = (privileges: Array<string>, roles: Array<string> = []) => ({
-        session: {
-          user: {
-            privileges: privileges.map((display) => ({ display })),
-            roles: roles.map((display) => ({ display })),
-          },
-        },
-      });
-      expect(evaluate(expression, session(['View Audit Logs']))).toBe(true);
-      expect(evaluate(expression, session(['View Read Audit Logs']))).toBe(true);
-      expect(evaluate(expression, session(['View Security Audit Logs']))).toBe(true);
-      expect(evaluate(expression, session([], ['System Developer']))).toBe(true);
-      expect(evaluate(expression, session(['App: act.home'], ['Organizational: ACT Clinician']))).toBe(false);
+      expect(evaluate(expression, auditSession(['View Audit Logs']))).toBe(true);
+      expect(evaluate(expression, auditSession(['View Read Audit Logs']))).toBe(true);
+      expect(evaluate(expression, auditSession(['View Security Audit Logs']))).toBe(true);
+      expect(evaluate(expression, auditSession([], ['System Developer']))).toBe(true);
+      expect(evaluate(expression, auditSession(['App: act.home'], ['Organizational: ACT Clinician']))).toBe(false);
+    },
+  );
+
+  it.each(['act-download-dashboard-link', 'act-download-dashboard'])(
+    'shows %s to a user holding either download privilege, or to a super user, and to no one else',
+    (name) => {
+      const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
+      expect(evaluate(expression, auditSession(['Task: act.downloadData']))).toBe(true);
+      expect(evaluate(expression, auditSession(['Task: act.downloadResearchData']))).toBe(true);
+      expect(evaluate(expression, auditSession([], ['System Developer']))).toBe(true);
+      expect(evaluate(expression, auditSession(['App: act.home'], ['Organizational: ACT Clinician']))).toBe(false);
     },
   );
 });

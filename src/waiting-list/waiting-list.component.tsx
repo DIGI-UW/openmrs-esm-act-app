@@ -103,7 +103,7 @@ export function WaitingListTable() {
     try {
       const [form, patient] = await loaded.current.get(encounterUuid);
       // An edit loads its own visit; the workspace calls handlePostResponse, not mutateVisitContext.
-      launchWorkspace2(
+      await launchWorkspace2(
         waitingListFormEntryWorkspace,
         { form, encounterUuid, handlePostResponse: refreshList },
         { patient, patientUuid, visitContext: null },

@@ -98,6 +98,19 @@ describe('Opening a recommendation consultation from the waiting list', () => {
     }
   });
 
+  it('says so when the workspace refuses to open the form', async () => {
+    vi.mocked(launchWorkspace2).mockRejectedValue(new Error('No window named act-waiting-list-form-entry'));
+    render(<WaitingList />);
+
+    await openFormOf('rhd00003');
+
+    await waitFor(() =>
+      expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'error', subtitle: 'No window named act-waiting-list-form-entry' }),
+      ),
+    );
+  });
+
   it('says so, and opens nothing, when the patient cannot be loaded', async () => {
     vi.mocked(fetchCurrentPatient).mockRejectedValue(new Error('forbidden'));
     render(<WaitingList />);
