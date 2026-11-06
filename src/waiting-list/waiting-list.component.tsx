@@ -68,7 +68,8 @@ export function WaitingListTable() {
   const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
-  // Memoised so a reopened row keeps its props; mutate(encounter) would cache the encounter.
+  // Memoised so a reopened row keeps its props.
+  // Wraps mutate, since mutate(encounter) would cache the encounter.
   const refreshList = useCallback(() => {
     mutate();
   }, [mutate]);
