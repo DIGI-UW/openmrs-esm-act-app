@@ -1,24 +1,21 @@
 # Workflow to automatically check and update OpenMRS dependencies
-# Runs hourly and can be triggered manually
 
 name: 'Check for OpenMRS Dependency Updates'
 
 on:
   workflow_dispatch:
   schedule:
-    # Runs every hour at minute 30
-    - cron: '30 * * * *'
+    - cron: '30 */4 * * *'
 
 jobs:
   check-for-updates:
     name: Check for updates to OpenMRS libraries
     runs-on: ubuntu-latest
 
-    if: github.repository_owner == 'DIGI-UW'
+    if: github.repository == 'DIGI-UW/openmrs-esm-act-app'
 
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
 
     steps:
       # Step 1: Check out repository
@@ -50,7 +47,6 @@ jobs:
 
       # Step 6: Create PR with updates if necessary
       - name: ⬆️ Create PR if necessary
-        id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: '(chore) Update OpenMRS dependencies'
