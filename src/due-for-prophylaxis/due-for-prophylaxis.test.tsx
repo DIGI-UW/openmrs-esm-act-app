@@ -346,7 +346,7 @@ describe('Due for prophylaxis page', () => {
     expect(second[2].visitContext).toBe(first[2].visitContext);
   });
 
-  it("opens the form in the patient's current visit on a second click, once the one it opened in has ended", async () => {
+  it('starts a visit on a second click once the one the form opened in has ended', async () => {
     vi.mocked(findActiveVisit).mockResolvedValueOnce({ uuid: 'first-visit' } as never);
     vi.mocked(findActiveVisit).mockResolvedValueOnce(null);
     dataset({ rows: dueRows });

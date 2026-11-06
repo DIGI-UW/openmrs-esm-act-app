@@ -329,6 +329,7 @@ describe('routes.json workspaces', () => {
       '/home/act-due-for-prophylaxis',
       '/home/act-enter-prophylaxis',
       '/home/act-home',
+      '/home/act-community-home',
     ];
     expect(new Set(pages.map(page)).size).toBe(pages.length);
   });
