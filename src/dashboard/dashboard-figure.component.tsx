@@ -65,10 +65,7 @@ export function DashboardFigure({
   const { counted, countParams, pending } = useCountParams(params);
   const report = useReportDataset(counted ? patientsReport(dashboard, figure.figure) : null, countParams);
   const { rows } = report;
-  // By value: figure is rebuilt every render, so passing params would go back to page 1 each time.
-  const paramsKey = JSON.stringify(params);
-  const pageKey = useMemo(() => ({ paramsKey }), [paramsKey]);
-  const { results, paginationProps } = usePagedRows(rows, pageKey);
+  const { results, paginationProps } = usePagedRows(rows, params);
   const names = figureNames(t, figure, careCascade.steps);
   const unit = rowUnit(figure);
   const count = rows.length;
