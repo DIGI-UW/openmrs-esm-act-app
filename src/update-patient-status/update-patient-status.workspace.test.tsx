@@ -1,6 +1,6 @@
 import React from 'react';
 import dayjs from 'dayjs';
-import { SWRConfig } from 'swr';
+import useSWR, { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -91,9 +91,18 @@ const posts = () =>
     .map(([url, init]) => [url, (init as { body: Record<string, unknown> }).body] as const);
 
 const closeWorkspace = vi.fn();
+// Reads this patient and another under the framework's usePatient key; only this one should reload.
+const fetchChartPatient = vi.fn(() => Promise.resolve({ resourceType: 'Patient', id: 'winnie' }));
+const fetchOtherPatient = vi.fn(() => Promise.resolve({ resourceType: 'Patient', id: 'otto' }));
+function ChartPatient() {
+  useSWR(['patient', 'winnie'], fetchChartPatient);
+  useSWR(['patient', 'otto'], fetchOtherPatient);
+  return null;
+}
 function workspace() {
   return (
     <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      <ChartPatient />
       <UpdatePatientStatusWorkspace
         workspaceProps={null}
         windowProps={null}
@@ -157,7 +166,21 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(posts()[1][1]).toMatchObject({ states: [{ state: 'dead' }] });
   });
 
-  it('says the death was saved when the enrolment is refused, and a second Save repeats only the enrolment', async () => {
+  it("reloads the chart's patient after a death is saved, so the banner shows it", async () => {
+    serve();
+    await openWorkspace();
+    expect(fetchChartPatient).toHaveBeenCalledTimes(1);
+
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    await waitFor(() => expect(fetchChartPatient).toHaveBeenCalledTimes(2));
+    expect(fetchOtherPatient).toHaveBeenCalledTimes(1);
+  });
+
+  it('says the death was saved when the enrolment is refused, reloads the patient, and repeats only the enrolment', async () => {
     serve({ failEnrolment: true });
     await openWorkspace();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
@@ -171,6 +194,7 @@ describe('UpdatePatientStatusWorkspace', () => {
       ),
     );
     expect(closeWorkspace).not.toHaveBeenCalled();
+    await waitFor(() => expect(fetchChartPatient).toHaveBeenCalledTimes(2));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(posts()).toHaveLength(3));
     expect(posts().map(([url]) => url)).toEqual([
