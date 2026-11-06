@@ -700,8 +700,20 @@
   border-left: layout.$spacing-02 solid $interactive-01;
 }
 
+.figureToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: layout.$spacing-03;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: layout.$spacing-03;
+}
+
+// At the right of the chips, and still at the right on a line of its own once they fill the width.
+.figureActions {
+  margin-left: auto;
 }
