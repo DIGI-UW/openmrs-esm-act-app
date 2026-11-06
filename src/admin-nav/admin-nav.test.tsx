@@ -10,7 +10,11 @@ const homeExtensions = routes.extensions.filter((extension) => extension.slot ==
 const assign = (...names: Array<string>) =>
   vi
     .mocked(useAssignedExtensions)
-    .mockReturnValue(homeExtensions.filter(({ name }) => names.includes(name)) as unknown as Array<AssignedExtension>);
+    .mockImplementation((slot) =>
+      slot === 'homepage-dashboard-slot'
+        ? (homeExtensions.filter(({ name }) => names.includes(name)) as unknown as Array<AssignedExtension>)
+        : [],
+    );
 const links = () => screen.queryAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')]);
 
 describe('AdminNav', () => {
