@@ -14,7 +14,7 @@ jobs:
     name: Check for updates to OpenMRS libraries
     runs-on: ubuntu-latest
 
-    if: github.repository_owner == 'openmrs'
+    if: github.repository_owner == 'DIGI-UW'
 
     permissions:
       contents: write
@@ -67,26 +67,10 @@ jobs:
             ## Verification
             - [ ] All dependencies are valid versions
             - [ ] No breaking changes introduced
-
-            > This PR was automatically generated and will be automatically merged if checks pass.
           branch: 'chore/update-openmrs-deps'
           author: 'OpenMRS Bot <infrastructure@openmrs.org>'
-          token: ${{ secrets.OMRS_BOT_GH_TOKEN }}
+          token: ${{ secrets.GH_BOT_TOKEN }}
           labels: |
             dependencies
             automated-pr
           delete-branch: true    # Clean up branch after merge
-
-      # Step 7: Auto-approve the PR if created or updated
-      - name: ✅ Auto approve PR
-        if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
-        run: gh pr review --approve "${{ steps.cpr.outputs.pull-request-number }}"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Step 8: Auto-merge the PR if created or updated
-      - name: 🔀 Auto merge PR
-        if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
-        run: gh pr merge --auto --squash "${{ steps.cpr.outputs.pull-request-number }}"
-        env:
-          GH_TOKEN: ${{ secrets.OMRS_BOT_GH_TOKEN }}
