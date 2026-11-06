@@ -977,6 +977,10 @@
       "scopePattern": "/home/act-waiting-list"
     },
     {
+      "name": "act-record-dose",
+      "scopePattern": "^/home/([^/]+)"
+    },
+    {
       "name": "act-screen-positive",
       "scopePattern": "/home/act-screen-positive"
     },
@@ -1001,6 +1005,12 @@
     {
       "name": "act-waiting-list-form-entry",
       "group": "act-waiting-list",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-record-dose-form-entry",
+      "group": "act-record-dose",
       "width": "extra-wide",
       "canMaximize": true
     },
@@ -1086,6 +1096,11 @@
       "name": "act-waiting-list-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "act-waiting-list-form-entry"
+    },
+    {
+      "name": "act-record-dose-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-record-dose-form-entry"
     },
     {
       "name": "act-screen-positive-form-entry-workspace",
