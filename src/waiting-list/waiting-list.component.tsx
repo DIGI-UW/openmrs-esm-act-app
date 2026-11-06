@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -68,6 +68,10 @@ export function WaitingListTable() {
   const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
+  // Memoised so a reopened row keeps its props; mutate(encounter) would cache the encounter.
+  const refreshList = useCallback(() => {
+    mutate();
+  }, [mutate]);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
   // A band's name is translated where shown; the filter, kept in the URL, matches the configured name.
@@ -98,12 +102,11 @@ export function WaitingListTable() {
     }
     try {
       const [form, patient] = await loaded.current.get(encounterUuid);
-      // An edit loads its encounter's own visit, so the list passes none. Both form engines report a save
-      // through mutateVisitContext.
+      // An edit loads its own visit; the workspace calls handlePostResponse, not mutateVisitContext.
       launchWorkspace2(
         waitingListFormEntryWorkspace,
-        { form, encounterUuid },
-        { patient, patientUuid, visitContext: null, mutateVisitContext: mutate },
+        { form, encounterUuid, handlePostResponse: refreshList },
+        { patient, patientUuid, visitContext: null },
       );
     } catch (e) {
       loaded.current.delete(encounterUuid);
