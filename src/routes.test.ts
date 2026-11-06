@@ -285,8 +285,8 @@ describe('routes.json privileges', () => {
     'shows %s to a user holding either download privilege, or to a super user, and to no one else',
     (name) => {
       const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
-      expect(evaluate(expression, auditSession(['Task: act.downloadData']))).toBe(true);
-      expect(evaluate(expression, auditSession(['Task: act.downloadResearchData']))).toBe(true);
+      expect(evaluate(expression, auditSession(['App: act.home', 'Task: act.downloadData']))).toBe(true);
+      expect(evaluate(expression, auditSession(['App: act.home', 'Task: act.downloadResearchData']))).toBe(true);
       expect(evaluate(expression, auditSession([], ['System Developer']))).toBe(true);
       expect(evaluate(expression, auditSession(['App: act.home'], ['Organizational: ACT Clinician']))).toBe(false);
     },

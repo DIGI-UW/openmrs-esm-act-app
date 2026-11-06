@@ -72,8 +72,12 @@ describe("Carbon Charts' stylesheet", () => {
     );
     expect(sources.filter((path) => path.endsWith('.scss')).length).toBeGreaterThan(0);
     expect(sources.filter((path) => path.endsWith('.tsx')).length).toBeGreaterThan(0);
+    // A script may import charts JS, so only its .css specifiers count.
     const importing = sources.filter((path) =>
-      /['"]@carbon\/charts(-react)?\/[^'"]*\.css['"]/.test(readFileSync(resolve(process.cwd(), 'src', path), 'utf8')),
+      (path.endsWith('.scss')
+        ? /['"]~?@carbon\/charts(-react)?(\/[^'"]*)?['"]/
+        : /['"]~?@carbon\/charts(-react)?\/[^'"]*\.css['"]/
+      ).test(readFileSync(resolve(process.cwd(), 'src', path), 'utf8')),
     );
     expect(importing).toEqual([]);
   });
