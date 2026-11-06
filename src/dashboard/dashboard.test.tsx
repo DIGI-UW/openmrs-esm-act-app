@@ -313,12 +313,14 @@ const paramsOf = (report: string) =>
     .mock.calls.filter(([uuid]) => uuid === report)
     .at(-1)?.[1];
 
+const page = () => (
+  <SWRConfig value={{ provider: () => new Map() }}>
+    <Dashboard />
+  </SWRConfig>
+);
+
 function renderPage() {
-  return render(
-    <SWRConfig value={{ provider: () => new Map() }}>
-      <Dashboard />
-    </SWRConfig>,
-  );
+  return render(page());
 }
 
 describe('Dashboard', () => {
@@ -1576,6 +1578,80 @@ describe('Dashboard', () => {
           }),
         ),
       );
+    });
+
+    describe('a long figure', () => {
+      const many = Array.from({ length: 12 }, (_, i) =>
+        patientRow(`Patient ${String(i + 1).padStart(2, '0')}`, 'Active'),
+      );
+      const shownNames = () =>
+        screen.getAllByTestId('dashboard-figure-row').map((row) => within(row).getAllByRole('cell')[1].textContent);
+
+      async function openLongFigure(rows = many, query = '') {
+        await signIn(undefined, { [REGISTRANT_PATIENTS]: rows });
+        await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
+        window.history.replaceState(
+          null,
+          '',
+          `/openmrs/spa/home/act-dashboard?cardiacClinic=lira&figure=registrants&breakdown=status&label=Active${query}`,
+        );
+        return renderPage();
+      }
+
+      it('puts Download CSV before the table', async () => {
+        await openLongFigure();
+
+        const download = await screen.findByRole('button', { name: 'Download CSV' });
+        expect(
+          download.compareDocumentPosition(screen.getByRole('table')) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      });
+
+      it('shows the patients a page at a time, and Download CSV still has them all', async () => {
+        await openLongFigure();
+
+        await screen.findByText(/^Opened from the Dashboard: Registrant status, Active, 12 patients/);
+        expect(shownNames()).toHaveLength(10);
+        await userEvent.click(screen.getByRole('button', { name: /next page/i }));
+        expect(shownNames()).toEqual(['Patient 11', 'Patient 12']);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+        await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.calls.at(-1)[2]).toHaveLength(12);
+      });
+
+      it('offers Download CSV, disabled, and no pages, on a figure with no patients', async () => {
+        await openLongFigure([]);
+
+        expect(await screen.findByRole('button', { name: 'Download CSV' })).toBeDisabled();
+        expect(screen.queryByRole('button', { name: /next page/i })).not.toBeInTheDocument();
+      });
+
+      it('keeps its page when the Dashboard draws again, and starts from page 1 when a chip widens the list', async () => {
+        const { rerender } = await openLongFigure();
+        await userEvent.click(await screen.findByRole('button', { name: /next page/i }));
+        expect(shownNames()).toEqual(['Patient 11', 'Patient 12']);
+
+        rerender(page());
+        expect(shownNames()).toEqual(['Patient 11', 'Patient 12']);
+
+        await userEvent.click(screen.getByRole('button', { name: /Cardiac clinic: Lira RRH/ }));
+        await vi.waitFor(() => expect(shownNames()).toHaveLength(10));
+        expect(shownNames()[0]).toBe('Patient 01');
+      });
+
+      it.each([
+        ['the figure chip', '', /Registrant status: Active/],
+        ['the as-of chip', '&asOf=2026-01-15', /As of 15\/01\/2026/],
+      ])('starts from page 1 when %s widens the list', async (_, query, chip) => {
+        await openLongFigure(many, query);
+        await userEvent.click(await screen.findByRole('button', { name: /next page/i }));
+        expect(shownNames()).toEqual(['Patient 11', 'Patient 12']);
+
+        await userEvent.click(screen.getByRole('button', { name: chip }));
+        await vi.waitFor(() => expect(shownNames()).toHaveLength(10));
+        expect(shownNames()[0]).toBe('Patient 01');
+      });
     });
   });
 

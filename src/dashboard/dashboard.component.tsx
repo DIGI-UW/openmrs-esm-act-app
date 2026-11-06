@@ -1470,9 +1470,14 @@ export default function Dashboard() {
       setUrl({ cardiacClinic: next.cardiacClinic ?? '', primaryCareClinic: next.primaryCareClinic ?? '' }),
     [setUrl],
   );
-  const figure = sections.includes(url.figure as FigureSection)
-    ? (Object.fromEntries(figureKeys.map((key) => [key, url[key]])) as Figure)
-    : null;
+  // One object until the URL changes, so the figure page's paging sees the same parameters on every redraw.
+  const figure = useMemo(
+    () =>
+      sections.includes(url.figure as FigureSection)
+        ? (Object.fromEntries(figureKeys.map((key) => [key, url[key]])) as Figure)
+        : null,
+    [url],
+  );
   const defaultedKeys = sessionScope.status === 'ready' ? (Object.keys(sessionScope.params) as Array<UrlKey>) : [];
   const hrefOf = (change: Partial<Record<UrlKey, string>>) =>
     urlWithFilters(urlKeys, { ...url, ...change }, defaultedKeys);

@@ -700,8 +700,20 @@
   border-left: layout.$spacing-02 solid $interactive-01;
 }
 
+.figureToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: layout.$spacing-03;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: layout.$spacing-03;
+}
+
+// margin-left: auto, not space-between, so the button stays right when it wraps to its own line.
+.figureActions {
+  margin-left: auto;
 }

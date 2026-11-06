@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Button,
   InlineNotification,
+  Pagination,
   SkeletonText,
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
+import { usePagedRows } from '../table-filters/paged-rows';
 import {
   type Figure,
   figureNames,
@@ -63,6 +65,7 @@ export function DashboardFigure({
   const { counted, countParams, pending } = useCountParams(params);
   const report = useReportDataset(counted ? patientsReport(dashboard, figure.figure) : null, countParams);
   const { rows } = report;
+  const { results, paginationProps } = usePagedRows(rows, params);
   const names = figureNames(t, figure, careCascade.steps);
   const unit = rowUnit(figure);
   const count = rows.length;
@@ -121,32 +124,47 @@ export function DashboardFigure({
           {t('backToTheDashboard', 'Back to the Dashboard')}
         </Button>
       </div>
-      <div className={styles.chips}>
-        {!isWidened(figure) &&
-          chip('figure', [names.section, names.label].filter(Boolean).join(': '), () => onFigure(widened(figure)))}
-        {scope.cardiacClinic &&
-          chip('cardiac', `${t('cardiacClinic', 'Cardiac clinic')}: ${clinicNames.cardiac ?? ''}`, () => {
-            const { cardiacClinic: _, ...rest } = scope;
-            onScope(rest);
-          })}
-        {scope.primaryCareClinic &&
-          chip(
-            'primaryCare',
-            `${t('primaryCareClinic', 'Primary care clinic')}: ${clinicNames.primaryCare ?? ''}`,
-            () => {
-              const { primaryCareClinic: _, ...rest } = scope;
+      <div className={styles.figureToolbar}>
+        <div className={styles.chips}>
+          {!isWidened(figure) &&
+            chip('figure', [names.section, names.label].filter(Boolean).join(': '), () => onFigure(widened(figure)))}
+          {scope.cardiacClinic &&
+            chip('cardiac', `${t('cardiacClinic', 'Cardiac clinic')}: ${clinicNames.cardiac ?? ''}`, () => {
+              const { cardiacClinic: _, ...rest } = scope;
               onScope(rest);
-            },
-          )}
-        {asOf !== today &&
-          chip(
-            'asOf',
-            t('asOfDate', 'As of {{date}}', {
-              date: dayjs(asOf).format('DD/MM/YYYY'),
-              interpolation: { escapeValue: false },
-            }),
-            () => onAsOf(today),
-          )}
+            })}
+          {scope.primaryCareClinic &&
+            chip(
+              'primaryCare',
+              `${t('primaryCareClinic', 'Primary care clinic')}: ${clinicNames.primaryCare ?? ''}`,
+              () => {
+                const { primaryCareClinic: _, ...rest } = scope;
+                onScope(rest);
+              },
+            )}
+          {asOf !== today &&
+            chip(
+              'asOf',
+              t('asOfDate', 'As of {{date}}', {
+                date: dayjs(asOf).format('DD/MM/YYYY'),
+                interpolation: { escapeValue: false },
+              }),
+              () => onAsOf(today),
+            )}
+        </div>
+        {!report.error && !report.isLoading && !pending && (
+          <div className={styles.figureActions}>
+            <DownloadCsvButton
+              name={`dashboard-${figure.figure}`}
+              list={`dashboard:${figure.figure}`}
+              identifiers
+              filters={countParams}
+              headers={headers}
+              rows={() => rows.map(cells)}
+              disabled={!rows.length}
+            />
+          </div>
+        )}
       </div>
       {report.error ? (
         <InlineNotification
@@ -170,7 +188,7 @@ export function DashboardFigure({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => (
+                {results.map((row, index) => (
                   <TableRow key={`${row.patient_uuid}-${index}`} data-testid="dashboard-figure-row">
                     {cells(row).map((cell, column) => (
                       <TableCell key={headers[column]}>
@@ -186,15 +204,7 @@ export function DashboardFigure({
               </TableBody>
             </Table>
           </div>
-          <DownloadCsvButton
-            name={`dashboard-${figure.figure}`}
-            list={`dashboard:${figure.figure}`}
-            identifiers
-            filters={countParams}
-            headers={headers}
-            rows={() => rows.map(cells)}
-            disabled={!rows.length}
-          />
+          {rows.length > 0 && <Pagination {...paginationProps} />}
         </>
       )}
     </div>
