@@ -9,6 +9,7 @@ import { DueListToolbar } from './due-list-toolbar.component';
 import { useDueFilter } from './due-list';
 import { dueForProphylaxisDashboardMeta } from './due-for-prophylaxis.meta';
 import { useDueList } from './due-for-prophylaxis.resource';
+import { useRecordDose } from './record-dose.component';
 
 const shownRows = 5;
 
@@ -18,6 +19,7 @@ export default function DueForProphylaxisWidget() {
   const desktop = isDesktop(useLayoutType());
   const { rows, recorded, waiting, isLoading, error } = useDueList();
   const { filter, setFilter, counts, filtered } = useDueFilter(rows);
+  const recordDose = useRecordDose();
 
   return (
     <ActHomeCard
@@ -54,7 +56,7 @@ export default function DueForProphylaxisWidget() {
             recorded={recorded}
           />
           {filtered.length ? (
-            <DueForProphylaxisTable rows={filtered.slice(0, shownRows)} recorded={recorded} />
+            <DueForProphylaxisTable rows={filtered.slice(0, shownRows)} recorded={recorded} recordDose={recordDose} />
           ) : (
             <TableEmptyState message={t('nobodyDueInThisList', 'No patients in this list')} />
           )}

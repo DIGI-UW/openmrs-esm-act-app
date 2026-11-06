@@ -37,7 +37,11 @@ function cached<T>(cache: Map<string, Promise<T>>, key: string, load: () => Prom
   return cache.get(key);
 }
 
-/** Opens a due row's dose form beside the list, one at a time, as a second click while a visit starts would start a second. */
+/**
+ * Opens a due row's dose form beside the list, one at a time, as a second click while a visit starts would start a second.
+ * Called by what stays mounted while the panel is open, not by the table, which an empty filter or search unmounts and
+ * whose caches would go with it.
+ */
 export function useRecordDose() {
   const { t } = useTranslation();
   const { visitType } = useConfig<Config>();
@@ -86,6 +90,8 @@ export function useRecordDose() {
   };
   return { opening, record };
 }
+
+export type RecordDose = ReturnType<typeof useRecordDose>;
 
 /** A due row's Record BPG or Record oral, View chart once recorded today, or Needs prescription without one. */
 export function RecordDoseAction({

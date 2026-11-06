@@ -7,6 +7,7 @@ import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { DueForProphylaxisTable } from '../due-for-prophylaxis/due-for-prophylaxis-table.component';
 import { DueListToolbar } from '../due-for-prophylaxis/due-list-toolbar.component';
 import { useDueFilter } from '../due-for-prophylaxis/due-list';
+import { useRecordDose } from '../due-for-prophylaxis/record-dose.component';
 import { useRecordedToday } from '../due-for-prophylaxis/recorded-today.resource';
 import { bothClinics, onRegistryNow, useRegistryReport, useSessionClinicReport } from '../registry/registry.resource';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -33,6 +34,7 @@ function PatientsOnProphylaxis() {
   const { results, paginationProps } = usePagedRows(filtered, filters);
   // Who was recorded today is read from the rows themselves, so the CSV knows it for every filtered row too.
   const { recorded } = useRecordedToday(filtered);
+  const recordDose = useRecordDose();
 
   if (registry.error) {
     return (
@@ -75,7 +77,7 @@ function PatientsOnProphylaxis() {
           />
         ) : filtered.length ? (
           <>
-            <DueForProphylaxisTable rows={results} recorded={recorded} />
+            <DueForProphylaxisTable rows={results} recorded={recorded} recordDose={recordDose} />
             {filtered.length > paginationProps.pageSizes[0] && <Pagination {...paginationProps} />}
           </>
         ) : (

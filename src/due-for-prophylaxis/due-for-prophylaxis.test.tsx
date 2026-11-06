@@ -346,6 +346,28 @@ describe('Due for prophylaxis page', () => {
     expect(second[2].visitContext).toBe(first[2].visitContext);
   });
 
+  it('opens the same form again after a filter with nobody in it hid the table, as the panel stays open', async () => {
+    vi.mocked(findActiveVisit).mockImplementation(() => Promise.resolve({ uuid: 'active-visit' }) as never);
+    dataset({ rows: dueRows.filter((row) => row.patient_uuid !== 'patient-oral') });
+    await renderPage();
+
+    const recordBpg = () => within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button');
+    await userEvent.click(recordBpg());
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
+    await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: /^BPG/ }));
+    await userEvent.click(recordBpg());
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
+
+    const [first, second] = vi.mocked(launchWorkspace2).mock.calls as Array<
+      [string, Record<string, unknown>, Record<string, unknown>]
+    >;
+    expect(second[1].form).toBe(first[1].form);
+    expect(second[2].patient).toBe(first[2].patient);
+    expect(second[2].visitContext).toBe(first[2].visitContext);
+  });
+
   it('starts a visit on a second click once the one the form opened in has ended', async () => {
     vi.mocked(findActiveVisit).mockResolvedValueOnce({ uuid: 'first-visit' } as never);
     vi.mocked(findActiveVisit).mockResolvedValueOnce(null);

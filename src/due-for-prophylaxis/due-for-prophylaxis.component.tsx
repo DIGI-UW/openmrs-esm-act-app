@@ -9,6 +9,7 @@ import { DueForProphylaxisTable } from './due-for-prophylaxis-table.component';
 import { DueListToolbar } from './due-list-toolbar.component';
 import { useDueFilter } from './due-list';
 import { useDueList } from './due-for-prophylaxis.resource';
+import { useRecordDose } from './record-dose.component';
 import styles from './due-for-prophylaxis.scss';
 
 function DueList() {
@@ -18,6 +19,7 @@ function DueList() {
   const { filter, setFilter, counts, filtered } = useDueFilter(rows);
   const filters = useMemo(() => ({ filter }), [filter]);
   const { results, paginationProps } = usePagedRows(filtered, filters);
+  const recordDose = useRecordDose();
 
   if (error) {
     return (
@@ -55,7 +57,7 @@ function DueList() {
       <DueListToolbar filter={filter} counts={counts} onFilter={setFilter} rows={filtered} recorded={recorded} />
       {filtered.length ? (
         <>
-          <DueForProphylaxisTable rows={results} recorded={recorded} />
+          <DueForProphylaxisTable rows={results} recorded={recorded} recordDose={recordDose} />
           <Pagination {...paginationProps} />
         </>
       ) : (
