@@ -100,6 +100,8 @@ describe('routes.json privileges', () => {
     ['act-next-steps-card', ['Get Encounters', 'Get Observations', 'Add Encounters']],
     ['act-patient-status-flags', [PRIVILEGE_STATUS_FLAGS, 'Get Encounters', 'Get Observations']],
     ['act-allergies-pill', ['Get Encounters', 'Get Observations']],
+    // The roles that may end a registry enrolment, which the instance and global administrators are not.
+    ['act-update-patient-status', 'Edit Patient Programs'],
     // The roles that record BPG Delivery, whose form a scanned patient card opens.
     ['act-scan-patient-card-dashboard-link', PRIVILEGE_ENTER_PROPHYLAXIS],
     ['act-scan-patient-card-dashboard', PRIVILEGE_ENTER_PROPHYLAXIS],
@@ -223,27 +225,8 @@ describe('routes.json privileges', () => {
     expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-prophylaxis', group: 'patient-chart' });
   });
 
-  it('shows Update patient status to a user who may edit programmes or people, or to a super user, and to no one else', () => {
-    const expression = routes.extensions.find(
-      (extension) => extension.name === 'act-update-patient-status',
-    )?.displayExpression;
-    const session = (privileges: Array<string>, roles: Array<string> = []) => ({
-      session: {
-        user: {
-          privileges: privileges.map((display) => ({ display })),
-          roles: roles.map((display) => ({ display })),
-        },
-      },
-    });
-    expect(evaluate(expression, session(['Edit Patient Programs']))).toBe(true);
-    expect(evaluate(expression, session(['Edit People']))).toBe(true);
-    expect(evaluate(expression, session([], ['System Developer']))).toBe(true);
-    expect(evaluate(expression, session(['Get Patients']))).toBe(false);
-  });
-
-  it('declares a privilege on every extension but Download data, Logs, Update patient status, the Admin nav, the session timeout and the Help menu items Contact us and Docs, so none shows to every signed-in user', () => {
-    // They gate themselves: Download data and Update patient status on either of two privileges, Logs on either audit
-    // privilege, the Admin nav per link, the session timeout on being signed in, and the Help menu's items on being configured.
+  it('declares a privilege on every extension but Download data, Logs, the Admin nav, the session timeout and the Help menu items Contact us and Docs, so none shows to every signed-in user', () => {
+    // Each gates itself: on one of several privileges, its links, sign-in or configuration.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',
@@ -253,7 +236,6 @@ describe('routes.json privileges', () => {
       'act-session-timeout',
       'act-help-contact',
       'act-help-docs',
-      'act-update-patient-status',
     ]);
   });
 

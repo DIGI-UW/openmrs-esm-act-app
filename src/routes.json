@@ -908,7 +908,7 @@
       "name": "act-update-patient-status",
       "slot": "patient-actions-slot",
       "component": "updatePatientStatusButton",
-      "displayExpression": "session.user.privileges.some((privilege) => ['Edit Patient Programs', 'Edit People'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "privileges": "Edit Patient Programs"
     },
     {
       "name": "act-clinicians-only-note",
