@@ -713,7 +713,7 @@
   gap: layout.$spacing-03;
 }
 
-// At the right of the chips, and still at the right on a line of its own once they fill the width.
+// margin-left: auto, not space-between, so the button stays right when it wraps to its own line.
 .figureActions {
   margin-left: auto;
 }

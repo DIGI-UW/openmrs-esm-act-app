@@ -65,7 +65,7 @@ export function DashboardFigure({
   const { counted, countParams, pending } = useCountParams(params);
   const report = useReportDataset(counted ? patientsReport(dashboard, figure.figure) : null, countParams);
   const { rows } = report;
-  // Keyed by value: the Dashboard rebuilds the figure each time it draws, which alone must not go back to page 1.
+  // By value: figure is rebuilt every render, so passing params would go back to page 1 each time.
   const paramsKey = JSON.stringify(params);
   const pageKey = useMemo(() => ({ paramsKey }), [paramsKey]);
   const { results, paginationProps } = usePagedRows(rows, pageKey);
