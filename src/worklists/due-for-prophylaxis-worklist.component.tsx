@@ -3,13 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { dueReason, prescription, statusLabel } from '../due-for-prophylaxis/due-list';
 import { parseReportDate } from '../reports/report-date';
 import { useDueList, useDueRows } from '../due-for-prophylaxis/due-for-prophylaxis.resource';
-import { RecordDoseAction, useRecordDose } from '../due-for-prophylaxis/record-dose.component';
+import { RecordDoseAction, type RecordDose, useRecordDose } from '../due-for-prophylaxis/record-dose.component';
 import { Worklist, type WorklistState, WorklistTable, whyKey } from './worklist.component';
 
-function DuePatients({ title }: { title: string }) {
+function DuePatients({ title, recordDose: { opening, record } }: { title: string; recordDose: RecordDose }) {
   const { t } = useTranslation();
   const { rows, recorded, isLoading, error } = useDueList();
-  const { opening, record } = useRecordDose();
   const entries = rows.map((row) => ({
     row,
     prophylaxis: prescription(t, row),
@@ -41,6 +40,8 @@ export default function DueForProphylaxisWorklist(state: WorklistState) {
   // The report's rows, not the due list, whose who-was-recorded-today lookup the tile does not need.
   const { rows, isLoading, error } = useDueRows();
   const title = t('dueForProphylaxis', 'Due for prophylaxis');
+  // Here, not in the list, which closes with the tile while the panel stays open on the page.
+  const recordDose = useRecordDose();
   return (
     <Worklist
       state={state}
@@ -48,7 +49,7 @@ export default function DueForProphylaxisWorklist(state: WorklistState) {
       tone="red"
       count={isLoading ? undefined : rows.length}
       error={error}
-      list={<DuePatients title={title} />}
+      list={<DuePatients title={title} recordDose={recordDose} />}
     />
   );
 }

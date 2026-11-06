@@ -3,11 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import {
+  closeWorkspaceGroup2,
+  fetchCurrentPatient,
+  launchWorkspace2,
+  navigate,
+  openmrsFetch,
+  showSnackbar,
+  useSession,
+} from '@openmrs/esm-framework';
 import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { downloadCsv } from '../table-filters/csv';
+import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { openFormInChart } from '../visits/open-form-in-chart';
+import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { useRecordedToday } from './recorded-today.resource';
 import { dueRows, manyDueRows } from './due-for-prophylaxis.fixture';
 import DueForProphylaxis from './due-for-prophylaxis.component';
@@ -20,6 +30,12 @@ vi.mock('../access/may-enter-form', () => ({
 }));
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 vi.mock('../visits/open-form-in-chart', () => ({ openFormInChart: vi.fn() }));
+vi.mock('../visits/start-visit', () => ({ findActiveVisit: vi.fn(), startVisit: vi.fn() }));
+vi.mock('../flag-gaps/flag-gaps.resource', () => ({ fetchForm: vi.fn() }));
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchCurrentPatient: vi.fn(),
+}));
 vi.mock('./recorded-today.resource', () => ({ useRecordedToday: vi.fn() }));
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 vi.mock('./due-for-prophylaxis.scss', () => ({
@@ -96,6 +112,13 @@ describe('Due for prophylaxis page', () => {
     // A location of no clinic kind, so every patient on the report is listed.
     atSessionLocation('Kiswa HC III', [], 'clinic');
     mockOpenFormInChart.mockReset();
+    vi.mocked(launchWorkspace2).mockReset();
+    vi.mocked(launchWorkspace2).mockResolvedValue(true);
+    vi.mocked(closeWorkspaceGroup2).mockResolvedValue(true);
+    vi.mocked(fetchForm).mockImplementation((uuid: string) => Promise.resolve({ uuid, display: uuid }) as never);
+    vi.mocked(fetchCurrentPatient).mockImplementation((uuid: string) => Promise.resolve({ id: uuid }) as never);
+    vi.mocked(findActiveVisit).mockResolvedValue({ uuid: 'active-visit' } as never);
+    vi.mocked(startVisit).mockResolvedValue({ uuid: 'started-visit' } as never);
     recorded([]);
   });
 
@@ -246,22 +269,49 @@ describe('Due for prophylaxis page', () => {
     expect(screen.getByText('80%')).toHaveClass('goodAdherence');
   });
 
-  it('opens the BPG form in the chart from Record BPG, and the oral form from Record oral', async () => {
+  it("opens the BPG form beside the list from Record BPG, and the oral form from Record oral, in the patient's visit", async () => {
     dataset({ rows: dueRows });
     await renderPage();
     await showAll();
 
     await userEvent.click(within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button'));
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
     await userEvent.click(within(screen.getByRole('row', { name: /rhd00021/ })).getByRole('button'));
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
 
-    expect(mockOpenFormInChart.mock.calls.map(([, options]) => options)).toEqual([
-      expect.objectContaining({ patientUuid: 'patient-overdue', formUuid: bpgForm, location: 'clinic' }),
-      expect.objectContaining({ patientUuid: 'patient-oral', formUuid: oralForm, location: 'clinic' }),
+    expect(vi.mocked(launchWorkspace2).mock.calls).toEqual([
+      [
+        'act-record-dose-form-entry-workspace',
+        { form: { uuid: bpgForm, display: bpgForm }, encounterUuid: '', handlePostResponse: expect.any(Function) },
+        { patient: { id: 'patient-overdue' }, patientUuid: 'patient-overdue', visitContext: { uuid: 'active-visit' } },
+      ],
+      [
+        'act-record-dose-form-entry-workspace',
+        { form: { uuid: oralForm, display: oralForm }, encounterUuid: '', handlePostResponse: expect.any(Function) },
+        { patient: { id: 'patient-oral' }, patientUuid: 'patient-oral', visitContext: { uuid: 'active-visit' } },
+      ],
     ]);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(mockOpenFormInChart).not.toHaveBeenCalled();
+    expect(startVisit).not.toHaveBeenCalled();
+  });
+
+  it('starts a visit for a patient who has none, and opens the form in it', async () => {
+    vi.mocked(findActiveVisit).mockResolvedValue(null);
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    await userEvent.click(within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button'));
+
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalled());
+    expect(startVisit).toHaveBeenCalledWith(expect.anything(), 'patient-overdue', expect.any(String), 'clinic');
+    expect(vi.mocked(launchWorkspace2).mock.calls[0][2]).toEqual(
+      expect.objectContaining({ visitContext: { uuid: 'started-visit' } }),
+    );
   });
 
   it('opens one form at a time, so a second click cannot start a second visit', async () => {
-    mockOpenFormInChart.mockReturnValue(new Promise(() => {}));
+    vi.mocked(findActiveVisit).mockReturnValue(new Promise(() => {}));
     dataset({ rows: dueRows });
     await renderPage();
     await showAll();
@@ -271,7 +321,147 @@ describe('Due for prophylaxis page', () => {
 
     expect(recordBpg).toBeDisabled();
     expect(within(screen.getByRole('row', { name: /rhd00021/ })).getByRole('button')).toBeDisabled();
-    expect(mockOpenFormInChart).toHaveBeenCalledTimes(1);
+    expect(findActiveVisit).toHaveBeenCalledTimes(1);
+    expect(launchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('opens the same form again for a second click on a row, so the open form is not replaced', async () => {
+    // A fresh object per lookup, as the server sends; mockResolvedValue makes the toBe checks trivial.
+    vi.mocked(findActiveVisit).mockImplementation(() => Promise.resolve({ uuid: 'active-visit' }) as never);
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    const recordBpg = within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button');
+    await userEvent.click(recordBpg);
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
+    await userEvent.click(recordBpg);
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
+
+    const [first, second] = vi.mocked(launchWorkspace2).mock.calls as Array<
+      [string, Record<string, unknown>, Record<string, unknown>]
+    >;
+    expect(second[1].form).toBe(first[1].form);
+    expect(second[1].handlePostResponse).toBe(first[1].handlePostResponse);
+    expect(second[2].patient).toBe(first[2].patient);
+    expect(second[2].visitContext).toBe(first[2].visitContext);
+  });
+
+  it('opens the same form again after a filter with nobody in it hid the table, as the panel stays open', async () => {
+    vi.mocked(findActiveVisit).mockImplementation(() => Promise.resolve({ uuid: 'active-visit' }) as never);
+    dataset({ rows: dueRows.filter((row) => row.patient_uuid !== 'patient-oral') });
+    await renderPage();
+
+    const recordBpg = () => within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button');
+    await userEvent.click(recordBpg());
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
+    await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: /^BPG/ }));
+    await userEvent.click(recordBpg());
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
+
+    const [first, second] = vi.mocked(launchWorkspace2).mock.calls as Array<
+      [string, Record<string, unknown>, Record<string, unknown>]
+    >;
+    expect(second[1].form).toBe(first[1].form);
+    expect(second[2].patient).toBe(first[2].patient);
+    expect(second[2].visitContext).toBe(first[2].visitContext);
+  });
+
+  it('starts a visit on a second click once the one the form opened in has ended', async () => {
+    vi.mocked(findActiveVisit).mockResolvedValueOnce({ uuid: 'first-visit' } as never);
+    vi.mocked(findActiveVisit).mockResolvedValueOnce(null);
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    const recordBpg = within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button');
+    await userEvent.click(recordBpg);
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
+    await userEvent.click(recordBpg);
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
+
+    const visits = vi
+      .mocked(launchWorkspace2)
+      .mock.calls.map((call) => (call[2] as { visitContext: unknown }).visitContext);
+    expect(visits).toEqual([{ uuid: 'first-visit' }, { uuid: 'started-visit' }]);
+    expect(startVisit).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the form in the patient's new visit on a second click, once the one it opened in has ended", async () => {
+    vi.mocked(findActiveVisit).mockResolvedValueOnce({ uuid: 'first-visit' } as never);
+    vi.mocked(findActiveVisit).mockResolvedValueOnce({ uuid: 'second-visit' } as never);
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    const recordBpg = within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button');
+    await userEvent.click(recordBpg);
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
+    await userEvent.click(recordBpg);
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(2));
+
+    expect(vi.mocked(launchWorkspace2).mock.calls[1][2]).toEqual(
+      expect.objectContaining({ visitContext: { uuid: 'second-visit' } }),
+    );
+    expect(startVisit).not.toHaveBeenCalled();
+  });
+
+  it("asks about another form's unsaved changes before starting a visit, and starts none if they are kept", async () => {
+    vi.mocked(findActiveVisit).mockResolvedValue(null);
+    vi.mocked(closeWorkspaceGroup2).mockResolvedValue(false);
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    await userEvent.click(within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button'));
+
+    await waitFor(() => expect(closeWorkspaceGroup2).toHaveBeenCalled());
+    expect(startVisit).not.toHaveBeenCalled();
+    expect(launchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('leaves other forms to the workspace to ask about when the patient already has a visit', async () => {
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    await userEvent.click(within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button'));
+
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalled());
+    expect(closeWorkspaceGroup2).not.toHaveBeenCalled();
+  });
+
+  it('says so when the form cannot be loaded, and loads it again on the next click', async () => {
+    vi.mocked(fetchForm).mockRejectedValueOnce(new Error('The server did not answer'));
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    const recordBpg = within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button');
+    await userEvent.click(recordBpg);
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Could not open the form',
+          subtitle: 'The server did not answer',
+        }),
+      ),
+    );
+    expect(launchWorkspace2).not.toHaveBeenCalled();
+
+    await userEvent.click(recordBpg);
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalled());
+  });
+
+  it('says so when the form cannot be opened beside the list', async () => {
+    vi.mocked(launchWorkspace2).mockRejectedValue(new Error('No workspace is registered'));
+    dataset({ rows: dueRows });
+    await renderPage();
+
+    await userEvent.click(within(screen.getByRole('row', { name: /rhd00012/ })).getByRole('button'));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Could not open the form', subtitle: 'No workspace is registered' }),
+      ),
+    );
   });
 
   it('shows a patient recorded today as Recorded today, with View chart in place of Record', async () => {

@@ -5,14 +5,21 @@ import { ConfigurableLink, isDesktop, useLayoutType } from '@openmrs/esm-framewo
 import { patientChartUrl } from '../patient-chart-url';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { adherence, type DueColumn, dueColumns, firstDoseDue, lowAdherence } from './due-list';
-import { RecordDoseAction, useRecordDose } from './record-dose.component';
+import { RecordDoseAction, type RecordDose } from './record-dose.component';
 import styles from './due-for-prophylaxis.scss';
 
 /** The due list's rows, each with the form that records its next dose, or View chart once recorded today. */
-export function DueForProphylaxisTable({ rows, recorded }: { rows: Array<ReportRow>; recorded: Set<string> }) {
+export function DueForProphylaxisTable({
+  rows,
+  recorded,
+  recordDose: { opening, record },
+}: {
+  rows: Array<ReportRow>;
+  recorded: Set<string>;
+  recordDose: RecordDose;
+}) {
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
-  const { opening, record } = useRecordDose();
 
   const columns = dueColumns(t, recorded);
 

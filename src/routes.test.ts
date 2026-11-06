@@ -306,6 +306,11 @@ describe('routes.json workspaces', () => {
     ['act-study-form-workspace', 'act-studies', '/home/act-studies'],
     ['act-user-form-workspace', 'act-users', '/home/act-users'],
     ['act-reset-password-workspace', 'act-users', '/home/act-users'],
+    ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-worklists'],
+    ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-due-for-prophylaxis'],
+    ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-enter-prophylaxis'],
+    ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-home'],
+    ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-community-home'],
   ])('opens %s in the %s group, scoped to the page %s', (name, group, page) => {
     const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
     const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);
@@ -314,6 +319,19 @@ describe('routes.json workspaces', () => {
     const pattern = new RegExp(scope.scopePattern);
     expect(pattern.test(page)).toBe(true);
     expect(pattern.test(`/openmrs/spa${page}`)).toBe(false);
+  });
+
+  it('closes the dose form on leaving the page it was opened on, as its scope captures each page apart', () => {
+    const scope = workspaceRoutes.workspaceGroups2.find((candidate) => candidate.name === 'act-record-dose');
+    const page = (path: string) => new RegExp(scope.scopePattern).exec(path)?.[1];
+    const pages = [
+      '/home/act-worklists',
+      '/home/act-due-for-prophylaxis',
+      '/home/act-enter-prophylaxis',
+      '/home/act-home',
+      '/home/act-community-home',
+    ];
+    expect(new Set(pages.map(page)).size).toBe(pages.length);
   });
 
   it('opens the RHD Allergies form, from the consultation, in a patient chart window of its own', () => {
