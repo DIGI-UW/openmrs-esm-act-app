@@ -139,8 +139,8 @@ describe('statusOptionsOf', () => {
     expect(names(statusOptionsOf(base))).toEqual(['Lost to follow-up', 'Physical relocation', 'Deceased']);
   });
 
-  it('offers a user who may only edit people Deceased alone, and one who may only edit programmes the others', () => {
-    expect(names(statusOptionsOf({ ...base, mayEditPrograms: false }))).toEqual(['Deceased']);
+  it('offers nothing to a user who may only edit people, and one who may only edit programmes the others', () => {
+    expect(names(statusOptionsOf({ ...base, mayEditPrograms: false }))).toEqual([]);
     expect(names(statusOptionsOf({ ...base, mayEditPeople: false }))).toEqual([
       'Lost to follow-up',
       'Physical relocation',
@@ -159,6 +159,7 @@ describe('statusOptionsOf', () => {
   it('offers Deceased alone, as a person update, to a patient with no active enrolment who is alive', () => {
     expect(names(statusOptionsOf({ ...base, enrolmentActive: false }))).toEqual(['Deceased']);
     expect(names(statusOptionsOf({ ...base, enrolmentActive: false, mayEditPeople: false }))).toEqual([]);
+    expect(names(statusOptionsOf({ ...base, enrolmentActive: false, mayEditPrograms: false }))).toEqual([]);
   });
 
   it('offers nothing to a patient with no active enrolment who is already dead', () => {

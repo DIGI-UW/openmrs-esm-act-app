@@ -274,11 +274,12 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
-  it('offers a user who may only edit people Deceased alone', async () => {
+  it('offers no status to a user who may edit people but not programmes, as the instance and global administrators', async () => {
     await signInWith(['Edit People']);
     serve();
     await openWorkspace();
-    expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
+    expect(screen.getByText('There is nothing to update for this patient.')).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Deceased' })).not.toBeInTheDocument();
   });
 
   it('offers a user who may only edit programmes the other statuses', async () => {
