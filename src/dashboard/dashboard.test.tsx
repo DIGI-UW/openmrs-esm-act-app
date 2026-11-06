@@ -1587,13 +1587,13 @@ describe('Dashboard', () => {
       const shownNames = () =>
         screen.getAllByTestId('dashboard-figure-row').map((row) => within(row).getAllByRole('cell')[1].textContent);
 
-      async function openLongFigure(rows = many) {
+      async function openLongFigure(rows = many, query = '') {
         await signIn(undefined, { [REGISTRANT_PATIENTS]: rows });
         await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
         window.history.replaceState(
           null,
           '',
-          '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&figure=registrants&breakdown=status&label=Active',
+          `/openmrs/spa/home/act-dashboard?cardiacClinic=lira&figure=registrants&breakdown=status&label=Active${query}`,
         );
         return renderPage();
       }
@@ -1636,6 +1636,19 @@ describe('Dashboard', () => {
         expect(shownNames()).toEqual(['Patient 11', 'Patient 12']);
 
         await userEvent.click(screen.getByRole('button', { name: /Cardiac clinic: Lira RRH/ }));
+        await vi.waitFor(() => expect(shownNames()).toHaveLength(10));
+        expect(shownNames()[0]).toBe('Patient 01');
+      });
+
+      it.each([
+        ['the figure chip', '', /Registrant status: Active/],
+        ['the as-of chip', '&asOf=2026-01-15', /As of 15\/01\/2026/],
+      ])('starts from page 1 when %s widens the list', async (_, query, chip) => {
+        await openLongFigure(many, query);
+        await userEvent.click(await screen.findByRole('button', { name: /next page/i }));
+        expect(shownNames()).toEqual(['Patient 11', 'Patient 12']);
+
+        await userEvent.click(screen.getByRole('button', { name: chip }));
         await vi.waitFor(() => expect(shownNames()).toHaveLength(10));
         expect(shownNames()[0]).toBe('Patient 01');
       });
