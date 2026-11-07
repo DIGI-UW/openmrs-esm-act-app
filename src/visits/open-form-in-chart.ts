@@ -73,7 +73,7 @@ export async function openFormInChart(
       });
       return;
     }
-    launchInClinicalFormsWindow('patient-form-entry-workspace', {
+    await launchInClinicalFormsWindow('patient-form-entry-workspace', {
       workspaceTitle: form.display,
       form,
       encounterUuid: '',
