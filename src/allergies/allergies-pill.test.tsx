@@ -3,12 +3,31 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
+import {
+  type AssignedExtension,
+  getAssignedExtensions,
+  getDefaultsFromConfigSchema,
+  openmrsFetch,
+  useAssignedExtensions,
+} from '@openmrs/esm-framework';
 import { day } from '../consultations/repeated-lists.component';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
 import AllergiesPill from './allergies-pill.component';
+
+// The framework's test mock has no getAssignedExtensions, which reads a dashboard group's slot.
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getAssignedExtensions: vi.fn(() => []),
+}));
+
+// The Allergies page as a site's config may rename it.
+const allergiesPage = {
+  name: 'act-allergies-dashboard-link',
+  meta: { path: 'act-allergies' },
+  config: { path: 'allergies' },
+};
 
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
 const c = config.consultations.concepts;
@@ -45,6 +64,8 @@ describe('the patient banner allergies pill', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     await signInWith(['Get Encounters', 'Get Observations']);
+    vi.mocked(useAssignedExtensions).mockReturnValue([allergiesPage] as unknown as Array<AssignedExtension>);
+    vi.mocked(getAssignedExtensions).mockReturnValue([]);
   });
 
   it('names the allergies and marks a penicillin allergy', async () => {
@@ -93,8 +114,19 @@ describe('the patient banner allergies pill', () => {
     expect(day('2026-03-01')).not.toBe(day('2026-01-01'));
     expect(screen.getByRole('link', { name: 'Review in Allergies' })).toHaveAttribute(
       'href',
-      '/openmrs/spa/patient/abebe/chart/act-allergies',
+      '/openmrs/spa/patient/abebe/chart/allergies',
     );
+  });
+
+  it("offers no Review in Allergies link when the chart's nav has no Allergies page", async () => {
+    vi.mocked(useAssignedExtensions).mockReturnValue([]);
+    serve([consultation('one', '2026-04-01', [allergy(penicillin)])]);
+
+    renderPill();
+
+    await userEvent.click(within(await screen.findByTestId('allergies-pill')).getByRole('button'));
+    expect(await screen.findByRole('list', { name: 'Allergies' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Review in Allergies' })).not.toBeInTheDocument();
   });
 
   it('keeps an allergy an older consultation recorded and a later one does not repeat', async () => {

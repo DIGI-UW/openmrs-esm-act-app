@@ -11,6 +11,8 @@ import {
   formatDate,
 } from '@openmrs/esm-framework';
 import { EditButton } from '../cardiac-tests/cardiac-tests.component';
+import { useChartPagePath } from '../chart-page-path';
+import { patientChartUrl } from '../patient-chart-url';
 import { daysUntil } from '../patient-status/due-tone';
 import InrChart, { inrTone } from './inr-chart.component';
 import { useRecordInr } from './inr-reviews.component';
@@ -40,6 +42,7 @@ function useResultWord() {
 export default function InrCard({ patientUuid }: { patientUuid: string }) {
   const { t } = useTranslation();
   const { reviews, onWarfarin, dose, nextInr, indication, isLoading } = useInrReviews(patientUuid);
+  const pagePath = useChartPagePath('act-inr-reviews-dashboard-link');
   const record = useRecordInr(patientUuid);
   const resultWord = useResultWord();
   const [expanded, setExpanded] = useState(false);
@@ -162,9 +165,9 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
                     ))}
                   </TableBody>
                 </Table>
-                {readings.length > readingsShown && (
+                {readings.length > readingsShown && pagePath && (
                   <div className={styles.seeAll}>
-                    <ConfigurableLink to={`\${openmrsSpaBase}/patient/${patientUuid}/chart/act-inr-reviews`}>
+                    <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`}>
                       {t('seeAll', 'See all')}
                     </ConfigurableLink>
                   </div>

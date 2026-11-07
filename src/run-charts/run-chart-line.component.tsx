@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LineChart, ScaleTypes } from '@carbon/charts-react';
-import '@carbon/charts-react/styles.css';
 import { type RunChartMetricKind, type RunChartPeriod } from './run-chart-metrics';
 import { localDay, type RunChartPoint, type Shift, withValue } from './run-chart-stats';
 import { pointDetail, pointTitle } from './run-chart-tooltip';
