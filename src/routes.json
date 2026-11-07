@@ -501,12 +501,14 @@
         "name": "act-download",
         "slot": "act-download-dashboard-slot",
         "title": "downloadData"
-      }
+      },
+      "displayExpression": "session.user.privileges.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-download-dashboard",
       "slot": "act-download-dashboard-slot",
-      "component": "downloadDashboard"
+      "component": "downloadDashboard",
+      "displayExpression": "session.user.privileges.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-logs-dashboard-link",

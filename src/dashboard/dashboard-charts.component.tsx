@@ -2,7 +2,6 @@ import React, { useContext, useRef, useState } from 'react';
 import { Link } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { DonutChart, ScaleTypes, SimpleBarChart, TruncationTypes } from '@carbon/charts-react';
-import '@carbon/charts-react/styles.css';
 import { type Count, cascadeShares, share } from './dashboard-counts';
 import { type Figure, FigureLinks } from './dashboard-figure';
 import styles from './dashboard.scss';

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import React from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -62,5 +62,23 @@ describe('RunChartLine drawn by Carbon', () => {
           symbol.getAttribute('aria-label') === Array(13).fill(31).join(','),
       );
     expect(medianLine).toHaveClass('stroke-2-1-2');
+  });
+});
+
+describe("Carbon Charts' stylesheet", () => {
+  it('is left to the styleguide, which loads it globally, as an import here is renamed into a CSS module', () => {
+    const sources = (readdirSync(resolve(process.cwd(), 'src'), { recursive: true }) as Array<string>).filter(
+      (path) => /\.(tsx?|jsx?|scss)$/.test(path) && !/\.test\./.test(path),
+    );
+    expect(sources.filter((path) => path.endsWith('.scss')).length).toBeGreaterThan(0);
+    expect(sources.filter((path) => path.endsWith('.tsx')).length).toBeGreaterThan(0);
+    // A script may import charts JS, so only its .css specifiers count.
+    const importing = sources.filter((path) =>
+      (path.endsWith('.scss')
+        ? /['"]~?@carbon\/charts(-react)?(\/[^'"]*)?['"]/
+        : /['"]~?@carbon\/charts(-react)?\/[^'"]*\.css['"]/
+      ).test(readFileSync(resolve(process.cwd(), 'src', path), 'utf8')),
+    );
+    expect(importing).toEqual([]);
   });
 });
