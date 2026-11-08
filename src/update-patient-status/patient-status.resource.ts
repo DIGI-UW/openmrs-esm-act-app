@@ -78,9 +78,8 @@ export function terminalStatesOf(program: Program, deathConcept: string): Array<
 }
 
 /**
- * The statuses this user may record: ending an enrolment needs Edit Patient Programs, and marking the person dead
- * needs Edit People. A patient with no enrolment in force can only be marked dead, and a dead one can only end it
- * as Deceased.
+ * The statuses this user may record: ending an enrolment needs Edit Patient Programs, and a death Edit People too, so
+ * only those who record patient status record a death. A dead patient's enrolment can only end as Deceased.
  */
 export function statusOptionsOf({
   states,
@@ -95,14 +94,15 @@ export function statusOptionsOf({
   mayEditPrograms: boolean;
   mayEditPeople: boolean;
 }) {
+  const mayMarkDead = mayEditPeople && mayEditPrograms;
   return states.filter((one) => {
     if (!enrolmentActive) {
-      return one.death && !personDead && mayEditPeople;
+      return one.death && !personDead && mayMarkDead;
     }
     if (personDead) {
       return one.death && mayEditPrograms;
     }
-    return one.death ? mayEditPeople : mayEditPrograms;
+    return one.death ? mayMarkDead : mayEditPrograms;
   });
 }
 
