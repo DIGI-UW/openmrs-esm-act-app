@@ -66,18 +66,28 @@ describe('RunChartLine drawn by Carbon', () => {
 });
 
 describe("Carbon Charts' stylesheet", () => {
+  // A script may import charts JS, so only its .css specifiers count.
+  const stylesheetImport = /['"]~?@carbon\/charts(-react)?(\/[^'"]*)?['"]/;
+  const scriptImport = /['"]~?@carbon\/charts(-react)?\/[^'"?]*\.css(\?[^'"]*)?['"]/;
+
+  it('is caught however its specifier is written, and a script importing charts JS is not', () => {
+    expect(scriptImport.test("import '@carbon/charts-react/styles.css';")).toBe(true);
+    expect(scriptImport.test('import "@carbon/charts/styles.css";')).toBe(true);
+    expect(scriptImport.test("import styles from '@carbon/charts-react/styles.css?inline';")).toBe(true);
+    expect(scriptImport.test("import { LineChart } from '@carbon/charts-react';")).toBe(false);
+    expect(stylesheetImport.test("@use '~@carbon/charts/styles';")).toBe(true);
+  });
+
   it('is left to the styleguide, which loads it globally, as an import here is renamed into a CSS module', () => {
     const sources = (readdirSync(resolve(process.cwd(), 'src'), { recursive: true }) as Array<string>).filter(
       (path) => /\.(tsx?|jsx?|scss)$/.test(path) && !/\.test\./.test(path),
     );
     expect(sources.filter((path) => path.endsWith('.scss')).length).toBeGreaterThan(0);
     expect(sources.filter((path) => path.endsWith('.tsx')).length).toBeGreaterThan(0);
-    // A script may import charts JS, so only its .css specifiers count.
     const importing = sources.filter((path) =>
-      (path.endsWith('.scss')
-        ? /['"]~?@carbon\/charts(-react)?(\/[^'"]*)?['"]/
-        : /['"]~?@carbon\/charts(-react)?\/[^'"]*\.css['"]/
-      ).test(readFileSync(resolve(process.cwd(), 'src', path), 'utf8')),
+      (path.endsWith('.scss') ? stylesheetImport : scriptImport).test(
+        readFileSync(resolve(process.cwd(), 'src', path), 'utf8'),
+      ),
     );
     expect(importing).toEqual([]);
   });
