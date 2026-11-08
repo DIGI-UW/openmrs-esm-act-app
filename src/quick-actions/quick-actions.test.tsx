@@ -5,9 +5,11 @@ import { SWRConfig } from 'swr';
 import userEvent from '@testing-library/user-event';
 import {
   age,
+  type AssignedExtension,
   ExtensionSlot,
   getDefaultsFromConfigSchema,
   openmrsFetch,
+  useAssignedExtensions,
   useDebounce,
   useSession,
 } from '@openmrs/esm-framework';
@@ -173,6 +175,11 @@ describe('Home quick action tiles', () => {
     session();
     vi.mocked(useDebounce).mockImplementation((value) => value);
     vi.mocked(age).mockImplementation(() => '15 yrs');
+    vi.mocked(useAssignedExtensions).mockImplementation((slot) =>
+      slot === 'homepage-dashboard-slot'
+        ? ([{ name: 'act-role-permissions-dashboard-link' }] as Array<AssignedExtension>)
+        : [],
+    );
     vi.mocked(openFormInChart).mockReset();
     vi.mocked(openmrsFetch).mockImplementation(((url: string) => {
       if (url.includes('/user/')) {
@@ -264,6 +271,14 @@ describe('Home quick action tiles', () => {
       'href',
       '/openmrs/spa/home/act-studies',
     );
+  });
+
+  it("leaves out Role permissions when the home dashboard does not assign its page's link", () => {
+    vi.mocked(useAssignedExtensions).mockReturnValue([]);
+
+    const { container } = render(<RolePermissionsAction />);
+
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("opens ACT's patient search from Find a patient", async () => {

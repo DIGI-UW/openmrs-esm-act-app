@@ -376,7 +376,7 @@
       "slot": "act-instance-admin-quick-actions-slot",
       "component": "rolePermissionsQuickAction",
       "order": 2,
-      "privileges": ["App: act.instanceAdmin", "Manage Roles"]
+      "privileges": "App: act.instanceAdmin"
     },
     {
       "name": "act-instance-admin-research-participation",

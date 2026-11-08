@@ -1,20 +1,18 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ConfigurableLink, useAssignedExtensions, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { useHoldsActHome } from '../access/holds-act-home';
 import { type Config } from '../config-schema';
+import { useRolePermissionsAssigned } from '../role-permissions/role-permissions-dashboard-link.component';
 
 /**
- * The Instance admin's Forms & sites and Role permissions, to their quick-action URLs; Studies is in the Admin section.
- * Role permissions shows when its page's link is assigned, as the Admin section's links do. Left out for a user whose
- * home is ACT home, as the Instance admin's Home link is.
+ * The Instance admin's Forms & sites, and Role permissions when its page's link is assigned; Studies is in Admin.
+ * Left out for a user whose home is ACT home, as the Instance admin's Home link is.
  */
 export default function InstanceAdminNav() {
   const { t } = useTranslation();
   const { instanceAdminQuickActions } = useConfig<Config>();
-  const rolePermissionsAssigned = useAssignedExtensions('homepage-dashboard-slot').some(
-    ({ name }) => name === 'act-role-permissions-dashboard-link',
-  );
+  const rolePermissionsAssigned = useRolePermissionsAssigned();
   if (useHoldsActHome()) {
     return null;
   }
