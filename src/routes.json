@@ -502,13 +502,13 @@
         "slot": "act-download-dashboard-slot",
         "title": "downloadData"
       },
-      "displayExpression": "session.user.privileges.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-download-dashboard",
       "slot": "act-download-dashboard-slot",
       "component": "downloadDashboard",
-      "displayExpression": "session.user.privileges.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-logs-dashboard-link",
@@ -519,13 +519,13 @@
         "slot": "act-logs-dashboard-slot",
         "title": "logs"
       },
-      "displayExpression": "session.user.privileges.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-logs-dashboard",
       "slot": "act-logs-dashboard-slot",
       "component": "logsDashboard",
-      "displayExpression": "session.user.privileges.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-community-home-dashboard-link",

@@ -281,6 +281,15 @@ describe('routes.json privileges', () => {
     },
   );
 
+  it.each(['act-logs-dashboard-link', 'act-logs-dashboard', 'act-download-dashboard-link', 'act-download-dashboard'])(
+    'hides %s, without throwing, while the session is still loading',
+    (name) => {
+      const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
+      expect(evaluate(expression, { session: null })).toBe(false);
+      expect(evaluate(expression, { session: { authenticated: false, sessionId: '' } })).toBe(false);
+    },
+  );
+
   it.each(['act-download-dashboard-link', 'act-download-dashboard'])(
     'shows %s to a user holding either download privilege, or to a super user, and to no one else',
     (name) => {
