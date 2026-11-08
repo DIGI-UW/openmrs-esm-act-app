@@ -49,10 +49,29 @@ jobs:
           node-version: 20
       - run: yarn install --immutable
       - run: yarn version "$(node -e "console.log(require('semver').inc(require('./package.json').version, 'patch'))")-pre.${{ github.run_number }}"
+      - id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - run: yarn build
       - run: yarn npm publish --access public --tag next
         env:
           YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      # The distro builds its frontend image with exactly this version, once npm serves it.
+      - name: Rebuild the distro frontend with this version
+        env:
+          GH_TOKEN: ${{ secrets.DISTRO_DISPATCH_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::DISTRO_DISPATCH_TOKEN is not set, so the distro frontend was not rebuilt."
+            exit 0
+          fi
+          for attempt in $(seq 1 30); do
+            npm view "@act-registry/esm-act-app@$VERSION" version > /dev/null 2>&1 && break
+            sleep 10
+          done
+          npm view "@act-registry/esm-act-app@$VERSION" version
+          gh api repos/DIGI-UW/openmrs-distro-referenceapplication/dispatches \
+            -f event_type=frontend-prerelease -f "client_payload[act_app_version]=$VERSION"
 
   release:
     runs-on: ubuntu-latest
