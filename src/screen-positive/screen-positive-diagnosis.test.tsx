@@ -2,7 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { fetchCurrentPatient, launchWorkspace2, openmrsFetch, saveVisit } from '@openmrs/esm-framework';
+import { fetchCurrentPatient, launchWorkspace2, openmrsFetch, saveVisit, showSnackbar } from '@openmrs/esm-framework';
 import routes from '../routes.json';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -99,6 +99,19 @@ describe('Screen positive, Record diagnosis', () => {
 
     await vi.waitFor(() => expect(launchWorkspace2).toHaveBeenCalledTimes(1));
     expect(vi.mocked(fetchCurrentPatient)).toHaveBeenCalledTimes(2);
+  });
+
+  it('says so when the workspace refuses to open the form', async () => {
+    vi.mocked(launchWorkspace2).mockRejectedValue(new Error('No window named act-screen-positive-form-entry'));
+    render(<ScreenPositive />);
+
+    await recordDiagnosis('Patient 2');
+
+    await vi.waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'error', subtitle: 'No window named act-screen-positive-form-entry' }),
+      ),
+    );
   });
 
   it('offers no action for a Screen + recorded without a form', () => {

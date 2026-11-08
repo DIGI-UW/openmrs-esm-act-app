@@ -62,6 +62,24 @@ describe('openFormInChart', () => {
     expect(openedForms()[0]).toHaveLength(2);
   });
 
+  it('says so when the chart refuses to open the form', async () => {
+    serve([{ uuid: 'visit' }]);
+    vi.mocked(launchWorkspace2).mockRejectedValue(new Error('No workspace named patient-form-entry-workspace'));
+
+    const opening = openFormInChart(t, args);
+    await vi.waitFor(() => expect(navigate).toHaveBeenCalled());
+    chartOpensWith('grace', 'visit');
+    await opening;
+
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        title: 'Could not open the form',
+        subtitle: 'No workspace named patient-form-entry-workspace',
+      }),
+    );
+  });
+
   it('waits past a workspace group for another patient or another visit', async () => {
     serve([{ uuid: 'visit' }]);
 

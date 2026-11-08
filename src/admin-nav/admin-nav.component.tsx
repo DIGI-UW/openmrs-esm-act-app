@@ -1,53 +1,34 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ConfigurableLink, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { ConfigurableLink, useAssignedExtensions, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import {
-  PRIVILEGE_DOWNLOAD_DATA,
-  PRIVILEGE_DOWNLOAD_RESEARCH_DATA,
-  PRIVILEGE_EDIT_USERS,
-  PRIVILEGE_MANAGE_LOCATIONS,
-  PRIVILEGE_REFRESH_FLAGS,
-  PRIVILEGE_SCREENING_COUNTS,
-  PRIVILEGE_STUDIES,
-  PRIVILEGE_VIEW_AUDIT_LOGS,
-  PRIVILEGE_VIEW_READ_AUDIT_LOGS,
-  PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS,
-} from '../constants';
 import styles from './admin-nav.scss';
 
 /**
- * The left nav's Admin section: each page for a user holding any of its privileges, and no heading when there is none.
+ * The left nav's Admin section: each page whose link extension the home dashboard assigns to the user, so routes.json
+ * and a site's display conditions gate the link as they gate the page, and no heading when there is none.
  */
 export default function AdminNav() {
   const { t } = useTranslation();
   const { adminLinks } = useConfig<Config>();
-  const { user } = useSession();
+  const assigned = new Set(useAssignedExtensions('homepage-dashboard-slot').map(({ name }) => name));
   const links = [
-    { privilege: PRIVILEGE_EDIT_USERS, to: adminLinks.usersUrl, label: t('usersAndRoles', 'Users and roles') },
+    { extension: 'act-users-dashboard-link', to: adminLinks.usersUrl, label: t('usersAndRoles', 'Users and roles') },
+    { extension: 'act-logs-dashboard-link', to: adminLinks.logsUrl, label: t('logs', 'Logs') },
+    { extension: 'act-clinics-dashboard-link', to: adminLinks.clinicsUrl, label: t('clinics', 'Clinics') },
+    { extension: 'act-studies-dashboard-link', to: adminLinks.studiesUrl, label: t('studies', 'Studies') },
     {
-      privilege: [PRIVILEGE_VIEW_AUDIT_LOGS, PRIVILEGE_VIEW_READ_AUDIT_LOGS, PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS],
-      to: adminLinks.logsUrl,
-      label: t('logs', 'Logs'),
-    },
-    { privilege: PRIVILEGE_MANAGE_LOCATIONS, to: adminLinks.clinicsUrl, label: t('clinics', 'Clinics') },
-    { privilege: PRIVILEGE_STUDIES, to: adminLinks.studiesUrl, label: t('studies', 'Studies') },
-    {
-      privilege: PRIVILEGE_SCREENING_COUNTS,
+      extension: 'act-screening-counts-dashboard-link',
       to: adminLinks.screeningCountsUrl,
       label: t('screeningCounts', 'Screening counts'),
     },
     {
-      privilege: PRIVILEGE_REFRESH_FLAGS,
+      extension: 'act-refresh-flags-dashboard-link',
       to: adminLinks.refreshFlagsUrl,
       label: t('flagsAndAdherence', 'Flags and adherence'),
     },
-    {
-      privilege: [PRIVILEGE_DOWNLOAD_DATA, PRIVILEGE_DOWNLOAD_RESEARCH_DATA],
-      to: adminLinks.downloadUrl,
-      label: t('downloadData', 'Download data'),
-    },
-  ].filter(({ privilege }) => user && [privilege].flat().some((one) => userHasAccess(one, user)));
+    { extension: 'act-download-dashboard-link', to: adminLinks.downloadUrl, label: t('downloadData', 'Download data') },
+  ].filter(({ extension }) => assigned.has(extension));
 
   if (!links.length) {
     return null;

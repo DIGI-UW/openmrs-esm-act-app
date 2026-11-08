@@ -376,7 +376,7 @@
       "slot": "act-instance-admin-quick-actions-slot",
       "component": "rolePermissionsQuickAction",
       "order": 2,
-      "privileges": "App: act.instanceAdmin"
+      "privileges": ["App: act.instanceAdmin", "Manage Roles"]
     },
     {
       "name": "act-instance-admin-research-participation",
@@ -501,12 +501,14 @@
         "name": "act-download",
         "slot": "act-download-dashboard-slot",
         "title": "downloadData"
-      }
+      },
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-download-dashboard",
       "slot": "act-download-dashboard-slot",
-      "component": "downloadDashboard"
+      "component": "downloadDashboard",
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-logs-dashboard-link",
@@ -517,13 +519,13 @@
         "slot": "act-logs-dashboard-slot",
         "title": "logs"
       },
-      "displayExpression": "session.user.privileges.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-logs-dashboard",
       "slot": "act-logs-dashboard-slot",
       "component": "logsDashboard",
-      "displayExpression": "session.user.privileges.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
     },
     {
       "name": "act-community-home-dashboard-link",
@@ -908,7 +910,7 @@
       "name": "act-update-patient-status",
       "slot": "patient-actions-slot",
       "component": "updatePatientStatusButton",
-      "displayExpression": "session.user.privileges.some((privilege) => ['Edit Patient Programs', 'Edit People'].includes(privilege.display)) || session.user.roles.some((role) => role.display === 'System Developer')"
+      "privileges": "Edit Patient Programs"
     },
     {
       "name": "act-clinicians-only-note",
