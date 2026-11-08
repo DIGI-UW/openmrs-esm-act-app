@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -15,17 +15,14 @@ import {
 import {
   CardiologyPictogram,
   ConfigurableLink,
-  fetchCurrentPatient,
   formatDate,
   isDesktop,
-  launchWorkspace2,
-  showSnackbar,
   useConfig,
   useLayoutType,
   UserHasAccess,
 } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
-import { fetchForm } from '../flag-gaps/flag-gaps.resource';
+import { useOpenFormBesideList } from '../open-form-beside-list';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';
@@ -66,35 +63,8 @@ export function ScreenPositiveTable() {
   const { screenPositive } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows, isLoading, error, mutate } = useReportDataset(screenPositive.report);
-  // Stable, and not mutate itself, which would store the saved encounter as the list's data.
-  const refreshList = useCallback(() => {
-    mutate();
-  }, [mutate]);
-  // Same objects on a second click, so the open workspace does not prompt to close the form.
-  const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
   // Opens the row's form to edit beside the list, where saved Diagnosis Details take the patient off it.
-  const recordDiagnosis = async (row: ReportRow) => {
-    const patientUuid = String(row.patient_uuid);
-    const encounterUuid = String(row.encounter_uuid);
-    if (!loaded.current.has(encounterUuid)) {
-      loaded.current.set(
-        encounterUuid,
-        Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]),
-      );
-    }
-    try {
-      const [form, patient] = await loaded.current.get(encounterUuid);
-      // An edit loads its own visit; the workspace calls handlePostResponse, not mutateVisitContext.
-      await launchWorkspace2(
-        screenPositiveFormEntryWorkspace,
-        { form, encounterUuid, handlePostResponse: refreshList },
-        { patient, patientUuid, visitContext: null },
-      );
-    } catch (e) {
-      loaded.current.delete(encounterUuid);
-      showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
-    }
-  };
+  const recordDiagnosis = useOpenFormBesideList(screenPositiveFormEntryWorkspace, mutate);
   const [filters, setFilters, filtersPending] = useScreenPositiveFilters();
   const clinicKind = useSessionClinicKind();
   const [sort, setSort] = useState<ColumnSort | null>(null);
