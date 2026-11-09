@@ -29,8 +29,28 @@ jobs:
     with:
       node_version: '20'
       publish: true
-      downstream_repository: DIGI-UW/openmrs-distro-referenceapplication
-      downstream_workflow: build-frontend.yml
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      BOT_PAT: ${{ secrets.BOT_PAT }}
+
+  # Triggered here rather than by the release workflow, which dispatches before npm's next tag shows the new version.
+  # Drop this job and restore downstream_repository once O3-6013 lands in the shared release workflow.
+  build-distro-frontend:
+    needs: release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            package.json
+            .github/scripts
+
+      - name: Wait until npm serves this run's pre-release
+        id: npm
+        run: bash .github/scripts/wait-for-npm-pre-release.sh "${{ github.run_number }}"
+
+      - name: Build the distro's frontend image
+        if: steps.npm.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_PAT }}
+        run: gh workflow run build-frontend.yml --repo DIGI-UW/openmrs-distro-referenceapplication
