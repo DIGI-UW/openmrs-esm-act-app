@@ -32,24 +32,25 @@ jobs:
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-  # Triggered here rather than by the release workflow, which dispatches before npm's next tag shows the new version
+  # Triggered here rather than by the release workflow, which dispatches before npm's next tag shows the new version.
+  # Drop this job and restore downstream_repository once openmrs/openmrs-contrib-gha-workflows#57 (O3-6013) merges.
   build-distro-frontend:
     needs: release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            package.json
+            .github/scripts
+
       - name: Wait until npm serves this run's pre-release
-        run: |
-          end=$((SECONDS + 600))
-          until npm view @act-registry/esm-act-app@next version --prefer-online | grep -q -- "-pre\.${{ github.run_number }}$"; do
-            if [ $SECONDS -gt $end ]; then
-              echo "::error::npm next is not pre.${{ github.run_number }} after 10 minutes"
-              exit 1
-            fi
-            sleep 15
-          done
+        id: npm
+        run: bash .github/scripts/wait-for-npm-pre-release.sh "${{ github.run_number }}"
 
       - name: Build the distro's frontend image
+        if: steps.npm.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ secrets.BOT_PAT }}
         run: gh workflow run build-frontend.yml --repo DIGI-UW/openmrs-distro-referenceapplication
