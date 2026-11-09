@@ -118,10 +118,14 @@ export interface PrescribedCourse {
   started: string;
   stopped: string | null;
   reasonStopped: string | null;
-  /** The first later day whose prescription no longer carries the course; null while the latest day carries it. */
+  /**
+   * The first later day whose prescription no longer carries the course, or, for one still carried beside a course
+   * started after it, that course's start; null for the current course.
+   */
   replaced: string | null;
   /** The day of the first encounter that records the course. */
   recorded: string;
+  /** The course ACT Core counts as the current regimen: the last-started one in force. */
   current: boolean;
 }
 
@@ -134,7 +138,11 @@ export function prescriptionHistoryOf(
   concepts: Concepts,
   current = currentPrescriptionOf(encounters, concepts),
 ): Array<PrescribedCourse> {
-  const inForce = new Set(current?.groups.map((one) => `${one.regimen.uuid} ${one.started}`));
+  const keyOf = (one: PrescriptionGroup) => `${one.regimen.uuid} ${one.started}`;
+  const inForce = new Set(current?.groups.map(keyOf));
+  // A change of regimen keeps the earlier course in force beside the new one so ACT Core scores both, but only the
+  // last-started is the patient's prescription.
+  const main = current?.main ? keyOf(current.main) : null;
   const courses = new Map<string, PrescribedCourse>();
   const lastCarried = new Map<string, string>();
   const prescribedDays = new Set<string>();
@@ -160,7 +168,7 @@ export function prescriptionHistoryOf(
         reasonStopped: null,
         replaced: null,
         recorded: day,
-        current: inForce.has(key),
+        current: key === main,
       };
       const stopped = memberOf(group, concepts.dateStopped);
       if (stopped) {
@@ -173,7 +181,10 @@ export function prescriptionHistoryOf(
     }
   }
   for (const [key, course] of courses) {
-    course.replaced = [...prescribedDays].find((day) => day > lastCarried.get(key)!) ?? null;
+    course.replaced =
+      inForce.has(key) && key !== main
+        ? current!.main!.started
+        : ([...prescribedDays].find((day) => day > lastCarried.get(key)!) ?? null);
   }
   return [...courses.values()].sort((a, b) => b.started.localeCompare(a.started));
 }

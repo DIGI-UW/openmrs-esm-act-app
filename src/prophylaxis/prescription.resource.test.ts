@@ -110,6 +110,22 @@ describe('prescriptionHistoryOf', () => {
     ]);
   });
 
+  it('marks only the last-started course current when a change of regimen carries the earlier one beside it', () => {
+    const q21 = coded('q21', 'Q21 day BPG');
+    const history = prescriptionHistoryOf(
+      [
+        encounter('start', '2026-09-30T09:00:00.000+0000', [group(q28, '2026-09-30')]),
+        encounter('change', '2026-11-09T09:00:00.000+0000', [group(q21, '2026-11-09'), group(q28, '2026-09-30')]),
+      ],
+      concepts,
+    );
+
+    expect(history.map((course) => [course.regimen, course.current, course.replaced])).toEqual([
+      ['Q21 day BPG', true, null],
+      ['Q28 day BPG', false, '2026-11-09'],
+    ]);
+  });
+
   it('takes the stop of the latest encounter that stops a course, as a corrected stop date replaces the first', () => {
     const history = prescriptionHistoryOf(
       [
