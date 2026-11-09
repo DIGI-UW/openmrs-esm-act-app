@@ -33,7 +33,7 @@ jobs:
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   # Triggered here rather than by the release workflow, which dispatches before npm's next tag shows the new version.
-  # Drop this job and restore downstream_repository once openmrs/openmrs-contrib-gha-workflows#57 (O3-6013) merges.
+  # Drop this job and restore downstream_repository once O3-6013 lands in the shared release workflow.
   build-distro-frontend:
     needs: release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
