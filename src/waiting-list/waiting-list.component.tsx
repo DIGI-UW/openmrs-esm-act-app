@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -12,17 +12,9 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import {
-  CardiologyPictogram,
-  fetchCurrentPatient,
-  formatDate,
-  isDesktop,
-  launchWorkspace2,
-  showSnackbar,
-  useConfig,
-  useLayoutType,
-} from '@openmrs/esm-framework';
+import { CardiologyPictogram, formatDate, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
+import { useOpenFormBesideList } from '../open-form-beside-list';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { useReportDataset } from '../reports/report-dataset.resource';
@@ -33,7 +25,6 @@ import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { type ColumnSort, type SortValue, sortHeaderProps, sortItems } from '../table-filters/column-sort';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { fetchForm } from '../flag-gaps/flag-gaps.resource';
 import { labelUrgencies, rankWaitingRows, type WaitingRow } from './urgency';
 import {
   filterColumns,
@@ -68,6 +59,7 @@ export function WaitingListTable() {
   const { waitingList, urgencyBands } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
+  const openForm = useOpenFormBesideList(waitingListFormEntryWorkspace, mutate);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
   // A band's name is translated where shown; the filter, kept in the URL, matches the configured name.
@@ -84,32 +76,6 @@ export function WaitingListTable() {
   const sorted = useMemo(() => sortItems(ranked, sort, (waiting, key) => sortValues[key](waiting)), [ranked, sort]);
   const pageKey = useMemo(() => ({ filters, sort }), [filters, sort]);
   const { results, paginationProps } = usePagedRows(sorted, pageKey);
-  // Opening a row again passes the same objects, which the open workspace takes as the same form rather than
-  // prompting to close it.
-  const loaded = useRef(new Map<string, Promise<[Awaited<ReturnType<typeof fetchForm>>, fhir.Patient]>>());
-  const openForm = async ({ row }: WaitingRow) => {
-    const patientUuid = String(row.patient_uuid);
-    const encounterUuid = String(row.encounter_uuid);
-    if (!loaded.current.has(encounterUuid)) {
-      loaded.current.set(
-        encounterUuid,
-        Promise.all([fetchForm(String(row.form_uuid)), fetchCurrentPatient(patientUuid)]),
-      );
-    }
-    try {
-      const [form, patient] = await loaded.current.get(encounterUuid);
-      // An edit loads its encounter's own visit, so the list passes none. Both form engines report a save
-      // through mutateVisitContext.
-      launchWorkspace2(
-        waitingListFormEntryWorkspace,
-        { form, encounterUuid },
-        { patient, patientUuid, visitContext: null, mutateVisitContext: mutate },
-      );
-    } catch (e) {
-      loaded.current.delete(encounterUuid);
-      showSnackbar({ kind: 'error', title: t('couldNotOpenForm', 'Could not open the form'), subtitle: e?.message });
-    }
-  };
   const filterSelect = (key: keyof WaitingListFilters, label: string) => (
     <FilterSelect
       id={`waiting-list-${key}`}
@@ -234,7 +200,7 @@ export function WaitingListTable() {
                   ))}
                   <TableCell>
                     <MayEnterForm formUuid={String(waiting.row.form_uuid)}>
-                      <Button kind="ghost" size="sm" onClick={() => openForm(waiting)}>
+                      <Button kind="ghost" size="sm" onClick={() => openForm(waiting.row)}>
                         {t('openForm', 'Open form')}
                       </Button>
                     </MayEnterForm>

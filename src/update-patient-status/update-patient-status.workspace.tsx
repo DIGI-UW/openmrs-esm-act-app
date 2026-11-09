@@ -90,6 +90,18 @@ export default function UpdatePatientStatusWorkspace({
     }
   };
 
+  // Everything read under the patient follows: the banner, the registry reads and the flags.
+  const refreshPatient = () =>
+    mutate(
+      (key) =>
+        (Array.isArray(key) && key[0] === 'patient' && key[1] === patientUuid) ||
+        (typeof key === 'string' &&
+          (key.includes(`patient=${patientUuid}`) ||
+            key.includes(`/person/${patientUuid}`) ||
+            key.includes(`/Patient/${patientUuid}`) ||
+            key.startsWith(`${restBaseUrl}/patient/${patientUuid}`))),
+    );
+
   const save = async () => {
     if (!chosen) {
       return;
@@ -116,18 +128,13 @@ export default function UpdatePatientStatusWorkspace({
           : restErrorMessage(e),
       });
       setSaving(false);
+      if (diedNow) {
+        await refreshPatient();
+      }
       return;
     }
     showSnackbar({ kind: 'success', title: t('patientStatusUpdated', 'Patient status updated') });
-    // Everything read under the patient follows: the banner, the registry reads and the flags.
-    await mutate(
-      (key) =>
-        typeof key === 'string' &&
-        (key.includes(`patient=${patientUuid}`) ||
-          key.includes(`/person/${patientUuid}`) ||
-          key.includes(`/Patient/${patientUuid}`) ||
-          key.startsWith(`${restBaseUrl}/patient/${patientUuid}`)),
-    );
+    await refreshPatient();
     closeWorkspace({ discardUnsavedChanges: true });
   };
 

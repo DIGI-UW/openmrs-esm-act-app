@@ -4,12 +4,27 @@ import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
+import {
+  type AssignedExtension,
+  getAssignedExtensions,
+  getDefaultsFromConfigSchema,
+  openmrsFetch,
+  useAssignedExtensions,
+} from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { type Config, configSchema } from '../config-schema';
 import { type ChartEncounter } from '../consultations/consultations.resource';
 import InrCard from './inr-card.component';
 import InrStatusFlag from './inr-status-flag.component';
+
+// The framework's test mock has no getAssignedExtensions, which reads a dashboard group's slot.
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getAssignedExtensions: vi.fn(() => []),
+}));
+
+// The INR reviews page as a site's config may rename it.
+const inrPage = { name: 'act-inr-reviews-dashboard-link', meta: { path: 'act-inr-reviews' }, config: { path: 'inr' } };
 
 const ago = (days: number) => dayjs().subtract(days, 'day').format('YYYY-MM-DD');
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
@@ -77,6 +92,8 @@ describe('InrCard', () => {
   beforeEach(async () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     await signInWith(['Get Encounters', 'Get Observations']);
+    vi.mocked(useAssignedExtensions).mockReturnValue([inrPage] as unknown as Array<AssignedExtension>);
+    vi.mocked(getAssignedExtensions).mockReturnValue([]);
   });
 
   it('shows the indication, target, next INR and dose, then the chart and each reading with its words and dose change', async () => {
@@ -158,8 +175,24 @@ describe('InrCard', () => {
     expect(await screen.findAllByTestId('inr-reading')).toHaveLength(5);
     expect(screen.getByRole('link', { name: 'See all' })).toHaveAttribute(
       'href',
-      expect.stringContaining('/patient/grace/chart/act-inr-reviews'),
+      expect.stringContaining('/patient/grace/chart/inr'),
     );
+  });
+
+  it("shows no See all link when the chart's nav has no INR reviews page", async () => {
+    vi.mocked(useAssignedExtensions).mockReturnValue([]);
+    serve(
+      [onWarfarin],
+      ['2026-08-03', '2026-08-10', '2026-08-17', '2026-08-24', '2026-08-31', '2026-09-07'].map((day) =>
+        reading(day, 2.5),
+      ),
+    );
+
+    renderIn(<InrCard patientUuid="grace" />);
+
+    await showReadings();
+    expect(await screen.findAllByTestId('inr-reading')).toHaveLength(5);
+    expect(screen.queryByRole('link', { name: 'See all' })).not.toBeInTheDocument();
   });
 
   it('shows no See all link for five readings or fewer', async () => {

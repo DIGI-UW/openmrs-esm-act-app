@@ -16,6 +16,7 @@ import { type Config } from '../config-schema';
 import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.component';
 import { patientsOnProphylaxisDashboardMeta } from '../enter-prophylaxis/patients-on-prophylaxis.meta';
 import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
+import { useRolePermissionsAssigned } from '../role-permissions/role-permissions-dashboard-link.component';
 import { QuickActionTile } from './quick-action-tile.component';
 import styles from './quick-actions.scss';
 
@@ -160,6 +161,9 @@ export function FormsAndSitesAction() {
 export function RolePermissionsAction() {
   const { t } = useTranslation();
   const { instanceAdminQuickActions } = useConfig<Config>();
+  if (!useRolePermissionsAssigned()) {
+    return null;
+  }
   return (
     <QuickActionTile
       Icon={UserRole}

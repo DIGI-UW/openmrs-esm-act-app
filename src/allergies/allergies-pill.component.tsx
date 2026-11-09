@@ -2,6 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tag, Toggletip, ToggletipButton, ToggletipContent } from '@carbon/react';
 import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
+import { useChartPagePath } from '../chart-page-path';
+import { patientChartUrl } from '../patient-chart-url';
 import { type Config } from '../config-schema';
 import { day } from '../consultations/repeated-lists.component';
 import { pillsClassName } from '../patient-status/status-pill.component';
@@ -16,6 +18,7 @@ export default function AllergiesPill({ patientUuid }: { patientUuid: string }) 
   const { t } = useTranslation();
   const config = useConfig<Config>();
   const { current: allergies, noKnownAllergies, error, isLoading } = useAllergies(patientUuid, config);
+  const pagePath = useChartPagePath('act-allergies-dashboard-link');
   if (isLoading) {
     return null;
   }
@@ -70,9 +73,11 @@ export default function AllergiesPill({ patientUuid }: { patientUuid: string }) 
               </li>
             ))}
           </ul>
-          <ConfigurableLink to={`\${openmrsSpaBase}/patient/${patientUuid}/chart/act-allergies`}>
-            {t('reviewInAllergies', 'Review in Allergies')}
-          </ConfigurableLink>
+          {pagePath && (
+            <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`}>
+              {t('reviewInAllergies', 'Review in Allergies')}
+            </ConfigurableLink>
+          )}
         </ToggletipContent>
       </Toggletip>
     </span>
