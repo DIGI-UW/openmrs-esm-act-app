@@ -120,6 +120,11 @@ export const clinicalFlags = getAsyncLifecycle(() => import('./clinical-flags/cl
 
 export const inrCard = getAsyncLifecycle(() => import('./inr/inr-card.component'), options);
 
+export const proceduralRecommendationsCard = getAsyncLifecycle(
+  () => import('./procedural-recommendations/procedural-recommendations-card.component'),
+  options,
+);
+
 export const inrEditWorkspace = getAsyncLifecycle(() => import('./inr/inr-edit.workspace'), options);
 
 export const clinicsBanner = getAsyncLifecycle(() => import('./contact/clinics-banner.component'), options);

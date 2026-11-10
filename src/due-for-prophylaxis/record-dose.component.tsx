@@ -42,7 +42,7 @@ function cached<T>(cache: Map<string, Promise<T>>, key: string, load: () => Prom
  * Called by what stays mounted while the panel is open, not by the table, which an empty filter or search unmounts and
  * whose caches would go with it.
  */
-export function useRecordDose() {
+export function useRecordDose(workspace = recordDoseFormEntryWorkspace) {
   const { t } = useTranslation();
   const { visitType } = useConfig<Config>();
   const { sessionLocation } = useSession();
@@ -78,7 +78,7 @@ export function useRecordDose() {
       }
       visits.current.set(patientUuid, visit);
       await launchWorkspace2(
-        recordDoseFormEntryWorkspace,
+        workspace,
         { form, encounterUuid: '', handlePostResponse: refresh },
         { patient, patientUuid, visitContext: visit },
       );

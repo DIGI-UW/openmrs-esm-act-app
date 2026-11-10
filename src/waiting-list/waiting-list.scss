@@ -16,7 +16,7 @@
 }
 
 .tableContainer {
-  // Open form stays in view while a table wider than the screen scrolls sideways.
+  // The row's actions stay in view while a table wider than the screen scrolls sideways.
   th:last-child,
   td:last-child {
     position: sticky;
@@ -56,4 +56,10 @@
 // The figure that makes a row overdue reads in red, as the mockup shows; the tests read the same attribute.
 .tableContainer tr[data-overdue='true'] td[data-days-pending='true'] {
   color: $act-risk;
+}
+
+// Record procedure and Open consultation side by side, on one line.
+.rowActions {
+  display: flex;
+  white-space: nowrap;
 }
