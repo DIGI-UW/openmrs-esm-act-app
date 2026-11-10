@@ -184,13 +184,14 @@ describe('Due for prophylaxis page', () => {
     expect(sheet).toMatch(/\.tableContainer\.tablet\s*\{\s*th,\s*td\s*\{\s*padding-inline: layout\.\$spacing-03;/);
   });
 
-  it('shows -- for a prescription with no name', async () => {
-    dataset({ rows: [{ ...dueRows[0], regimen: '', injection_interval_days: '' }] });
+  it('shows -- for a prescription with no name and for a patient with no status', async () => {
+    dataset({ rows: [{ ...dueRows[0], regimen: '', injection_interval_days: '', status: '' }] });
 
     await renderPage();
     await showAll();
 
-    expect(cells(new RegExp(String(dueRows[0].rhd_id)))[1]).toBe('--');
+    const [, prescription, , status] = cells(new RegExp(String(dueRows[0].rhd_id)));
+    expect([prescription, status]).toEqual(['--', '--']);
   });
 
   it('lists only the patients whose primary care clinic it is, at a primary care clinic', async () => {

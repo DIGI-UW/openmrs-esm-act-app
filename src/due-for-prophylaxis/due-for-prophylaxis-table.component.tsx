@@ -24,7 +24,7 @@ export function DueForProphylaxisTable({
   // Drop the ACT ID column on screen only; PatientCell shows it and the CSV keeps it.
   const columns = dueColumns(t, recorded).filter((column) => column.key !== 'actId');
 
-  /** A column's text, as the CSV holds it, with the chart link, the status tag and the adherence colour on screen. */
+  /** A column's CSV text, shown with its chart link, status tag, adherence colour, or a placeholder for no value. */
   const cell = (column: DueColumn, row: ReportRow) => {
     const text = column.text(row);
     if (column.key === 'patient') {
