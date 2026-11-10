@@ -25,7 +25,9 @@ const mutate = vi.fn();
 
 async function openFormOf(actId: string) {
   await userEvent.click(
-    within(screen.getByRole('row', { name: new RegExp(`${actId}\\b`) })).getByRole('button', { name: 'Open form' }),
+    within(screen.getByRole('row', { name: new RegExp(`${actId}\\b`) })).getByRole('button', {
+      name: 'Open consultation',
+    }),
   );
 }
 
@@ -137,5 +139,39 @@ describe('Opening a recommendation consultation from the waiting list', () => {
       ),
     );
     expect(vi.mocked(launchWorkspace2)).not.toHaveBeenCalled();
+  });
+
+  describe('Record procedure', () => {
+    const proceduresForm = { uuid: 'bf762810-2bf1-3ca3-bdbe-8bd71fd5d59a', name: 'Procedures and Outcomes' };
+    const visit = { uuid: 'visit-3' };
+
+    beforeEach(() => {
+      vi.mocked(openmrsFetch).mockImplementation(((url: string) =>
+        Promise.resolve({
+          data: url.includes('/visit?') ? { results: [visit] } : proceduresForm,
+        })) as never);
+    });
+
+    it("opens a new Procedures and Outcomes for the row's patient in their visit, beside the list", async () => {
+      render(<WaitingList />);
+
+      await userEvent.click(
+        within(screen.getByRole('row', { name: /rhd00003\b/ })).getByRole('button', { name: 'Record procedure' }),
+      );
+
+      await waitFor(() => expect(vi.mocked(launchWorkspace2)).toHaveBeenCalled());
+      const [workspace, workspaceProps, windowProps] = vi.mocked(launchWorkspace2).mock.calls[0];
+      expect(workspace).toBe('act-waiting-list-form-entry-workspace');
+      expect(workspaceProps).toEqual({
+        form: proceduresForm,
+        encounterUuid: '',
+        handlePostResponse: expect.any(Function),
+      });
+      expect(windowProps).toEqual({ patient, patientUuid: 'patient-3', visitContext: visit });
+      expect(vi.mocked(openmrsFetch)).toHaveBeenCalledWith(
+        expect.stringContaining('bf762810-2bf1-3ca3-bdbe-8bd71fd5d59a'),
+      );
+      expect(vi.mocked(navigate)).not.toHaveBeenCalled();
+    });
   });
 });

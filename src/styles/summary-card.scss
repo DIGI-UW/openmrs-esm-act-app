@@ -128,3 +128,8 @@
   color: $text-02;
   padding: 0 layout.$spacing-05 layout.$spacing-05;
 }
+
+// A note under a table, spaced from its last row.
+.recommendationNote {
+  padding-top: layout.$spacing-04;
+}

@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { parseDate } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { answersIn, type ChartEncounter, type GroupedObs } from '../consultations/consultations.resource';
+import { answersIn, answerText, type ChartEncounter, type GroupedObs } from '../consultations/consultations.resource';
 import { diagnosisConcepts } from '../consultations/patient-details.resource';
 
 const YES = '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -111,4 +111,70 @@ export function needsConfirmatoryEcho(patientInformation: Array<ChartEncounter>,
     ),
   );
   return !diagnosed;
+}
+
+/** Procedure Type None: the consultation records that no intervention is recommended. */
+const NONE = '1107AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+/** One recommendation on the latest consultation, as the patient summary lists it (AR-191). */
+export interface ProceduralRecommendation {
+  key: string;
+  procedure: string;
+  type: string;
+  /** The Urgency answer's uuid, which names its urgency band, and its name. */
+  urgencyConcept: string;
+  urgency: string;
+  /** The day of the oldest consultation in the unbroken run back from the latest that recommends it, YYYY-MM-DD. */
+  recommended: string;
+  /** The day Procedures and Outcomes first recorded it on or after the latest consultation's day, YYYY-MM-DD. */
+  doneOn: string | null;
+  /** Answered Completed on a consultation saved before Completed left the form (AR-147). */
+  markedCompleted: boolean;
+}
+
+/**
+ * The recommendations the latest consultation records, other than Procedure Type None, each done when Procedures and
+ * Outcomes records the same procedure on or after that consultation's day, as the Procedural Waiting List reads it.
+ */
+export function proceduralRecommendations(
+  consultations: Array<ChartEncounter>,
+  concepts: Config['consultations']['concepts'],
+  done: Array<DoneProcedure> = [],
+): Array<ProceduralRecommendation> {
+  const latest = consultations[0];
+  if (!latest) {
+    return [];
+  }
+  const latestDay = serverDay(latest.encounterDatetime);
+  return answersIn(latest.obs, concepts.recommendation)
+    .filter((group) => uuidOf(answersIn(group.groupMembers, concepts.procedureType)[0]?.value) !== NONE)
+    .map((group, index) => {
+      const procedureAnswer = answersIn(group.groupMembers, concepts.recommendation)[0]?.value;
+      const procedureUuid = uuidOf(procedureAnswer);
+      const typeAnswer = answersIn(group.groupMembers, concepts.procedureType)[0]?.value;
+      const urgencyAnswer = answersIn(group.groupMembers, concepts.urgency)[0]?.value;
+      const doneOn =
+        done
+          .filter((one) => procedureUuid && one.procedure === procedureUuid && one.day >= latestDay)
+          .map((one) => one.day)
+          .sort()[0] ?? null;
+      let first = latest;
+      for (const encounter of consultations.slice(1)) {
+        if (!procedureUuid || !openProcedures(encounter, concepts, done).includes(procedureUuid)) {
+          break;
+        }
+        first = encounter;
+      }
+      return {
+        key: group.uuid ?? `${latest.uuid}-${index}`,
+        procedure: answerText(procedureAnswer),
+        type: answerText(typeAnswer),
+        urgencyConcept: uuidOf(urgencyAnswer),
+        urgency: answerText(urgencyAnswer),
+        recommended: serverDay(first.encounterDatetime),
+        doneOn,
+        markedCompleted: isCompleted(group, concepts.completed),
+      };
+    })
+    .filter((recommendation) => recommendation.procedure || recommendation.type);
 }

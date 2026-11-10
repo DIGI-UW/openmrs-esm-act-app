@@ -445,6 +445,12 @@ export const configSchema = {
     },
   },
   procedures: {
+    form: {
+      _type: Type.UUID,
+      _default: 'bf762810-2bf1-3ca3-bdbe-8bd71fd5d59a',
+      _description:
+        'The Procedures and Outcomes form, which Record procedure opens on the patient summary and the Procedural waiting list (AR-191).',
+    },
     encounterType: {
       _type: Type.UUID,
       _default: 'c9b87090-8768-50be-987e-8ca0a8983429',
@@ -492,9 +498,11 @@ export const configSchema = {
         complication: 'a04d2268-a7de-589f-b4b6-92c47c13e342',
         recommendation: 'ce93d393-1df5-587f-bf11-c373eac2ccf4',
         completed: '1632f8dc-195d-5d67-a52e-6c7a057cb536',
+        procedureType: '3a576b80-744a-59ee-9515-d9fdca06f3d7',
+        urgency: '7b8eda07-34b6-55f2-ab6c-1b295f41918b',
       },
       _description:
-        "The consultation's questions: Date of Consultation Visit, NYHA Classification, Secondary Antibiotic Prophylaxis (the group and its regimen share the concept), Date Stopped, Next Consultation Time Amount and Period, Cardiac Medication (group and medicine share the concept) with its Dosing, Dosing Interval and Date Started, Date Added on the chronic condition, allergy and RHD complication lists (each group and its name share the concept), and Interventional Recommendation(s) (group and procedure share the concept) with its Completed answer.",
+        "The consultation's questions: Date of Consultation Visit, NYHA Classification, Secondary Antibiotic Prophylaxis (the group and its regimen share the concept), Date Stopped, Next Consultation Time Amount and Period, Cardiac Medication (group and medicine share the concept) with its Dosing, Dosing Interval and Date Started, Date Added on the chronic condition, allergy and RHD complication lists (each group and its name share the concept), and Interventional Recommendation(s) (group and procedure share the concept) with its Completed answer, Procedure Type and Urgency.",
     },
     vitaminKAntagonists: {
       _type: Type.Array,
@@ -1085,6 +1093,7 @@ export interface Config {
     screeningDiagnosesReport: string;
   };
   procedures: {
+    form: string;
     encounterType: string;
     concepts: Record<'date' | 'surgeryType' | 'catheterizationType', string>;
   };
@@ -1107,7 +1116,9 @@ export interface Config {
       | 'allergy'
       | 'complication'
       | 'recommendation'
-      | 'completed',
+      | 'completed'
+      | 'procedureType'
+      | 'urgency',
       string
     >;
     vitaminKAntagonists: Array<string>;

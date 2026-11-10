@@ -879,6 +879,16 @@
       ]
     },
     {
+      "name": "act-procedural-recommendations-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "proceduralRecommendationsCard",
+      "meta": { "fullWidth": true },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
       "name": "act-inr-card",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "inrCard",

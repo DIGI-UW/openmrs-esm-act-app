@@ -14,6 +14,7 @@ import {
 } from '@carbon/react';
 import { formatDate, InPatientPictogram, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
+import { useRecordDose } from '../due-for-prophylaxis/record-dose.component';
 import { useOpenFormBesideList } from '../open-form-beside-list';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
@@ -56,10 +57,12 @@ const sortValues: Record<string, (waiting: WaitingRow) => SortValue> = {
 
 export function WaitingListTable() {
   const { t } = useTranslation();
-  const { waitingList, urgencyBands } = useConfig<Config>();
+  const { waitingList, urgencyBands, procedures } = useConfig<Config>();
   const desktop = isDesktop(useLayoutType());
   const { rows: reportRows, isLoading, error, mutate } = useReportDataset(waitingList.report);
   const openForm = useOpenFormBesideList(waitingListFormEntryWorkspace, mutate);
+  // A recommendation is done once Procedures and Outcomes records its procedure, so that is what the row records (AR-191).
+  const recordProcedure = useRecordDose(waitingListFormEntryWorkspace);
   // Named by band before anything reads them, so the column, its filter and the CSV agree.
   const rows = useMemo(() => labelUrgencies(reportRows, urgencyBands, 'label'), [reportRows, urgencyBands]);
   // A band's name is translated where shown; the filter, kept in the URL, matches the configured name.
@@ -199,11 +202,23 @@ export function WaitingListTable() {
                     </TableCell>
                   ))}
                   <TableCell>
-                    <MayEnterForm formUuid={String(waiting.row.form_uuid)}>
-                      <Button kind="ghost" size="sm" onClick={() => openForm(waiting.row)}>
-                        {t('openForm', 'Open form')}
-                      </Button>
-                    </MayEnterForm>
+                    <div className={styles.rowActions}>
+                      <MayEnterForm formUuid={procedures.form}>
+                        <Button
+                          kind="ghost"
+                          size="sm"
+                          disabled={recordProcedure.opening}
+                          onClick={() => recordProcedure.record(waiting.row, procedures.form)}
+                        >
+                          {t('recordProcedure', 'Record procedure')}
+                        </Button>
+                      </MayEnterForm>
+                      <MayEnterForm formUuid={String(waiting.row.form_uuid)}>
+                        <Button kind="ghost" size="sm" onClick={() => openForm(waiting.row)}>
+                          {t('openConsultation', 'Open consultation')}
+                        </Button>
+                      </MayEnterForm>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
