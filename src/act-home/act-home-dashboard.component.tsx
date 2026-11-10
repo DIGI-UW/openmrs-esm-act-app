@@ -2,8 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layer, Tile } from '@carbon/react';
 import { ExtensionSlot, useAssignedExtensions, useSession } from '@openmrs/esm-framework';
+import { ActPictogram } from './act-pictogram.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
-import actLogo from '../assets/act-logo.png';
 import { actHomeWidgetsSlot } from './act-home.meta';
 import styles from './act-home.scss';
 
@@ -39,7 +39,7 @@ export function HomeDashboard({
     <>
       <ActPageHeader
         title={title}
-        illustration={<img src={actLogo} alt={t('actLogo', 'ACT logo')} className={styles.logo} />}
+        illustration={<ActPictogram label={t('actLogo', 'ACT logo')} />}
         actions={<SignedInRole />}
       />
       <div className={styles.dashboard}>

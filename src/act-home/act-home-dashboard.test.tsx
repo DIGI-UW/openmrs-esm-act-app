@@ -41,13 +41,15 @@ describe('ActHomeDashboard', () => {
     );
   });
 
-  it('shows the ACT logo beside the title instead of a hospital pictogram', async () => {
+  it("heads the page with the ACT logo's emblem, without its lettering, instead of a hospital pictogram", async () => {
     await signInWith([homePrivilege]);
     mockUseAssignedExtensions.mockReturnValue([]);
 
     render(<ActHomeDashboard />);
 
-    expect(header().getByRole('img', { name: 'ACT logo' })).toBeInTheDocument();
+    const emblem = header().getByRole('img', { name: 'ACT logo' });
+    expect(emblem.tagName.toLowerCase()).toBe('img');
+    expect(emblem).toHaveAttribute('width', '60');
     expect(header().queryByText('HomePictogram')).not.toBeInTheDocument();
     // The header is the only h1; the screen does not render its own heading beside it.
     const headings = screen.getAllByRole('heading', { level: 1 });
