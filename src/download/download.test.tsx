@@ -1,7 +1,7 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
@@ -85,6 +85,15 @@ describe('formFields', () => {
 describe('DownloadData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('heads the page with the export pictogram', async () => {
+    await signInWith(['Task: act.downloadResearchData']);
+    backendAnswers();
+    renderPage();
+
+    expect(within(screen.getByTestId('act-page-header')).getByText('MetadataExportPictogram')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
   });
 
   it('downloads the chosen fields of a form over the dates given as a CSV', async () => {

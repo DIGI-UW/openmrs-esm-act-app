@@ -116,6 +116,12 @@ describe('Enter prophylaxis', () => {
     vi.mocked(useRecordedToday).mockReturnValue({ recorded: new Set() });
   });
 
+  it('heads the page with the pharmacy pictogram', () => {
+    render(<EnterProphylaxis />);
+
+    expect(within(screen.getByTestId('act-page-header')).getByText('PharmacyPictogram')).toBeInTheDocument();
+  });
+
   it('lists every patient on prophylaxis, and those without a prescription, with what to record for each', () => {
     render(<EnterProphylaxis />);
 

@@ -89,6 +89,14 @@ describe('Screening counts', () => {
     await signInWith(['App: act.screeningCounts', 'Task: act.enterScreeningCounts']);
   });
 
+  it('heads the page with the data entry pictogram', async () => {
+    backendAnswers();
+    renderPage();
+
+    expect(within(screen.getByTestId('act-page-header')).getByText('DataEntryPictogram')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('412')).toBeInTheDocument();
+  });
+
   it("opens on the first clinic's last month, cardiac and primary care clinics both offered", async () => {
     backendAnswers();
     renderPage();

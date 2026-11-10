@@ -1,4 +1,6 @@
 import React from 'react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -39,7 +41,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 vi.mock('./recorded-today.resource', () => ({ useRecordedToday: vi.fn() }));
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 vi.mock('./due-for-prophylaxis.scss', () => ({
-  default: { dueTag: 'dueTag', lowAdherence: 'lowAdherence', goodAdherence: 'goodAdherence' },
+  default: { dueTag: 'dueTag', lowAdherence: 'lowAdherence', goodAdherence: 'goodAdherence', recordDose: 'recordDose' },
 }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
 const mockOpenFormInChart = vi.mocked(openFormInChart);
@@ -120,6 +122,25 @@ describe('Due for prophylaxis page', () => {
     vi.mocked(findActiveVisit).mockResolvedValue({ uuid: 'active-visit' } as never);
     vi.mocked(startVisit).mockResolvedValue({ uuid: 'started-visit' } as never);
     recorded([]);
+  });
+
+  it('heads the page with the appointments pictogram', () => {
+    dataset({ rows: dueRows });
+    render(<DueForProphylaxis />);
+
+    expect(within(screen.getByTestId('act-page-header')).getByText('AppointmentsPictogram')).toBeInTheDocument();
+  });
+
+  it('draws Record BPG and Record oral at one minimum width, so the column lines up', async () => {
+    dataset({ rows: dueRows });
+    render(<DueForProphylaxis />);
+    await userEvent.click(await screen.findByRole('tab', { name: /^All/ }));
+
+    const buttons = await screen.findAllByRole('button', { name: /^Record (BPG|oral)$/ });
+    expect(buttons.map((button) => button.textContent)).toEqual(expect.arrayContaining(['Record BPG', 'Record oral']));
+    buttons.forEach((button) => expect(button).toHaveClass('recordDose'));
+    const sheet = readFileSync(resolve(process.cwd(), 'src/due-for-prophylaxis/due-for-prophylaxis.scss'), 'utf8');
+    expect(sheet).toMatch(/\.recordDose\s*\{[^}]*min-width: 10rem;/);
   });
 
   it('lists only the patients whose primary care clinic it is, at a primary care clinic', async () => {

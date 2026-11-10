@@ -18,7 +18,7 @@ import {
   TextInput,
   Tile,
 } from '@carbon/react';
-import { ReportsPictogram, showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { DataEntryPictogram, showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { PRIVILEGE_ENTER_SCREENING_COUNTS } from '../constants';
@@ -307,7 +307,7 @@ export default function ScreeningCounts() {
 
   return (
     <>
-      <ActPageHeader title={t('screeningCounts', 'Screening counts')} illustration={<ReportsPictogram />} />
+      <ActPageHeader title={t('screeningCounts', 'Screening counts')} illustration={<DataEntryPictogram />} />
       <div className={styles.page}>
         <Tile className={styles.tile}>
           <p className={styles.explanation}>

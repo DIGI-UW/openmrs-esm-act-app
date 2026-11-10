@@ -31,10 +31,9 @@
   padding: layout.$spacing-05;
 }
 
-.logo {
-  display: block;
-  height: layout.$spacing-09;
-  width: auto;
+// 60px plus this margin fills the 92px a framework pictogram takes.
+.emblem {
+  margin: layout.$spacing-05;
 }
 
 .role {

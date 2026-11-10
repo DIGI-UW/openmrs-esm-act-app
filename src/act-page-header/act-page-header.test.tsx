@@ -28,13 +28,13 @@ const screens = [
   {
     name: 'Worklists',
     Screen: Worklists,
-    pictogram: 'PatientListsPictogram',
+    pictogram: 'ServiceQueuesPictogram',
     noAccess: 'You do not have access to the worklists.',
   },
   {
     name: 'Procedural waiting list',
     Screen: WaitingList,
-    pictogram: 'CardiologyPictogram',
+    pictogram: 'InPatientPictogram',
     noAccess: 'You do not have access to the procedural waiting list.',
   },
   {

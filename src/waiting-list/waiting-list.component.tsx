@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { CardiologyPictogram, formatDate, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, InPatientPictogram, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { MayEnterForm } from '../access/may-enter-form';
 import { useOpenFormBesideList } from '../open-form-beside-list';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
@@ -222,7 +222,7 @@ export default function WaitingList() {
   const { t } = useTranslation();
   return (
     <>
-      <ActPageHeader title={t('waitingList', 'Procedural waiting list')} illustration={<CardiologyPictogram />} />
+      <ActPageHeader title={t('waitingList', 'Procedural waiting list')} illustration={<InPatientPictogram />} />
       <div className={styles.waitingList}>
         <p className={styles.description}>
           {t(

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton, InlineNotification, Pagination, Tag } from '@carbon/react';
-import { CardiologyPictogram, isDesktop, useLayoutType } from '@openmrs/esm-framework';
+import { AppointmentsPictogram, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
@@ -71,7 +71,7 @@ export default function DueForProphylaxis() {
   const { t } = useTranslation();
   return (
     <>
-      <ActPageHeader title={t('dueForProphylaxis', 'Due for prophylaxis')} illustration={<CardiologyPictogram />} />
+      <ActPageHeader title={t('dueForProphylaxis', 'Due for prophylaxis')} illustration={<AppointmentsPictogram />} />
       <div className={styles.dueForProphylaxis}>
         <DueList />
       </div>

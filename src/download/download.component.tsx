@@ -13,8 +13,8 @@ import {
 } from '@carbon/react';
 import { Download } from '@carbon/react/icons';
 import {
+  MetadataExportPictogram,
   OpenmrsDatePicker,
-  PatientListsPictogram,
   showSnackbar,
   userHasAccess,
   useSession,
@@ -142,7 +142,7 @@ export default function DownloadData() {
 
   return (
     <>
-      <ActPageHeader title={t('downloadData', 'Download data')} illustration={<PatientListsPictogram />} />
+      <ActPageHeader title={t('downloadData', 'Download data')} illustration={<MetadataExportPictogram />} />
       <div className={styles.page}>
         <Tile className={styles.tile}>
           <p className={styles.explanation}>
