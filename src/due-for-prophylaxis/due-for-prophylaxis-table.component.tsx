@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
-import { ConfigurableLink, isDesktop, useLayoutType } from '@openmrs/esm-framework';
-import { patientChartUrl } from '../patient-chart-url';
+import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { adherence, type DueColumn, dueColumns, firstDoseDue, lowAdherence } from './due-list';
 import { RecordDoseAction, type RecordDose } from './record-dose.component';
+import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './due-for-prophylaxis.scss';
 
 /** The due list's rows, each with the form that records its next dose, or View chart once recorded today. */
@@ -21,13 +21,14 @@ export function DueForProphylaxisTable({
   const { t } = useTranslation();
   const desktop = isDesktop(useLayoutType());
 
-  const columns = dueColumns(t, recorded);
+  // Drop the ACT ID column on screen only; PatientCell shows it and the CSV keeps it.
+  const columns = dueColumns(t, recorded).filter((column) => column.key !== 'actId');
 
   /** A column's text, as the CSV holds it, with the chart link, the status tag and the adherence colour on screen. */
   const cell = (column: DueColumn, row: ReportRow) => {
     const text = column.text(row);
     if (column.key === 'patient') {
-      return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{text}</ConfigurableLink>;
+      return <PatientCell row={row} />;
     }
     if (column.key === 'status') {
       if (!text) {

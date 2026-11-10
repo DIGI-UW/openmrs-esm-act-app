@@ -21,6 +21,7 @@ import { parseReportDate } from '../reports/report-date';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { ActHomeCard } from './act-home-card.component';
+import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './overdue-consultation.scss';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -113,8 +114,7 @@ export default function OverdueConsultation() {
                 {results.map(({ row, lastConsultation, wasDue, days }) => (
                   <TableRow key={String(row.patient_uuid)}>
                     <TableCell>
-                      <span className={styles.name}>{String(row.full_name ?? '')}</span>
-                      <span className={styles.actId}>{String(row.rhd_id ?? '')}</span>
+                      <PatientCell row={row} />
                     </TableCell>
                     <TableCell>{date(lastConsultation)}</TableCell>
                     <TableCell>{date(wasDue)}</TableCell>

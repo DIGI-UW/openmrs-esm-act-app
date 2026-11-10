@@ -69,7 +69,7 @@ function PatientsOnProphylaxis() {
         {registry.isLoading ? (
           <DataTableSkeleton
             role="progressbar"
-            columnCount={7}
+            columnCount={6}
             rowCount={paginationProps.pageSize}
             compact={desktop}
             showHeader={false}

@@ -78,7 +78,7 @@ function cells(name: RegExp) {
 
 /** The status tag in the patient's row: its text, its Carbon colour and whether it is drawn yellow. */
 function statusTag(name: RegExp) {
-  const status = within(screen.getByRole('row', { name })).getAllByRole('cell')[4];
+  const status = within(screen.getByRole('row', { name })).getAllByRole('cell')[3];
   // The tag has no role, so it is found around its label.
   // eslint-disable-next-line testing-library/no-node-access
   const tag = within(status).getByTitle(/./).parentElement;
@@ -220,7 +220,6 @@ describe('Due for prophylaxis page', () => {
 
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
       'Patient',
-      'ACT ID',
       'Prescription',
       'Last dose',
       'Status',
@@ -228,8 +227,7 @@ describe('Due for prophylaxis page', () => {
       '',
     ]);
     expect(cells(/rhd00012/)).toEqual([
-      'Amina Nakato',
-      'rhd00012',
+      'Amina Nakatorhd00012',
       'BPG · every 28 days',
       '24-Aug-2026',
       'Overdue',
@@ -238,8 +236,7 @@ describe('Due for prophylaxis page', () => {
     ]);
     // Joan has no oral report yet, so her first supply is what is due.
     expect(cells(/rhd00021/)).toEqual([
-      'Joan Apio',
-      'rhd00021',
+      'Joan Apiorhd00021',
       'Penicillin V',
       '',
       'First dose due',
@@ -247,8 +244,7 @@ describe('Due for prophylaxis page', () => {
       'Record oral',
     ]);
     expect(cells(/rhd00052/)).toEqual([
-      'Peter Mugisha',
-      'rhd00052',
+      'Peter Mugisharhd00052',
       'BPG · every 28 days',
       '26-Aug-2026',
       'Due soon',
@@ -492,8 +488,7 @@ describe('Due for prophylaxis page', () => {
     await renderPage();
 
     expect(cells(/rhd00003/)).toEqual([
-      'Abebe Zeleke',
-      'rhd00003',
+      'Abebe Zelekerhd00003',
       'BPG · every 28 days',
       '31-Aug-2026',
       'Recorded today',
@@ -539,8 +534,8 @@ describe('Due for prophylaxis page', () => {
       screen
         .getAllByRole('row')
         .slice(1)
-        .map((row) => within(row).getAllByRole('cell')[1].textContent),
-    ).toEqual(['rhd00021']);
+        .map((row) => within(row).getAllByRole('cell')[0].textContent),
+    ).toEqual(['Joan Apiorhd00021']);
   });
 
   it('counts a patient due in the next two days as listed, not waiting', async () => {

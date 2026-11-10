@@ -52,6 +52,10 @@ describe('Overdue for consultation', () => {
       'Patient 1rhd00001',
     ]);
     expect(within(rows[0]).getByText('108 days')).toBeInTheDocument();
+    expect(within(rows[0]).getByRole('link', { name: 'Patient 2' })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/patient/patient-2/chart',
+    );
   });
 
   it("lists only the patients of the session's cardiac clinic", async () => {

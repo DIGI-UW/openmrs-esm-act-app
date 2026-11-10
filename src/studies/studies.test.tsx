@@ -6,11 +6,13 @@ import userEvent from '@testing-library/user-event';
 import { launchWorkspace2 } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { downloadCsv } from '../table-filters/csv';
 import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Studies from './studies.component';
 import { backendAnswers } from './studies.test-helper';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 
 const participant = (overrides: Record<string, unknown>) => ({
   patient_uuid: 'patient-1',
@@ -204,6 +206,18 @@ describe('Studies', () => {
     expect(screen.getByLabelText('Study')).toHaveValue('ARC');
   });
 
+  it('keeps the ACT ID as its own column in the CSV, though the screen shows it beneath the name', async () => {
+    backendAnswers();
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+    await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+    const [, headers, rows] = vi.mocked(downloadCsv).mock.lastCall;
+    expect(headers.slice(0, 2)).toEqual(['Patient', 'ACT ID']);
+    expect(rows).toContainEqual(expect.arrayContaining(['Herman Muhereza', 'rhd00037']));
+  });
+
   it('lists every participant, filtered by study and by status', async () => {
     backendAnswers();
     renderPage();
@@ -224,6 +238,10 @@ describe('Studies', () => {
       'href',
       expect.stringMatching(/\/patient\/patient-1\/chart\/act-research$/),
     );
+    const patientCell = within(within(filtered).getByRole('row', { name: /rhd00037/ })).getAllByRole('cell')[0];
+    expect(patientCell).toHaveTextContent('Herman Muherezarhd00037');
+    expect(within(patientCell).getByRole('link', { name: 'Herman Muhereza' })).toBeInTheDocument();
+    expect(within(filtered).queryByRole('columnheader', { name: 'ACT ID' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download CSV' })).toBeEnabled();
   });
 
