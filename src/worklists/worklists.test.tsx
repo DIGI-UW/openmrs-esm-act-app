@@ -449,7 +449,7 @@ describe('Due for prophylaxis worklist', () => {
     vi.mocked(useDueList).mockReturnValue({
       rows: dueRows,
       recorded: new Set(['patient-1']),
-      waiting: 1,
+      dueNow: 1,
       isLoading: false,
       error: undefined,
     });

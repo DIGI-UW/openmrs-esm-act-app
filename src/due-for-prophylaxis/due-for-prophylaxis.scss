@@ -89,3 +89,8 @@
   @include type.type-style('body-compact-01');
   color: colors.$gray-70;
 }
+
+// Keep the definition's dotted underline off, since the badge only triggers the tooltip.
+.dueNowTooltip :global(.cds--definition-term) {
+  border-bottom: none;
+}

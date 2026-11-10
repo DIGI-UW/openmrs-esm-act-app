@@ -2,7 +2,7 @@ import React from 'react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
 import {
@@ -25,6 +25,9 @@ import { useRecordedToday } from './recorded-today.resource';
 import { dueRows, manyDueRows } from './due-for-prophylaxis.fixture';
 import DueForProphylaxis from './due-for-prophylaxis.component';
 import DueForProphylaxisWidget from './due-for-prophylaxis-widget.component';
+
+const dueNowExplanation =
+  'Overdue or due today, and not recorded today. The list also includes patients due in the next 48 hours.';
 
 // Who may record a form is may-enter-form's own test; here every form may be recorded.
 vi.mock('../access/may-enter-form', () => ({
@@ -50,6 +53,7 @@ vi.mock('./due-for-prophylaxis.scss', () => ({
     oneLine: 'oneLine',
     tableContainer: 'tableContainer',
     tablet: 'tablet',
+    dueNowTooltip: 'dueNowTooltip',
   },
 }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
@@ -552,7 +556,7 @@ describe('Due for prophylaxis page', () => {
     expect(
       within(screen.getByRole('row', { name: /rhd00003/ })).getByRole('link', { name: 'View chart' }),
     ).toHaveAttribute('href', '/openmrs/spa/patient/patient-today/chart');
-    expect(screen.getByText('2 waiting')).toBeInTheDocument();
+    expect(screen.getByText('2 due now')).toBeInTheDocument();
   });
 
   it('reads who was recorded today from every listed row, not only the first page', async () => {
@@ -562,10 +566,10 @@ describe('Due for prophylaxis page', () => {
     await renderPage();
 
     expect(mockUseRecordedToday).toHaveBeenLastCalledWith(manyDueRows(12));
-    expect(screen.getByText('11 waiting')).toBeInTheDocument();
+    expect(screen.getByText('11 due now')).toBeInTheDocument();
   });
 
-  it('hides the waiting count once everyone due now was recorded today', async () => {
+  it('hides the due-now count once everyone due now was recorded today', async () => {
     dataset({ rows: dueRows });
     recorded(['patient-overdue', 'patient-oral', 'patient-today']);
 
@@ -573,7 +577,7 @@ describe('Due for prophylaxis page', () => {
     await showAll();
 
     expect(screen.getAllByText('Recorded today')).toHaveLength(3);
-    expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/due now/)).not.toBeInTheDocument();
   });
 
   it('shows the patients on BPG first, and the oral ones or all of them with their counts', async () => {
@@ -592,13 +596,62 @@ describe('Due for prophylaxis page', () => {
     ).toEqual(['Joan Apiorhd00021']);
   });
 
-  it('counts a patient due in the next two days as listed, not waiting', async () => {
+  it('counts a patient due in the next two days as listed, not due now', async () => {
     dataset({ rows: dueRows });
 
     await renderPage();
 
     expect(cells(/rhd00052/)).toContain('Due soon');
-    expect(screen.getByText('3 waiting')).toBeInTheDocument();
+    expect(screen.getByText('3 due now')).toBeInTheDocument();
+  });
+
+  it('counts as due now every listed patient but those only due soon and those recorded today', async () => {
+    dataset({ rows: dueRows });
+    recorded(['patient-today']);
+
+    await renderPage();
+
+    expect(screen.getByRole('tab', { name: /^All/ })).toHaveTextContent('All 4');
+    expect(screen.getByText('2 due now')).toBeInTheDocument();
+  });
+
+  it('on a desktop, explains what the due-now count counts in a tooltip on hover', async () => {
+    vi.mocked(useLayoutType).mockReturnValue('small-desktop');
+    dataset({ rows: dueRows });
+
+    await renderPage();
+
+    const badge = screen.getByRole('button', { name: '3 due now' });
+    expect(badge).toHaveAccessibleDescription(dueNowExplanation);
+    expect(badge).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.hover(badge);
+    expect(badge).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it("draws the due-now badge as a span, as a tooltip button's content must be, without a definition's underline", async () => {
+    vi.mocked(useLayoutType).mockReturnValue('small-desktop');
+    dataset({ rows: dueRows });
+
+    await renderPage();
+
+    const badge = screen.getByRole('button', { name: '3 due now' });
+    expect(within(badge).getByText('3 due now').tagName).toBe('SPAN');
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(badge.closest('.dueNowTooltip')).not.toBeNull();
+    const sheet = readFileSync(resolve(process.cwd(), 'src/due-for-prophylaxis/due-for-prophylaxis.scss'), 'utf8');
+    expect(sheet).toMatch(/\.dueNowTooltip :global\(\.cds--definition-term\)\s*\{[^}]*border-bottom: none;/);
+  });
+
+  it('on a tablet, opens the due-now explanation on a tap, which its trailing mouseleave does not close', async () => {
+    vi.mocked(useLayoutType).mockReturnValue('tablet');
+    dataset({ rows: dueRows });
+
+    await renderPage();
+
+    const badge = screen.getByRole('button', { name: '3 due now' });
+    await userEvent.click(badge);
+    fireEvent.mouseLeave(badge);
+    expect(badge).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('downloads the patients the filter shows as CSV, for a user who may export lists', async () => {
@@ -651,14 +704,15 @@ describe('Due for prophylaxis widget', () => {
     recorded([]);
   });
 
-  it('shows the first five patients and how many of all of them are waiting', async () => {
+  it('shows the first five patients and how many of all of them are due now', async () => {
+    vi.mocked(useLayoutType).mockReturnValue('small-desktop');
     dataset({ rows: manyDueRows(7) });
     recorded(['patient-6']);
 
     render(<DueForProphylaxisWidget />);
 
     expect(screen.getByRole('heading', { name: 'Due for prophylaxis' })).toBeInTheDocument();
-    expect(screen.getByText('6 waiting')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '6 due now' })).toHaveAccessibleDescription(dueNowExplanation);
     expect(screen.getAllByRole('row')).toHaveLength(1 + 5);
     expect(screen.getByRole('link', { name: /Open/ })).toHaveAttribute(
       'href',
@@ -666,7 +720,7 @@ describe('Due for prophylaxis widget', () => {
     );
   });
 
-  it('keeps the waiting count beside Open, apart from the title', async () => {
+  it('keeps the due-now count beside Open, apart from the title', async () => {
     dataset({ rows: manyDueRows(7) });
 
     render(<DueForProphylaxisWidget />);
@@ -674,7 +728,7 @@ describe('Due for prophylaxis widget', () => {
     // The header's right-hand group has no role, so it is found as Open's parent.
     // eslint-disable-next-line testing-library/no-node-access
     const end = screen.getByRole('link', { name: /Open/ }).parentElement;
-    expect(end).toContainElement(screen.getByText('7 waiting'));
+    expect(end).toContainElement(screen.getByText('7 due now'));
     expect(end).not.toContainElement(screen.getByRole('heading', { name: 'Due for prophylaxis' }));
   });
 
@@ -696,13 +750,13 @@ describe('Due for prophylaxis widget', () => {
     expect(csvNames()).toEqual(['Joan Apio']);
   });
 
-  it('hides the waiting count once everyone listed was recorded today', async () => {
+  it('hides the due-now count once everyone listed was recorded today', async () => {
     dataset({ rows: manyDueRows(2) });
     recorded(['patient-0', 'patient-1']);
 
     render(<DueForProphylaxisWidget />);
 
     expect(screen.getAllByText('Recorded today')).toHaveLength(2);
-    expect(screen.queryByText(/waiting/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/due now/)).not.toBeInTheDocument();
   });
 });

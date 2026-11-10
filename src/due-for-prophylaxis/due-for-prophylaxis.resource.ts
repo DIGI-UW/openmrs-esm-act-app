@@ -12,12 +12,12 @@ export function useDueRows() {
 }
 
 /**
- * The due list: its rows (useDueRows), who among all of them was recorded today, and how many are still waiting.
+ * The due list: its rows (useDueRows), who among all of them was recorded today, and how many are due now.
  */
 export function useDueList() {
   const { rows, isLoading, error } = useDueRows();
   const { recorded } = useRecordedToday(rows);
-  // Waiting means due now: a dose due in the next two days is listed, but nobody is waiting for it yet.
-  const waiting = rows.filter((row) => row.status !== 'due_soon' && !recorded.has(String(row.patient_uuid))).length;
-  return { rows, recorded, waiting, isLoading, error };
+  // Keep due_soon rows out of the count: they are listed but not due now.
+  const dueNow = rows.filter((row) => row.status !== 'due_soon' && !recorded.has(String(row.patient_uuid))).length;
+  return { rows, recorded, dueNow, isLoading, error };
 }
