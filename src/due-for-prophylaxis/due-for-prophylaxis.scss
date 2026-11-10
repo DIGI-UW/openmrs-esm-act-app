@@ -25,7 +25,7 @@
   overflow-x: auto;
 }
 
-// Carbon's 1rem cell padding leaves an 820 px tablet's Home card too narrow for one-line names and dates.
+// At Carbon's 1rem padding, one-line names and dates push the Record button off an 820 px Home card.
 .tableContainer.tablet {
   th,
   td {
