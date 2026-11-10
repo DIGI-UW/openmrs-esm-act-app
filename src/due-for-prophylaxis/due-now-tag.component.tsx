@@ -20,7 +20,7 @@ export function DueNowTag({ count }: { count: number }) {
       {label}
     </Tag>
   );
-  // Keep a Toggletip off desktop: a tap's trailing mouseleave closes a hover tooltip.
+  // Off desktop a Toggletip: a tap's trailing mouseleave closes a hover tooltip.
   return desktop ? (
     <DefinitionTooltip className={styles.dueNowTooltip} align="bottom-end" openOnHover definition={explanation}>
       {tag}
