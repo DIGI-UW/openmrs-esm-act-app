@@ -1,15 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText } from '@carbon/react';
-import {
-  AddIcon,
-  CardHeader,
-  ConfigurableLink,
-  EditIcon,
-  formatDate,
-  parseDate,
-  useConfig,
-} from '@openmrs/esm-framework';
+import { AddIcon, CardHeader, ConfigurableLink, EditIcon, parseDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { useMayEnterForm } from '../access/may-enter-form';
 import { useChartPagePath } from '../chart-page-path';
 import { type Config } from '../config-schema';

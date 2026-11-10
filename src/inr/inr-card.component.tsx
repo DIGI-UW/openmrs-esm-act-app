@@ -2,14 +2,8 @@ import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
-import {
-  AddIcon,
-  CardHeader,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ConfigurableLink,
-  formatDate,
-} from '@openmrs/esm-framework';
+import { AddIcon, CardHeader, ChevronDownIcon, ChevronUpIcon, ConfigurableLink } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { EditButton } from '../cardiac-tests/cardiac-tests.component';
 import { useChartPagePath } from '../chart-page-path';
 import { patientChartUrl } from '../patient-chart-url';

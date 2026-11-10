@@ -81,9 +81,9 @@ describe('Registry details, markers, sorting and search', () => {
 
     expect(screen.getByTestId('registry-cardiac-clinic')).toHaveTextContent('Lira RRH');
     expect(screen.getByTestId('registry-primary-care-clinic')).toHaveTextContent('Anyeke HCIV');
-    expect(screen.getByTestId('registry-next-consultation')).toHaveTextContent('01-Sept-2026');
+    expect(screen.getByTestId('registry-next-consultation')).toHaveTextContent('01-Sep-2026');
     expect(screen.getByTestId('registry-next-consultation')).toHaveAttribute('data-overdue', 'true');
-    expect(screen.getByTestId('registry-last-injection')).toHaveTextContent('03-Sept-2026 (30 days ago)');
+    expect(screen.getByTestId('registry-last-injection')).toHaveTextContent('03-Sep-2026 (30 days ago)');
     expect(screen.getByTestId('registry-injection-due')).toHaveAttribute('data-overdue', 'true');
     expect(screen.getByTestId('registry-interventions')).toHaveTextContent(/^CT scan: 95 days overdue$/);
     expect(within(screen.getByTestId('registry-interventions')).getByRole('listitem')).toHaveAttribute(

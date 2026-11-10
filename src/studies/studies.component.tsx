@@ -16,7 +16,6 @@ import {
 import { Add, Edit } from '@carbon/react/icons';
 import {
   ConfigurableLink,
-  formatDate,
   isDesktop,
   launchWorkspace2,
   CohortsPictogram,
@@ -24,6 +23,7 @@ import {
   useLayoutType,
   UserHasAccess,
 } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { PRIVILEGE_MANAGE_STUDIES } from '../constants';

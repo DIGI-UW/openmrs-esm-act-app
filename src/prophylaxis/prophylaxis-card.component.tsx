@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
-import { CardHeader, ConfigurableLink, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { CardHeader, ConfigurableLink, parseDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { useChartPagePath } from '../chart-page-path';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';

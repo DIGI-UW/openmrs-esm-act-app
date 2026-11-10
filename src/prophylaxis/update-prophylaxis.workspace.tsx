@@ -13,7 +13,6 @@ import {
   TextInput,
 } from '@carbon/react';
 import {
-  formatDate,
   parseDate,
   restBaseUrl,
   showSnackbar,
@@ -22,6 +21,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type Config } from '../config-schema';
 import { restErrorMessage } from '../rest-error-message';
 import { type CurrentPrescription, savePrescription, usePrescription } from './prescription.resource';

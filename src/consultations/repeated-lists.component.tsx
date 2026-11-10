@@ -5,12 +5,12 @@ import {
   CardHeader,
   EmptyCard,
   ErrorState,
-  formatDate,
   isDesktop,
   parseDate,
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { useMayEnterForm } from '../access/may-enter-form';
 import { EditButton } from '../cardiac-tests/cardiac-tests.component';
 import { type Config } from '../config-schema';

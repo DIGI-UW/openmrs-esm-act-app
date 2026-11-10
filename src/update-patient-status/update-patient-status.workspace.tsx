@@ -4,7 +4,6 @@ import { useSWRConfig } from 'swr';
 import dayjs from 'dayjs';
 import { Button, ButtonSet, InlineLoading, InlineNotification, Select, SelectItem, TextInput } from '@carbon/react';
 import {
-  formatDate,
   parseDate,
   restBaseUrl,
   showSnackbar,
@@ -14,6 +13,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type Config } from '../config-schema';
 import { PRIVILEGE_EDIT_PATIENT_PROGRAMS, PRIVILEGE_EDIT_PEOPLE } from '../constants';
 import { restErrorMessage } from '../rest-error-message';

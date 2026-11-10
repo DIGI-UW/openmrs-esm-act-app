@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type ClinicLimit } from '../clinic-limit';
 import {
   cellText,

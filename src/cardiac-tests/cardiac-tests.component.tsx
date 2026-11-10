@@ -18,11 +18,11 @@ import {
   CardHeader,
   EmptyCard,
   ErrorState,
-  formatDate,
   isDesktop,
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { useMayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';

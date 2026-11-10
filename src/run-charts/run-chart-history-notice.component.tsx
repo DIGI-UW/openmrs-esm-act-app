@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { InlineNotification } from '@carbon/react';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { kindOf, periodName, periodNames, type RunChartPeriod } from './run-chart-metrics';
 import { localDay, MIN_POINTS_FOR_MEDIAN, type RunChartPoint, withValue } from './run-chart-stats';
 import { pointDetail } from './run-chart-tooltip';

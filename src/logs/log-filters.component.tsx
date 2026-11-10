@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { TextInput } from '@carbon/react';
-import { formatDate, OpenmrsDatePicker } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { PAGE_SIZES, type Paging, type SharedQuery } from './logs.resource';
 import styles from './logs.scss';
 

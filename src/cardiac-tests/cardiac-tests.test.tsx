@@ -129,7 +129,7 @@ describe('CardiacTests', () => {
     ]);
     expect(shownRows()).toEqual([
       ['', '27-Feb-2026', 'Moderate', '--', '--', '--', '48%', 'Edit'],
-      ['', '02-Sept-2025', 'None', 'Mild', 'Mild', 'Mild', '55%', 'Edit'],
+      ['', '02-Sep-2025', 'None', 'Mild', 'Mild', 'Mild', '55%', 'Edit'],
     ]);
   });
 
@@ -185,7 +185,7 @@ describe('CardiacTests', () => {
     const edits = screen.getAllByRole('button', { name: /^Edit echocardiogram/ });
     expect(edits.map((button) => button.getAttribute('aria-label'))).toEqual([
       'Edit echocardiogram of 27-Feb-2026',
-      'Edit echocardiogram of 02-Sept-2025',
+      'Edit echocardiogram of 02-Sep-2025',
     ]);
     await userEvent.click(edits[0]);
 

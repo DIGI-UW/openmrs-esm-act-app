@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { PRIVILEGE_SCREEN_POSITIVE } from '../constants';
 import { type Config } from '../config-schema';
 import { bothClinics, useSessionClinicReport } from '../registry/registry.resource';

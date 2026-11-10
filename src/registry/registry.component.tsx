@@ -18,13 +18,13 @@ import {
 } from '@carbon/react';
 import {
   ConfigurableLink,
-  formatDate,
   isDesktop,
   navigate,
   PatientListsPictogram,
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
 import { patientChartUrl } from '../patient-chart-url';

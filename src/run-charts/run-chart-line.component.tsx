@@ -4,6 +4,7 @@ import { LineChart, ScaleTypes } from '@carbon/charts-react';
 import { type RunChartMetricKind, type RunChartPeriod } from './run-chart-metrics';
 import { localDay, type RunChartPoint, type Shift, withValue } from './run-chart-stats';
 import { pointDetail, pointTitle } from './run-chart-tooltip';
+import { threeLetterMonths } from '../format-date';
 import styles from './run-charts.scss';
 
 const teal = '#005d5d';
@@ -83,6 +84,11 @@ export function RunChartLine({
     legend: { enabled: !compact },
     color: { scale: { [valueGroup]: teal, ...(medianGroup ? { [medianGroup]: purple } : {}) } },
     points: { enabled: true, radius: 3 },
+    // Keep Carbon's default date formatter here so only "Sept" changes on the time axis.
+    locale: {
+      date: (value: Date, language: string, options: Intl.DateTimeFormatOptions, preformatted?: string) =>
+        threeLetterMonths(preformatted || value.toLocaleDateString(language, options)),
+    },
     axes: {
       bottom: {
         mapsTo: 'date',

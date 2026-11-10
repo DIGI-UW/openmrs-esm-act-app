@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';

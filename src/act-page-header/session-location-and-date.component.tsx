@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, Location } from '@carbon/react/icons';
-import { formatDate, useSession } from '@openmrs/esm-framework';
+import { useSession } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import styles from './session-location-and-date.scss';
 
 /** The session location and today's date, on the right of every ACT page header. */

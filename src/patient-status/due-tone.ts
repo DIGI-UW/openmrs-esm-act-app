@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
-import { formatDate, parseDate } from '@openmrs/esm-framework';
+import { parseDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 
 export type DueTone = 'red' | 'yellow' | 'green';
 

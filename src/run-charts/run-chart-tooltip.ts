@@ -1,5 +1,5 @@
 import { type TFunction } from 'i18next';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type RunChartMetricKind, type RunChartPeriod } from './run-chart-metrics';
 import { localDay, type RunChartPoint } from './run-chart-stats';
 

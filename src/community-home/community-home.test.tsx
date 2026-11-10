@@ -37,7 +37,7 @@ describe('Community home', () => {
     const header = screen.getByTestId('act-page-header');
     expect(within(header).getByRole('heading', { level: 1 })).toHaveTextContent('Home');
     expect(within(header).getByText('Kiswa Health Centre III')).toBeInTheDocument();
-    expect(within(header).getByText('28-Sept-2026')).toBeInTheDocument();
+    expect(within(header).getByText('28-Sep-2026')).toBeInTheDocument();
   });
 
   it('shows the ACT logo and the signed-in role in its header', () => {

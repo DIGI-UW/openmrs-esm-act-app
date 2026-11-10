@@ -2,7 +2,8 @@ import React, { useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Button, ContentSwitcher, InlineNotification, Select, SelectItem, SkeletonText, Switch } from '@carbon/react';
-import { ConfigurableLink, formatDate, OpenmrsDatePicker, ReportsPictogram, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, OpenmrsDatePicker, ReportsPictogram, useConfig } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
@@ -232,7 +233,10 @@ export default function RunCharts() {
         />
         <div className={styles.notes}>
           <span>
-            {t('runChartCalculated', 'Each point is the figure on its date, worked out from the records as they are now.')}
+            {t(
+              'runChartCalculated',
+              'Each point is the figure on its date, worked out from the records as they are now.',
+            )}
           </span>
         </div>
       </>

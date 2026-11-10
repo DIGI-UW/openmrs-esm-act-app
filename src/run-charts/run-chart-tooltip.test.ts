@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { pointDetail, pointTitle } from './run-chart-tooltip';
 
 // The plain mock answers a key's English default, or the key itself when it has none.

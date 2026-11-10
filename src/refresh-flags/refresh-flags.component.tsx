@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, InlineLoading, InlineNotification, SkeletonText, Tile } from '@carbon/react';
-import { Assessment1Pictogram, formatDatetime, showSnackbar } from '@openmrs/esm-framework';
+import { Assessment1Pictogram, showSnackbar } from '@openmrs/esm-framework';
+import { formatDatetime } from '../format-date';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { runRefresh, useRefreshStatus } from './refresh-flags.resource';
 import styles from './refresh-flags.scss';

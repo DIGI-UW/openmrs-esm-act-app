@@ -22,14 +22,8 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import {
-  formatDate,
-  OpenmrsDatePicker,
-  ReportsPictogram,
-  useConfig,
-  useLayoutType,
-  useSession,
-} from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, ReportsPictogram, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { cascadeSteps } from '../act-home/care-cascade-steps';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';

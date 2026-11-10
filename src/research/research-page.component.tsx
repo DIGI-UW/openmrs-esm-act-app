@@ -19,7 +19,6 @@ import { Add, Edit } from '@carbon/react/icons';
 import {
   CardHeader,
   ErrorState,
-  formatDate,
   isDesktop,
   launchWorkspace2,
   parseDate,
@@ -28,6 +27,7 @@ import {
   useLayoutType,
   UserHasAccess,
 } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type Config } from '../config-schema';
 import { PRIVILEGE_ENTER_CLINICAL_FORMS } from '../constants';
 import { TableEmptyState } from '../table-filters/empty-state.component';

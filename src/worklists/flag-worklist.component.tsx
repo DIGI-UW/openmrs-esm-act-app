@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { type TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { rowFlags } from '../registry/registry-filters';
 import { bothClinics, useRegistryReport, useSessionClinicReport } from '../registry/registry.resource';
 import { type ReportRow } from '../reports/report-dataset.resource';

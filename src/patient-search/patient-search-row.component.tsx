@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { InlineLoading } from '@carbon/react';
-import { age, formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { age, parseDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type Config } from '../config-schema';
 import { useProphylaxisSummary } from '../prophylaxis/prophylaxis.resource';
 import { ProphylaxisPill } from '../patient-status/status-pills.component';

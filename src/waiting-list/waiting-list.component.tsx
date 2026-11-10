@@ -12,7 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { formatDate, InPatientPictogram, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { InPatientPictogram, isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { MayEnterForm } from '../access/may-enter-form';
 import { useOpenFormBesideList } from '../open-form-beside-list';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';

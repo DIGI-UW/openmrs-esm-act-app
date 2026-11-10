@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { standardTarget } from './inr.resource';
 
 export interface InrPoint {

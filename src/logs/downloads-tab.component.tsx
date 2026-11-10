@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectItem, Tag } from '@carbon/react';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { PRIVILEGE_DOWNLOAD_IDENTIFIERS } from '../constants';
 import { type DownloadLogDetail, type DownloadLogEntry, useDownloadForms } from '../download/download.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';

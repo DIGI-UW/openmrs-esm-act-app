@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { type TFunction } from 'i18next';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 

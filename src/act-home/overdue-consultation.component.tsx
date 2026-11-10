@@ -13,7 +13,8 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { formatDate, isDesktop, navigate, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, navigate, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { patientChartUrl } from '../patient-chart-url';
 import { bothClinics, onRegistryNow, useRegistryReport, useSessionClinicReport } from '../registry/registry.resource';
 import { type ReportRow } from '../reports/report-dataset.resource';

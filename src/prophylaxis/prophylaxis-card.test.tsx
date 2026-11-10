@@ -121,7 +121,7 @@ describe('ProphylaxisCard', () => {
 
     expect(await screen.findByText('BPG · every 4 weeks')).toBeInTheDocument();
     expect(field('last-dose')).toHaveTextContent('13-Aug-2026');
-    expect(field('next-due')).toHaveTextContent(/^10-Sept?-2026$/);
+    expect(field('next-due')).toHaveTextContent(/^10-Sep-2026$/);
     expect(field('next-due')).toHaveAttribute('data-overdue', 'true');
     expect(field('on-time')).toHaveTextContent('3 of 4');
   });
@@ -567,7 +567,7 @@ describe('ProphylaxisCard', () => {
     respondWith({ ...winnie, lastGiven: '2026-09-28', nextDue: '2026-10-26', status: 'ok' });
     await invalidatePatientEncounters('winnie');
 
-    await waitFor(() => expect(field('last-dose')).toHaveTextContent(/^28-Sept?-2026$/));
+    await waitFor(() => expect(field('last-dose')).toHaveTextContent(/^28-Sep-2026$/));
     expect(field('next-due')).toHaveAttribute('data-overdue', 'false');
     expect(summaryRequests()).toBe(2);
   });

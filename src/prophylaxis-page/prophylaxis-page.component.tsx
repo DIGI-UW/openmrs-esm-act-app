@@ -1,15 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
-import {
-  CardHeader,
-  ErrorState,
-  formatDate,
-  isDesktop,
-  parseDate,
-  useConfig,
-  useLayoutType,
-} from '@openmrs/esm-framework';
+import { CardHeader, ErrorState, isDesktop, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 import { useMayEnterForm } from '../access/may-enter-form';
 import { EditButton } from '../cardiac-tests/cardiac-tests.component';
 import { type Config } from '../config-schema';

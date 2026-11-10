@@ -2,7 +2,8 @@ import { type TFunction } from 'i18next';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
-import { formatDate, formatTime } from '@openmrs/esm-framework';
+import { formatTime } from '@openmrs/esm-framework';
+import { formatDate } from '../format-date';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
