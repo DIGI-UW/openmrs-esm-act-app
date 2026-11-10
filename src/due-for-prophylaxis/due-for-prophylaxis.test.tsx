@@ -12,6 +12,7 @@ import {
   navigate,
   openmrsFetch,
   showSnackbar,
+  useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
 import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
@@ -41,7 +42,15 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 vi.mock('./recorded-today.resource', () => ({ useRecordedToday: vi.fn() }));
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 vi.mock('./due-for-prophylaxis.scss', () => ({
-  default: { dueTag: 'dueTag', lowAdherence: 'lowAdherence', goodAdherence: 'goodAdherence', recordDose: 'recordDose' },
+  default: {
+    dueTag: 'dueTag',
+    lowAdherence: 'lowAdherence',
+    goodAdherence: 'goodAdherence',
+    recordDose: 'recordDose',
+    oneLine: 'oneLine',
+    tableContainer: 'tableContainer',
+    tablet: 'tablet',
+  },
 }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
 const mockOpenFormInChart = vi.mocked(openFormInChart);
@@ -143,6 +152,51 @@ describe('Due for prophylaxis page', () => {
     expect(sheet).toMatch(/\.recordDose\s*\{[^}]*min-width: 10rem;/);
   });
 
+  it('keeps names and dates on one line, so a tablet does not wrap them', async () => {
+    dataset({ rows: dueRows });
+
+    await renderPage();
+
+    const oneLine = within(screen.getByRole('row', { name: /rhd00012/ }))
+      .getAllByRole('cell')
+      .map((cell) => cell.classList.contains('oneLine'));
+    expect(oneLine).toEqual([true, false, true, false, false, false]);
+    const sheet = readFileSync(resolve(process.cwd(), 'src/due-for-prophylaxis/due-for-prophylaxis.scss'), 'utf8');
+    expect(sheet).toMatch(/\.oneLine\s*\{[^}]*white-space: nowrap;/);
+  });
+
+  it.each([
+    ['tablet', true],
+    ['small-desktop', false],
+  ] as const)('narrows the cell padding only on a tablet, so its card fits the row (%s)', async (layout, narrowed) => {
+    vi.mocked(useLayoutType).mockReturnValue(layout);
+    dataset({ rows: dueRows });
+
+    await renderPage();
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const container = screen.getByRole('table').closest('.tableContainer');
+    expect(container).toHaveAttribute('class', narrowed ? 'tableContainer tablet' : 'tableContainer');
+    const sheet = readFileSync(resolve(process.cwd(), 'src/due-for-prophylaxis/due-for-prophylaxis.scss'), 'utf8');
+    expect(sheet).toMatch(/\.tableContainer\.tablet\s*\{\s*th,\s*td\s*\{\s*padding-inline: layout\.\$spacing-03;/);
+  });
+
+  it('shows -- for a prescription with no name and for a patient with no status', async () => {
+    dataset({ rows: [{ ...dueRows[0], regimen: '', injection_interval_days: '', status: '' }] });
+
+    await renderPage();
+
+    expect(cells(/rhd00012/)).toEqual(['Amina Nakatorhd00012', '--', '24-Aug-2026', '--', '64%', 'Record BPG']);
+  });
+
+  it('shows -- rather than No dose yet for a last dose whose date cannot be read', async () => {
+    dataset({ rows: [{ ...dueRows[0], last_given: 'not a date' }] });
+
+    await renderPage();
+
+    expect(cells(/rhd00012/)[2]).toBe('--');
+  });
+
   it('lists only the patients whose primary care clinic it is, at a primary care clinic', async () => {
     atSessionLocation('Kiswa HC III', ['RHD Community']);
     dataset({
@@ -238,7 +292,7 @@ describe('Due for prophylaxis page', () => {
     expect(cells(/rhd00021/)).toEqual([
       'Joan Apiorhd00021',
       'Penicillin V',
-      '',
+      'No dose yet',
       'First dose due',
       '70%',
       'Record oral',
@@ -248,7 +302,7 @@ describe('Due for prophylaxis page', () => {
       'BPG · every 28 days',
       '26-Aug-2026',
       'Due soon',
-      '',
+      '--',
       'Record BPG',
     ]);
     expect(screen.getByRole('link', { name: 'Amina Nakato' })).toHaveAttribute(
