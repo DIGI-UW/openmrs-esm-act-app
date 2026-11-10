@@ -25,6 +25,14 @@
   overflow-x: auto;
 }
 
+// Carbon's 1rem cell padding leaves an 820 px tablet's Home card too narrow for one-line names and dates.
+.tableContainer.tablet {
+  th,
+  td {
+    padding-inline: layout.$spacing-03;
+  }
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -60,6 +68,11 @@
 // Keep this at least as wide as Record BPG so every Record oral button matches it down the column.
 .recordDose {
   min-width: 10rem;
+}
+
+// A tablet would otherwise wrap a name at its space and a date at its hyphens.
+.oneLine {
+  white-space: nowrap;
 }
 
 .lowAdherence {

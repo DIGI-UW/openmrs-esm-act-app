@@ -127,9 +127,9 @@ describe('Enter prophylaxis', () => {
 
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
     expect(tableRows()).toEqual([
-      ['Patient 1rhd00001', 'BPG · every 28 days', '', 'Overdue', '62%', 'Record BPG'],
+      ['Patient 1rhd00001', 'BPG · every 28 days', 'No dose yet', 'Overdue', '62%', 'Record BPG'],
       ['Patient 2rhd00002', 'Q21 day BPG', '15-Sept-2026', 'Up to date', '96%', 'Record BPG'],
-      ['Patient 3rhd00003', 'None', '', 'No prescription', '', 'Needs prescription'],
+      ['Patient 3rhd00003', 'None', 'No dose yet', 'No prescription', '--', 'Needs prescription'],
       ['Patient 4rhd00004', 'Oral penicillin', '04-Aug-2026', 'Due today', '88%', 'Record oral'],
     ]);
   });

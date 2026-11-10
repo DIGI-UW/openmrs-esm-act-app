@@ -30,10 +30,10 @@ export function DueForProphylaxisTable({
     if (column.key === 'patient') {
       return <PatientCell row={row} />;
     }
+    if (!text) {
+      return column.key === 'lastDose' ? t('noDoseYet', 'No dose yet') : '--';
+    }
     if (column.key === 'status') {
-      if (!text) {
-        return null;
-      }
       const recordedToday = recorded.has(String(row.patient_uuid));
       const firstDose = !recordedToday && firstDoseDue(row);
       const dueNow = !recordedToday && !firstDose && (row.status === 'due_today' || row.status === 'due_soon');
@@ -55,7 +55,7 @@ export function DueForProphylaxisTable({
 
   return (
     <>
-      <div className={styles.tableContainer}>
+      <div className={desktop ? styles.tableContainer : `${styles.tableContainer} ${styles.tablet}`}>
         <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
           <TableHead>
             <TableRow>
@@ -69,7 +69,12 @@ export function DueForProphylaxisTable({
             {rows.map((row) => (
               <TableRow key={String(row.patient_uuid)}>
                 {columns.map((column) => (
-                  <TableCell key={column.key}>{cell(column, row)}</TableCell>
+                  <TableCell
+                    key={column.key}
+                    className={column.key === 'patient' || column.key === 'lastDose' ? styles.oneLine : undefined}
+                  >
+                    {cell(column, row)}
+                  </TableCell>
                 ))}
                 <TableCell>
                   <RecordDoseAction
