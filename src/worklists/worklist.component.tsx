@@ -23,6 +23,7 @@ import { DownloadCsvButton } from '../table-filters/download-csv-button.componen
 import { type ColumnSort, type SortValue, sortHeaderProps, sortItems } from '../table-filters/column-sort';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
+import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './worklist.scss';
 
 /**
@@ -252,14 +253,7 @@ function WorklistRows({ title, csvName, entries, isLoading, error, action }: Wor
                   <TableRow key={`${entry.row.patient_uuid}-${index}`}>
                     {shownColumns.map((column) => (
                       <TableCell key={column.key}>
-                        {column.key === 'patient' ? (
-                          <>
-                            <span className={styles.patientName}>{column.text(entry)}</span>
-                            <span className={styles.actId}>{text(patient(entry), 'rhd_id')}</span>
-                          </>
-                        ) : (
-                          column.text(entry)
-                        )}
+                        {column.key === 'patient' ? <PatientCell row={patient(entry)} /> : column.text(entry)}
                       </TableCell>
                     ))}
                     <TableCell>

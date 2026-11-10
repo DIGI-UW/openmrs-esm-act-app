@@ -14,7 +14,6 @@ import {
 } from '@carbon/react';
 import {
   CardiologyPictogram,
-  ConfigurableLink,
   formatDate,
   isDesktop,
   useConfig,
@@ -25,7 +24,6 @@ import { MayEnterForm } from '../access/may-enter-form';
 import { useOpenFormBesideList } from '../open-form-beside-list';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { type Config } from '../config-schema';
-import { patientChartUrl } from '../patient-chart-url';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { useSessionClinicKind } from '../session-clinic';
@@ -40,6 +38,7 @@ import {
   useScreenPositiveFilters,
 } from './screen-positive-filters';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
+import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './screen-positive.scss';
 
 function screenDate(row: ReportRow) {
@@ -89,12 +88,7 @@ export function ScreenPositiveTable() {
       key: 'patient',
       header: t('patient', 'Patient'),
       render: (row) => (
-        <>
-          <ConfigurableLink to={patientChartUrl(row.patient_uuid)} className={styles.name}>
-            {String(row.full_name ?? '')}
-          </ConfigurableLink>
-          <span className={styles.ageSex}>{[text('age_years')(row), text('sex')(row)].filter(Boolean).join(' ')}</span>
-        </>
+        <PatientCell row={row} detail={[text('age_years')(row), text('sex')(row)].filter(Boolean).join(' ')} />
       ),
     },
     { key: 'screened', header: t('screened', 'Screened'), render: screenDate },

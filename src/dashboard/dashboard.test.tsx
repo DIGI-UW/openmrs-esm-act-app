@@ -1232,8 +1232,10 @@ describe('Dashboard', () => {
       });
       expect(screen.getByRole('button', { name: /Registrant status: Active/ })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Cardiac clinic: Lira RRH/ })).toBeInTheDocument();
-      expect(screen.getByRole('cell', { name: 'rhd-Akello Atoo' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Akello Atoo' })).toBeInTheDocument();
+      const patientCell = within(screen.getByRole('row', { name: /rhd-Akello Atoo/ })).getAllByRole('cell')[0];
+      expect(patientCell).toHaveTextContent('Akello Atoorhd-Akello Atoo');
+      expect(within(patientCell).getByRole('link', { name: 'Akello Atoo' })).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'ACT ID' })).not.toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'Back to the Dashboard' }));
 
@@ -1585,7 +1587,7 @@ describe('Dashboard', () => {
         patientRow(`Patient ${String(i + 1).padStart(2, '0')}`, 'Active'),
       );
       const shownNames = () =>
-        screen.getAllByTestId('dashboard-figure-row').map((row) => within(row).getAllByRole('cell')[1].textContent);
+        screen.getAllByTestId('dashboard-figure-row').map((row) => within(row).getByRole('link').textContent);
 
       async function openLongFigure(rows = many, query = '') {
         await signIn(undefined, { [REGISTRANT_PATIENTS]: rows });
@@ -1618,6 +1620,8 @@ describe('Dashboard', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
         await vi.waitFor(() => expect(downloadCsv).toHaveBeenCalled());
         expect(vi.mocked(downloadCsv).mock.calls.at(-1)[2]).toHaveLength(12);
+        expect(vi.mocked(downloadCsv).mock.calls.at(-1)[1].slice(0, 2)).toEqual(['ACT ID', 'Patient']);
+        expect(vi.mocked(downloadCsv).mock.calls.at(-1)[2][0].slice(0, 2)).toEqual(['rhd-Patient 01', 'Patient 01']);
       });
 
       it('offers Download CSV, disabled, and no pages, on a figure with no patients', async () => {

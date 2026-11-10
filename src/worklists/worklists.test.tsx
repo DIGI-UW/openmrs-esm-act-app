@@ -265,6 +265,20 @@ describe('Flag worklist', () => {
     expect(vi.mocked(navigate)).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient/patient-1/chart' });
   });
 
+  it("links each patient's name to their chart, with the ACT ID beneath it", () => {
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    reports({ registry: [registryRow(1, 'RHD lost to follow-up')] });
+
+    render(<FlagWorklist {...list} />);
+
+    const name = screen.getByRole('link', { name: 'Patient 1' });
+    expect(name).toHaveAttribute('href', '/openmrs/spa/patient/patient-1/chart');
+    const patientCell = within(screen.getByRole('row', { name: /rhd00001/ })).getAllByRole('cell')[0];
+    expect(patientCell).toHaveTextContent('Patient 1rhd00001');
+    expect(within(patientCell).getByRole('link', { name: 'Patient 1' })).toBe(name);
+    expect(screen.queryByRole('columnheader', { name: 'ACT ID' })).not.toBeInTheDocument();
+  });
+
   it('says so when its flag has no patients on the registry', () => {
     reports({ registry: [registryRow(2)] });
 

@@ -55,7 +55,7 @@ export interface DueColumn {
   text: (row: ReportRow) => string;
 }
 
-/** The due list's columns, as the table heads them and the CSV holds them. */
+/** Keep the ACT ID here for the CSV, though the table filters it out. */
 export function dueColumns(t: TFunction, recorded: Set<string>): Array<DueColumn> {
   return [
     { key: 'patient', header: t('patient', 'Patient'), text: (row) => String(row.full_name ?? '') },

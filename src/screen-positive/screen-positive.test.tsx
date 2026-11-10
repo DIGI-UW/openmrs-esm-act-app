@@ -66,7 +66,7 @@ describe('Diagnosis to confirm', () => {
     const cells = within(screen.getByRole('row', { name: /Patient 2\b/ }))
       .getAllByRole('cell')
       .map((cell) => cell.textContent);
-    expect(cells).toEqual(['Patient 29 M', '17-Sept-2026', 'Layibi College', 'Record diagnosis']);
+    expect(cells).toEqual(['Patient 2rhd00002 · 9 M', '17-Sept-2026', 'Layibi College', 'Record diagnosis']);
   });
 
   it('sorts by any column, the date of positive screen by its day, then returns to the report order', async () => {
@@ -121,7 +121,7 @@ describe('Diagnosis to confirm', () => {
     expect(cells[2]).toHaveTextContent('');
   });
 
-  it("links each patient's name to their chart", () => {
+  it("links each patient's name to their chart, with the ACT ID, age and sex beneath it", () => {
     dataset({ rows: screenPositiveRows });
 
     render(<ScreenPositive />);
@@ -130,6 +130,9 @@ describe('Diagnosis to confirm', () => {
       'href',
       '/openmrs/spa/patient/patient-2/chart',
     );
+    const patientCell = within(screen.getByRole('row', { name: /rhd00002\b/ })).getAllByRole('cell')[0];
+    expect(patientCell).toHaveTextContent(/^Patient 2rhd00002 · 9 M$/);
+    expect(within(patientCell).getByRole('link', { name: 'Patient 2' })).toBeInTheDocument();
   });
 
   it('evaluates the configured report', () => {

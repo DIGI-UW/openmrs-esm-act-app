@@ -14,9 +14,8 @@ import {
   TableRow,
 } from '@carbon/react';
 import { ArrowLeft, Close } from '@carbon/react/icons';
-import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { patientChartUrl } from '../patient-chart-url';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { usePagedRows } from '../table-filters/paged-rows';
@@ -31,6 +30,7 @@ import {
   useCountParams,
   widened,
 } from './dashboard-figure';
+import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './dashboard.scss';
 
 type Scope = Record<string, string>;
@@ -182,7 +182,7 @@ export function DashboardFigure({
             <Table size="sm" aria-label={names.section}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header) => (
+                  {headers.slice(1).map((header) => (
                     <TableHeader key={header}>{header}</TableHeader>
                   ))}
                 </TableRow>
@@ -190,15 +190,14 @@ export function DashboardFigure({
               <TableBody>
                 {results.map((row, index) => (
                   <TableRow key={`${row.patient_uuid}-${index}`} data-testid="dashboard-figure-row">
-                    {cells(row).map((cell, column) => (
-                      <TableCell key={headers[column]}>
-                        {column === 1 ? (
-                          <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{cell}</ConfigurableLink>
-                        ) : (
-                          cell
-                        )}
-                      </TableCell>
-                    ))}
+                    {/* Skip the ACT ID column here; PatientCell shows it beneath the name and the CSV still holds it. */}
+                    {cells(row)
+                      .slice(1)
+                      .map((cell, column) => (
+                        <TableCell key={headers[column + 1]}>
+                          {column === 0 ? <PatientCell row={row} /> : cell}
+                        </TableCell>
+                      ))}
                   </TableRow>
                 ))}
               </TableBody>

@@ -17,7 +17,6 @@ import {
   Tag,
 } from '@carbon/react';
 import {
-  ConfigurableLink,
   formatDate,
   isDesktop,
   navigate,
@@ -53,6 +52,7 @@ import { useSessionClinicScope } from '../session-clinic';
 import { type RegistrySort, sortRegistry } from './registry-sort';
 import { sortHeaderProps } from '../table-filters/column-sort';
 import { FilterEmptyState, TableEmptyState } from '../table-filters/empty-state.component';
+import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './registry.scss';
 
 const chartUrl = (row: ReportRow) => patientChartUrl(row.patient_uuid);
@@ -178,10 +178,7 @@ function RegistryTable() {
       header: t('patient', 'Patient'),
       sortKey: 'name',
       render: (row) => (
-        <>
-          <ConfigurableLink to={chartUrl(row)} className={styles.name}>
-            {text('full_name')(row)}
-          </ConfigurableLink>
+        <PatientCell row={row}>
           {row.consent_given !== 'Yes' && (
             <span className={styles.notConsented} title={t('notConsented', 'Not consented')}>
               *
@@ -192,8 +189,7 @@ function RegistryTable() {
               {t('inactive', 'Inactive')}
             </Tag>
           )}
-          <span className={styles.actId}>{text('rhd_id')(row)}</span>
-        </>
+        </PatientCell>
       ),
     },
     {

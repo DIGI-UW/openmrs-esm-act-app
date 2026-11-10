@@ -15,7 +15,6 @@ import {
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
 import {
-  ConfigurableLink,
   formatDate,
   isDesktop,
   launchWorkspace2,
@@ -38,6 +37,7 @@ import { FilterSelect } from '../table-filters/filter-select.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { useUrlFilters } from '../table-filters/url-filters';
 import { type Study, useStudies } from './studies.resource';
+import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './studies.scss';
 
 const filterKeys = ['study', 'status'] as const;
@@ -165,22 +165,18 @@ function ParticipantsTable({
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
   const columns: Array<{
     header: string;
-    render: (row: ReportRow) => React.ReactNode;
+    /** Omit to keep the column in the CSV only. */
+    render?: (row: ReportRow) => React.ReactNode;
     csv: (row: ReportRow) => string;
   }> = [
     {
       header: t('patient', 'Patient'),
       render: (row) => (
-        <ConfigurableLink
-          to={`${patientChartUrl(row.patient_uuid)}/${researchPageDashboardMeta.path}`}
-          className={styles.name}
-        >
-          {text('full_name')(row)}
-        </ConfigurableLink>
+        <PatientCell row={row} to={`${patientChartUrl(row.patient_uuid)}/${researchPageDashboardMeta.path}`} />
       ),
       csv: text('full_name'),
     },
-    { header: t('actId', 'ACT ID'), render: text('rhd_id'), csv: text('rhd_id') },
+    { header: t('actId', 'ACT ID'), csv: text('rhd_id') },
     { header: t('study', 'Study'), render: text('study'), csv: text('study') },
     { header: t('studyId', 'Study ID'), render: text('study_id'), csv: text('study_id') },
     {
@@ -210,6 +206,7 @@ function ParticipantsTable({
     },
     { header: t('cardiacClinic', 'Cardiac clinic'), render: text('cardiac_clinic'), csv: text('cardiac_clinic') },
   ];
+  const shownColumns = columns.filter((column) => column.render);
 
   let body: React.ReactNode;
   if (error) {
@@ -226,7 +223,7 @@ function ParticipantsTable({
     body = (
       <DataTableSkeleton
         role="progressbar"
-        columnCount={columns.length}
+        columnCount={shownColumns.length}
         compact={desktop}
         showHeader={false}
         showToolbar={false}
@@ -271,7 +268,7 @@ function ParticipantsTable({
             >
               <TableHead>
                 <TableRow>
-                  {columns.map((column) => (
+                  {shownColumns.map((column) => (
                     <TableHeader key={column.header}>{column.header}</TableHeader>
                   ))}
                 </TableRow>
@@ -279,8 +276,8 @@ function ParticipantsTable({
               <TableBody>
                 {results.map((row) => (
                   <TableRow key={String(row.enrollment_uuid)}>
-                    {columns.map((column) => (
-                      <TableCell key={column.header}>{column.render(row)}</TableCell>
+                    {shownColumns.map((column) => (
+                      <TableCell key={column.header}>{column.render?.(row)}</TableCell>
                     ))}
                   </TableRow>
                 ))}

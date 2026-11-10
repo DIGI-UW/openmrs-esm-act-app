@@ -121,10 +121,10 @@ describe('Enter prophylaxis', () => {
 
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
     expect(tableRows()).toEqual([
-      ['Patient 1', 'rhd00001', 'BPG · every 28 days', '', 'Overdue', '62%', 'Record BPG'],
-      ['Patient 2', 'rhd00002', 'Q21 day BPG', '15-Sept-2026', 'Up to date', '96%', 'Record BPG'],
-      ['Patient 3', 'rhd00003', 'None', '', 'No prescription', '', 'Needs prescription'],
-      ['Patient 4', 'rhd00004', 'Oral penicillin', '04-Aug-2026', 'Due today', '88%', 'Record oral'],
+      ['Patient 1rhd00001', 'BPG · every 28 days', '', 'Overdue', '62%', 'Record BPG'],
+      ['Patient 2rhd00002', 'Q21 day BPG', '15-Sept-2026', 'Up to date', '96%', 'Record BPG'],
+      ['Patient 3rhd00003', 'None', '', 'No prescription', '', 'Needs prescription'],
+      ['Patient 4rhd00004', 'Oral penicillin', '04-Aug-2026', 'Due today', '88%', 'Record oral'],
     ]);
   });
 
@@ -143,7 +143,7 @@ describe('Enter prophylaxis', () => {
 
     render(<EnterProphylaxis />);
 
-    expect(tableRows()[0][4]).toBe(status);
+    expect(tableRows()[0][3]).toBe(status);
   });
 
   it("lists only the patients of the session's primary care clinic", async () => {
@@ -158,14 +158,14 @@ describe('Enter prophylaxis', () => {
 
     render(<EnterProphylaxis />);
 
-    await waitFor(() => expect(tableRows().map((row) => row[0])).toEqual(['Patient 1']));
+    await waitFor(() => expect(tableRows().map((row) => row[0])).toEqual(['Patient 1rhd00001']));
   });
 
   it('leaves out completed enrolments and patients who have died, as no dose can be recorded for them', () => {
     render(<EnterProphylaxis />);
 
-    expect(tableRows().map((row) => row[0])).not.toContain('Patient 6');
-    expect(tableRows().map((row) => row[0])).not.toContain('Patient 7');
+    expect(tableRows().map((row) => row[0])).not.toContain('Patient 6rhd00006');
+    expect(tableRows().map((row) => row[0])).not.toContain('Patient 7rhd00007');
   });
 
   it('says Recorded today on screen and in the CSV, as the rows themselves say who was recorded today', async () => {
@@ -173,7 +173,7 @@ describe('Enter prophylaxis', () => {
     vi.mocked(useRecordedToday).mockReturnValue({ recorded: new Set(['patient-1']) });
     render(<EnterProphylaxis />);
 
-    expect(tableRows()[0][4]).toBe('Recorded today');
+    expect(tableRows()[0][3]).toBe('Recorded today');
     // The download is recorded through ACT Core before the file is made.
     vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
     await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
@@ -192,13 +192,13 @@ describe('Enter prophylaxis', () => {
 
     expect(screen.getByRole('tab', { name: /^BPG/ })).toHaveTextContent('BPG 2');
     await userEvent.click(screen.getByRole('tab', { name: /^BPG/ }));
-    expect(tableRows().map((row) => row[0])).toEqual(['Patient 1', 'Patient 2']);
+    expect(tableRows().map((row) => row[0])).toEqual(['Patient 1rhd00001', 'Patient 2rhd00002']);
 
     await userEvent.click(screen.getByRole('tab', { name: /^Oral/ }));
-    expect(tableRows().map((row) => row[0])).toEqual(['Patient 4']);
+    expect(tableRows().map((row) => row[0])).toEqual(['Patient 4rhd00004']);
 
     await userEvent.click(screen.getByRole('tab', { name: /^All/ }));
     await userEvent.type(screen.getByRole('searchbox'), 'rhd00002');
-    expect(tableRows().map((row) => row[0])).toEqual(['Patient 2']);
+    expect(tableRows().map((row) => row[0])).toEqual(['Patient 2rhd00002']);
   });
 });
