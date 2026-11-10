@@ -157,9 +157,10 @@ describe('Due for prophylaxis page', () => {
 
     await renderPage();
 
-    const [name, , lastDose] = within(screen.getByRole('row', { name: /rhd00012/ })).getAllByRole('cell');
-    expect(name).toHaveClass('oneLine');
-    expect(lastDose).toHaveClass('oneLine');
+    const oneLine = within(screen.getByRole('row', { name: /rhd00012/ }))
+      .getAllByRole('cell')
+      .map((cell) => cell.classList.contains('oneLine'));
+    expect(oneLine).toEqual([true, false, true, false, false, false]);
     const sheet = readFileSync(resolve(process.cwd(), 'src/due-for-prophylaxis/due-for-prophylaxis.scss'), 'utf8');
     expect(sheet).toMatch(/\.oneLine\s*\{[^}]*white-space: nowrap;/);
   });
@@ -175,11 +176,7 @@ describe('Due for prophylaxis page', () => {
 
     // eslint-disable-next-line testing-library/no-node-access
     const container = screen.getByRole('table').closest('.tableContainer');
-    if (narrowed) {
-      expect(container).toHaveClass('tablet');
-    } else {
-      expect(container).not.toHaveClass('tablet');
-    }
+    expect(container).toHaveAttribute('class', narrowed ? 'tableContainer tablet' : 'tableContainer');
     const sheet = readFileSync(resolve(process.cwd(), 'src/due-for-prophylaxis/due-for-prophylaxis.scss'), 'utf8');
     expect(sheet).toMatch(/\.tableContainer\.tablet\s*\{\s*th,\s*td\s*\{\s*padding-inline: layout\.\$spacing-03;/);
   });
@@ -188,10 +185,16 @@ describe('Due for prophylaxis page', () => {
     dataset({ rows: [{ ...dueRows[0], regimen: '', injection_interval_days: '', status: '' }] });
 
     await renderPage();
-    await showAll();
 
-    const [, prescription, , status] = cells(new RegExp(String(dueRows[0].rhd_id)));
-    expect([prescription, status]).toEqual(['--', '--']);
+    expect(cells(/rhd00012/)).toEqual(['Amina Nakatorhd00012', '--', '24-Aug-2026', '--', '64%', 'Record BPG']);
+  });
+
+  it('shows -- rather than No dose yet for a last dose whose date cannot be read', async () => {
+    dataset({ rows: [{ ...dueRows[0], last_given: 'not a date' }] });
+
+    await renderPage();
+
+    expect(cells(/rhd00012/)[2]).toBe('--');
   });
 
   it('lists only the patients whose primary care clinic it is, at a primary care clinic', async () => {

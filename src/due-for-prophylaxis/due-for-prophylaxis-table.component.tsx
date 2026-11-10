@@ -31,7 +31,7 @@ export function DueForProphylaxisTable({
       return <PatientCell row={row} />;
     }
     if (!text) {
-      return column.key === 'lastDose' ? t('noDoseYet', 'No dose yet') : '--';
+      return column.key === 'lastDose' && !row.last_given ? t('noDoseYet', 'No dose yet') : '--';
     }
     if (column.key === 'status') {
       const recordedToday = recorded.has(String(row.patient_uuid));
