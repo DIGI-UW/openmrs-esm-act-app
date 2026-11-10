@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Extension, ExtensionSlot, PatientListsPictogram, useAssignedExtensions } from '@openmrs/esm-framework';
+import { Extension, ExtensionSlot, ServiceQueuesPictogram, useAssignedExtensions } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useUrlFilters } from '../table-filters/url-filters';
 import { type WorklistState } from './worklist.component';
@@ -47,7 +47,7 @@ export default function Worklists() {
   const { t } = useTranslation();
   return (
     <>
-      <ActPageHeader title={t('worklists', 'Worklists')} illustration={<PatientListsPictogram />} />
+      <ActPageHeader title={t('worklists', 'Worklists')} illustration={<ServiceQueuesPictogram />} />
       <div className={styles.worklists}>
         <p className={styles.description}>{t('worklistsDescription', 'Patients needing action, by list')}</p>
         <WorklistsContent />

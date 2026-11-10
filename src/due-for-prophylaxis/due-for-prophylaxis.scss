@@ -57,6 +57,11 @@
   @include act-yellow-tag;
 }
 
+// Keep this at least as wide as Record BPG so every Record oral button matches it down the column.
+.recordDose {
+  min-width: 10rem;
+}
+
 .lowAdherence {
   font-weight: 600;
   color: colors.$red-60;

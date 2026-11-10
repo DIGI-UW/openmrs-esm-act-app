@@ -117,7 +117,13 @@ export function RecordDoseAction({
   const form = oral ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;
   return (
     <MayEnterForm formUuid={form}>
-      <Button kind="primary" size="sm" disabled={disabled} onClick={() => onRecord(row, form)}>
+      <Button
+        className={styles.recordDose}
+        kind="primary"
+        size="sm"
+        disabled={disabled}
+        onClick={() => onRecord(row, form)}
+      >
         {oral ? t('recordOral', 'Record oral') : t('recordBpg', 'Record BPG')}
       </Button>
     </MayEnterForm>

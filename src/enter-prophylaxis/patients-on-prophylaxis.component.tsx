@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton, InlineNotification, Pagination, Search } from '@carbon/react';
 import { Information } from '@carbon/react/icons';
-import { CardiologyPictogram, isDesktop, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, PharmacyPictogram, useLayoutType } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { DueForProphylaxisTable } from '../due-for-prophylaxis/due-for-prophylaxis-table.component';
 import { DueListToolbar } from '../due-for-prophylaxis/due-list-toolbar.component';
@@ -100,7 +100,7 @@ export default function EnterProphylaxis() {
   const { t } = useTranslation();
   return (
     <>
-      <ActPageHeader title={t('enterProphylaxis', 'Enter prophylaxis')} illustration={<CardiologyPictogram />} />
+      <ActPageHeader title={t('enterProphylaxis', 'Enter prophylaxis')} illustration={<PharmacyPictogram />} />
       <div className={styles.page}>
         <p className={styles.description}>
           {t('enterProphylaxisDescription', 'Choose the patient, then record what was given today')}
