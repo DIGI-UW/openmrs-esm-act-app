@@ -158,6 +158,25 @@ describe('ProceduralRecommendationsCard', () => {
     expect(await screen.findByTestId('procedural-recommendation')).toHaveTextContent('Waiting');
   });
 
+  it('dates a recommendation from its first consultation since it was last done, across one that left it out', async () => {
+    serve(
+      [
+        consultation(ago(10), [recommends(SURGERY, MITRAL_VALVE, ELECTIVE)]),
+        consultation(ago(150), [recommends(SURGERY, AORTIC_VALVE, URGENT)]),
+        consultation(ago(300), [recommends(SURGERY, MITRAL_VALVE, ELECTIVE)]),
+        consultation(ago(400), [recommends(SURGERY, MITRAL_VALVE, ELECTIVE)]),
+      ],
+      [procedure(ago(350), MITRAL_VALVE)],
+    );
+
+    renderCard();
+
+    const row = await screen.findByTestId('procedural-recommendation');
+    // Not from the consultation 150 days ago, which left it out, nor from before it was done 350 days ago.
+    expect(row).toHaveTextContent(shown(ago(300)));
+    expect(row).toHaveTextContent('Overdue');
+  });
+
   it('shows nothing when the latest consultation recommends no procedure', async () => {
     serve([
       consultation(ago(10), [recommends(coded(NONE, 'None'), null, null)]),

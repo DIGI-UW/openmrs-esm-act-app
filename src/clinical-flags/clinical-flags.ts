@@ -124,7 +124,10 @@ export interface ProceduralRecommendation {
   /** The Urgency answer's uuid, which names its urgency band, and its name. */
   urgencyConcept: string;
   urgency: string;
-  /** The day of the oldest consultation in the unbroken run back from the latest that recommends it, YYYY-MM-DD. */
+  /**
+   * The day of the first consultation to recommend it since it was last completed, YYYY-MM-DD, as the Procedural
+   * Waiting List dates it: a consultation between that left it out does not restart the wait.
+   */
   recommended: string;
   /** The day Procedures and Outcomes first recorded it on or after the latest consultation's day, YYYY-MM-DD. */
   doneOn: string | null;
@@ -159,8 +162,14 @@ export function proceduralRecommendations(
           .map((one) => one.day)
           .sort()[0] ?? null;
       let first = latest;
-      for (const encounter of consultations.slice(1)) {
-        if (!procedureUuid || !openProcedures(encounter, concepts, done).includes(procedureUuid)) {
+      for (const encounter of procedureUuid ? consultations.slice(1) : []) {
+        const recommends = answersIn(encounter.obs, concepts.recommendation).some(
+          (group) => uuidOf(answersIn(group.groupMembers, concepts.recommendation)[0]?.value) === procedureUuid,
+        );
+        if (!recommends) {
+          continue;
+        }
+        if (!openProcedures(encounter, concepts, done).includes(procedureUuid)) {
           break;
         }
         first = encounter;

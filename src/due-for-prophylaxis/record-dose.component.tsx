@@ -40,8 +40,7 @@ function cached<T>(cache: Map<string, Promise<T>>, key: string, load: () => Prom
 /**
  * Opens a due row's dose form beside the list, one at a time, as a second click while a visit starts would start a second.
  * Called by what stays mounted while the panel is open, not by the table, which an empty filter or search unmounts and
- * whose caches would go with it. Another list records a new form for its rows the same way in its own `workspace`, as
- * the Procedural waiting list records a procedure (AR-191).
+ * whose caches would go with it.
  */
 export function useRecordDose(workspace = recordDoseFormEntryWorkspace) {
   const { t } = useTranslation();
