@@ -58,7 +58,7 @@ describe('Registry table width', () => {
     const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
     expect(cells.map(narrow)).toEqual([false, false, true, false, false, true, false, false]);
     expect(sheet()).toMatch(
-      /\.table\s*\{[^}]*td:not\(:global\(\.cds--table-expand\)\)[^{]*\{\s*padding-inline: layout\.\$spacing-04;/,
+      /^\.table\s*\{\s*td:not\(:global\(\.cds--table-expand\)\),\s*th:not\(:global\(\.cds--table-expand\)\):not\(\[aria-sort\]\)\s*\{\s*padding-inline: layout\.\$spacing-04;/m,
     );
     expect(sheet()).toMatch(/td\.narrow\s*\{\s*padding-inline: layout\.\$spacing-03;/);
   });
@@ -77,7 +77,7 @@ describe('Registry table width', () => {
       true,
       false,
     ]);
-    expect(sheet()).toMatch(/\.oneLine\s*\{\s*white-space: nowrap;/);
+    expect(sheet()).toMatch(/^td\.oneLine\s*\{\s*white-space: nowrap;/m);
   });
 
   it('shows a shadow at the edge it is cut at, when the page is too narrow for the table', () => {
