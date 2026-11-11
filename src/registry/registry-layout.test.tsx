@@ -10,7 +10,6 @@ import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
-// Each class by its own name, which happy-dom's empty stylesheet modules do not give.
 vi.mock('./registry.scss', () => ({ default: new Proxy({}, { get: (_, name) => name }) }));
 
 const sheet = () => readFileSync(resolve(process.cwd(), 'src/registry/registry.scss'), 'utf8');
@@ -61,7 +60,6 @@ describe('Registry table width', () => {
     expect(sheet()).toMatch(
       /\.table\s*\{[^}]*td:not\(:global\(\.cds--table-expand\)\)[^{]*\{\s*padding-inline: layout\.\$spacing-04;/,
     );
-    // td.narrow, not .narrow, which the padding rule for every td outranks.
     expect(sheet()).toMatch(/td\.narrow\s*\{\s*padding-inline: layout\.\$spacing-03;/);
   });
 

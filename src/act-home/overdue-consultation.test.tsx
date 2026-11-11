@@ -117,7 +117,7 @@ describe('Overdue for consultation', () => {
     expect(vi.mocked(navigate)).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient/patient-1/chart' });
   });
 
-  it('fits half the page: Open chart is a small ghost button, and a name and a header may wrap', () => {
+  it('keeps dates, days and a small ghost Open chart on one line, and lets the name and headers wrap', () => {
     registry([row(1, daysAgo(8))]);
 
     render(<OverdueConsultation />);
@@ -127,7 +127,7 @@ describe('Overdue for consultation', () => {
     expect(cells.map((cell) => cell.classList.contains('oneLine'))).toEqual([false, true, true, true, true]);
     const sheet = readFileSync(resolve(process.cwd(), 'src/act-home/overdue-consultation.scss'), 'utf8');
     expect(sheet).toMatch(/\.oneLine\s*\{[^}]*white-space: nowrap;/);
-    expect(sheet.match(/white-space: nowrap;/g)).toHaveLength(1);
+    expect(sheet).not.toMatch(/th,\s*td\s*\{[^}]*white-space/);
   });
 
   it('shows a shadow at the edge it is cut at, when the card is too narrow for the table', () => {

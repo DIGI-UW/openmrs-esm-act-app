@@ -87,6 +87,17 @@ describe('ScrollEdges', () => {
     );
   });
 
+  it('marks no edge, and does not fail, around something other than a Carbon table', () => {
+    render(
+      <ScrollEdges>
+        <p>No patients to display</p>
+      </ScrollEdges>,
+    );
+
+    expect(screen.getByText('No patients to display')).toBeInTheDocument();
+    expect(edgesOf(screen.getByTestId('scroll-edges'))).toEqual([false, false]);
+  });
+
   it('draws a shadow over a marked edge only', () => {
     const sheet = readFileSync(resolve(process.cwd(), 'src/table-filters/scroll-edges.scss'), 'utf8');
 

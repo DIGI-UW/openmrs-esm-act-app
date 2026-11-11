@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styles from './scroll-edges.scss';
 
-/**
- * Wraps a table that may scroll sideways and shades each edge with more of the table beyond it, as macOS and touch
- * devices hide the scrollbar. The scroller is Carbon's table content inside, else the wrapper itself.
- */
+/** Wraps a Carbon table and shades each edge it scrolls past, as macOS and touch devices hide the scrollbar. */
 export function ScrollEdges({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: false, end: false });
   useEffect(() => {
-    const scroller = ref.current.querySelector<HTMLElement>('.cds--data-table-content') ?? ref.current;
+    const scroller = ref.current.querySelector<HTMLElement>('.cds--data-table-content');
+    if (!scroller) {
+      return;
+    }
     const measure = () => {
       const start = scroller.scrollLeft > 0;
       const end = scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1;

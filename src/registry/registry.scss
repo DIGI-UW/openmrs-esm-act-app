@@ -16,18 +16,19 @@
   cursor: pointer;
 }
 
-// Under Carbon's 16 px each side, so the table fits a 1440 px page; a sortable header pads its button, not itself.
+// Under Carbon's 16 px each side, so the table fits a 1440 px page.
 .table {
   td:not(:global(.cds--table-expand)),
   th:not(:global(.cds--table-expand)):not([aria-sort]) {
     padding-inline: layout.$spacing-04;
   }
 
+  // A sortable th has Carbon's padding 0; its button carries the padding.
   :global(.cds--table-sort) {
     padding-inline-start: layout.$spacing-04;
   }
 
-  // Age, sex and Last updated, whose header is wider than what they hold.
+  // Keep the td: a bare .narrow loses to the padding rule for every td.
   td.narrow {
     padding-inline: layout.$spacing-03;
   }

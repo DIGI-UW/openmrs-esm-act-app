@@ -20,7 +20,7 @@
   }
 }
 
-// For dates, counts and Open chart; a name or a header wraps, so the table fits half of a 1440 px page.
+// Not on the name or the headers: they wrap so the table fits the card at 1440 px.
 .oneLine {
   white-space: nowrap;
 }
