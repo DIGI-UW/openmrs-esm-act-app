@@ -24,7 +24,7 @@ function FlagTag({ priority, children }: { priority: Flag['priority']; children:
       data-testid="registry-flag"
       data-priority={priority}
       type={tagTypes[priority]}
-      className={`${styles.flagTag} ${styles[priority]}`}
+      className={[styles.flagTag, styles[priority]].filter(Boolean).join(' ')}
       size="sm"
     >
       {children}

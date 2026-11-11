@@ -8,9 +8,18 @@ import { signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
+import { RegistryFlags } from './registry-flags.component';
 import { columnHeaders } from '../column-headers.test-helper';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+// As a CSS module does, a class the sheet does not declare resolves to undefined.
+vi.mock('./registry.scss', async () => {
+  const { readFileSync } = await import('node:fs');
+  const sheet = readFileSync(`${process.cwd()}/src/registry/registry.scss`, 'utf8');
+  return {
+    default: new Proxy({}, { get: (_, name) => (new RegExp(`\\.${String(name)}\\b`).test(sheet) ? name : undefined) }),
+  };
+});
 
 const withFlags = (flags: Array<string | null>) =>
   registryRows.map((row, i) => ({ ...row, rhd_flags: flags[i] ?? null }));
@@ -219,6 +228,20 @@ describe('Registry flags column', () => {
     expect(blue('Patient 3')).toEqual([['2 flags', 'earlyWarning', true]]);
     expect(flagsOf('Patient 4')).toEqual([['2 flags', 'risk', true]]);
   });
+});
+
+describe('Registry flag tag classes', () => {
+  it.each(['risk', 'earlyWarning', 'dataQuality'] as const)(
+    'gives the %s tag only classes the sheet declares',
+    (priority) => {
+      render(<RegistryFlags flags={[{ flagName: 'A flag', priority }]} rowsBelow={0} />);
+
+      const classes = screen.getByTestId('registry-flag').className.split(' ');
+      expect(classes).toContain('flagTag');
+      expect(classes).not.toContain('undefined');
+      expect(classes.includes('dataQuality')).toBe(priority === 'dataQuality');
+    },
+  );
 });
 
 describe('Registry flag filter', () => {
