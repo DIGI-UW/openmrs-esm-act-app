@@ -7,6 +7,7 @@ import { flagWorklists } from './worklists/flag-worklists';
 describe('configSchema', () => {
   it("defaults to the clinic tags, RHD flags and the consultation form's urgency bands", () => {
     expect(getDefaultsFromConfigSchema(configSchema)).toEqual({
+      timeZone: 'Africa/Kampala',
       clinicLocationTags: {
         cardiac: ['RHD Tertiary', 'RHD District'],
         primaryCare: ['RHD Community'],

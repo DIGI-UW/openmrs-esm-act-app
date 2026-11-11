@@ -23,6 +23,7 @@ import { usePagedRows } from '../table-filters/paged-rows';
 import { ActHomeCard } from './act-home-card.component';
 import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './overdue-consultation.scss';
+import { clinicClock } from '../clinic-clock';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -36,7 +37,7 @@ interface Overdue {
 }
 
 /** The registry's patients whose next cardiology review date has passed, longest overdue first. */
-export function overdueConsultations(rows: Array<ReportRow>, now = new Date()) {
+export function overdueConsultations(rows: Array<ReportRow>, now = clinicClock()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return rows
     .map((row) => ({ row, wasDue: parseReportDate(row.next_consultation_date) }))

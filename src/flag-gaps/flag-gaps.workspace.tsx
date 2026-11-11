@@ -37,6 +37,7 @@ import { MayEnterForm } from '../access/may-enter-form';
 import { type FormLauncher, useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { openEncounterForm } from './open-encounter-form';
 import styles from './flag-gaps.scss';
+import { clinicClock } from '../clinic-clock';
 
 /** What a patient flags app that passes the clicked flag launches a flag action's workspace with. */
 export interface FlagActionWorkspaceProps {
@@ -58,8 +59,8 @@ export function daysPending(encounterDatetime: string, now = new Date()) {
 }
 
 /** Whole days from the day the flag was raised to today, as ACT 2.0 counted a critical data flag's days pending. */
-export function daysOpen(raisedSince: string, now = new Date()) {
-  const since = new Date(raisedSince);
+export function daysOpen(raisedSince: string, now = clinicClock()) {
+  const since = clinicClock(new Date(raisedSince));
   const raisedDay = new Date(since.getFullYear(), since.getMonth(), since.getDate());
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((today.getTime() - raisedDay.getTime()) / DAY_MS);

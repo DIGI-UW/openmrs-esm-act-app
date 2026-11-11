@@ -10,6 +10,7 @@ import { useSessionClinicScope } from '../session-clinic';
 import { ActHomeCard } from './act-home-card.component';
 import { cascadeSteps } from './care-cascade-steps';
 import styles from './care-cascade.scss';
+import { clinicClock } from '../clinic-clock';
 
 /**
  * The care cascade as of today at one clinic scope, the report's clinic parameters; `null` while the scope is not
@@ -29,7 +30,7 @@ export function CareCascadeCard({
   const { t } = useTranslation();
   const { careCascade } = useConfig<Config>();
   // Send a plain date: the server runs on UTC, so a local-midnight timestamp east of UTC lands on yesterday.
-  const today = useMemo(() => dayjs().startOf('day'), []);
+  const today = useMemo(() => dayjs(clinicClock()).startOf('day'), []);
   const { cardiacClinic, primaryCareClinic } = scope ?? {};
   const params = useMemo(
     () => ({

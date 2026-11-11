@@ -32,6 +32,7 @@ import {
 } from './dashboard-figure';
 import { PatientCell } from '../patient-cell/patient-cell.component';
 import styles from './dashboard.scss';
+import { clinicToday } from '../clinic-clock';
 
 type Scope = Record<string, string>;
 
@@ -60,7 +61,7 @@ export function DashboardFigure({
 }) {
   const { t } = useTranslation();
   const { dashboard, careCascade } = useConfig<Config>();
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = clinicToday();
   const params = useMemo(() => ({ endDate: asOf, ...scope, ...figureParams(figure) }), [asOf, scope, figure]);
   const { counted, countParams, pending } = useCountParams(params);
   const report = useReportDataset(counted ? patientsReport(dashboard, figure.figure) : null, countParams);

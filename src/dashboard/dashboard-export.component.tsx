@@ -23,6 +23,7 @@ import {
   zip,
 } from './dashboard-export';
 import { sectionPng } from './dashboard-images';
+import { clinicToday } from '../clinic-clock';
 
 /** Each export section's name, as its card or tab names it. */
 export function useSectionNames(): Record<ExportSection, string> {
@@ -70,7 +71,7 @@ export function DashboardExportButton({
   const { t } = useTranslation();
   const names = useSectionNames();
   const [busy, setBusy] = useState(false);
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = clinicToday();
   const summary = `${clinics} · ${t('figuresAsOfDate', 'figures as of {{date}}', { date: formatDate(dayjs(asOf).toDate(), { time: false, noToday: true }) })}`;
   const csvHeaders = [
     t('csvSection', 'Section'),

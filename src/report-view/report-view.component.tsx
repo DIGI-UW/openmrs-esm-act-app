@@ -31,6 +31,7 @@ import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { cellText, columnHeader, limitToClinics, matchesSearch, reportsFor, sortValue } from './report-catalogue';
 import styles from './report-view.scss';
+import { clinicClock } from '../clinic-clock';
 
 const isoDate = (date: Date) => dayjs(date).format('YYYY-MM-DD');
 
@@ -42,8 +43,8 @@ export default function ReportView() {
   const limit = useClinicLimit();
   const id = useMemo(() => new URLSearchParams(window.location.search).get('report'), []);
   const entry = reportsFor(reportCatalogue, limit).find((candidate) => candidate.id === id);
-  const [startDate, setStartDate] = useState(() => dayjs().subtract(12, 'month').toDate());
-  const [endDate, setEndDate] = useState(() => new Date());
+  const [startDate, setStartDate] = useState(() => dayjs(clinicClock()).subtract(12, 'month').toDate());
+  const [endDate, setEndDate] = useState(() => clinicClock());
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<ColumnSort | null>(null);
   const backwards = dayjs(startDate).isAfter(endDate, 'day');

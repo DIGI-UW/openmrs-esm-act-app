@@ -9,6 +9,7 @@ import { useReportDataset } from '../reports/report-dataset.resource';
 import { registryRows } from './registry.fixture';
 import Registry from './registry.component';
 import { columnHeaders } from '../column-headers.test-helper';
+import { setClinicTimeZone } from '../clinic-clock';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
@@ -66,7 +67,11 @@ describe('Registry', () => {
   it("shows the diagnosis's details, or its category when no details are recorded", () => {
     dataset({
       rows: [
-        { ...registryRows[0], diagnosis_category: 'Rheumatic Heart Disease/Rheumatic Fever', diagnosis_details: 'RHD B' },
+        {
+          ...registryRows[0],
+          diagnosis_category: 'Rheumatic Heart Disease/Rheumatic Fever',
+          diagnosis_details: 'RHD B',
+        },
         { ...registryRows[1], diagnosis_category: 'Normal', diagnosis_details: null },
       ],
     });
@@ -105,6 +110,21 @@ describe('Registry', () => {
     expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
       startDate: '1900-01-01',
       endDate: '2026-09-29',
+    });
+  });
+
+  it("asks for the clinic's today, not the laptop's, when the clinic is already a day ahead", () => {
+    setClinicTimeZone('Africa/Kampala');
+    vi.useFakeTimers({ now: new Date('2026-11-10T22:30:00Z') });
+    dataset({ rows: registryRows });
+
+    render(<Registry />);
+
+    vi.useRealTimers();
+    setClinicTimeZone('UTC');
+    expect(mockUseReportDataset).toHaveBeenLastCalledWith('f1a2b3c4-d5e6-7890-abcd-ef1234567890', {
+      startDate: '1900-01-01',
+      endDate: '2026-11-11',
     });
   });
 

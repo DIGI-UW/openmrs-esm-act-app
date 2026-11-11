@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
+import { clinicClock } from '../clinic-clock';
 
 const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -10,7 +11,7 @@ const sameDay = (a: Date, b: Date) =>
  * saved, so the report's last dose is current: its `recorded_today` says so on the server's clock, the clock its
  * statuses use; a report without that column is read by its `last_given` falling on today, here.
  */
-export function recordedToday(row: ReportRow, today = new Date()) {
+export function recordedToday(row: ReportRow, today = clinicClock()) {
   if (row.recorded_today !== undefined && row.recorded_today !== null && row.recorded_today !== '') {
     return Number(row.recorded_today) === 1;
   }

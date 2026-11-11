@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
-import dayjs from 'dayjs';
 import { Button, ButtonSet, InlineLoading, InlineNotification, Select, SelectItem, TextInput } from '@carbon/react';
 import {
   formatDate,
@@ -26,6 +25,7 @@ import {
   usePatientStatus,
 } from './patient-status.resource';
 import styles from './update-patient-status.scss';
+import { clinicToday } from '../clinic-clock';
 
 const day = (value: string) => formatDate(parseDate(value), { time: false });
 
@@ -42,7 +42,7 @@ export default function UpdatePatientStatusWorkspace({
   const { user } = useSession();
   const { mutate } = useSWRConfig();
   const { enrolment, program, person, isLoading, error } = usePatientStatus(patientUuid, patientStatus.programUuid);
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = clinicToday();
   const [stateUuid, setStateUuid] = useState('');
   const [date, setDate] = useState(today);
   const [cause, setCause] = useState('');

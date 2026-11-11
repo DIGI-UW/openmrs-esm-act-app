@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { clinicClock } from '../clinic-clock';
 
 export interface Enrolment {
   uuid: string;
@@ -130,7 +131,8 @@ export function usePatientStatus(patientUuid: string | null, programUuid: string
 }
 
 /** A date as the server takes it: today as the present moment, so that a clock ahead of the server's is not the future. */
-const serverDate = (date: string) => (dayjs(date).isSame(dayjs(), 'day') ? new Date().toISOString() : date);
+const serverDate = (date: string) =>
+  dayjs(date).isSame(dayjs(clinicClock()), 'day') ? new Date().toISOString() : date;
 
 /** Marks the person dead on the date with a cause in words, which core requires of a dead person. */
 export async function markDead(personUuid: string, deathDate: string, cause: string) {

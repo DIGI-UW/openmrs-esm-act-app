@@ -27,6 +27,7 @@ import facilityReportsDashboardLinkComponent from './programme-report/facility-r
 import instanceAdminDashboardLinkComponent from './instance-admin/instance-admin-dashboard-link.component';
 import scanPatientCardDashboardLinkComponent from './scan-patient-card/scan-patient-card-dashboard-link.component';
 import { trackActReturn } from './back-to-act/act-return';
+import { registerClinicTimeZone } from './clinic-clock';
 import { registerAllergies } from './allergies/allergies.resource';
 import { registerNextInjectionDue } from './prophylaxis/next-injection-due';
 import { registerVisitVitals } from './vitals/visit-vitals.resource';
@@ -43,6 +44,7 @@ export const importTranslation = require.context('../translations', false, /.jso
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+  registerClinicTimeZone();
   Object.entries(flagWorklists).forEach(([name, defaults]) =>
     defineExtensionConfigSchema(name, flagWorklistConfigSchema(defaults)),
   );

@@ -9,6 +9,7 @@ import { parseReportDate } from '../reports/report-date';
 import { useRhdFlagList } from '../rhd-flags/rhd-flag-lists.resource';
 import { type FlagWorklistConfig } from './flag-worklists';
 import { Worklist, type WorklistState, WorklistTable, whyKey } from './worklist.component';
+import { clinicClock } from '../clinic-clock';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -21,7 +22,7 @@ function onListSince(t: TFunction, row: ReportRow, flag: string) {
   if (!since) {
     return '';
   }
-  const now = new Date();
+  const now = clinicClock();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return t('onListForDays', 'On the list for {{count}} days', {
     count: Math.round((today.getTime() - since.getTime()) / DAY_MS),
@@ -34,7 +35,7 @@ function dueBy(t: TFunction, value: unknown) {
   if (!due) {
     return '';
   }
-  const now = new Date();
+  const now = clinicClock();
   const date = formatDate(due, { time: false, noToday: true });
   return due < new Date(now.getFullYear(), now.getMonth(), now.getDate())
     ? t('overdueWasDue', 'Overdue · was due {{date}}', { date })

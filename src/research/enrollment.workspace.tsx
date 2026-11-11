@@ -22,6 +22,7 @@ import {
   useStudyEnrollments,
 } from './research.resource';
 import styles from '../styles/form-workspace.scss';
+import { clinicClock } from '../clinic-clock';
 
 const day = (date: Date | null) => (date ? dayjs(date).format('YYYY-MM-DD') : null);
 const toDate = (value: string | null) => (value ? parseDate(value) : null);
@@ -59,7 +60,7 @@ function EnrollmentForm({ patientUuid, studies, enrollment, mutate, closeWorkspa
   // Reopening a completed enrolment leaves it with no open status.
   const states = (study?.states ?? []).filter((s) => !enrollment?.dateCompleted || s.terminal);
   const state = states.find((s) => s.uuid === stateUuid);
-  const today = dayjs().endOf('day').toDate();
+  const today = dayjs(clinicClock()).endOf('day').toDate();
   const errors = {
     study: !study ? t('chooseAStudy', 'Choose a study') : null,
     studyId: !studyId.trim() ? t('enterTheStudyId', 'Enter the Study ID') : null,

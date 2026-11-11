@@ -1,4 +1,5 @@
 import dayjs, { type Dayjs } from 'dayjs';
+import { clinicClock } from '../clinic-clock';
 
 export type PeriodKind = 'month' | 'quarter';
 
@@ -17,7 +18,7 @@ function quarterStart(day: Dayjs) {
 }
 
 /** The current month or quarter and those before it, newest first: a year of either. */
-export function periods(kind: PeriodKind, today: Dayjs = dayjs()): Array<Period> {
+export function periods(kind: PeriodKind, today: Dayjs = dayjs(clinicClock())): Array<Period> {
   const first = kind === 'month' ? today.startOf('month') : quarterStart(today);
   const step = kind === 'month' ? 1 : 3;
   return Array.from({ length: choices[kind] }, (_, i) => {

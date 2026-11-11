@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Button, InlineLoading } from '@carbon/react';
 import { Download } from '@carbon/react/icons';
@@ -8,6 +7,7 @@ import { PRIVILEGE_EXPORT_LISTS } from '../constants';
 import { recordDownload } from '../logs/logs.resource';
 import { restErrorMessage } from '../rest-error-message';
 import { downloadCsv } from './csv';
+import { clinicToday } from '../clinic-clock';
 
 type Rows = Array<Array<string>>;
 
@@ -57,7 +57,7 @@ export function DownloadCsvButton({
     }
     try {
       await recordDownload({ list, columns: headers, rows: built.length, identifiers, filters });
-      downloadCsv(`${name}-${dayjs().format('YYYY-MM-DD')}.csv`, headers, built);
+      downloadCsv(`${name}-${clinicToday()}.csv`, headers, built);
     } catch (e) {
       showSnackbar({
         kind: 'error',

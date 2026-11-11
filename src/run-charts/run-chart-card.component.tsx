@@ -15,6 +15,7 @@ import { MIN_POINTS_FOR_CHART, MIN_POINTS_FOR_MEDIAN, shifts, withValue } from '
 import { pointDetail } from './run-chart-tooltip';
 import { type RunChartParams, useRunChart } from './run-chart.resource';
 import styles from './run-charts.scss';
+import { clinicClock, clinicToday } from '../clinic-clock';
 
 /**
  * The Dashboard's run charts card: the default metric at the primary care clinic chosen, else the cardiac clinic, else
@@ -38,8 +39,8 @@ export function RunChartCard({ scope }: { scope: Record<string, string> }) {
     : {
         metric: defaultMetric,
         clinic: clinic || null,
-        startDate: dayjs().subtract(12, 'month').format('YYYY-MM-DD'),
-        endDate: dayjs().format('YYYY-MM-DD'),
+        startDate: dayjs(clinicClock()).subtract(12, 'month').format('YYYY-MM-DD'),
+        endDate: clinicToday(),
         points: defaultPeriod,
       };
   const chart = useRunChart(params);

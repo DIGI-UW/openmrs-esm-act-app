@@ -86,6 +86,7 @@ import {
   useScreeningSummary,
 } from '../screening-counts/screening-counts.resource';
 import styles from './dashboard.scss';
+import { clinicClock, clinicToday } from '../clinic-clock';
 
 type Scope = Record<string, string>;
 
@@ -511,7 +512,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const registrants = useMemo(() => registrantCounts(registrantsReport.rows), [registrantsReport.rows]);
 
   const cascadeReport = whileLimitRead(useReportDataset(counted ? careCascade.report : null, countParams));
-  const isPast = asOf < dayjs().format('YYYY-MM-DD');
+  const isPast = asOf < clinicToday();
   const { cascade, leftOutToday } = useMemo(() => {
     const steps = cascadeSteps(cascadeReport.rows, careCascade.steps);
     const dated = isPast ? steps.filter(({ step }) => !stepsCountedToday.includes(step)) : steps;
@@ -1215,7 +1216,7 @@ function ScreeningFromRegistrations({
               labelText={t('registeredTo', 'Registered to')}
               value={dayjs(end).toDate()}
               minDate={dayjs(start).toDate()}
-              maxDate={new Date()}
+              maxDate={clinicClock()}
               onChange={pickDate('end')}
             />
           </div>
@@ -1451,7 +1452,7 @@ export default function Dashboard() {
     sessionScope.status === 'ready' ? sessionScope.params : sessionScope.status === 'error' ? {} : 'pending',
   );
   // A plain date, as a zoned midnight reads as the day before on a server behind the browser's time zone.
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = clinicToday();
   const asOf = url.asOf || today;
   const setAsOf = (day: string) => setUrl({ asOf: day === today ? '' : day });
   const scope = useMemo(
@@ -1528,7 +1529,7 @@ export default function Dashboard() {
         <p>
           {t('printedByOn', 'Printed by {{user}} on {{date}}', {
             user: session?.user?.person?.display ?? session?.user?.display ?? '',
-            date: formatDate(new Date(), { noToday: true }),
+            date: formatDate(clinicClock(), { noToday: true }),
           })}
           {' · '}
           {t('countsOnlyNoPatients', 'Counts only, no patient data')}
@@ -1565,7 +1566,7 @@ export default function Dashboard() {
                 labelText={t('figuresAsOf', 'Figures as of')}
                 value={dayjs(asOf).toDate()}
                 minDate={dayjs(earliestAsOf).toDate()}
-                maxDate={new Date()}
+                maxDate={clinicClock()}
                 onChange={(date) => {
                   const day = date && dayjs(date).format('YYYY-MM-DD');
                   // The picker reports a year at each digit typed, as 0002, 0020 and 0202 on the way to 2026.

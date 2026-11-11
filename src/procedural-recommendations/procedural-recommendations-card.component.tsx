@@ -23,6 +23,7 @@ import { type Config } from '../config-schema';
 import { useChartEncounters } from '../consultations/consultations.resource';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import styles from '../styles/summary-card.scss';
+import { clinicToday } from '../clinic-clock';
 
 const day = (value: string) => formatDate(dayjs(value).toDate(), { time: false, noToday: true });
 
@@ -53,7 +54,7 @@ export default function ProceduralRecommendationsCard({ patientUuid }: { patient
     return null;
   }
 
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = clinicToday();
   const bandOf = (recommendation: ProceduralRecommendation) =>
     urgencyBands.find((band) => band.concept === recommendation.urgencyConcept);
   const dueOf = (recommendation: ProceduralRecommendation) => {

@@ -29,6 +29,7 @@ import { restErrorMessage } from '../rest-error-message';
 import { downloadCsv } from '../table-filters/csv';
 import { downloadForm, useDownloadForms, useFormFields } from './download.resource';
 import styles from './download.scss';
+import { clinicToday } from '../clinic-clock';
 
 const isoDate = (date: Date | null) => (date ? dayjs(date).format('YYYY-MM-DD') : null);
 
@@ -81,7 +82,7 @@ export default function DownloadData() {
         return;
       }
       const name = (form?.name ?? 'download').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      downloadCsv(`${name}-${dayjs().format('YYYY-MM-DD')}.csv`, result.headers, result.rows);
+      downloadCsv(`${name}-${clinicToday()}.csv`, result.headers, result.rows);
     } catch (e) {
       showSnackbar({
         kind: 'error',

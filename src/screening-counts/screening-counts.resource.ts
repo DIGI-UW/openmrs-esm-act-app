@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import useSWR, { type ScopedMutator } from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { clinicClock } from '../clinic-clock';
 
 export const settings = ['school', 'community', 'facility'] as const;
 export const metrics = ['screened', 'children', 'adolescents', 'adults', 'females', 'positive'] as const;
@@ -45,7 +46,7 @@ export const screeningMonthsOffered = 36;
 
 /** This month and the ones before it, newest first, as YYYY-MM. */
 export const recentMonths = (count: number) =>
-  Array.from({ length: count }, (_, back) => dayjs().subtract(back, 'month').format('YYYY-MM'));
+  Array.from({ length: count }, (_, back) => dayjs(clinicClock()).subtract(back, 'month').format('YYYY-MM'));
 
 export const monthName = (month: string) => dayjs(`${month}-01`).format('MMMM YYYY');
 

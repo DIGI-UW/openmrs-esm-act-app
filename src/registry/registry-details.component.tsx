@@ -6,11 +6,12 @@ import { useReportDataset, type ReportRow } from '../reports/report-dataset.reso
 import { parseReportDate } from '../reports/report-date';
 import { rankWaitingRows } from '../waiting-list/urgency';
 import styles from './registry.scss';
+import { clinicClock } from '../clinic-clock';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function daysFromToday(date: Date) {
-  const now = new Date();
+  const now = clinicClock();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((date.getTime() - today.getTime()) / DAY_MS);
 }

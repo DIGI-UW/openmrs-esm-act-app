@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, Location } from '@carbon/react/icons';
 import { formatDate, useSession } from '@openmrs/esm-framework';
 import styles from './session-location-and-date.scss';
+import { clinicClock } from '../clinic-clock';
 
 /** The session location and today's date, on the right of every ACT page header. */
 export function SessionLocationAndDate() {
@@ -16,7 +17,7 @@ export function SessionLocationAndDate() {
       )}
       <span className={styles.metaItem}>
         <Calendar size={16} aria-hidden="true" />
-        {formatDate(new Date(), { time: false, noToday: true })}
+        {formatDate(clinicClock(), { time: false, noToday: true })}
       </span>
     </div>
   );

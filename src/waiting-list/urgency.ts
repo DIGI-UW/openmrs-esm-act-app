@@ -1,6 +1,7 @@
 import { type Config } from '../config-schema';
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
+import { clinicClock } from '../clinic-clock';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -32,7 +33,7 @@ export function labelUrgencies(rows: Array<ReportRow>, bands: Config['urgencyBan
 }
 
 /** Each row with its days pending and whether it is past its urgency band's deadline, overdue first, then by band. */
-export function rankWaitingRows(rows: Array<ReportRow>, bands: Config['urgencyBands'], today = new Date()) {
+export function rankWaitingRows(rows: Array<ReportRow>, bands: Config['urgencyBands'], today = clinicClock()) {
   return rows
     .map((row): WaitingRow => {
       const daysPending = daysSince(row.date_added, today);

@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { Button, ButtonSet, InlineLoading, InlineNotification, Select, SelectItem, TextInput } from '@carbon/react';
@@ -15,6 +14,7 @@ import { useChartEncounters } from '../consultations/consultations.resource';
 import { restErrorMessage } from '../rest-error-message';
 import { latestInrEntry, saveInr, type InrEntry } from './inr-edit.resource';
 import styles from './inr-window.scss';
+import { clinicToday } from '../clinic-clock';
 
 const highest = 99;
 
@@ -39,7 +39,7 @@ function EditForm({
   const { inrReviews } = useConfig<Config>();
   const { mutate } = useSWRConfig();
   const initial = {
-    dateTested: entry.dateTested || dayjs().format('YYYY-MM-DD'),
+    dateTested: entry.dateTested || clinicToday(),
     inr: entry.inr === null ? '' : String(entry.inr),
     doseChange: entry.doseChange,
     newDose: entry.newDose,

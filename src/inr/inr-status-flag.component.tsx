@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { pillsClassName } from '../patient-status/status-pill.component';
 import { InrPill, InrValuePill } from '../patient-status/status-pills.component';
 import { useInrReviews } from './inr.resource';
+import { clinicClock } from '../clinic-clock';
 
 /**
  * The patient banner's INR pills, for a living patient on warfarin: the next INR when due or overdue, and the
@@ -12,7 +13,7 @@ export default function InrStatusFlag({ patientUuid, patient }: { patientUuid: s
   const deceased = Boolean(patient?.deceasedBoolean || patient?.deceasedDateTime);
   const { onWarfarin, nextInr, reviews } = useInrReviews(deceased ? null : patientUuid);
   const latest = reviews.find((review) => review.inr !== null);
-  const recent = latest && dayjs(latest.date).isAfter(dayjs().subtract(3, 'month'));
+  const recent = latest && dayjs(latest.date).isAfter(dayjs(clinicClock()).subtract(3, 'month'));
   if (deceased || !onWarfarin) {
     return null;
   }

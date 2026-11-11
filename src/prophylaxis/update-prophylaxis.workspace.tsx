@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
-import dayjs from 'dayjs';
 import {
   Button,
   ButtonSet,
@@ -26,6 +25,7 @@ import { type Config } from '../config-schema';
 import { restErrorMessage } from '../rest-error-message';
 import { type CurrentPrescription, savePrescription, usePrescription } from './prescription.resource';
 import styles from './update-prophylaxis.scss';
+import { clinicToday } from '../clinic-clock';
 
 const day = (value: string) => formatDate(parseDate(value), { time: false });
 
@@ -44,7 +44,7 @@ function UpdateForm({
   const { prophylaxisUpdate } = useConfig<Config>();
   const { sessionLocation } = useSession();
   const { mutate } = useSWRConfig();
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = clinicToday();
   // The last-started prescription in force, which this edits; any others are carried as they are.
   const main = prescription?.main ?? null;
   const [regimen, setRegimen] = useState(main?.regimen.uuid ?? '');

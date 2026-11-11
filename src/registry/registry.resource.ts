@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
-import dayjs from 'dayjs';
 import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
 import { useSessionClinicScope } from '../session-clinic';
+import { clinicToday } from '../clinic-clock';
 
 /** The registry report's rows: every patient on the registry, as the Registry and the worklists show them. */
 export function useRegistryReport(enabled = true) {
   const { registry } = useConfig<Config>();
-  const params = useMemo(() => ({ startDate: '1900-01-01', endDate: dayjs().format('YYYY-MM-DD') }), []);
+  const params = useMemo(() => ({ startDate: '1900-01-01', endDate: clinicToday() }), []);
   return useReportDataset(enabled ? registry.report : null, params);
 }
 

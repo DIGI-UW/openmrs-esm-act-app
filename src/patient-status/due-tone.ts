@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { formatDate, parseDate } from '@openmrs/esm-framework';
+import { clinicClock } from '../clinic-clock';
 
 export type DueTone = 'red' | 'yellow' | 'green';
 
@@ -7,7 +8,7 @@ export type DueTone = 'red' | 'yellow' | 'green';
 export const DUE_SOON_DAYS = 2;
 
 /** Days from today to a YYYY-MM-DD due date, negative once it has passed. */
-export function daysUntil(nextDue: string, now = new Date()) {
+export function daysUntil(nextDue: string, now = clinicClock()) {
   return dayjs(nextDue).startOf('day').diff(dayjs(now).startOf('day'), 'day');
 }
 
@@ -20,7 +21,7 @@ export function dueTone(days: number): DueTone {
 }
 
 /** 15-Oct, with the year only when it is not this year's. */
-export function shortDate(date: string, now = new Date()) {
+export function shortDate(date: string, now = clinicClock()) {
   const parsed = parseDate(date);
   return formatDate(parsed, { time: false, noToday: true, year: parsed.getFullYear() !== now.getFullYear() });
 }

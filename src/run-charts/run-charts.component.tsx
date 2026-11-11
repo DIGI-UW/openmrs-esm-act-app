@@ -35,6 +35,7 @@ import { HistoryNotice } from './run-chart-history-notice.component';
 import { RunChartLine } from './run-chart-line.component';
 import { type RunChartParams, useRunChart } from './run-chart.resource';
 import styles from './run-charts.scss';
+import { clinicClock } from '../clinic-clock';
 
 const filterKeys = ['metric', 'clinic', 'from', 'to', 'points'] as const;
 const isoDay = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
@@ -128,8 +129,8 @@ export default function RunCharts() {
         ? ('pending' as const)
         : {
             metric: defaultMetric,
-            from: isoDay(dayjs().subtract(12, 'month').toDate()),
-            to: isoDay(new Date()),
+            from: isoDay(dayjs(clinicClock()).subtract(12, 'month').toDate()),
+            to: isoDay(clinicClock()),
             points: defaultPeriod as string,
           },
     [limit.status],
@@ -145,8 +146,8 @@ export default function RunCharts() {
 
   const limited = limit.status === 'ready';
   const metric = isMetric(filters.metric) ? filters.metric : defaultMetric;
-  const from = validDay(filters.from) ? filters.from : isoDay(dayjs().subtract(12, 'month').toDate());
-  const to = validDay(filters.to) ? filters.to : isoDay(new Date());
+  const from = validDay(filters.from) ? filters.from : isoDay(dayjs(clinicClock()).subtract(12, 'month').toDate());
+  const to = validDay(filters.to) ? filters.to : isoDay(clinicClock());
   // A longer range in days is refused, so Day is offered only while the range allows it.
   const longRange = dayjs(to).diff(dayjs(from), 'day') > MOST_DAILY_DAYS;
   const period: RunChartPeriod =
@@ -232,7 +233,10 @@ export default function RunCharts() {
         />
         <div className={styles.notes}>
           <span>
-            {t('runChartCalculated', 'Each point is the figure on its date, worked out from the records as they are now.')}
+            {t(
+              'runChartCalculated',
+              'Each point is the figure on its date, worked out from the records as they are now.',
+            )}
           </span>
         </div>
       </>

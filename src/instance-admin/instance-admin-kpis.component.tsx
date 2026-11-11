@@ -6,6 +6,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import styles from './instance-admin-kpis.scss';
+import { clinicClock, clinicToday } from '../clinic-clock';
 
 const sum = (reportRows: Array<ReportRow>, column: string) =>
   reportRows.reduce((total, row) => total + Number(row[column] ?? 0), 0);
@@ -40,13 +41,13 @@ export function InstanceAdminKpis() {
   // Plain dates, so the server reads them the same whatever its time zone.
   const month = useMemo(
     () => ({
-      startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
-      endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
+      startDate: dayjs(clinicClock()).startOf('month').format('YYYY-MM-DD'),
+      endDate: dayjs(clinicClock()).endOf('month').format('YYYY-MM-DD'),
     }),
     [],
   );
   const week = useMemo(
-    () => ({ startDate: dayjs().subtract(6, 'day').format('YYYY-MM-DD'), endDate: dayjs().format('YYYY-MM-DD') }),
+    () => ({ startDate: dayjs(clinicClock()).subtract(6, 'day').format('YYYY-MM-DD'), endDate: clinicToday() }),
     [],
   );
   const programme = useReportDataset(programmeReport.report, month);

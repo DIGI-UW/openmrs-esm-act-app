@@ -3,6 +3,7 @@ import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { matchesColumns } from '../table-filters/distinct-values';
 import { type FilterDefaults, useUrlFilters } from '../table-filters/url-filters';
+import { clinicClock } from '../clinic-clock';
 
 const keys = ['status', 'cardiac', 'primaryCare', 'category', 'prophylaxis', 'bpg', 'flag', 'q'] as const;
 
@@ -33,7 +34,7 @@ export function useRegistryFilters() {
  * Whole days since the patient joined the flag's list, which ACT Core dates from when it first found the flag raised,
  * from the report's name=YYYY-MM-DD pairs; undefined when the report gives no date.
  */
-export function rowFlagDays(row: ReportRow, flag: string, now = new Date()) {
+export function rowFlagDays(row: ReportRow, flag: string, now = clinicClock()) {
   const pair = String(row.rhd_flag_dates ?? '')
     .split('|')
     .find((p) => p.slice(0, p.lastIndexOf('=')) === flag);

@@ -19,7 +19,23 @@ const link = (description: string, defaultUrl: string) => ({
   _description: description,
 });
 
+const isTimeZone = (zone: string) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const configSchema = {
+  timeZone: {
+    _type: Type.String,
+    _default: 'Africa/Kampala',
+    _description:
+      "The IANA time zone the clinics keep their days in. Today, in every list, report, figure and form date, is this zone's date rather than the laptop's, so it should match the server's ACT_TIME_ZONE.",
+    _validators: [validator(isTimeZone, 'Must be an IANA time zone, such as Africa/Kampala')],
+  },
   clinicLocationTags: {
     cardiac: locationTags('cardiac clinics', ['RHD Tertiary', 'RHD District']),
     primaryCare: locationTags('primary care clinics', ['RHD Community']),
@@ -1036,6 +1052,7 @@ export type EchoField =
   | 'ejectionFraction';
 
 export interface Config {
+  timeZone: string;
   clinicLocationTags: { cardiac: Array<string>; primaryCare: Array<string> };
   clinics: { levels: Array<{ tag: string; level: string }>; types: Array<string>; newClinicTags: Array<string> };
   flagLists: {
