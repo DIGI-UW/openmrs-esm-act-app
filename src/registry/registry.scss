@@ -38,7 +38,7 @@
   }
 }
 
-// A date, which would wrap at its hyphens once the table narrows; its header may still wrap.
+// Keeps a date whole, which would otherwise wrap at its hyphens once the table narrows.
 td.oneLine {
   white-space: nowrap;
 }
