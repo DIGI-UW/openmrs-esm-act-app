@@ -61,7 +61,8 @@ describe('Registry table width', () => {
     expect(sheet()).toMatch(
       /\.table\s*\{[^}]*td:not\(:global\(\.cds--table-expand\)\)[^{]*\{\s*padding-inline: layout\.\$spacing-04;/,
     );
-    expect(sheet()).toMatch(/\.narrow\s*\{\s*padding-inline: layout\.\$spacing-03;/);
+    // td.narrow, not .narrow, which the padding rule for every td outranks.
+    expect(sheet()).toMatch(/td\.narrow\s*\{\s*padding-inline: layout\.\$spacing-03;/);
   });
 
   it('keeps Last updated and Procedure due on one line, as a date wraps at its hyphens once the table narrows', () => {
