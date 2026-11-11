@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styles from './scroll-edges.scss';
 
-/** Wraps a Carbon table and shades each edge it scrolls past, as macOS and touch devices hide the scrollbar. */
+/** Shades each edge of a Carbon table with columns past it, as macOS and touch devices hide the scrollbar. */
 export function ScrollEdges({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: false, end: false });
@@ -17,9 +17,9 @@ export function ScrollEdges({ children }: { children: React.ReactNode }) {
     };
     measure();
     scroller.addEventListener('scroll', measure, { passive: true });
-    // The table too, as a new page of rows changes how wide it is and not the scroller.
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
     observer?.observe(scroller);
+    // Observes the table as well, as a new page of rows widens it but not the scroller.
     const table = scroller.querySelector('table');
     if (table) {
       observer?.observe(table);
