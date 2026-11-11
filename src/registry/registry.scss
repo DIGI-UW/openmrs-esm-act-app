@@ -42,7 +42,7 @@ td.oneLine {
   white-space: nowrap;
 }
 
-// So a flag wraps to two lines at most, rather than a word to a line.
+// Wide enough for a wrapped flag to keep a few words to a line, not one.
 .flagsCell {
   min-width: 9rem;
 }
