@@ -35,6 +35,7 @@ import { DownloadCsvButton } from '../table-filters/download-csv-button.componen
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { usePagedRows } from '../table-filters/paged-rows';
+import { ScrollEdges } from '../table-filters/scroll-edges.component';
 import {
   filterRegistry,
   registryFilterColumns,
@@ -172,6 +173,7 @@ function RegistryTable() {
   const columns: Array<{
     header: string;
     sortKey?: RegistrySort['key'];
+    className?: string;
     render: (row: ReportRow, index: number) => React.ReactNode;
   }> = [
     {
@@ -195,6 +197,7 @@ function RegistryTable() {
     {
       header: t('ageSex', 'Age, sex'),
       sortKey: 'age',
+      className: styles.narrow,
       render: (row) => [text('age_years')(row), text('sex')(row)].filter(Boolean).join(' '),
     },
     { header: t('diagnosis', 'Diagnosis'), render: diagnosis },
@@ -217,15 +220,18 @@ function RegistryTable() {
     {
       header: t('lastUpdated', 'Last updated'),
       sortKey: 'lastUpdated',
+      className: `${styles.narrow} ${styles.oneLine}`,
       render: (row) => reportDate(row.last_updated),
     },
     {
       header: t('procedureDue', 'Procedure due'),
       sortKey: 'procedureDue',
+      className: styles.oneLine,
       render: (row) => reportDate(row.earliest_procedure_due),
     },
     {
       header: t('flags', 'Flags'),
+      className: styles.flagsCell,
       render: (row, index) => <RegistryFlags flags={flagsOf(row)} rowsBelow={results.length - 1 - index} />,
     },
   ];
@@ -309,49 +315,59 @@ function RegistryTable() {
           <p className={styles.legend}>
             {t('notConsentedLegend', 'Patients marked with * have not consented to the registry')}
           </p>
-          <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
-            <TableHead>
-              <TableRow>
-                <TableExpandHeader aria-label={t('details', 'Details')} />
-                {columns.map((column) =>
-                  column.sortKey ? (
-                    <TableHeader key={column.header} {...sortHeaderProps(sort, column.sortKey, setSort)}>
-                      {column.header}
-                    </TableHeader>
-                  ) : (
-                    <TableHeader key={column.header}>{column.header}</TableHeader>
-                  ),
-                )}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {results.map((row, index) => (
-                <React.Fragment key={String(row.patient_uuid)}>
-                  <TableExpandRow
-                    aria-label={t('details', 'Details')}
-                    isExpanded={expanded.has(row.patient_uuid)}
-                    onExpand={() => toggle(row.patient_uuid)}
-                    className={styles.row}
-                    // TableExpandRow passes onClick on to its row, though its props do not declare it.
-                    {...({
-                      onClick: (event) =>
-                        (event.target as HTMLElement).closest('a, button, .cds--popover-container') ||
-                        navigate({ to: chartUrl(row) }),
-                    } as React.HTMLAttributes<HTMLTableRowElement>)}
-                  >
-                    {columns.map((column) => (
-                      <TableCell key={column.header}>{column.render(row, index)}</TableCell>
-                    ))}
-                  </TableExpandRow>
-                  {expanded.has(row.patient_uuid) && (
-                    <TableExpandedRow colSpan={columns.length + 1}>
-                      <RegistryDetails row={row} />
-                    </TableExpandedRow>
+          <ScrollEdges>
+            <Table className={styles.table} size={desktop ? 'sm' : 'lg'} useZebraStyles>
+              <TableHead>
+                <TableRow>
+                  <TableExpandHeader aria-label={t('details', 'Details')} />
+                  {columns.map((column) =>
+                    column.sortKey ? (
+                      <TableHeader
+                        key={column.header}
+                        className={column.className}
+                        {...sortHeaderProps(sort, column.sortKey, setSort)}
+                      >
+                        {column.header}
+                      </TableHeader>
+                    ) : (
+                      <TableHeader key={column.header} className={column.className}>
+                        {column.header}
+                      </TableHeader>
+                    ),
                   )}
-                </React.Fragment>
-              ))}
-            </TableBody>
-          </Table>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {results.map((row, index) => (
+                  <React.Fragment key={String(row.patient_uuid)}>
+                    <TableExpandRow
+                      aria-label={t('details', 'Details')}
+                      isExpanded={expanded.has(row.patient_uuid)}
+                      onExpand={() => toggle(row.patient_uuid)}
+                      className={styles.row}
+                      // TableExpandRow passes onClick on to its row, though its props do not declare it.
+                      {...({
+                        onClick: (event) =>
+                          (event.target as HTMLElement).closest('a, button, .cds--popover-container') ||
+                          navigate({ to: chartUrl(row) }),
+                      } as React.HTMLAttributes<HTMLTableRowElement>)}
+                    >
+                      {columns.map((column) => (
+                        <TableCell key={column.header} className={column.className}>
+                          {column.render(row, index)}
+                        </TableCell>
+                      ))}
+                    </TableExpandRow>
+                    {expanded.has(row.patient_uuid) && (
+                      <TableExpandedRow colSpan={columns.length + 1}>
+                        <RegistryDetails row={row} />
+                      </TableExpandedRow>
+                    )}
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollEdges>
         </>
       ) : (
         <FilterEmptyState message={t('noRegistryMatches', 'No patients to display')} />

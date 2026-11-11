@@ -1,0 +1,32 @@
+@use '@carbon/layout';
+
+.scrollEdges {
+  position: relative;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    z-index: 1;
+    inline-size: layout.$spacing-06;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms;
+  }
+
+  &::before {
+    inset-inline-start: 0;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.2), transparent);
+  }
+
+  &::after {
+    inset-inline-end: 0;
+    background: linear-gradient(to left, rgba(0, 0, 0, 0.2), transparent);
+  }
+
+  &[data-more-start]::before,
+  &[data-more-end]::after {
+    opacity: 1;
+  }
+}

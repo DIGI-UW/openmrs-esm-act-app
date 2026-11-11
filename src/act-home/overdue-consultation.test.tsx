@@ -1,14 +1,20 @@
 import React from 'react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { navigate } from '@openmrs/esm-framework';
 import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import OverdueConsultation from './overdue-consultation.component';
+import { laidOut } from '../table-filters/laid-out.test-helper';
 
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+vi.mock('./overdue-consultation.scss', () => ({
+  default: { description: 'description', tableContainer: 'tableContainer', days: 'days', oneLine: 'oneLine' },
+}));
 
 const daysAgo = (days: number) => dayjs().subtract(days, 'day').format('YYYY-MM-DD');
 
@@ -109,6 +115,32 @@ describe('Overdue for consultation', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Open chart' }));
 
     expect(vi.mocked(navigate)).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient/patient-1/chart' });
+  });
+
+  it('fits half the page: Open chart is a small ghost button, and a name and a header may wrap', () => {
+    registry([row(1, daysAgo(8))]);
+
+    render(<OverdueConsultation />);
+
+    expect(screen.getByRole('button', { name: 'Open chart' })).toHaveClass('cds--btn--ghost', 'cds--btn--sm');
+    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
+    expect(cells.map((cell) => cell.classList.contains('oneLine'))).toEqual([false, true, true, true, true]);
+    const sheet = readFileSync(resolve(process.cwd(), 'src/act-home/overdue-consultation.scss'), 'utf8');
+    expect(sheet).toMatch(/\.oneLine\s*\{[^}]*white-space: nowrap;/);
+    expect(sheet.match(/white-space: nowrap;/g)).toHaveLength(1);
+  });
+
+  it('shows a shadow at the edge it is cut at, when the card is too narrow for the table', () => {
+    registry([row(1, daysAgo(8))]);
+
+    render(<OverdueConsultation />);
+    // eslint-disable-next-line testing-library/no-node-access
+    const scroller = screen.getByRole('table').parentElement;
+    laidOut(scroller, { scrollWidth: 506, clientWidth: 434 });
+    fireEvent.scroll(scroller);
+
+    expect(scroller).toHaveClass('cds--data-table-content');
+    expect(screen.getByTestId('scroll-edges')).toHaveAttribute('data-more-end');
   });
 
   it('says so when nobody is overdue', () => {

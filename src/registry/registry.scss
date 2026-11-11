@@ -16,6 +16,37 @@
   cursor: pointer;
 }
 
+// Under Carbon's 16 px each side, so the table fits a 1440 px page; a sortable header pads its button, not itself.
+.table {
+  td:not(:global(.cds--table-expand)),
+  th:not(:global(.cds--table-expand)):not([aria-sort]) {
+    padding-inline: layout.$spacing-04;
+  }
+
+  :global(.cds--table-sort) {
+    padding-inline-start: layout.$spacing-04;
+  }
+
+  // Age, sex and Last updated, whose header is wider than what they hold.
+  td.narrow {
+    padding-inline: layout.$spacing-03;
+  }
+
+  .narrow:global(.cds--table-sort) {
+    padding-inline-start: layout.$spacing-03;
+  }
+}
+
+// A date, which would wrap at its hyphens once the table narrows; its header may still wrap.
+td.oneLine {
+  white-space: nowrap;
+}
+
+// So a flag wraps to two lines at most, rather than a word to a line.
+.flagsCell {
+  min-width: 9rem;
+}
+
 .message {
   @include type.type-style('body-01');
   padding: layout.$spacing-05;
@@ -32,6 +63,16 @@
 // Carbon has no yellow tag, so No prescription is drawn in Carbon's yellow here.
 .noPrescription {
   @include act-yellow-tag;
+}
+
+// A long flag wraps rather than being cut off at Carbon's tag width.
+.flagTag:global(.cds--tag) {
+  max-inline-size: none;
+
+  :global(.cds--tag__label) {
+    white-space: normal;
+    overflow: visible;
+  }
 }
 
 // Carbon has no orange tag, so missing data flags are drawn in Carbon's orange here.

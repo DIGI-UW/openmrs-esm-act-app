@@ -19,6 +19,7 @@ import { bothClinics, onRegistryNow, useRegistryReport, useSessionClinicReport }
 import { type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { TableEmptyState } from '../table-filters/empty-state.component';
+import { ScrollEdges } from '../table-filters/scroll-edges.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { ActHomeCard } from './act-home-card.component';
 import { PatientCell } from '../patient-cell/patient-cell.component';
@@ -101,37 +102,41 @@ export default function OverdueConsultation() {
       ) : (
         <>
           <div className={styles.tableContainer}>
-            <Table size={desktop ? 'sm' : 'lg'}>
-              <TableHead>
-                <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader key={header}>{header}</TableHeader>
-                  ))}
-                  <TableHeader aria-label={t('actions', 'Actions')} />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {results.map(({ row, lastConsultation, wasDue, days }) => (
-                  <TableRow key={String(row.patient_uuid)}>
-                    <TableCell>
-                      <PatientCell row={row} />
-                    </TableCell>
-                    <TableCell>{date(lastConsultation)}</TableCell>
-                    <TableCell>{date(wasDue)}</TableCell>
-                    <TableCell className={styles.days}>{t('daysCount', '{{count}} days', { count: days })}</TableCell>
-                    <TableCell>
-                      <Button
-                        kind="tertiary"
-                        size="sm"
-                        onClick={() => navigate({ to: patientChartUrl(row.patient_uuid) })}
-                      >
-                        {t('openChart', 'Open chart')}
-                      </Button>
-                    </TableCell>
+            <ScrollEdges>
+              <Table size={desktop ? 'sm' : 'lg'}>
+                <TableHead>
+                  <TableRow>
+                    {headers.map((header) => (
+                      <TableHeader key={header}>{header}</TableHeader>
+                    ))}
+                    <TableHeader aria-label={t('actions', 'Actions')} />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {results.map(({ row, lastConsultation, wasDue, days }) => (
+                    <TableRow key={String(row.patient_uuid)}>
+                      <TableCell>
+                        <PatientCell row={row} />
+                      </TableCell>
+                      <TableCell className={styles.oneLine}>{date(lastConsultation)}</TableCell>
+                      <TableCell className={styles.oneLine}>{date(wasDue)}</TableCell>
+                      <TableCell className={`${styles.days} ${styles.oneLine}`}>
+                        {t('daysCount', '{{count}} days', { count: days })}
+                      </TableCell>
+                      <TableCell className={styles.oneLine}>
+                        <Button
+                          kind="ghost"
+                          size="sm"
+                          onClick={() => navigate({ to: patientChartUrl(row.patient_uuid) })}
+                        >
+                          {t('openChart', 'Open chart')}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollEdges>
           </div>
           {overdue.length > paginationProps.pageSizes[0] && <Pagination {...paginationProps} />}
         </>
