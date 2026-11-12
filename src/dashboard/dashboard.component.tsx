@@ -442,52 +442,83 @@ const stepsCountedToday = ['Covered today', ...adherentSteps];
 const earliestAsOf = '1900-01-01';
 // The design's order; a measure it does not name, such as consultations, comes last.
 const measureOrder = ['retainedInCare', 'echocardiogram', 'interventionAssigned', 'interventions', 'warfarin'];
+// The one optimisation measure the Procedural waitlist draws; its title carries the patients waiting instead of a bar.
+const drawnWaitlistMeasure = 'interventions';
 
 type Measure = { measure: string; label: string; done: number; notDone: number | null };
 
-function MeasureBars({ measures, name, testId }: { measures: Array<Measure>; name: string; testId: string }) {
+/**
+ * Each measure's done and not done of the active registrants or, for the waitlist's one measure, the recommendations
+ * done and still waiting.
+ */
+function MeasureBars({
+  measures,
+  name,
+  testId,
+  unit = 'patients',
+}: {
+  measures: Array<Measure>;
+  name: string;
+  testId: string;
+  unit?: 'patients' | 'recommendations';
+}) {
   const { t } = useTranslation();
+  const waiting = unit === 'recommendations';
   return (
     <SegmentedBars
       name={name}
       segments={[
         { label: t('done', 'Done'), colour: doneColours[0] },
-        { label: t('notDone', 'Not done'), colour: doneColours[1] },
+        { label: waiting ? t('stillWaiting', 'Still waiting') : t('notDone', 'Not done'), colour: doneColours[1] },
       ]}
       rows={measures
         .filter((measure): measure is Measure & { notDone: number } => measure.notDone !== null)
-        .map((measure) => ({
-          key: measure.measure,
-          label: measure.label,
-          values: [measure.done, measure.notDone],
-          end: (
-            <>
-              <span className={styles.share}>{share(measure.done, measure.done + measure.notDone)}%</span>
-              <span className={styles.doneNotDone}>
-                <Trans
-                  t={t}
-                  i18nKey="doneNotDoneOf"
-                  defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
-                  values={{ done: measure.done, notDone: measure.notDone, total: measure.done + measure.notDone }}
-                  components={{
-                    done: (
-                      <CountLink
-                        value={measure.done}
-                        figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
-                      />
-                    ),
-                    notDone: (
-                      <CountLink
-                        value={measure.notDone}
-                        figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
-                      />
-                    ),
-                  }}
-                />
-              </span>
-            </>
-          ),
-        }))}
+        .map((measure) => {
+          const values = { done: measure.done, notDone: measure.notDone, total: measure.done + measure.notDone };
+          const links = {
+            done: (
+              <CountLink
+                value={measure.done}
+                figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
+              />
+            ),
+            notDone: (
+              <CountLink
+                value={measure.notDone}
+                figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
+              />
+            ),
+          };
+          return {
+            key: measure.measure,
+            label: measure.label,
+            values: [measure.done, measure.notDone],
+            end: (
+              <>
+                <span className={styles.share}>{share(measure.done, measure.done + measure.notDone)}%</span>
+                <span className={styles.doneNotDone}>
+                  {waiting ? (
+                    <Trans
+                      t={t}
+                      i18nKey="doneStillWaitingOfRecommendations"
+                      defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> still waiting, of {{total}} recommendations"
+                      values={values}
+                      components={links}
+                    />
+                  ) : (
+                    <Trans
+                      t={t}
+                      i18nKey="doneNotDoneOf"
+                      defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
+                      values={values}
+                      components={links}
+                    />
+                  )}
+                </span>
+              </>
+            ),
+          };
+        })}
       whole
       testId={testId}
     />
@@ -542,7 +573,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       return { measure: String(row.measure), label: measureLabel(t, String(row.measure)), done, notDone };
     })
     .sort((a, b) => (measureOrder.indexOf(a.measure) + 1 || 99) - (measureOrder.indexOf(b.measure) + 1 || 99));
-  const waitlistFigures = measures.filter((measure) => waitlistMeasures.includes(measure.measure));
+  const waitlistFigures = measures.filter((measure) => measure.measure === drawnWaitlistMeasure);
   const onlyWaitlistFigures = Boolean(waitlistReport.error) && !optimisationReport.error && waitlistFigures.length > 0;
   const optimisationMeasures = measures.filter((measure) => !waitlistMeasures.includes(measure.measure));
 
@@ -600,7 +631,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
     'Of the {{count}} active registrants, unless a row says otherwise',
     { count: registrants.active },
   );
-  const measureRows = (sectionName: string, list: Array<Measure>) =>
+  const measureRows = (sectionName: string, list: Array<Measure>, notDone = t('notDone', 'Not done')) =>
     list.flatMap((measure) =>
       countRows(
         sectionName,
@@ -609,7 +640,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           ? [{ label: '', value: measure.done }]
           : [
               { label: t('done', 'Done'), value: measure.done },
-              { label: t('notDone', 'Not done'), value: measure.notDone },
+              { label: notDone, value: measure.notDone },
             ],
         asOf,
       ),
@@ -673,7 +704,9 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         ),
       ),
     ]),
-    ...loaded(optimisationReport, () => measureRows(waitlistSection, waitlistFigures)),
+    ...loaded(optimisationReport, () =>
+      measureRows(waitlistSection, waitlistFigures, t('stillWaiting', 'Still waiting')),
+    ),
     ...loaded(waitlistReport, () => [
       ...countRows(
         waitlistSection,
@@ -838,13 +871,19 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           </div>
         </Section>
         <Section
-          title={t('proceduralWaitlistPatients', 'Procedural waitlist: {{count}} patients', {
-            count: waitlist.patients,
-          })}
+          title={
+            registrantsReport.error
+              ? t('proceduralWaitlistPatients', 'Procedural waitlist: {{count}} patients', { count: waitlist.patients })
+              : t(
+                  'proceduralWaitlistOfActive',
+                  'Procedural waitlist: {{count}} of {{active}} active patients are waiting for a procedure',
+                  { count: waitlist.patients, active: registrants.active },
+                )
+          }
           name={t('proceduralWaitlist', 'Procedural waitlist')}
           description={t(
             'waitlistDescription',
-            "Open recommendations in each active patient's latest consultation by urgency, and how many recommended procedures are done",
+            "Open recommendations in each active patient's latest consultation, by urgency",
           )}
           state={
             onlyWaitlistFigures
@@ -935,9 +974,8 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           )}
           {optimisationReport.error ? (
             <p className={styles.performed}>
-              {t('waitlistFiguresCouldNotLoad', '{{open}} and {{done}} could not load', {
-                open: measureLabel(t, waitlistMeasures[0]),
-                done: measureLabel(t, waitlistMeasures[1]),
+              {t('waitlistFigureCouldNotLoad', '{{figure}} could not load', {
+                figure: measureLabel(t, drawnWaitlistMeasure),
               })}
             </p>
           ) : (
@@ -947,8 +985,8 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   measures={waitlistFigures}
                   name={t('recommendationOutcome', 'Recommendation outcome')}
                   testId="dashboard-procedure-measure"
+                  unit="recommendations"
                 />
-                <p className={styles.performed}>{ofTheActive}</p>
               </>
             )
           )}
