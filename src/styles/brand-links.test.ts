@@ -38,13 +38,13 @@ describe("ACT's links take the configured brand colours", () => {
     const style = document.documentElement.style;
     expect(style.getPropertyValue('--cds-link-primary')).toBe('var(--brand-01)');
     expect(style.getPropertyValue('--cds-link-primary-hover')).toBe('var(--brand-02)');
-    expect(style.getPropertyValue('--cds-link-visited')).toBe('var(--brand-01)');
     expect(style.getPropertyValue('--cds-link-inverse')).toBe('color-mix(in srgb, var(--brand-01) 40%, white)');
+    expect(style.getPropertyValue('--cds-link-inverse-hover')).toBe('color-mix(in srgb, var(--brand-01) 25%, white)');
   }, 20000);
 
-  it('draws a standalone link without an underline until it is hovered', () => {
-    expect(sheet('src/styles/links.scss')).toMatch(
-      /\.standalone\s*\{\s*text-decoration: none;\s*&:hover\s*\{\s*text-decoration: underline;/,
+  it('underlines the counts inside the Dashboard\'s "done, not done" sentence', () => {
+    expect(sheet('src/dashboard/dashboard.scss')).toMatch(
+      /\.doneNotDone :global\(\.cds--link\)\s*\{[^}]*text-decoration: underline;/,
     );
   });
 

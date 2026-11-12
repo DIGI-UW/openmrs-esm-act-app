@@ -1,4 +1,4 @@
-// A link that stands alone, as Carbon draws its own: no underline until hovered. A link inside a sentence keeps it.
+// Only for a link that stands alone; a link inside a sentence keeps its underline.
 .standalone {
   text-decoration: none;
 

@@ -667,6 +667,11 @@
   display: inline;
 }
 
+// These counts sit inside a sentence, so they keep a link's underline; the figures on their own do not.
+.doneNotDone :global(.cds--link) {
+  text-decoration: underline;
+}
+
 .tableContainer {
   overflow-x: auto;
 }
