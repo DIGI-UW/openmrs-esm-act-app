@@ -135,13 +135,14 @@ function useStable<T>(value: T): T {
 // Carbon cuts a long label short by default, and names sharing a prefix then read the same.
 const whole = { type: TruncationTypes.NONE };
 
-export function CountLink({ value, figure }: { value: number | string; figure?: Figure }) {
+export function CountLink({ value, figure, inline }: { value: number | string; figure?: Figure; inline?: boolean }) {
   const links = useContext(FigureLinks);
   if (!figure || !links) {
     return <>{value}</>;
   }
   return (
     <Link
+      inline={inline}
       href={links.href(figure)}
       onClick={(event) => {
         if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {

@@ -42,17 +42,14 @@ describe("ACT's links take the configured brand colours", () => {
     expect(style.getPropertyValue('--cds-link-inverse-hover')).toBe('color-mix(in srgb, var(--brand-01) 25%, white)');
   }, 20000);
 
-  it('underlines the counts inside the Dashboard\'s "done, not done" sentence', () => {
-    expect(sheet('src/dashboard/dashboard.scss')).toMatch(
-      /\.doneNotDone :global\(\.cds--link\)\s*\{[^}]*text-decoration: underline;/,
-    );
-  });
-
+  // A text match: it misses a fixed colour by any other name, such as colors.$teal-60 or #78a9ff.
   it.each([
     'src/dashboard/dashboard.scss',
     'src/run-charts/run-charts.scss',
     'src/instance-admin/instance-admin-kpis.scss',
-  ])('takes accents in %s from the brand colours, not Carbon blue or a fixed teal', (path) => {
-    expect(sheet(path)).not.toMatch(/\$interactive-01|colors\.\$teal-70|\$brand-0\d\b(?!\()/);
+  ])("names none of Carbon's blue tokens, teal-70 or O3's compiled $brand-0N in %s", (path) => {
+    expect(sheet(path)).not.toMatch(
+      /\$interactive\b|\$focus(?![\w-])|\$link-|colors\.\$blue-\d|#0f62fe|colors\.\$teal-70|\$brand-0\d/i,
+    );
   });
 });

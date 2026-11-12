@@ -6,7 +6,7 @@ import { localDay, type RunChartPoint, type Shift, withValue } from './run-chart
 import { pointDetail, pointTitle } from './run-chart-tooltip';
 import styles from './run-charts.scss';
 
-const teal = '#005d5d';
+const brand = 'var(--brand-01)';
 const purple = '#8a3ffc';
 const green = '#a7f0ba';
 
@@ -81,7 +81,7 @@ export function RunChartLine({
     resizable: true,
     toolbar: { enabled: false },
     legend: { enabled: !compact },
-    color: { scale: { [valueGroup]: teal, ...(medianGroup ? { [medianGroup]: purple } : {}) } },
+    color: { scale: { [valueGroup]: brand, ...(medianGroup ? { [medianGroup]: purple } : {}) } },
     points: { enabled: true, radius: 3 },
     axes: {
       bottom: {

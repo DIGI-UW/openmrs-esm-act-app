@@ -1349,6 +1349,20 @@ describe('Dashboard', () => {
       expect(headers).not.toContain('Procedural waitlist');
     });
 
+    it("draws the counts inside a sentence as Carbon's inline link, underlined", async () => {
+      await signIn(undefined, figureRows);
+      renderPage();
+
+      const [, done] = await screen.findAllByTestId('dashboard-procedure-measure');
+      const sentenceLinks = [
+        ...within(done).getAllByRole('link'),
+        ...within(await screen.findByTestId('dashboard-performed')).getAllByRole('link'),
+      ];
+      expect(sentenceLinks).toHaveLength(4);
+      sentenceLinks.forEach((link) => expect(link).toHaveClass('cds--link--inline'));
+      expect(within(screen.getAllByTestId('dashboard-tile')[0]).getByRole('link')).not.toHaveClass('cds--link--inline');
+    });
+
     it('widens a performed figure to every procedure performed, not to the open waitlist', async () => {
       await signIn(undefined, figureRows);
       window.history.replaceState(

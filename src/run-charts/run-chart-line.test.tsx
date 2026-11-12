@@ -48,6 +48,17 @@ describe('RunChartLine drawn by Carbon', () => {
     expect(within(screen.getByRole('group', { name: 'Data groups' })).getByText('Median 30')).toBeInTheDocument();
   });
 
+  it("draws the value's line in O3's configured Brand color #1", () => {
+    render(<RunChartLine name="Retained" points={days(12)} median={30} shifts={[]} period="day" kind="count" />);
+
+    const symbols = screen.getAllByRole('graphics-symbol');
+    const valueLine = symbols.find(
+      (symbol) =>
+        symbol.getAttribute('aria-roledescription') === 'line' && symbol.getAttribute('aria-label')?.startsWith('20,'),
+    );
+    expect(valueLine?.style.stroke).toBe('var(--brand-01)');
+  });
+
   it('keeps the median dashed when the median changes while the chart stays mounted', () => {
     const { rerender } = render(
       <RunChartLine name="Retained" points={days(12)} median={30} shifts={[]} period="day" kind="count" />,

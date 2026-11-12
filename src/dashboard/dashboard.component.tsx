@@ -472,12 +472,14 @@ function MeasureBars({ measures, name, testId }: { measures: Array<Measure>; nam
                   components={{
                     done: (
                       <CountLink
+                        inline
                         value={measure.done}
                         figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'done' }}
                       />
                     ),
                     notDone: (
                       <CountLink
+                        inline
                         value={measure.notDone}
                         figure={{ figure: 'optimisation', measure: measure.measure, outcome: 'notDone' }}
                       />
@@ -963,6 +965,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   components={{
                     bmv: (
                       <CountLink
+                        inline
                         value={waitlist.performed.bmv}
                         figure={{
                           figure: 'waitlist',
@@ -973,6 +976,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                     ),
                     surgery: (
                       <CountLink
+                        inline
                         value={waitlist.performed.surgery}
                         figure={{ figure: 'waitlist', breakdown: 'performed', procedure: 'Surgery' }}
                       />
