@@ -489,7 +489,9 @@ describe('Dashboard', () => {
 
     renderPage();
 
-    expect(await screen.findByText('Procedural waitlist: 2 patients')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Procedural waitlist: 2 of 3 active patients are waiting for a procedure'),
+    ).toBeInTheDocument();
     expect(texts('dashboard-waitlist-total')).toEqual(['Balloon valvuloplasty1', 'Mitral valve repair/replacement2']);
     expect(segmentsOf('dashboard-waitlist-total')).toEqual([[`${EMERGENT}: 1`], [`${EMERGENT}: 1`, `${URGENT}: 1`]]);
     expect(screen.queryByTestId('dashboard-waitlist-row')).not.toBeInTheDocument();
@@ -545,7 +547,7 @@ describe('Dashboard', () => {
     expect(keyColours('Outcome')).toEqual({ Done: '#009d9a', 'Not done': '#d0e2ff' });
   });
 
-  it('draws the open and done procedural recommendations in the Procedural waitlist, with their counts', async () => {
+  it('draws the recommendations done in the Procedural waitlist, and counts the patients waiting in its title', async () => {
     await signIn();
 
     renderPage();
@@ -556,19 +558,12 @@ describe('Dashboard', () => {
       within(waitlist)
         .getAllByTestId('dashboard-procedure-measure')
         .map((row) => row.textContent),
-    ).toEqual([
-      'Open procedural recommendation20%2 done, 8 not done, of 10',
-      'Recommended procedures done25%1 done, 3 not done, of 4',
-    ]);
+    ).toEqual(['Latest recommendations carried out25%1 done, 3 still waiting, of 4 recommendations']);
+    expect(within(waitlist).queryByText(/unless a row says otherwise/)).not.toBeInTheDocument();
     expect(
-      within(waitlist).getByText(/^Of the 3 active registrants, unless a row says otherwise$/),
+      within(waitlist).getByText("Open recommendations in each active patient's latest consultation, by urgency"),
     ).toBeInTheDocument();
-    expect(
-      within(waitlist).getByText(
-        "Open recommendations in each active patient's latest consultation by urgency, and how many recommended procedures are done",
-      ),
-    ).toBeInTheDocument();
-    expect(segmentsOf('dashboard-procedure-measure')[0]).toEqual(['Done: 2', 'Not done: 8']);
+    expect(segmentsOf('dashboard-procedure-measure')[0]).toEqual(['Done: 1', 'Still waiting: 3']);
   });
 
   describe('when nobody is waiting for a procedure', () => {
@@ -583,16 +578,14 @@ describe('Dashboard', () => {
       await signIn(undefined, nobodyWaiting);
       renderPage();
 
-      expect(await screen.findAllByTestId('dashboard-procedure-measure')).toHaveLength(2);
+      expect(await screen.findAllByTestId('dashboard-procedure-measure')).toHaveLength(1);
     });
 
     it('still says the recommendation figures could not load when their report fails', async () => {
       await signIn(OPTIMISATION, nobodyWaiting);
       renderPage();
 
-      expect(
-        await screen.findByText('Open procedural recommendation and Recommended procedures done could not load'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Latest recommendations carried out could not load')).toBeInTheDocument();
     });
   });
 
@@ -609,7 +602,7 @@ describe('Dashboard', () => {
     });
     renderPage();
 
-    expect(await screen.findAllByTestId('dashboard-procedure-measure')).toHaveLength(2);
+    expect(await screen.findAllByTestId('dashboard-procedure-measure')).toHaveLength(1);
     expect(within(exportSection('optimisation')).getByText('No patients to count')).toBeInTheDocument();
     expect(screen.queryByTestId('dashboard-measure')).not.toBeInTheDocument();
   });
@@ -736,7 +729,7 @@ describe('Dashboard', () => {
     await userEvent.selectOptions(await screen.findByLabelText('Cardiac clinic'), 'lira');
 
     expect(await screen.findByText('Active registrants: 1')).toBeInTheDocument();
-    expect(screen.getByText(/^Procedural waitlist: 1 patient/)).toBeInTheDocument();
+    expect(screen.getByText(/^Procedural waitlist: 1 of 1 active patients /)).toBeInTheDocument();
     [CARE_CASCADE, OPTIMISATION, SCREENING, DIAGNOSES, REGISTRANTS, DASHBOARD_WAITLIST].forEach((report) =>
       expect(paramsOf(report)).toEqual({ endDate: today, cardiacClinic: 'lira' }),
     );
@@ -775,10 +768,8 @@ describe('Dashboard', () => {
     renderPage();
 
     expect(await screen.findByText('Medical optimisation could not load')).toBeInTheDocument();
-    // The waitlist draws two of this report's figures, so it flags them and keeps its own counts.
-    expect(
-      screen.getByText('Open procedural recommendation and Recommended procedures done could not load'),
-    ).toBeInTheDocument();
+    // The waitlist draws one of this report's figures, so it flags it and keeps its own counts.
+    expect(screen.getByText('Latest recommendations carried out could not load')).toBeInTheDocument();
     expect(screen.getAllByText(/ could not load$/)).toHaveLength(2);
     expect(screen.getAllByTestId('dashboard-waitlist-total')).toHaveLength(2);
     expect(texts('dashboard-status')).toEqual(['Active375%', 'Voluntary inactivity125%']);
@@ -820,10 +811,7 @@ describe('Dashboard', () => {
       within(waitlist)
         .getAllByTestId('dashboard-procedure-measure')
         .map((row) => row.textContent),
-    ).toEqual([
-      'Open procedural recommendation20%2 done, 8 not done, of 10',
-      'Recommended procedures done25%1 done, 3 not done, of 4',
-    ]);
+    ).toEqual(['Latest recommendations carried out25%1 done, 3 still waiting, of 4 recommendations']);
     expect(within(waitlist).queryByTestId('dashboard-performed')).not.toBeInTheDocument();
 
     await userEvent.click(within(waitlist).getByRole('button', { name: 'Try again' }));
@@ -907,7 +895,7 @@ describe('Dashboard', () => {
     });
     renderPage();
 
-    await screen.findByText(/^Procedural waitlist: 1 patient/);
+    await screen.findByText(/^Procedural waitlist: 1 of /);
     expect(keyColours('Urgency')).toEqual({ [URGENT]: '#eb6200' });
   });
 
@@ -921,7 +909,7 @@ describe('Dashboard', () => {
     await signIn(undefined, waitlistOf('2 - within 1 month', URGENT));
     const { unmount } = renderPage();
 
-    await screen.findByText(/^Procedural waitlist: 2 patients/);
+    await screen.findByText(/^Procedural waitlist: 2 of /);
     expect(keyColours('Urgency')).toEqual({ '2 - within 1 month': '#8a3800', [URGENT]: '#eb6200' });
     unmount();
 
@@ -1038,7 +1026,7 @@ describe('Dashboard', () => {
     });
     renderPage();
 
-    await screen.findByText(/^Procedural waitlist: 2 patient/);
+    await screen.findByText(/^Procedural waitlist: 2 of /);
     expect(keyColours('Urgency')).toEqual({ [URGENT]: '#eb6200', 'Not given': '#8d8d8d' });
   });
 
@@ -1334,18 +1322,20 @@ describe('Dashboard', () => {
       await signIn(undefined, figureRows);
       renderPage();
 
-      const [, done] = await screen.findAllByTestId('dashboard-procedure-measure');
+      const [done] = await screen.findAllByTestId('dashboard-procedure-measure');
       await userEvent.click(within(done).getByRole('link', { name: '1' }));
 
       expect(
-        await screen.findByText(/^Opened from the Dashboard: Procedural waitlist, Recommended procedures done, /),
+        await screen.findByText(
+          /^Opened from the Dashboard: Procedural waitlist, Latest recommendations carried out, /,
+        ),
       ).toBeInTheDocument();
       expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual(
         expect.objectContaining({ measure: 'interventions', outcome: 'done' }),
       );
       // Its Done and Not done values are the measure's, so the column is headed by the measure.
       const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-      expect(headers).toContain('Recommended procedures done');
+      expect(headers).toContain('Latest recommendations carried out');
       expect(headers).not.toContain('Procedural waitlist');
     });
 
@@ -1709,8 +1699,7 @@ describe('Dashboard', () => {
         expect.arrayContaining([
           ['Key figures', '', 'Registered', '4', today, 'every clinic'],
           ['Registrant status', '', 'Voluntary inactivity', '1', today, 'every clinic'],
-          ['Procedural waitlist', 'Open procedural recommendation', 'Done', '2', today, 'every clinic'],
-          ['Procedural waitlist', 'Recommended procedures done', 'Not done', '3', today, 'every clinic'],
+          ['Procedural waitlist', 'Latest recommendations carried out', 'Still waiting', '3', today, 'every clinic'],
           [
             'Procedural waitlist',
             'Performed in the last 12 months',
@@ -1740,8 +1729,7 @@ describe('Dashboard', () => {
       expect(groupsOf('Procedural waitlist')).toEqual([
         'Balloon valvuloplasty',
         'Mitral valve repair/replacement',
-        'Open procedural recommendation',
-        'Recommended procedures done',
+        'Latest recommendations carried out',
         'Performed in the last 12 months',
       ]);
       expect(groupsOf('Medical optimisation')).toEqual([
@@ -1771,7 +1759,7 @@ describe('Dashboard', () => {
       const rows = downloaded()[2];
       expect([
         ...new Set(rows.filter(([section]) => section === 'Procedural waitlist').map(([, group]) => group)),
-      ]).toEqual(['Open procedural recommendation', 'Recommended procedures done']);
+      ]).toEqual(['Latest recommendations carried out']);
       expect(rows.some(([section]) => section === 'Medical optimisation')).toBe(true);
     });
 
