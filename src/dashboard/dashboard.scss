@@ -667,7 +667,7 @@
   display: inline;
 }
 
-// These counts sit inside a sentence, so they keep a link's underline; the figures on their own do not.
+// Underlined because these counts sit inside a sentence, where a bare Carbon link would not read as a link.
 .doneNotDone :global(.cds--link) {
   text-decoration: underline;
 }
