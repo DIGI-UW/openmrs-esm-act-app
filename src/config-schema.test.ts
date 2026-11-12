@@ -174,7 +174,6 @@ describe('configSchema', () => {
           allergy: 'cd73e118-64ee-5855-b276-f7cb44fdcf7e',
           complication: 'a04d2268-a7de-589f-b4b6-92c47c13e342',
           recommendation: 'ce93d393-1df5-587f-bf11-c373eac2ccf4',
-          completed: '1632f8dc-195d-5d67-a52e-6c7a057cb536',
           procedureType: '3a576b80-744a-59ee-9515-d9fdca06f3d7',
           urgency: '7b8eda07-34b6-55f2-ab6c-1b295f41918b',
         },

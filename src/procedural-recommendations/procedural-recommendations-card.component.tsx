@@ -61,7 +61,7 @@ export default function ProceduralRecommendationsCard({ patientUuid }: { patient
     return band ? dayjs(recommendation.recommended).add(band.deadlineDays, 'day').format('YYYY-MM-DD') : null;
   };
   const statusOf = (recommendation: ProceduralRecommendation): Status => {
-    if (recommendation.doneOn || recommendation.markedCompleted) {
+    if (recommendation.doneOn) {
       return 'done';
     }
     const due = dueOf(recommendation);
@@ -119,9 +119,7 @@ export default function ProceduralRecommendationsCard({ patientUuid }: { patient
                     <TableCell>
                       {status === 'done' ? (
                         <Tag size="sm" type="green">
-                          {recommendation.doneOn
-                            ? t('procedureDoneOn', 'Done {{date}}', { date: day(recommendation.doneOn) })
-                            : t('procedureDone', 'Done')}
+                          {t('procedureDoneOn', 'Done {{date}}', { date: day(recommendation.doneOn) })}
                         </Tag>
                       ) : status === 'overdue' ? (
                         <Tag size="sm" type="red">
