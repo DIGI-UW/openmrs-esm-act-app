@@ -7,6 +7,6 @@ export function linkColoursFromBrand() {
   style.setProperty('--cds-link-primary', 'var(--brand-01)');
   style.setProperty('--cds-link-primary-hover', 'var(--brand-02)');
   style.setProperty('--cds-link-visited', 'var(--brand-01)');
-  // A light shade for links on a dark surface, such as a toggletip, where every brand colour is too dark to read.
+  // Lighter, for links on a dark surface such as a toggletip, where a dark brand colour would not read.
   style.setProperty('--cds-link-inverse', 'color-mix(in srgb, var(--brand-01) 40%, white)');
 }

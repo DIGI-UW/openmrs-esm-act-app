@@ -30,6 +30,7 @@ describe("ACT's links take the configured brand colours", () => {
     document.documentElement.removeAttribute('style');
   });
 
+  // Longer than the default timeout, as importing index loads every lifecycle's module graph.
   it("points Carbon's link colours at O3's brand colours when ACT starts", async () => {
     const { startupApp } = await import('../index');
     startupApp();
@@ -39,7 +40,6 @@ describe("ACT's links take the configured brand colours", () => {
     expect(style.getPropertyValue('--cds-link-primary-hover')).toBe('var(--brand-02)');
     expect(style.getPropertyValue('--cds-link-visited')).toBe('var(--brand-01)');
     expect(style.getPropertyValue('--cds-link-inverse')).toBe('color-mix(in srgb, var(--brand-01) 40%, white)');
-    // Importing index loads every lifecycle's module graph.
   }, 20000);
 
   it('draws a standalone link without an underline until it is hovered', () => {
