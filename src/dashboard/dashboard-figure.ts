@@ -67,7 +67,10 @@ const withStep = (figure: Figure): Figure =>
 export const isWidened = (figure: Figure) =>
   JSON.stringify(figureParams(withStep(figure))) === JSON.stringify(figureParams(withStep(widened(figure))));
 
-/** Optimisation report measures the Procedural waitlist draws instead of Medical optimisation. */
+/**
+ * Optimisation report measures that belong to the Procedural waitlist, not Medical optimisation: it draws the
+ * recommendations done and counts the patients waiting in its title.
+ */
 export const waitlistMeasures = ['interventionAssigned', 'interventions'];
 
 export function measureLabel(t: TFunction, measure: string) {
@@ -75,8 +78,8 @@ export function measureLabel(t: TFunction, measure: string) {
     consultations: t('consultationsLastYear', 'Consultations in the last year'),
     echocardiogram: t('echoLast13Months', 'Echocardiogram in the last 13 months'),
     retainedInCare: t('retainedInCare', 'Retained in care (seen in the last 7 months)'),
-    interventionAssigned: t('interventionAssigned', 'Open procedural recommendation'),
-    interventions: t('interventionsCompleted', 'Recommended procedures done'),
+    interventionAssigned: t('patientsWaitingForProcedure', 'Patients waiting for a procedure'),
+    interventions: t('latestRecommendationsCarriedOut', 'Latest recommendations carried out'),
     warfarin: t('inrLast90Days', 'On warfarin, with an INR in the last 90 days'),
   };
   return labels[measure] ?? measure;
