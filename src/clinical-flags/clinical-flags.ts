@@ -1,24 +1,13 @@
 import dayjs from 'dayjs';
 import { parseDate } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { answersIn, answerText, type ChartEncounter, type GroupedObs } from '../consultations/consultations.resource';
+import { answersIn, answerText, type ChartEncounter } from '../consultations/consultations.resource';
 import { diagnosisConcepts } from '../consultations/patient-details.resource';
 
 const YES = '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 const uuidOf = (value: unknown) =>
   typeof value === 'object' && value !== null ? String((value as { uuid?: string }).uuid ?? '') : String(value ?? '');
-
-/** Completed answered Yes, CIEL's or core's True, as the Procedural Waiting List reads it. */
-const isCompleted = (group: GroupedObs, completed: string) =>
-  answersIn(group.groupMembers, completed).some((answer) => {
-    const value = answer.value;
-    return (
-      value === true ||
-      uuidOf(value) === YES ||
-      (typeof value === 'object' && value !== null && (value as { display?: string }).display === 'True')
-    );
-  });
 
 /** The calendar day of an OpenMRS timestamp as the server wrote it, as the reports' DATE() reads it. */
 const serverDay = (timestamp: string) => timestamp.slice(0, 10);
@@ -49,8 +38,8 @@ export function doneProcedures(
 }
 
 /**
- * The procedures a consultation recommends and has not completed, by answer uuid: completed when answered Completed,
- * or when the procedure is recorded on Procedures and Outcomes on or after the consultation's day (AR-162).
+ * The procedures a consultation recommends and has not completed, by answer uuid: completed when the procedure is
+ * recorded on Procedures and Outcomes on or after the consultation's day (AR-162).
  */
 function openProcedures(
   encounter: ChartEncounter,
@@ -59,7 +48,6 @@ function openProcedures(
 ) {
   const day = serverDay(encounter.encounterDatetime);
   return answersIn(encounter.obs, concepts.recommendation)
-    .filter((group) => !isCompleted(group, concepts.completed))
     .map((group) => uuidOf(answersIn(group.groupMembers, concepts.recommendation)[0]?.value))
     .filter(Boolean)
     .filter((procedure) => !done.some((one) => one.procedure === procedure && one.day >= day));
@@ -131,8 +119,6 @@ export interface ProceduralRecommendation {
   recommended: string;
   /** The day Procedures and Outcomes first recorded it on or after the latest consultation's day, YYYY-MM-DD. */
   doneOn: string | null;
-  /** Answered Completed on a consultation saved before Completed left the form (AR-147). */
-  markedCompleted: boolean;
 }
 
 /**
@@ -182,7 +168,6 @@ export function proceduralRecommendations(
         urgency: answerText(urgencyAnswer),
         recommended: serverDay(first.encounterDatetime),
         doneOn,
-        markedCompleted: isCompleted(group, concepts.completed),
       };
     })
     .filter((recommendation) => recommendation.procedure || recommendation.type);

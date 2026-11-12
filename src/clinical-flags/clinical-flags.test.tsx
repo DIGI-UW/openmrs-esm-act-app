@@ -23,13 +23,11 @@ const obs = (concept: string, value: unknown, groupMembers?: Array<unknown>) => 
   groupMembers,
 });
 
-const recommending = (date: string, procedure: unknown, completed = false): ChartEncounter =>
+const recommending = (date: string, procedure: unknown): ChartEncounter =>
   ({
     uuid: date,
     encounterDatetime: `${date}T09:00:00.000+0300`,
-    obs: [
-      obs(c.recommendation, null, [obs(c.recommendation, procedure), ...(completed ? [obs(c.completed, YES)] : [])]),
-    ],
+    obs: [obs(c.recommendation, null, [obs(c.recommendation, procedure)])],
   }) as ChartEncounter;
 const p = config.procedures.concepts;
 /** A Procedures and Outcomes encounter recording a surgery, dated by its Date of Procedure. */
@@ -64,7 +62,6 @@ describe('clinical banner flags', () => {
   it('ages the procedural recommendation from the first consultation of the latest run that recommends its procedure', () => {
     expect(procedureStatus([], c, now)).toBeNull();
     expect(procedureStatus([plain('2026-09-01'), recommending('2025-01-01', MVR)], c, now)).toBe('none');
-    expect(procedureStatus([recommending('2026-09-01', MVR, true)], c, now)).toBe('none');
     expect(procedureStatus([recommending('2026-09-01', MVR), recommending('2026-03-01', MVR)], c, now)).toBe('recent');
     expect(
       procedureStatus(
