@@ -15,6 +15,7 @@ import { describeSignInDetails, logTime } from './log-time';
 import { type Paging, useActivity, useDownloads, useReads, useSignIns } from './logs.resource';
 import { useSignInLabels } from './sign-ins-tab.component';
 import styles from './logs.scss';
+import links from '../styles/links.scss';
 
 type Source = 'activity' | 'reads' | 'downloads' | 'signIns';
 
@@ -222,7 +223,10 @@ export function UserLogPanel({
               </span>
             ))}
         </div>
-        <ConfigurableLink to={`${adminLinks.logsUrl}?user=${encodeURIComponent(username)}`}>
+        <ConfigurableLink
+          to={`${adminLinks.logsUrl}?user=${encodeURIComponent(username)}`}
+          className={links.standalone}
+        >
           {t('everythingInLogs', 'Everything in Logs')}
         </ConfigurableLink>
       </div>

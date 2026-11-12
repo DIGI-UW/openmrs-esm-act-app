@@ -45,7 +45,7 @@
 }
 
 .info {
-  color: $brand-01;
+  @include brand-01(color);
 }
 
 .success {

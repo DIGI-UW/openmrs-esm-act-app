@@ -31,6 +31,7 @@ import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { cellText, columnHeader, limitToClinics, matchesSearch, reportsFor, sortValue } from './report-catalogue';
 import styles from './report-view.scss';
+import links from '../styles/links.scss';
 
 const isoDate = (date: Date) => dayjs(date).format('YYYY-MM-DD');
 
@@ -147,7 +148,7 @@ export default function ReportView() {
     <>
       <ActPageHeader title={title} illustration={<FacilityPictogram />} />
       <div className={styles.reportView}>
-        <ConfigurableLink className={styles.link} to="${openmrsSpaBase}/home/act-reports">
+        <ConfigurableLink className={`${styles.link} ${links.standalone}`} to="${openmrsSpaBase}/home/act-reports">
           {t('backToReports', 'Back to Reports')}
         </ConfigurableLink>
         {entry && <p className={styles.description}>{entry.description}</p>}

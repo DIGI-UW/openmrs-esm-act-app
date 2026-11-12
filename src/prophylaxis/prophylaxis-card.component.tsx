@@ -11,6 +11,7 @@ import { usePrescription } from './prescription.resource';
 import { type ProphylaxisSummary, useProphylaxisSummary } from './prophylaxis.resource';
 import UpdateProphylaxis from './update-prophylaxis.component';
 import styles from '../styles/summary-card.scss';
+import links from '../styles/links.scss';
 
 interface ProphylaxisCardProps {
   patientUuid: string;
@@ -109,7 +110,10 @@ export default function ProphylaxisCard({ patientUuid, title, historyLink = true
       <CardHeader title={title ?? t('prophylaxis', 'Prophylaxis')}>
         <div className={styles.actions}>
           {historyLink && pagePath && (
-            <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`} className={styles.headerLink}>
+            <ConfigurableLink
+              to={`${patientChartUrl(patientUuid)}/${pagePath}`}
+              className={`${styles.headerLink} ${links.standalone}`}
+            >
               {t('history', 'History')}
             </ConfigurableLink>
           )}

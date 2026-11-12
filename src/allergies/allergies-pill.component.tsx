@@ -74,7 +74,7 @@ export default function AllergiesPill({ patientUuid }: { patientUuid: string }) 
             ))}
           </ul>
           {pagePath && (
-            <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`}>
+            <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`} className="cds--link">
               {t('reviewInAllergies', 'Review in Allergies')}
             </ConfigurableLink>
           )}

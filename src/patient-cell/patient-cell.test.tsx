@@ -1,7 +1,9 @@
 import React from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PatientCell } from './patient-cell.component';
+
+vi.mock('../styles/links.scss', () => ({ default: { standalone: 'standalone' } }));
 
 const row = { patient_uuid: 'patient-1', full_name: 'Amina Nakato', rhd_id: 'rhd00012' };
 
@@ -26,6 +28,7 @@ describe('PatientCell', () => {
 
     const name = screen.getByRole('link', { name: 'Amina Nakato' });
     expect(name).toHaveAttribute('href', '/openmrs/spa/patient/patient-1/chart');
+    expect(name).toHaveClass('standalone');
     expect(name).not.toHaveTextContent('rhd00012');
     expect(screen.getByRole('cell')).toHaveTextContent(/^Amina Nakatorhd00012$/);
   });

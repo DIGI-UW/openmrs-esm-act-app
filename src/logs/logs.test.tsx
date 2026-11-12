@@ -10,6 +10,7 @@ import Logs from './logs.component';
 import { activityDetails, activityEntries, downloadEntries, readEntries, signInEntries } from './logs.fixture';
 
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
+vi.mock('../styles/links.scss', () => ({ default: { standalone: 'standalone' } }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -276,6 +277,9 @@ describe('Logs', () => {
         'href',
         '/openmrs/spa/patient/p-grace/chart',
       );
+      // A link on a line of its own is standalone; the one ending the page's description sits in a sentence.
+      expect(within(detail).getByRole('link', { name: "Open Grace Akello's chart" })).toHaveClass('standalone');
+      expect(screen.getByRole('link', { name: 'Open the audit module' })).not.toHaveClass('standalone');
       expect(
         within(detail).getByRole('link', { name: 'This change in the audit module (every field, every revision)' }),
       ).toHaveAttribute('href', expect.stringMatching(/^\/openmrs\/module\/auditlogweb\/auditlogs\.form\?username=/));

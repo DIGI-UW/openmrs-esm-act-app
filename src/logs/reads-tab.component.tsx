@@ -17,6 +17,7 @@ import { DetailLine, LogActionCell, LogTable, LogTargetCell, LogUserCell } from 
 import { describeClient, fullTime, logTimeRange } from './log-time';
 import { fetchAllLogs, type LogPage, type ReadEntry, readsUrl, useReads } from './logs.resource';
 import styles from './logs.scss';
+import links from '../styles/links.scss';
 
 const readsFilterKeys = ['user', 'from', 'to', 'patient'] as const;
 
@@ -105,7 +106,7 @@ export function ReadsTab({
             </DetailLine>
           )}
           <p className={styles.detailLine}>
-            <ConfigurableLink to={adminLinks.readAuditUrl}>
+            <ConfigurableLink to={adminLinks.readAuditUrl} className={links.standalone}>
               {t('everyReadInAuditModule', 'Every read in the audit module')}
             </ConfigurableLink>
           </p>

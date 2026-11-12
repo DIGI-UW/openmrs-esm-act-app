@@ -30,6 +30,7 @@ import { trackActReturn } from './back-to-act/act-return';
 import { registerAllergies } from './allergies/allergies.resource';
 import { registerNextInjectionDue } from './prophylaxis/next-injection-due';
 import { registerVisitVitals } from './vitals/visit-vitals.resource';
+import { linkColoursFromBrand } from './styles/brand-links';
 import { flagWorklistConfigSchema, flagWorklists } from './worklists/flag-worklists';
 
 const moduleName = '@act-registry/esm-act-app';
@@ -50,6 +51,7 @@ export function startupApp() {
   registerNextInjectionDue();
   registerAllergies();
   registerVisitVitals();
+  linkColoursFromBrand();
 }
 
 export const backToActLink = getAsyncLifecycle(() => import('./back-to-act/back-to-act-link.component'), options);

@@ -6,6 +6,7 @@ import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { reportsFor } from './report-catalogue';
 import styles from './report-view.scss';
+import links from '../styles/links.scss';
 
 /** The Reports page's list of reports that open as a table, each with its description; nothing when none is offered. */
 export function ReportCatalogueCard() {
@@ -23,7 +24,10 @@ export function ReportCatalogueCard() {
       <ul className={styles.catalogue}>
         {entries.map((entry) => (
           <li key={entry.id} className={styles.catalogueItem}>
-            <ConfigurableLink to={`\${openmrsSpaBase}/home/act-report?report=${encodeURIComponent(entry.id)}`}>
+            <ConfigurableLink
+              to={`\${openmrsSpaBase}/home/act-report?report=${encodeURIComponent(entry.id)}`}
+              className={links.standalone}
+            >
               {entry.label}
             </ConfigurableLink>
             <span className={styles.description}>{entry.description}</span>

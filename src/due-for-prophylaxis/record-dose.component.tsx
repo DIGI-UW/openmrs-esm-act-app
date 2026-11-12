@@ -20,6 +20,7 @@ import { type ReportRow } from '../reports/report-dataset.resource';
 import { findActiveVisit, startVisit } from '../visits/start-visit';
 import { isOral } from './due-list';
 import styles from './due-for-prophylaxis.scss';
+import links from '../styles/links.scss';
 
 const recordDoseFormEntryWorkspace = 'act-record-dose-form-entry-workspace';
 
@@ -111,7 +112,11 @@ export function RecordDoseAction({
     return <span className={styles.needsPrescription}>{t('needsPrescription', 'Needs prescription')}</span>;
   }
   if (recordedToday) {
-    return <ConfigurableLink to={patientChartUrl(row.patient_uuid)}>{t('viewChart', 'View chart')}</ConfigurableLink>;
+    return (
+      <ConfigurableLink to={patientChartUrl(row.patient_uuid)} className={links.standalone}>
+        {t('viewChart', 'View chart')}
+      </ConfigurableLink>
+    );
   }
   const oral = isOral(row);
   const form = oral ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;

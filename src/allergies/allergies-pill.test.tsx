@@ -116,6 +116,8 @@ describe('the patient banner allergies pill', () => {
       'href',
       '/openmrs/spa/patient/abebe/chart/allergies',
     );
+    // Carbon's link class reads the inverse link colour that the toggletip's dark surface needs.
+    expect(screen.getByRole('link', { name: 'Review in Allergies' })).toHaveClass('cds--link');
   });
 
   it("offers no Review in Allergies link when the chart's nav has no Allergies page", async () => {

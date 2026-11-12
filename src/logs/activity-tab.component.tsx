@@ -27,6 +27,7 @@ import {
   useActivityDetail,
 } from './logs.resource';
 import styles from './logs.scss';
+import links from '../styles/links.scss';
 
 /** Each kind's tag colour, and for the form and patient kinds the verb ACT Core opens the action with. */
 const kinds: Record<ActivityKind, { type: TagType; verb?: string }> = {
@@ -106,13 +107,16 @@ function ActivityDetailRow({ entry, label }: { entry: ActivityEntry; label: stri
         )}
         {entry.target?.kind === 'patient' && entry.target.uuid && (
           <p className={styles.detailLine}>
-            <ConfigurableLink to={patientChartUrl(entry.target.uuid)}>
+            <ConfigurableLink to={patientChartUrl(entry.target.uuid)} className={links.standalone}>
               {t('openPatientsChart', "Open {{name}}'s chart", { name: entry.target.display })}
             </ConfigurableLink>
           </p>
         )}
         <p className={styles.detailLine}>
-          <ConfigurableLink to={`${adminLinks.auditLogsUrl}?username=${encodeURIComponent(entry.user.username)}`}>
+          <ConfigurableLink
+            to={`${adminLinks.auditLogsUrl}?username=${encodeURIComponent(entry.user.username)}`}
+            className={links.standalone}
+          >
             {t('revisionInAuditModule', 'This change in the audit module (every field, every revision)')}
           </ConfigurableLink>
         </p>

@@ -35,6 +35,7 @@ import { HistoryNotice } from './run-chart-history-notice.component';
 import { RunChartLine } from './run-chart-line.component';
 import { type RunChartParams, useRunChart } from './run-chart.resource';
 import styles from './run-charts.scss';
+import links from '../styles/links.scss';
 
 const filterKeys = ['metric', 'clinic', 'from', 'to', 'points'] as const;
 const isoDay = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
@@ -232,7 +233,10 @@ export default function RunCharts() {
         />
         <div className={styles.notes}>
           <span>
-            {t('runChartCalculated', 'Each point is the figure on its date, worked out from the records as they are now.')}
+            {t(
+              'runChartCalculated',
+              'Each point is the figure on its date, worked out from the records as they are now.',
+            )}
           </span>
         </div>
       </>
@@ -244,7 +248,9 @@ export default function RunCharts() {
       <ActPageHeader title={t('runCharts', 'Run charts')} illustration={<ReportsPictogram />} />
       <div className={styles.page}>
         <div className={styles.crumb}>
-          <ConfigurableLink to="${openmrsSpaBase}/home/act-dashboard">{t('dashboard', 'Dashboard')}</ConfigurableLink>
+          <ConfigurableLink to="${openmrsSpaBase}/home/act-dashboard" className={links.standalone}>
+            {t('dashboard', 'Dashboard')}
+          </ConfigurableLink>
           {' / '}
           {t('runCharts', 'Run charts')}
         </div>

@@ -17,6 +17,8 @@ import { type Config, configSchema } from '../config-schema';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import ProphylaxisCard from './prophylaxis-card.component';
 
+vi.mock('../styles/links.scss', () => ({ default: { standalone: 'standalone' } }));
+
 // Who may record a form is may-enter-form's own test; here every form may be recorded.
 vi.mock('../access/may-enter-form', () => ({
   MayEnterForm: ({ children }: { children: React.ReactNode }) => children,
@@ -276,6 +278,7 @@ describe('ProphylaxisCard', () => {
       'href',
       '/openmrs/spa/patient/winnie/chart/act-prophylaxis',
     );
+    expect(screen.getByRole('link', { name: 'History' })).toHaveClass('standalone');
   });
 
   it('links to the Prophylaxis page when the distro puts it in a dashboard group', async () => {

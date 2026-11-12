@@ -111,12 +111,12 @@
   text-decoration: none;
 
   &:hover {
-    border-color: $interactive-01;
+    border-color: var(--brand-01);
   }
 }
 
 .current {
-  border: 2px solid $interactive-01;
+  border: 2px solid var(--brand-01);
 }
 
 .tileLabel {

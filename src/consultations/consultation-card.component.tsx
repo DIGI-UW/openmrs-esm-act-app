@@ -21,6 +21,7 @@ import { useStartConsultation } from './consultations.component';
 import { useConsultations } from './consultations.resource';
 import { useLatestDiagnosis, usePersonDetails } from './patient-details.resource';
 import styles from '../styles/summary-card.scss';
+import links from '../styles/links.scss';
 
 /**
  * The patient summary's Consultation visits card, as the prototype's: the last consultation, the next cardiology
@@ -67,7 +68,10 @@ export default function ConsultationCard({ patientUuid }: { patientUuid: string 
       <CardHeader title={t('consultationVisits', 'Consultation visits')}>
         <div className={styles.actions}>
           {pagePath && (
-            <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`} className={styles.headerLink}>
+            <ConfigurableLink
+              to={`${patientChartUrl(patientUuid)}/${pagePath}`}
+              className={`${styles.headerLink} ${links.standalone}`}
+            >
               {t('details', 'Details')}
             </ConfigurableLink>
           )}

@@ -4,6 +4,7 @@ import { Button, Tile } from '@carbon/react';
 import { ArrowRight, ChevronDown, ChevronUp } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import styles from './act-home-card.scss';
+import links from '../styles/links.scss';
 
 /**
  * A home page widget's frame, on ACT home or Home: its title, then on the right a tag and a link to the full screen when
@@ -33,7 +34,7 @@ export function ActHomeCard({
         <div className={styles.end}>
           {tag}
           {link && (
-            <ConfigurableLink to={link.to} className={styles.link}>
+            <ConfigurableLink to={link.to} className={`${styles.link} ${links.standalone}`}>
               {link.label}
               <ArrowRight size={16} aria-hidden="true" />
             </ConfigurableLink>

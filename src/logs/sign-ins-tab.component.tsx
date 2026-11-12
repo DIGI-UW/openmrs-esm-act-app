@@ -17,6 +17,7 @@ import {
   useSignIns,
 } from './logs.resource';
 import styles from './logs.scss';
+import links from '../styles/links.scss';
 
 const signInsFilterKeys = ['user', 'from', 'to'] as const;
 
@@ -106,7 +107,7 @@ export function SignInsTab({
             <DetailLine label={t('from', 'From')}>{describeClient(t, entry.ipAddress, entry.userAgent)}</DetailLine>
           )}
           <p className={styles.detailLine}>
-            <ConfigurableLink to={adminLinks.securityAuditUrl}>
+            <ConfigurableLink to={adminLinks.securityAuditUrl} className={links.standalone}>
               {t('securityRecordInAuditModule', 'The full security record in the audit module')}
             </ConfigurableLink>
           </p>

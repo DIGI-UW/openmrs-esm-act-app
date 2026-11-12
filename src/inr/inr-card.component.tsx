@@ -18,6 +18,7 @@ import InrChart, { inrTone } from './inr-chart.component';
 import { useRecordInr } from './inr-reviews.component';
 import { standardTarget, targetRange, useInrReviews, type InrReview } from './inr.resource';
 import styles from '../styles/summary-card.scss';
+import links from '../styles/links.scss';
 
 const day = (date: Date) => formatDate(date, { time: false, noToday: true });
 const readingsShown = 5;
@@ -167,7 +168,7 @@ export default function InrCard({ patientUuid }: { patientUuid: string }) {
                 </Table>
                 {readings.length > readingsShown && pagePath && (
                   <div className={styles.seeAll}>
-                    <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`}>
+                    <ConfigurableLink to={`${patientChartUrl(patientUuid)}/${pagePath}`} className={links.standalone}>
                       {t('seeAll', 'See all')}
                     </ConfigurableLink>
                   </div>
