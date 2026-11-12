@@ -724,7 +724,6 @@
   "proceduralWaitlistPatients_other": "Procedural waitlist: {{count}} patients",
   "procedure": "Procedure",
   "procedureCompletesRecommendation": "A recommendation is done once Procedures and Outcomes records the same procedure, dated on or after the consultation.",
-  "procedureDone": "Done",
   "procedureDoneOn": "Done {{date}}",
   "procedureDue": "Procedure due",
   "procedureOverdue": "Overdue",
