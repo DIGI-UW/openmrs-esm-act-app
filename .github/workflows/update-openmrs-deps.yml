@@ -65,7 +65,7 @@ jobs:
             - [ ] No breaking changes introduced
           branch: 'chore/update-openmrs-deps'
           author: 'OpenMRS Bot <infrastructure@openmrs.org>'
-          token: ${{ secrets.GH_BOT_TOKEN }}
+          token: ${{ secrets.BOT_PAT }}
           labels: |
             dependencies
             automated-pr
