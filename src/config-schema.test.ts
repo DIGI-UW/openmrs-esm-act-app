@@ -46,7 +46,6 @@ describe('configSchema', () => {
           { label: 'enterBpg', url: '${openmrsSpaBase}/forms/form/0119d2e6-e2e1-391c-9b88-d59a10b0780d' },
           { label: 'enterOralProphylaxis', url: '${openmrsSpaBase}/forms/form/ba29e982-ce18-302a-9fc4-d4b2c3983465' },
         ],
-        findPatientInPanel: true,
         findPatientUrl: '${openmrsSpaBase}/search?query=',
       },
       dataClerkQuickActions: {

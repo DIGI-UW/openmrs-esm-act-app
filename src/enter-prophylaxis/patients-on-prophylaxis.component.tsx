@@ -29,7 +29,12 @@ function PatientsOnProphylaxis() {
     const q = search.trim().toLowerCase();
     return q ? rows.filter((row) => `${row.full_name ?? ''} ${row.rhd_id ?? ''}`.toLowerCase().includes(q)) : rows;
   }, [rows, search]);
-  const { filter, setFilter, counts, filtered } = useDueFilter(searched, 'all');
+  // Record BPG and Record oral link here showing their prophylaxis.
+  const opening = useMemo(() => new URLSearchParams(window.location.search).get('prophylaxis'), []);
+  const { filter, setFilter, counts, filtered } = useDueFilter(
+    searched,
+    opening === 'bpg' || opening === 'oral' ? opening : 'all',
+  );
   const filters = useMemo(() => ({ filter, search }), [filter, search]);
   const { results, paginationProps } = usePagedRows(filtered, filters);
   // Who was recorded today is read from the rows themselves, so the CSV knows it for every filtered row too.

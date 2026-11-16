@@ -228,13 +228,15 @@ describe('routes.json privileges', () => {
     expect(routeFile.workspaceWindows2).toContainEqual({ name: 'act-update-prophylaxis', group: 'patient-chart' });
   });
 
-  it('declares a privilege on every extension but Download data, Logs, the Admin nav, the session timeout and the Help menu items Contact us and Docs, so none shows to every signed-in user', () => {
+  it('declares a privilege on every extension but Download data, Logs, Enter prophylaxis, the Admin nav, the session timeout and the Help menu items Contact us and Docs, so none shows to every signed-in user', () => {
     // Each gates itself: on one of several privileges, its links, sign-in or configuration.
     expect(routes.extensions.filter((extension) => !('privileges' in extension)).map(({ name }) => name)).toEqual([
       'act-download-dashboard-link',
       'act-download-dashboard',
       'act-logs-dashboard-link',
       'act-logs-dashboard',
+      'act-enter-prophylaxis-dashboard-link',
+      'act-enter-prophylaxis-dashboard',
       'act-admin-nav',
       'act-session-timeout',
       'act-help-contact',
@@ -263,14 +265,29 @@ describe('routes.json privileges', () => {
     },
   );
 
-  it.each(['act-logs-dashboard-link', 'act-logs-dashboard', 'act-download-dashboard-link', 'act-download-dashboard'])(
-    'hides %s, without throwing, while the session is still loading',
+  it.each(['act-enter-prophylaxis-dashboard-link', 'act-enter-prophylaxis-dashboard'])(
+    "shows %s to a user with the registry or the due list, as Home's Record BPG and Record oral lead there, and to no one else",
     (name) => {
       const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
-      expect(evaluate(expression, { session: null })).toBe(false);
-      expect(evaluate(expression, { session: { authenticated: false, sessionId: '' } })).toBe(false);
+      expect(evaluate(expression, auditSession([screenPrivileges.registry]))).toBe(true);
+      expect(evaluate(expression, auditSession([screenPrivileges.dueList, screenPrivileges.communityHome]))).toBe(true);
+      expect(evaluate(expression, auditSession([], ['System Developer']))).toBe(true);
+      expect(evaluate(expression, auditSession([screenPrivileges.communityHome]))).toBe(false);
     },
   );
+
+  it.each([
+    'act-logs-dashboard-link',
+    'act-logs-dashboard',
+    'act-download-dashboard-link',
+    'act-download-dashboard',
+    'act-enter-prophylaxis-dashboard-link',
+    'act-enter-prophylaxis-dashboard',
+  ])('hides %s, without throwing, while the session is still loading', (name) => {
+    const expression = routes.extensions.find((extension) => extension.name === name)?.displayExpression;
+    expect(evaluate(expression, { session: null })).toBe(false);
+    expect(evaluate(expression, { session: { authenticated: false, sessionId: '' } })).toBe(false);
+  });
 
   it.each(['act-download-dashboard-link', 'act-download-dashboard'])(
     'shows %s to a user holding either download privilege, or to a super user, and to no one else',
@@ -317,9 +334,6 @@ describe('routes.json workspaces', () => {
     ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-enter-prophylaxis'],
     ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-home'],
     ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-community-home'],
-    ['act-patient-search-workspace', 'act-patient-search', '/home/act-home'],
-    ['act-patient-search-workspace', 'act-patient-search', '/home/act-community-home'],
-    ['act-patient-search-start-visit-workspace', 'act-patient-search', '/home/act-home'],
   ])('opens %s in the %s group, scoped to the page %s', (name, group, page) => {
     const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
     const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);

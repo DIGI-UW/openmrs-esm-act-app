@@ -143,14 +143,8 @@ export const configSchema = {
       _description:
         'The choices the Enter prophylaxis quick action offers when enterProphylaxisInFastDataEntry is true, as ACT 2.0 offered BPG and oral prophylaxis; by default the RHD BPG Delivery and RHD Oral Adherence forms in fast data entry. When empty, Enter prophylaxis leads to enterProphylaxisUrl.',
     },
-    findPatientInPanel: {
-      _type: Type.Boolean,
-      _default: true,
-      _description:
-        "Whether Find a patient on ACT home and on Home opens O3's patient search beside the page. When false, it leads to findPatientUrl.",
-    },
     findPatientUrl: link(
-      'Where the Find a patient quick action on ACT home and on Home leads when findPatientInPanel is false. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
+      "Where the Find a patient quick action on ACT home and on Home leads: O3's patient search page. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.",
       '${openmrsSpaBase}/search?query=',
     ),
   },
@@ -1049,7 +1043,6 @@ export interface Config {
     enterProphylaxisInFastDataEntry: boolean;
     enterProphylaxisUrl: string;
     prophylaxisForms: Array<{ label: string; url: string }>;
-    findPatientInPanel: boolean;
     findPatientUrl: string;
   };
   dataClerkQuickActions: {

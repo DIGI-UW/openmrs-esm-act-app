@@ -11,13 +11,10 @@ import {
   UserFollow,
   UserRole,
 } from '@carbon/react/icons';
-import { ConfigurableLink, navigate, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
 import { patientsOnProphylaxisDashboardMeta } from '../enter-prophylaxis/patients-on-prophylaxis.meta';
-import { useRecordDose } from '../due-for-prophylaxis/record-dose.component';
-import { patientChartUrl } from '../patient-chart-url';
 import { useRolePermissionsAssigned } from '../role-permissions/role-permissions-dashboard-link.component';
-import { launchPatientSearch } from './patient-search';
 import { QuickActionTile } from './quick-action-tile.component';
 import styles from './quick-actions.scss';
 
@@ -36,38 +33,29 @@ export function RegisterPatientAction() {
   );
 }
 
-/** Find a patient: O3's patient search beside the page, opening the chosen patient's chart, or the configured page. */
+/** Find a patient: O3's patient search page. */
 export function FindPatientAction() {
   const { t } = useTranslation();
   const { quickActions } = useConfig<Config>();
-  const tile = {
-    Icon: Search,
-    label: t('findPatient', 'Find a patient'),
-    subtitle: t('nameOrActId', 'Name or ACT ID'),
-  };
-  if (!quickActions.findPatientInPanel) {
-    return <QuickActionTile {...tile} to={quickActions.findPatientUrl} />;
-  }
   return (
     <QuickActionTile
-      {...tile}
-      onClick={() => launchPatientSearch(tile.label, (patientUuid) => navigate({ to: patientChartUrl(patientUuid) }))}
+      Icon={Search}
+      label={t('findPatient', 'Find a patient')}
+      subtitle={t('nameOrActId', 'Name or ACT ID')}
+      to={quickActions.findPatientUrl}
     />
   );
 }
 
-/** Record BPG or oral: O3's patient search beside the page, then that dose form beside it, as the due lists open it. */
+/** Record BPG or oral: the patients on prophylaxis, showing that prophylaxis, each with its Record button. */
 function RecordProphylaxis({
   prophylaxis,
   ...tile
-}: React.ComponentProps<typeof QuickActionTile> & { prophylaxis: 'bpg' | 'oral' }) {
-  const { prophylaxisCard } = useConfig<Config>();
-  const { record } = useRecordDose();
-  const formUuid = prophylaxis === 'oral' ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;
+}: Omit<React.ComponentProps<typeof QuickActionTile>, 'to' | 'onClick'> & { prophylaxis: 'bpg' | 'oral' }) {
   return (
     <QuickActionTile
       {...tile}
-      onClick={() => launchPatientSearch(tile.label, (patientUuid) => record({ patient_uuid: patientUuid }, formUuid))}
+      to={`\${openmrsSpaBase}/home/${patientsOnProphylaxisDashboardMeta.name}?prophylaxis=${prophylaxis}`}
     />
   );
 }

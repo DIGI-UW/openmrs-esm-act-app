@@ -207,4 +207,17 @@ describe('Enter prophylaxis', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'rhd00002');
     expect(tableRows().map((row) => row[0])).toEqual(['Patient 2rhd00002']);
   });
+
+  it.each([
+    ['bpg', /^BPG/, ['Patient 1rhd00001', 'Patient 2rhd00002']],
+    ['oral', /^Oral/, ['Patient 4rhd00004']],
+  ])('opens on %s when Record BPG or Record oral linked here with it', (prophylaxis, tab, patients) => {
+    window.history.replaceState(null, '', `/openmrs/spa/home/act-enter-prophylaxis?prophylaxis=${prophylaxis}`);
+
+    render(<EnterProphylaxis />);
+    window.history.replaceState(null, '', '/');
+
+    expect(screen.getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true');
+    expect(tableRows().map((row) => row[0])).toEqual(patients);
+  });
 });
