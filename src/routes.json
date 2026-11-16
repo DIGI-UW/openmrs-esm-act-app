@@ -1011,6 +1011,10 @@
     {
       "name": "act-dashboard",
       "scopePattern": "^/home/act-dashboard"
+    },
+    {
+      "name": "act-patient-search",
+      "scopePattern": "^/home/([^/]+)"
     }
   ],
   "workspaceWindows2": [
@@ -1096,6 +1100,10 @@
       "name": "act-dashboard-export",
       "group": "act-dashboard",
       "width": "narrow"
+    },
+    {
+      "name": "act-patient-search",
+      "group": "act-patient-search"
     }
   ],
   "workspaces2": [
@@ -1183,6 +1191,16 @@
       "name": "act-dashboard-export-workspace",
       "component": "dashboardExportWorkspace",
       "window": "act-dashboard-export"
+    },
+    {
+      "name": "act-patient-search-workspace",
+      "component": "@openmrs/esm-patient-search-app#patientSearchWorkspace2",
+      "window": "act-patient-search"
+    },
+    {
+      "name": "act-patient-search-start-visit-workspace",
+      "component": "@openmrs/esm-patient-chart-app#exportedVisitForm",
+      "window": "act-patient-search"
     }
   ]
 }

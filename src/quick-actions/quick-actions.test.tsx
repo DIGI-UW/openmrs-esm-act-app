@@ -1,13 +1,16 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import userEvent from '@testing-library/user-event';
 import {
   age,
   type AssignedExtension,
   ExtensionSlot,
+  fetchCurrentPatient,
   getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  navigate,
   openmrsFetch,
   useAssignedExtensions,
   useDebounce,
@@ -15,7 +18,8 @@ import {
 } from '@openmrs/esm-framework';
 import { type Config, configSchema } from '../config-schema';
 import { homePrivilege, signInWith } from '../access/sign-in.test-helper';
-import { openFormInChart } from '../visits/open-form-in-chart';
+import { fetchForm } from '../flag-gaps/flag-gaps.resource';
+import { findActiveVisit } from '../visits/start-visit';
 import { ActHomeQuickActions } from './quick-actions.component';
 import {
   EnterProphylaxisAction,
@@ -29,7 +33,23 @@ import {
   RolePermissionsAction,
 } from './quick-action-tiles.component';
 
-vi.mock('../visits/open-form-in-chart', () => ({ openFormInChart: vi.fn() }));
+vi.mock('../visits/start-visit', () => ({ findActiveVisit: vi.fn(), startVisit: vi.fn() }));
+vi.mock('../flag-gaps/flag-gaps.resource', () => ({ fetchForm: vi.fn() }));
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchCurrentPatient: vi.fn(),
+}));
+
+/** Picks a patient in the O3 patient search the last launch opened, as its result cards do. */
+async function pickInPatientSearch(patientUuid: string, closed = true) {
+  const [name, props, windowProps] = vi.mocked(launchWorkspace2).mock.lastCall;
+  expect(name).toBe('act-patient-search-workspace');
+  expect(windowProps).toEqual({ startVisitWorkspaceName: 'act-patient-search-start-visit-workspace' });
+  const { onPatientSelected } = props as {
+    onPatientSelected: (uuid: string, patient: unknown, launchChild: unknown, close: () => Promise<boolean>) => unknown;
+  };
+  await act(() => onPatientSelected(patientUuid, { id: patientUuid }, vi.fn(), () => Promise.resolve(closed)));
+}
 
 const bpgForm = '0119d2e6-e2e1-391c-9b88-d59a10b0780d';
 const oralForm = 'ba29e982-ce18-302a-9fc4-d4b2c3983465';
@@ -107,14 +127,26 @@ describe('ACT home quick actions', () => {
     expect(screen.getByRole('link', { name: /find a patient/i })).toHaveAttribute('href', '/openmrs/spa/search?query=');
   });
 
-  it("opens ACT's patient search over the page from Find a patient", async () => {
+  it("opens O3's patient search beside the page from Find a patient, then the chosen patient's chart", async () => {
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     render(<FindPatientAction />);
 
     await userEvent.click(screen.getByRole('button', { name: /find a patient/i }));
+    expect(vi.mocked(launchWorkspace2).mock.lastCall[1]).toEqual(
+      expect.objectContaining({ workspaceTitle: 'Find a patient' }),
+    );
+    await pickInPatientSearch('grace');
 
-    expect(screen.getByRole('dialog', { name: 'Find a patient' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Close search' }));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(navigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient/grace/chart' });
+  });
+
+  it('stays on the page when the patient search does not close', async () => {
+    render(<FindPatientAction />);
+
+    await userEvent.click(screen.getByRole('button', { name: /find a patient/i }));
+    await pickInPatientSearch('grace', false);
+
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('opens the patients on prophylaxis by default', () => {
@@ -180,7 +212,10 @@ describe('Home quick action tiles', () => {
         ? ([{ name: 'act-role-permissions-dashboard-link' }] as Array<AssignedExtension>)
         : [],
     );
-    vi.mocked(openFormInChart).mockReset();
+    vi.mocked(fetchForm).mockImplementation((uuid: string) => Promise.resolve({ uuid }) as never);
+    vi.mocked(fetchCurrentPatient).mockImplementation((uuid: string) => Promise.resolve({ id: uuid }) as never);
+    vi.mocked(findActiveVisit).mockResolvedValue({ uuid: 'active-visit' } as never);
+    vi.mocked(launchWorkspace2).mockResolvedValue(true);
     vi.mocked(openmrsFetch).mockImplementation(((url: string) => {
       if (url.includes('/user/')) {
         return Promise.resolve({ data: { userProperties: {} } });
@@ -219,7 +254,7 @@ describe('Home quick action tiles', () => {
     { Tile: RecordBpgAction, label: 'Record BPG injection', formUuid: bpgForm },
     { Tile: RecordOralAction, label: 'Record oral prophylaxis', formUuid: oralForm },
   ])(
-    "opens $label's patient search, then the chosen patient's chart with its form",
+    "opens O3's patient search for $label, then the chosen patient's dose form beside the page",
     async ({ Tile, label, formUuid }) => {
       render(
         <SWRConfig value={{ provider: () => new Map() }}>
@@ -228,15 +263,14 @@ describe('Home quick action tiles', () => {
       );
 
       await userEvent.click(screen.getByRole('button', { name: new RegExp(label) }));
-      const search = screen.getByRole('dialog', { name: label });
-      expect(within(search).queryByRole('tab')).not.toBeInTheDocument();
-      await userEvent.type(within(search).getByRole('searchbox'), 'Grace');
-      await userEvent.click(await within(search).findByRole('button', { name: /Grace Achieng/ }));
+      expect(vi.mocked(launchWorkspace2).mock.lastCall[1]).toEqual(expect.objectContaining({ workspaceTitle: label }));
+      await pickInPatientSearch('grace');
 
       await vi.waitFor(() =>
-        expect(openFormInChart).toHaveBeenCalledWith(
-          expect.anything(),
-          expect.objectContaining({ patientUuid: 'grace', formUuid, location: 'clinic' }),
+        expect(launchWorkspace2).toHaveBeenLastCalledWith(
+          'act-record-dose-form-entry-workspace',
+          expect.objectContaining({ form: { uuid: formUuid } }),
+          expect.objectContaining({ patientUuid: 'grace', visitContext: { uuid: 'active-visit' } }),
         ),
       );
     },
@@ -267,10 +301,7 @@ describe('Home quick action tiles', () => {
       'href',
       '/openmrs/spa/home/act-role-permissions',
     );
-    expect(screen.getByRole('link', { name: /Studies/ })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-studies',
-    );
+    expect(screen.getByRole('link', { name: /Studies/ })).toHaveAttribute('href', '/openmrs/spa/home/act-studies');
   });
 
   it("leaves out Role permissions when the home dashboard does not assign its page's link", () => {
@@ -281,11 +312,15 @@ describe('Home quick action tiles', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("opens ACT's patient search from Find a patient", async () => {
+  it("opens O3's patient search from Find a patient", async () => {
     render(<FindPatientAction />);
 
     await userEvent.click(screen.getByRole('button', { name: /Find a patient/ }));
 
-    expect(screen.getByRole('dialog', { name: 'Find a patient' })).toBeInTheDocument();
+    expect(launchWorkspace2).toHaveBeenCalledWith(
+      'act-patient-search-workspace',
+      expect.objectContaining({ workspaceTitle: 'Find a patient' }),
+      expect.anything(),
+    );
   });
 });

@@ -317,6 +317,9 @@ describe('routes.json workspaces', () => {
     ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-enter-prophylaxis'],
     ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-home'],
     ['act-record-dose-form-entry-workspace', 'act-record-dose', '/home/act-community-home'],
+    ['act-patient-search-workspace', 'act-patient-search', '/home/act-home'],
+    ['act-patient-search-workspace', 'act-patient-search', '/home/act-community-home'],
+    ['act-patient-search-start-visit-workspace', 'act-patient-search', '/home/act-home'],
   ])('opens %s in the %s group, scoped to the page %s', (name, group, page) => {
     const workspace = workspaceRoutes.workspaces2.find((candidate) => candidate.name === name);
     const window = workspaceRoutes.workspaceWindows2.find((candidate) => candidate.name === workspace?.window);

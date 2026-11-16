@@ -11,12 +11,13 @@ import {
   UserFollow,
   UserRole,
 } from '@carbon/react/icons';
-import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, navigate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
-import { EnterProphylaxisSearch } from '../enter-prophylaxis/enter-prophylaxis.component';
 import { patientsOnProphylaxisDashboardMeta } from '../enter-prophylaxis/patients-on-prophylaxis.meta';
-import { PatientSearchPanel } from '../patient-search/patient-search-panel.component';
+import { useRecordDose } from '../due-for-prophylaxis/record-dose.component';
+import { patientChartUrl } from '../patient-chart-url';
 import { useRolePermissionsAssigned } from '../role-permissions/role-permissions-dashboard-link.component';
+import { launchPatientSearch } from './patient-search';
 import { QuickActionTile } from './quick-action-tile.component';
 import styles from './quick-actions.scss';
 
@@ -35,11 +36,10 @@ export function RegisterPatientAction() {
   );
 }
 
-/** Find a patient: ACT's patient search over the page, or the configured page. */
+/** Find a patient: O3's patient search beside the page, opening the chosen patient's chart, or the configured page. */
 export function FindPatientAction() {
   const { t } = useTranslation();
   const { quickActions } = useConfig<Config>();
-  const [open, setOpen] = useState(false);
   const tile = {
     Icon: Search,
     label: t('findPatient', 'Find a patient'),
@@ -49,24 +49,26 @@ export function FindPatientAction() {
     return <QuickActionTile {...tile} to={quickActions.findPatientUrl} />;
   }
   return (
-    <>
-      <QuickActionTile {...tile} onClick={() => setOpen(true)} />
-      {open && <PatientSearchPanel onClose={() => setOpen(false)} />}
-    </>
+    <QuickActionTile
+      {...tile}
+      onClick={() => launchPatientSearch(tile.label, (patientUuid) => navigate({ to: patientChartUrl(patientUuid) }))}
+    />
   );
 }
 
-/** Record BPG or oral: ACT's patient search, opening that form in the chosen patient's chart. */
+/** Record BPG or oral: O3's patient search beside the page, then that dose form beside it, as the due lists open it. */
 function RecordProphylaxis({
   prophylaxis,
   ...tile
 }: React.ComponentProps<typeof QuickActionTile> & { prophylaxis: 'bpg' | 'oral' }) {
-  const [open, setOpen] = useState(false);
+  const { prophylaxisCard } = useConfig<Config>();
+  const { record } = useRecordDose();
+  const formUuid = prophylaxis === 'oral' ? prophylaxisCard.oralForm : prophylaxisCard.bpgForm;
   return (
-    <>
-      <QuickActionTile {...tile} onClick={() => setOpen(true)} />
-      {open && <EnterProphylaxisSearch prophylaxis={prophylaxis} onClose={() => setOpen(false)} />}
-    </>
+    <QuickActionTile
+      {...tile}
+      onClick={() => launchPatientSearch(tile.label, (patientUuid) => record({ patient_uuid: patientUuid }, formUuid))}
+    />
   );
 }
 

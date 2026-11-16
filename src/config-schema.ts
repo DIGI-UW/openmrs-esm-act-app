@@ -147,7 +147,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        "Whether Find a patient on ACT home and on Home opens ACT's patient search over the page. When false, it leads to findPatientUrl.",
+        "Whether Find a patient on ACT home and on Home opens O3's patient search beside the page. When false, it leads to findPatientUrl.",
     },
     findPatientUrl: link(
       'Where the Find a patient quick action on ACT home and on Home leads when findPatientInPanel is false. The empty query keeps the search page loading when it is refreshed: the patient search app of 11.1.1-pre fails on a /search page load without one.',
