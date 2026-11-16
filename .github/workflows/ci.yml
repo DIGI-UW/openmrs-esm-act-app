@@ -34,9 +34,10 @@ jobs:
 
   # Triggered here rather than by the release workflow, which dispatches before npm's next tag shows the new version.
   # Drop this job and restore downstream_repository once O3-6013 lands in the shared release workflow.
+  # A [skip-pre] commit publishes nothing, so it has nothing to wait for or to build.
   build-distro-frontend:
     needs: release
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip-pre]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
