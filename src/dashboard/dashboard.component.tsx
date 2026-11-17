@@ -719,7 +719,7 @@ function Figures({
         asOf,
       ),
     ),
-    ...loaded(demographicReport, () => [
+    ...loaded({ ...demographicReport, ...categoryError }, () => [
       ...countRows(activeName, withCategory(t('sex', 'Sex')), demographics.sex, asOf),
       ...countRows(activeName, withCategory(t('age', 'Age')), demographics.age, asOf),
       ...countRows(activeName, withCategory(t('disease', 'Disease')), demographics.category, asOf),
@@ -862,8 +862,12 @@ function Figures({
           />
         </Section>
         <Section
-          title={t('activeRegistrantsCount', 'Active registrants: {{count}}', { count: activeCounted })}
-          name={t('activeRegistrants', 'Active registrants')}
+          title={
+            categoryPending
+              ? activeName
+              : t('activeRegistrantsCount', 'Active registrants: {{count}}', { count: activeCounted })
+          }
+          name={activeName}
           description={
             categoryName
               ? t(

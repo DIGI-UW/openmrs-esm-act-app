@@ -22,12 +22,12 @@ import { usePagedRows } from '../table-filters/paged-rows';
 import {
   type Figure,
   figureNames,
-  takesCategory,
   figureParams,
   isWidened,
   measureLabel,
   patientsReport,
   rowUnit,
+  takesCategory,
   useCountParams,
   widened,
 } from './dashboard-figure';

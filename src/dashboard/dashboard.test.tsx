@@ -279,6 +279,13 @@ async function signIn(
   });
 }
 
+/** Answers the Category at Diagnosis concept fetch with the result given; other requests go to the mock already set. */
+function conceptAnswers(result: () => Promise<unknown>) {
+  const served = vi.mocked(openmrsFetch).getMockImplementation();
+  vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: unknown) =>
+    url.includes('/concept/') ? result() : served(url, init as never)) as never);
+}
+
 const summaryUrls = () =>
   vi
     .mocked(openmrsFetch)
@@ -1214,12 +1221,6 @@ describe('Dashboard', () => {
       expect(vi.mocked(useReportDataset).mock.calls.some(([, params]) => params?.category)).toBe(false);
     });
 
-    function conceptAnswers(result: () => Promise<unknown>) {
-      const served = vi.mocked(openmrsFetch).getMockImplementation();
-      vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: unknown) =>
-        url.includes('/concept/') ? result() : served(url, init as never)) as never);
-    }
-
     it("waits for the disease choices before listing a linked sex, age or disease figure's patients", async () => {
       await signIn(undefined, { [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Female')] });
       conceptAnswers(() => new Promise(() => {}));
@@ -1848,9 +1849,12 @@ describe('Dashboard', () => {
     const close = vi.fn();
 
     /** Opens the export workspace from the Dashboard, and gives what it was opened with. */
-    async function openExport(failing?: string) {
+    async function openExport(failing?: string, categories?: () => Promise<unknown>) {
       await signIn(failing);
       await signInWith(['App: act.dashboard', 'Task: act.lists.export']);
+      if (categories) {
+        conceptAnswers(categories);
+      }
       vi.mocked(downloadCsv).mockClear();
       vi.mocked(launchWorkspace2).mockClear();
       close.mockClear();
@@ -1887,6 +1891,32 @@ describe('Dashboard', () => {
           filters: expect.objectContaining({ disease: 'Rheumatic Heart Disease/Rheumatic Fever' }),
         }),
       );
+    });
+
+    it('holds the Active registrants and the export while the disease choices of a linked disease load', async () => {
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?category=rhd-category');
+      const opened = await openExport(undefined, () => new Promise(() => {}));
+
+      expect(screen.getByRole('heading', { name: 'Active registrants' })).toBeInTheDocument();
+      expect(screen.queryByText('Active registrants: 3')).not.toBeInTheDocument();
+      expect(screen.queryAllByTestId('dashboard-sex')).toHaveLength(0);
+      await act(() => opened.run({ format: 'csv', sections: allButRunCharts, orientation: 'portrait' }, close));
+
+      expect(downloadCsv).not.toHaveBeenCalled();
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'The counts are still loading; export again in a moment' }),
+      );
+    });
+
+    it('leaves out the Active registrants rather than giving every disease when the disease choices fail', async () => {
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?category=rhd-category');
+      const opened = await openExport(undefined, () => Promise.reject(new Error('Privileges required: Get Concepts')));
+      await screen.findByText('Active registrants could not load');
+      await act(() => opened.run({ format: 'csv', sections: allButRunCharts, orientation: 'portrait' }, close));
+
+      const rows = downloaded()[2];
+      expect(rows.some(([section]) => section === 'Active registrants')).toBe(false);
+      expect(rows).toContainEqual(['Key figures', '', 'Active', '3', today, 'every clinic']);
     });
 
     it("gives every section's counts in one file, recorded in the download log without identifiers", async () => {
