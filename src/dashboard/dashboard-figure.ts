@@ -25,6 +25,9 @@ export const figureKeys = [
 
 export type Figure = { figure: Section } & Partial<Record<Exclude<(typeof figureKeys)[number], 'figure'>, string>>;
 
+export const takesCategory = (figure: Figure) =>
+  figure.figure === 'registrants' && ['sex', 'age', 'disease'].includes(figure.breakdown);
+
 /** The parameters a figure passes its section's patients report: every key but the section, the empty ones left out. */
 export const figureParams = ({ figure, ...rest }: Figure) =>
   Object.fromEntries(Object.entries(rest).filter(([, value]) => value)) as Record<string, string>;

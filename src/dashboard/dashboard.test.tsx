@@ -244,15 +244,30 @@ async function signIn(
             }
           : url.includes('/location?tag=')
             ? { results: [], totalCount: 0 }
-            : url.includes('?v=custom:(display)')
-              ? { display: url.includes('/gulu') ? 'Gulu RRH' : 'Lira RRH' }
-              : { tags: sessionLocation.tags },
+            : url.includes('/concept/1a5aa050-661d-5e89-95d7-c1eba476df22')
+              ? {
+                  answers: [
+                    { uuid: 'rhd-category', display: 'Rheumatic Heart Disease/Rheumatic Fever' },
+                    { uuid: 'congenital-category', display: 'Congenital heart disease' },
+                  ],
+                }
+              : url.includes('?v=custom:(display)')
+                ? { display: url.includes('/gulu') ? 'Gulu RRH' : 'Lira RRH' }
+                : { tags: sessionLocation.tags },
     })) as never);
   vi.mocked(useReportDataset).mockImplementation((report, params) => {
     const counts = {
       ...countRows(['mbarara', 'arua'].includes(params?.cardiacClinic)),
       ...dashboardRows(params?.cardiacClinic),
     };
+    if (params?.category) {
+      counts[REGISTRANTS] = [
+        ...counts[REGISTRANTS].filter((row) => row.breakdown === 'status'),
+        ...(params.category === 'rhd-category'
+          ? [...counted('sex', { Female: 1 }), ...counted('age', { '10-19': 1 }), ...counted('disease', { 'RHD B': 1 })]
+          : []),
+      ];
+    }
     mutates[String(report)] ??= vi.fn();
     return {
       columns: [],
@@ -1134,6 +1149,179 @@ describe('Dashboard', () => {
     expect(texts('dashboard-cascade-step')).toEqual(['active4', 'initiated4100%', 'adherentEightyPercent125%']);
   });
 
+  describe('the disease filter on Active registrants', () => {
+    const registrantCalls = () =>
+      vi
+        .mocked(useReportDataset)
+        .mock.calls.filter(([uuid]) => uuid === REGISTRANTS)
+        .map(([, params]) => params);
+
+    it('counts the sex, age and disease of the active registrants with the disease chosen, and leaves the tiles and status as they are', async () => {
+      await signIn();
+      renderPage();
+      await screen.findByText('Active registrants: 3');
+      await screen.findByRole('option', { name: 'Rheumatic Heart Disease/Rheumatic Fever' });
+      vi.mocked(useReportDataset).mockClear();
+
+      await userEvent.selectOptions(screen.getByLabelText('Disease'), 'Rheumatic Heart Disease/Rheumatic Fever');
+
+      expect(await screen.findByText('Active registrants: 1')).toBeInTheDocument();
+      expect(texts('dashboard-sex')).toEqual(['Female1100%']);
+      expect(texts('dashboard-age')).toEqual(['1100%10-19']);
+      expect(texts('dashboard-category')).toEqual(['RHD B1']);
+      expect(texts('dashboard-tile')).toContain('3Activeenrolled and alive');
+      expect(texts('dashboard-status')).toEqual(['Active375%', 'Voluntary inactivity125%']);
+      expect(registrantCalls()).toContainEqual({ endDate: today, category: 'rhd-category' });
+      expect(registrantCalls()).toContainEqual({ endDate: today });
+      await vi.waitFor(() => expect(window.location.search).toContain('category=rhd-category'));
+    });
+
+    it('lists only the Category at Diagnosis answers, and every active registrant again on All diseases', async () => {
+      await signIn();
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?category=rhd-category');
+      renderPage();
+
+      expect(await screen.findByText('Active registrants: 1')).toBeInTheDocument();
+      const options = within(screen.getByLabelText('Disease')).getAllByRole('option');
+      expect(options.map((option) => option.textContent)).toEqual([
+        'All diseases',
+        'Rheumatic Heart Disease/Rheumatic Fever',
+        'Congenital heart disease',
+      ]);
+
+      await userEvent.selectOptions(screen.getByLabelText('Disease'), 'All diseases');
+      expect(await screen.findByText('Active registrants: 3')).toBeInTheDocument();
+      expect(texts('dashboard-sex')).toEqual(['Female267%', 'Male133%']);
+    });
+
+    it('counts every disease, and offers no disease chip, for a category no answer names, such as an old link carries', async () => {
+      await signIn(undefined, { [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Female')] });
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?category=retired-category&figure=registrants&breakdown=sex&label=Female',
+      );
+      renderPage();
+
+      await vi.waitFor(() =>
+        expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'sex', label: 'Female' }),
+      );
+      expect(screen.queryByRole('button', { name: /Disease:/ })).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back to the Dashboard' }));
+      expect(await screen.findByText('Active registrants: 3')).toBeInTheDocument();
+      expect(screen.getByLabelText('Disease')).toHaveValue('');
+      expect(vi.mocked(useReportDataset).mock.calls.some(([, params]) => params?.category)).toBe(false);
+    });
+
+    function conceptAnswers(result: () => Promise<unknown>) {
+      const served = vi.mocked(openmrsFetch).getMockImplementation();
+      vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: unknown) =>
+        url.includes('/concept/') ? result() : served(url, init as never)) as never);
+    }
+
+    it("waits for the disease choices before listing a linked sex, age or disease figure's patients", async () => {
+      await signIn(undefined, { [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Female')] });
+      conceptAnswers(() => new Promise(() => {}));
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?category=rhd-category&figure=registrants&breakdown=sex&label=Female',
+      );
+      renderPage();
+
+      expect(await screen.findByText(/Opened from the Dashboard/)).toBeInTheDocument();
+      expect(vi.mocked(useReportDataset).mock.calls.filter(([uuid]) => uuid === REGISTRANT_PATIENTS)).toEqual([]);
+      expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
+    });
+
+    it("says a linked sex, age or disease figure's patients could not load when the disease choices fail", async () => {
+      await signIn(undefined, { [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Female')] });
+      conceptAnswers(() => Promise.reject(new Error('Privileges required: Get Concepts')));
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?category=rhd-category&figure=registrants&breakdown=sex&label=Female',
+      );
+      renderPage();
+
+      expect(await screen.findByText('Could not load the patients behind this figure')).toBeInTheDocument();
+      expect(vi.mocked(useReportDataset).mock.calls.filter(([uuid]) => uuid === REGISTRANT_PATIENTS)).toEqual([]);
+    });
+
+    it('says the Active registrants could not load when the disease choices fail, rather than counting every disease', async () => {
+      await signIn();
+      conceptAnswers(() => Promise.reject(new Error('Privileges required: Get Concepts')));
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?category=rhd-category');
+      renderPage();
+
+      expect(await screen.findByText('Active registrants could not load')).toBeInTheDocument();
+      expect(screen.queryAllByTestId('dashboard-sex')).toHaveLength(0);
+      expect(texts('dashboard-tile')).toContain('3Activeenrolled and alive');
+    });
+
+    it('says nobody has the disease chosen, rather than drawing empty charts', async () => {
+      await signIn();
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?category=congenital-category');
+      renderPage();
+
+      expect(await screen.findByText('Active registrants: 0')).toBeInTheDocument();
+      expect(screen.queryAllByTestId('dashboard-sex')).toHaveLength(0);
+      expect(screen.getByText(/Nobody with Congenital heart disease to count/)).toBeInTheDocument();
+    });
+
+    it("opens a count's patients with the disease, and Back returns to the Dashboard still filtered", async () => {
+      await signIn(undefined, { [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Female')] });
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?category=rhd-category');
+      renderPage();
+      await screen.findByText('Active registrants: 1');
+
+      await userEvent.click(within(screen.getAllByTestId('dashboard-sex')[0]).getByRole('link'));
+
+      expect(
+        await screen.findByText(/^Opened from the Dashboard: Active registrants, Female, 1 patient/),
+      ).toBeInTheDocument();
+      expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({
+        endDate: today,
+        breakdown: 'sex',
+        label: 'Female',
+        category: 'rhd-category',
+      });
+      expect(
+        screen.getByRole('button', { name: /Disease: Rheumatic Heart Disease\/Rheumatic Fever/ }),
+      ).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back to the Dashboard' }));
+      expect(await screen.findByLabelText('Disease')).toHaveValue('rhd-category');
+      expect(await screen.findByText('Active registrants: 1')).toBeInTheDocument();
+    });
+
+    it('widens a removed figure chip to every active registrant, and a removed disease chip to every disease', async () => {
+      await signIn(undefined, { [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Female')] });
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?category=rhd-category&figure=registrants&breakdown=sex&label=Female',
+      );
+      renderPage();
+
+      await userEvent.click(await screen.findByRole('button', { name: /Disease: Rheumatic Heart Disease/ }));
+      await vi.waitFor(() =>
+        expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'sex', label: 'Female' }),
+      );
+
+      window.history.replaceState(
+        null,
+        '',
+        '/openmrs/spa/home/act-dashboard?category=rhd-category&figure=registrants&breakdown=sex&label=Female',
+      );
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      await userEvent.click(await screen.findByRole('button', { name: /Active registrants: Female/ }));
+      await vi.waitFor(() => expect(paramsOf(REGISTRANT_PATIENTS)).toEqual({ endDate: today, breakdown: 'active' }));
+      expect(screen.queryByRole('button', { name: /Disease:/ })).not.toBeInTheDocument();
+    });
+  });
+
   describe('the patients behind a figure', () => {
     const figureRows = {
       [REGISTRANT_PATIENTS]: [patientRow('Akello Atoo', 'Voluntary inactivity')],
@@ -1677,6 +1865,28 @@ describe('Dashboard', () => {
       const opened = await openExport();
       expect(opened.summary).toMatch(/^every clinic · figures as of /);
       expect(opened.showScreening).toBe(true);
+    });
+
+    it('names the disease chosen in the Active registrants rows and in the download log', async () => {
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?category=rhd-category');
+      const opened = await openExport();
+      await act(() => opened.run({ format: 'csv', sections: allButRunCharts, orientation: 'portrait' }, close));
+
+      const rows = downloaded()[2];
+      expect(rows).toContainEqual([
+        'Active registrants',
+        'Sex, Rheumatic Heart Disease/Rheumatic Fever',
+        'Female',
+        '1',
+        today,
+        'every clinic',
+      ]);
+      expect(rows).toContainEqual(['Key figures', '', 'Active', '3', today, 'every clinic']);
+      expect(recorded().at(-1)).toEqual(
+        expect.objectContaining({
+          filters: expect.objectContaining({ disease: 'Rheumatic Heart Disease/Rheumatic Fever' }),
+        }),
+      );
     });
 
     it("gives every section's counts in one file, recorded in the download log without identifiers", async () => {

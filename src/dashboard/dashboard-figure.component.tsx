@@ -22,6 +22,7 @@ import { usePagedRows } from '../table-filters/paged-rows';
 import {
   type Figure,
   figureNames,
+  takesCategory,
   figureParams,
   isWidened,
   measureLabel,
@@ -44,6 +45,11 @@ export function DashboardFigure({
   scope,
   asOf,
   clinicNames,
+  category,
+  categoryName,
+  categoryPending,
+  categoryFailed,
+  onCategory,
   onFigure,
   onScope,
   onAsOf,
@@ -53,6 +59,11 @@ export function DashboardFigure({
   scope: Scope;
   asOf: string;
   clinicNames: { cardiac?: string; primaryCare?: string };
+  category?: string;
+  categoryName?: string;
+  categoryPending?: boolean;
+  categoryFailed?: boolean;
+  onCategory: (category: string) => void;
   onFigure: (figure: Figure) => void;
   onScope: (scope: Scope) => void;
   onAsOf: (asOf: string) => void;
@@ -61,9 +72,16 @@ export function DashboardFigure({
   const { t } = useTranslation();
   const { dashboard, careCascade } = useConfig<Config>();
   const today = dayjs().format('YYYY-MM-DD');
-  const params = useMemo(() => ({ endDate: asOf, ...scope, ...figureParams(figure) }), [asOf, scope, figure]);
-  const { counted, countParams, pending } = useCountParams(params);
-  const report = useReportDataset(counted ? patientsReport(dashboard, figure.figure) : null, countParams);
+  const filtered = Boolean(category) && takesCategory(figure);
+  const params = useMemo(
+    () => ({ endDate: asOf, ...scope, ...figureParams(figure), ...(filtered && { category }) }),
+    [asOf, scope, figure, filtered, category],
+  );
+  const { counted, countParams, pending: limitPending } = useCountParams(params);
+  const failed = Boolean(categoryFailed) && takesCategory(figure);
+  // Until the answers load, a category the URL asks for cannot be told from one no answer names.
+  const pending = limitPending || failed || (Boolean(categoryPending) && takesCategory(figure));
+  const report = useReportDataset(counted && !pending ? patientsReport(dashboard, figure.figure) : null, countParams);
   const { rows } = report;
   const { results, paginationProps } = usePagedRows(rows, params);
   const names = figureNames(t, figure, careCascade.steps);
@@ -128,6 +146,7 @@ export function DashboardFigure({
         <div className={styles.chips}>
           {!isWidened(figure) &&
             chip('figure', [names.section, names.label].filter(Boolean).join(': '), () => onFigure(widened(figure)))}
+          {filtered && chip('disease', `${t('disease', 'Disease')}: ${categoryName}`, () => onCategory(''))}
           {scope.cardiacClinic &&
             chip('cardiac', `${t('cardiacClinic', 'Cardiac clinic')}: ${clinicNames.cardiac ?? ''}`, () => {
               const { cardiacClinic: _, ...rest } = scope;
@@ -166,7 +185,7 @@ export function DashboardFigure({
           </div>
         )}
       </div>
-      {report.error ? (
+      {report.error || failed ? (
         <InlineNotification
           kind="error"
           statusIconDescription={t('errorIcon', 'error icon')}
