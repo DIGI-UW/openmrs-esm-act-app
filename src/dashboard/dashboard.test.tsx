@@ -618,7 +618,7 @@ describe('Dashboard', () => {
     expect(await screen.findAllByTestId('dashboard-screening-step')).toHaveLength(3);
     expect(texts('dashboard-screening-step')).toEqual([
       'Screened positive4',
-      'Had a confirmatory echo4100%',
+      'Diagnosis recorded4100%',
       'Heart disease375%',
     ]);
     expect(screen.getByText('Screening programme sites')).toBeInTheDocument();
@@ -626,7 +626,7 @@ describe('Dashboard', () => {
     expect(screen.getByRole('heading', { name: 'RHD details of the 2' })).toBeInTheDocument();
     expect(texts('dashboard-screening-details')).toEqual(['RHD A2']);
     expect(chartData(SimpleBarChart, 'Screening cascade')).toHaveLength(3);
-    expect(chartData(DonutChart, 'Diagnoses after the echo')).toEqual([
+    expect(chartData(DonutChart, 'What the diagnosis found')).toEqual([
       { group: 'RHD', value: 3 },
       { group: 'Normal', value: 1 },
     ]);
@@ -640,7 +640,7 @@ describe('Dashboard', () => {
     const scaleOf = (title: string) =>
       (chartOptions(DonutChart, title) as unknown as { color: { scale: object } }).color.scale;
     expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#ba4e00' });
-    expect(scaleOf('Diagnoses after the echo')).toEqual({
+    expect(scaleOf('What the diagnosis found')).toEqual({
       RHD: '#007d79',
       Normal: '#198038',
     });
