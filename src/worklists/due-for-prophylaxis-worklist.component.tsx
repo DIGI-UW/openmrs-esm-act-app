@@ -1,0 +1,55 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { dueReason, prescription, statusLabel } from '../due-for-prophylaxis/due-list';
+import { parseReportDate } from '../reports/report-date';
+import { useDueList, useDueRows } from '../due-for-prophylaxis/due-for-prophylaxis.resource';
+import { RecordDoseAction, type RecordDose, useRecordDose } from '../due-for-prophylaxis/record-dose.component';
+import { Worklist, type WorklistState, WorklistTable, whyKey } from './worklist.component';
+
+function DuePatients({ title, recordDose: { opening, record } }: { title: string; recordDose: RecordDose }) {
+  const { t } = useTranslation();
+  const { rows, recorded, isLoading, error } = useDueList();
+  const entries = rows.map((row) => ({
+    row,
+    prophylaxis: prescription(t, row),
+    why: dueReason(t, row, recorded.has(String(row.patient_uuid))),
+    whyKey: whyKey(statusLabel(t, row, recorded.has(String(row.patient_uuid))), parseReportDate(row.next_due)),
+  }));
+  return (
+    <WorklistTable
+      title={title}
+      csvName="due-for-prophylaxis"
+      entries={entries}
+      isLoading={isLoading}
+      error={error}
+      action={({ row }) => (
+        <RecordDoseAction
+          row={row}
+          recordedToday={recorded.has(String(row.patient_uuid))}
+          disabled={opening}
+          onRecord={record}
+        />
+      )}
+    />
+  );
+}
+
+/** The patients whose prophylaxis is due in the next 48 hours, due today or overdue. */
+export default function DueForProphylaxisWorklist(state: WorklistState) {
+  const { t } = useTranslation();
+  // The report's rows, not the due list, whose who-was-recorded-today lookup the tile does not need.
+  const { rows, isLoading, error } = useDueRows();
+  const title = t('dueForProphylaxis', 'Due for prophylaxis');
+  // Here, not in the list, which closes with the tile while the panel stays open on the page.
+  const recordDose = useRecordDose();
+  return (
+    <Worklist
+      state={state}
+      title={title}
+      tone="red"
+      count={isLoading ? undefined : rows.length}
+      error={error}
+      list={<DuePatients title={title} recordDose={recordDose} />}
+    />
+  );
+}

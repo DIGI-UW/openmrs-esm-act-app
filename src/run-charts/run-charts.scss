@@ -1,0 +1,171 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05 layout.$spacing-06 layout.$spacing-09;
+}
+
+.crumb {
+  @include type.type-style('body-compact-01');
+}
+
+.card {
+  background: $ui-02;
+  border: 1px solid $ui-03;
+  padding: layout.$spacing-05;
+  min-width: 0;
+}
+
+.title {
+  @include type.type-style('heading-03');
+  margin: 0 0 layout.$spacing-02;
+}
+
+.sub {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin: 0 0 layout.$spacing-05;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.field {
+  min-width: 12.5rem;
+}
+
+.metricField {
+  min-width: 22rem;
+}
+
+// Carbon's switcher takes the row's whole width unless held to its three choices.
+.points {
+  flex: none;
+  width: 16rem;
+}
+
+.chart {
+  min-width: 0;
+
+  // Carbon classes the second of two groups, the median, stroke-2-1-2.
+  :global(path.line.stroke-2-1-2) {
+    stroke-dasharray: 6 4;
+  }
+
+  // Invisible but still hoverable, so the median's tooltip stays.
+  :global(circle.dot.stroke-2-1-2) {
+    opacity: 0;
+  }
+}
+
+.tooltip {
+  padding: layout.$spacing-03 layout.$spacing-04;
+  @include type.type-style('body-compact-01');
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.notes {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-06;
+  margin-top: layout.$spacing-05;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: layout.$spacing-05;
+
+  @media (max-width: 66rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background: $ui-02;
+  border: 1px solid $ui-03;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    border-color: $interactive-01;
+  }
+}
+
+.current {
+  border: 2px solid $interactive-01;
+}
+
+.tileLabel {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  min-height: layout.$spacing-08;
+}
+
+.tileValue {
+  @include type.type-style('heading-05');
+  font-variant-numeric: tabular-nums;
+}
+
+.up {
+  color: #0e6027;
+}
+
+.down {
+  color: #a2191f;
+}
+
+.flat {
+  color: $text-02;
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  align-items: flex-start;
+}
+
+.cardMetric {
+  @include type.type-style('heading-04');
+  font-variant-numeric: tabular-nums;
+}
+
+.cardDescription {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin: -#{layout.$spacing-03} 0 layout.$spacing-05;
+}
+
+.cardHeading {
+  @include type.type-style('heading-compact-01');
+  margin-bottom: layout.$spacing-04;
+}
+
+.cardNote {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+}

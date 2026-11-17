@@ -1,0 +1,90 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
+
+.panel {
+  position: fixed;
+  top: var(--omrs-navbar-height, 3rem);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8000;
+  display: flex;
+  flex-direction: column;
+  background-color: $ui-02;
+}
+
+.searchBar {
+  display: flex;
+  border-bottom: 1px solid $ui-03;
+}
+
+.body {
+  overflow-y: auto;
+  padding: layout.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('heading-compact-01');
+  color: $text-02;
+  margin: layout.$spacing-05 0 layout.$spacing-03;
+}
+
+.results {
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+  width: 100%;
+  padding: layout.$spacing-04 layout.$spacing-03;
+  border: none;
+  border-bottom: 1px solid $ui-03;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background-color: $ui-01;
+  }
+
+  &:focus-visible {
+    @include act-focus;
+  }
+}
+
+.initials {
+  @include type.type-style('heading-compact-02');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  background-color: $ui-03;
+  color: $ui-05;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.name {
+  @include type.type-style('heading-compact-02');
+  color: $ui-05;
+}
+
+.details {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.empty {
+  @include type.type-style('body-01');
+  color: $text-02;
+}

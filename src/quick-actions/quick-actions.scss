@@ -1,0 +1,106 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
+
+// The tiles share each row, so a home with fewer of them, or a row that wraps, leaves no empty cell.
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  background-color: $ui-03;
+  border: 1px solid $ui-03;
+
+  > * {
+    flex: 1 1 10rem;
+  }
+
+  // An action its own check hides renders nothing, and takes no cell.
+  > :empty {
+    display: none;
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: layout.$spacing-02;
+  width: 100%;
+  height: 100%;
+  padding: layout.$spacing-05;
+  background-color: $ui-01;
+  border: none;
+  color: $ui-05;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    background-color: $ui-02;
+  }
+
+  &:hover .icon {
+    @include brand-02(background-color);
+  }
+
+  &:focus-visible {
+    @include act-focus;
+  }
+}
+
+.icon {
+  display: flex;
+  margin-bottom: layout.$spacing-03;
+  padding: layout.$spacing-03;
+  @include brand-01(background-color);
+  color: $ui-01;
+}
+
+.label {
+  @include type.type-style('heading-compact-02');
+}
+
+.subtitle {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+}
+
+// Enter prophylaxis's forms open over the page under its tile, so the tiles beside it keep their height.
+.choice {
+  position: relative;
+  height: 100%;
+}
+
+.choices {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $ui-03;
+  background-color: $ui-01;
+}
+
+.choiceLink {
+  @include type.type-style('body-compact-02');
+  display: block;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  color: $ui-05;
+  text-decoration: none;
+
+  &:hover {
+    background-color: $ui-02;
+  }
+
+  &:focus-visible {
+    @include act-focus;
+  }
+}
+
+.shownFor {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+}

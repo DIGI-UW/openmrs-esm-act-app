@@ -1,0 +1,172 @@
+import useSWR from 'swr';
+import { type FetchResponse, openmrsFetch, parseDate, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  answersIn,
+  answerText,
+  answerUuid,
+  type ChartEncounter,
+  type GroupedObs,
+  useChartEncounters,
+} from './consultations.resource';
+
+interface PersonDetails {
+  attributes?: Array<{ attributeType: { uuid: string }; value: unknown }>;
+  preferredAddress?: { cityVillage?: string | null } | null;
+}
+
+/** The patient's person attributes by type uuid, as text, and their village. */
+export function usePersonDetails(patientUuid: string | null) {
+  const { data, error, isLoading } = useSWR<FetchResponse<PersonDetails>, Error>(
+    patientUuid
+      ? `${restBaseUrl}/person/${patientUuid}?v=custom:(attributes:(attributeType:(uuid),value),preferredAddress:(cityVillage))`
+      : null,
+    openmrsFetch,
+  );
+  const attributes = new Map(
+    (data?.data?.attributes ?? []).map((attribute) => [attribute.attributeType.uuid, answerText(attribute.value)]),
+  );
+  return { attributes, village: data?.data?.preferredAddress?.cityVillage ?? null, error, isLoading };
+}
+
+/**
+ * The questions a diagnosis reads. A clinician records it on RHD Patient Information; one a consultation recorded
+ * during the AR-167 interim still counts, so both encounter types are read.
+ */
+export const diagnosisConcepts = {
+  encounterTypes: {
+    consultation: 'c2503561-c00d-5460-8157-43d594472b4a',
+    patientInformation: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
+  },
+  group: '594b4495-36dc-52a6-9810-15a9e2e2dcb9',
+  category: '1a5aa050-661d-5e89-95d7-c1eba476df22',
+  active: 'b1b5d279-8013-5ae4-83a7-0f2bd9bc8457',
+  no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  priority: '97c025b2-f42c-5c53-8aaa-0506c8dd3774',
+  secondary: 'af45fb2a-ed18-5beb-935e-8e4d92df2dac',
+  started: '62321320-695e-5319-a306-40dfd6ad94b7',
+  ended: 'e9f2fceb-05be-577f-bf76-dde0647f01db',
+  details: [
+    'cfe17bb5-4a76-5f3a-9e1c-7b1e9b84a8e3',
+    'd3f6e1a2-9c5b-5e84-8f2d-1a6c7b9e0d4f',
+    'b7a2c4d8-5e91-5f3a-8c6d-2b9e4f7a1c0d',
+    'e9f3a5c7-6b82-5d4e-9f1a-3c7d8e2b5f4a',
+  ],
+};
+
+const withCategory = (encounter: ChartEncounter) =>
+  answersIn(encounter.obs, diagnosisConcepts.group).filter(
+    (group) => answersIn(group.groupMembers, diagnosisConcepts.category).length,
+  );
+
+// An edit re-creates a changed answer, or the group if one is added: the newest dates the save.
+const savedAt = (group: GroupedObs) =>
+  Math.max(
+    0,
+    ...[group, ...(group.groupMembers ?? [])]
+      .filter((one) => one.auditInfo?.dateCreated)
+      .map((one) => parseDate(one.auditInfo.dateCreated).getTime()),
+  );
+
+// A code-unit compare, which orders lowercase hex as MariaDB's obs.uuid collation does.
+const byUuidDescending = (a: GroupedObs, b: GroupedObs) =>
+  Number((b.uuid ?? '') > (a.uuid ?? '')) - Number((b.uuid ?? '') < (a.uuid ?? ''));
+
+const answered = (group: GroupedObs, concept: string, answer: string) =>
+  answersIn(group.groupMembers, concept).some((one) => answerUuid(one.value) === answer);
+
+/** Whether the registry's reports count this Diagnosis: not answered inactive, nor secondary. */
+const counted = (group: GroupedObs) =>
+  !answered(group, diagnosisConcepts.active, diagnosisConcepts.no) &&
+  !answered(group, diagnosisConcepts.priority, diagnosisConcepts.secondary);
+
+/**
+ * The Diagnosis the registry's reports read, the one counted that saved last, with its encounter; with none counted,
+ * the Diagnosis saved last. A tie, as when saved together, goes to the higher obs uuid, as in the reports.
+ */
+function useLatestDiagnosisGroup(patientUuid: string | null) {
+  const consultations = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.consultation);
+  const information = useChartEncounters(patientUuid, diagnosisConcepts.encounterTypes.patientInformation);
+  const tag = (list: Array<ChartEncounter>, onConsultation: boolean) =>
+    list.flatMap((encounter) => {
+      const diagnoses = withCategory(encounter);
+      return diagnoses.map((group) => ({ group, encounter: { ...encounter, onConsultation, diagnoses } }));
+    });
+  const [latest] = [...tag(consultations.encounters, true), ...tag(information.encounters, false)].sort(
+    (a, b) =>
+      Number(counted(b.group)) - Number(counted(a.group)) ||
+      savedAt(b.group) - savedAt(a.group) ||
+      parseDate(b.encounter.encounterDatetime).getTime() - parseDate(a.encounter.encounterDatetime).getTime() ||
+      byUuidDescending(a.group, b.group),
+  );
+  return {
+    latest,
+    error: consultations.error ?? information.error,
+    isLoading: consultations.isLoading || information.isLoading,
+  };
+}
+
+/** The Diagnosis the registry's reports read, as its category with its details in name order. Null with none. */
+export function useLatestDiagnosis(patientUuid: string | null) {
+  const { latest, error, isLoading } = useLatestDiagnosisGroup(patientUuid);
+  const group = latest && counted(latest.group) ? latest.group : null;
+  if (!group) {
+    return { diagnosis: null, error, isLoading };
+  }
+  const category = answerText(answersIn(group.groupMembers, diagnosisConcepts.category)[0].value);
+  const details = (group.groupMembers ?? [])
+    .filter((member) => diagnosisConcepts.details.includes(member.concept.uuid))
+    .map((member) => answerText(member.value))
+    .sort();
+  return { diagnosis: details.length ? `${category} (${details.join(', ')})` : category, error, isLoading };
+}
+
+export interface DiagnosisRow {
+  key: string;
+  /** The consultation or Patient Information that records it; Edit reopens a Patient Information. */
+  encounterUuid: string;
+  /** Whether a consultation records it (an AR-167-interim record); otherwise Patient Information. */
+  onConsultation: boolean;
+  diagnosis: string;
+  active: string;
+  started: string | null;
+  ended: string | null;
+}
+
+/** One Diagnosis answer group as a table row: the category with its details, and its status and dates. */
+export function toDiagnosisRow(
+  group: GroupedObs,
+  key: string,
+  encounterUuid: string,
+  onConsultation = true,
+): DiagnosisRow {
+  const one = (concept: string) => answersIn(group.groupMembers, concept)[0]?.value;
+  const category = answerText(one(diagnosisConcepts.category));
+  const details = (group.groupMembers ?? [])
+    .filter((member) => diagnosisConcepts.details.includes(member.concept.uuid))
+    .map((member) => answerText(member.value))
+    .sort();
+  return {
+    key,
+    encounterUuid,
+    onConsultation,
+    diagnosis: details.length ? `${category} (${details.join(', ')})` : category,
+    active: answerText(one(diagnosisConcepts.active)),
+    started: one(diagnosisConcepts.started) ? String(one(diagnosisConcepts.started)) : null,
+    ended: one(diagnosisConcepts.ended) ? String(one(diagnosisConcepts.ended)) : null,
+  };
+}
+
+/**
+ * Every Diagnosis with a Category, inactive ones too, of the record holding the one the registry's reports read, else
+ * of the record that saved one last; other records are superseded.
+ */
+export function useDiagnoses(patientUuid: string | null) {
+  const { latest, error, isLoading } = useLatestDiagnosisGroup(patientUuid);
+  const record = latest?.encounter;
+  const diagnoses = record
+    ? record.diagnoses.map((group, index) =>
+        toDiagnosisRow(group, `${record.uuid}-${index}`, record.uuid, record.onConsultation),
+      )
+    : [];
+  return { diagnoses, error, isLoading };
+}

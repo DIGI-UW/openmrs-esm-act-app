@@ -1,0 +1,29 @@
+@use '@carbon/layout';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.ring {
+  display: block;
+  width: layout.$spacing-09 - layout.$spacing-03;
+  height: layout.$spacing-09 - layout.$spacing-03;
+}
+
+.track,
+.arc {
+  fill: none;
+  stroke-width: 3;
+}
+
+.track {
+  stroke: $ui-03;
+}
+
+.arc {
+  @include brand-01(stroke);
+}
+
+// In the ring's own units, so "100%" fits inside the track at any size.
+.value {
+  font-size: 9px;
+  font-weight: 600;
+  fill: $ui-05;
+}

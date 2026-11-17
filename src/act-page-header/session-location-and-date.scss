@@ -1,0 +1,16 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.headerMeta {
+  @include type.type-style('body-compact-01');
+  display: flex;
+  gap: layout.$spacing-05;
+  color: $text-02;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+}

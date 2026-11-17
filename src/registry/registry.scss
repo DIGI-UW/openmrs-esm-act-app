@@ -1,0 +1,89 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
+
+.registry {
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.description {
+  @include type.type-style('body-01');
+  margin-bottom: layout.$spacing-06;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  gap: layout.$spacing-05;
+  align-items: end;
+  margin-bottom: layout.$spacing-05;
+}
+
+// Carbon has no yellow tag, so No prescription is drawn in Carbon's yellow here.
+.noPrescription {
+  @include act-yellow-tag;
+}
+
+// Carbon has no orange tag, so missing data flags are drawn in Carbon's orange here.
+.dataQuality {
+  background-color: $act-data-quality-background;
+  color: $act-data-quality-text;
+}
+
+// The tooltip's trigger is the tag itself, without the dotted underline of a definition.
+.flagsTooltip :global(.cds--definition-term) {
+  border-bottom: none;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-05;
+}
+
+.notConsented {
+  margin-left: layout.$spacing-02;
+  font-weight: 600;
+}
+
+.inactive {
+  margin-left: layout.$spacing-03;
+}
+
+.legend {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin-bottom: layout.$spacing-03;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-03 0;
+}
+
+.detailFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: layout.$spacing-03 layout.$spacing-05;
+}
+
+.detailLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.overdue {
+  color: $danger;
+}

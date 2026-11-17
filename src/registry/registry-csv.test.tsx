@@ -1,0 +1,128 @@
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { openmrsFetch } from '@openmrs/esm-framework';
+import { signInWith } from '../access/sign-in.test-helper';
+import { useReportDataset } from '../reports/report-dataset.resource';
+import { registryRows } from './registry.fixture';
+import Registry from './registry.component';
+
+vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+
+async function downloadedCsv() {
+  const createObjectURL = vi.fn((blob: Blob) => 'blob:registry');
+  window.URL.createObjectURL = createObjectURL as never;
+  window.URL.revokeObjectURL = vi.fn();
+  // The test browser would follow the blob link, leaving the next test on a page with no URL to set.
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  await userEvent.click(screen.getByRole('button', { name: /download csv/i }));
+  // The download is recorded in ACT Core's log before the file is made.
+  await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
+  return (createObjectURL.mock.calls[0][0] as Blob).text();
+}
+
+describe('Registry CSV download', () => {
+  beforeEach(async () => {
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-registry?status=');
+    await signInWith(['App: act.registry', 'Task: act.lists.export']);
+    // The download is recorded through ACT Core before the file is made.
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: registryRows,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+  });
+
+  it('downloads the filtered rows, from every page, with the report fields in separate columns', async () => {
+    render(<Registry />);
+    await userEvent.selectOptions(screen.getByLabelText('Category at diagnosis'), 'RHD A');
+
+    const lines = (await downloadedCsv()).trim().split('\r\n');
+
+    expect(lines[0]).toBe(
+      'Name,ACT ID,Alternate ID,National ID,Age,Sex,Diagnosis category,Diagnosis details,Prophylaxis regimen,Next consultation,Cardiac clinic,Primary care clinic,Consent given,Last injection,Injection due,Last updated,Procedure due,Flags',
+    );
+    expect(lines).toHaveLength(1 + 10);
+    expect(lines[1]).toBe('Patient 1,rhd00001,,,10,F,RHD A,,Q28 day BPG,15-Oct-2026,Lira RRH,,Yes,,,,,');
+  });
+
+  it("writes the patient's Alternate ID and National ID beside the ACT ID, so a facility's own register can be matched", async () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [{ ...registryRows[0], external_id: 'GUL/2024/017', national_id: 'CM900123456ABC' }],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    render(<Registry />);
+
+    const lines = (await downloadedCsv()).trim().split('\r\n');
+
+    expect(lines[1].startsWith('Patient 1,rhd00001,GUL/2024/017,CM900123456ABC,10,')).toBe(true);
+  });
+
+  it('includes rows past the first page', async () => {
+    render(<Registry />);
+
+    const lines = (await downloadedCsv()).trim().split('\r\n');
+
+    expect(lines).toHaveLength(1 + 30);
+  });
+
+  it("writes each of a patient's flags, joined by semicolons", async () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [{ ...registryRows[0], rhd_flags: 'RHD INR target missing|RHD prophylaxis overdue' }],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    render(<Registry />);
+
+    const lines = (await downloadedCsv()).trim().split('\r\n');
+
+    expect(lines[1].endsWith(',RHD INR target missing; RHD prophylaxis overdue')).toBe(true);
+  });
+
+  it('quotes a value holding a comma or a quote', async () => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [{ ...registryRows[0], full_name: 'Nambi, Esther "Essie"' }],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    render(<Registry />);
+
+    const lines = (await downloadedCsv()).trim().split('\r\n');
+
+    expect(lines[1].startsWith('"Nambi, Esther ""Essie""",')).toBe(true);
+  });
+
+  it.each([
+    ['=HYPERLINK("http://x")', `"'=HYPERLINK(""http://x"")"`],
+    ['+256 700', "'+256 700"],
+    ['-1', "'-1"],
+    ['@SUM(A1)', "'@SUM(A1)"],
+    ['\t=1+1', "'\t=1+1"],
+    ['\r=1+1', `"'\r=1+1"`],
+  ])('writes %s as text, so a spreadsheet does not run it', async (name, cell) => {
+    vi.mocked(useReportDataset).mockReturnValue({
+      columns: [],
+      rows: [{ ...registryRows[0], full_name: name }],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    render(<Registry />);
+
+    const lines = (await downloadedCsv()).trim().split('\r\n');
+
+    expect(lines[1].startsWith(`${cell},`)).toBe(true);
+  });
+});

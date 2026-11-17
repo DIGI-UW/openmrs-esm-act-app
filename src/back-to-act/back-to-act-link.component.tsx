@@ -1,0 +1,35 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@carbon/react';
+import { ArrowLeftIcon, navigate } from '@openmrs/esm-framework';
+import { type ActScreenName, readActReturn } from './act-return';
+import styles from './back-to-act-link.scss';
+
+/** Above every chart page: a link back to the ACT page the chart was opened from, filters and all. */
+export default function BackToActLink() {
+  const { t } = useTranslation();
+  const actReturn = readActReturn();
+  const labels: Record<ActScreenName, string> = {
+    'act-home': t('backToActHome', 'Back to ACT home'),
+    'act-registry': t('backToRegistry', 'Back to Registry'),
+    'act-worklists': t('backToWorklists', 'Back to Worklists'),
+    'act-waiting-list': t('backToWaitingList', 'Back to Procedural waiting list'),
+    'act-screen-positive': t('backToDiagnosisToConfirm', 'Back to Diagnosis to confirm'),
+    'act-community-home': t('backToHome', 'Back to Home'),
+    'act-due-for-prophylaxis': t('backToDueForProphylaxis', 'Back to Due for prophylaxis'),
+    'act-enter-prophylaxis': t('backToEnterProphylaxis', 'Back to Enter prophylaxis'),
+    'act-dashboard': t('backToTheDashboard', 'Back to the Dashboard'),
+  };
+  if (!actReturn || !(actReturn.screen in labels)) {
+    return null;
+  }
+  return (
+    <div className={styles.backLink}>
+      {/* The arrow leads, as a way back reads; renderIcon would draw it after the label. */}
+      <Button kind="ghost" size="sm" className={styles.button} onClick={() => navigate({ to: actReturn.path })}>
+        <ArrowLeftIcon size={16} />
+        <span>{labels[actReturn.screen]}</span>
+      </Button>
+    </div>
+  );
+}

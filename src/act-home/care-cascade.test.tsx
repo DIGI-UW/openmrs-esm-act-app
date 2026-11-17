@@ -1,0 +1,227 @@
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { openmrsFetch } from '@openmrs/esm-framework';
+import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
+import { useReportDataset } from '../reports/report-dataset.resource';
+import CareCascade from './care-cascade.component';
+
+vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+const mockUseReportDataset = vi.mocked(useReportDataset);
+
+// Step names are the report's verbatim; the widget matches on them.
+const cascade = [
+  { step_order: 1, step: 'Active', patients: 20 },
+  { step_order: 2, step: 'Prescribed', patients: 17 },
+  { step_order: 3, step: 'Oral', patients: 2 },
+  { step_order: 4, step: 'BPG', patients: 15 },
+  { step_order: 5, step: 'Initiated', patients: 11 },
+  { step_order: 6, step: 'Covered today', patients: 9 },
+  { step_order: 7, step: 'Adherent (80%+)', patients: 0 },
+];
+
+function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
+  mockUseReportDataset.mockReturnValue({
+    columns: [],
+    rows: [],
+    isLoading: false,
+    error: undefined,
+    mutate: vi.fn(),
+    ...value,
+  });
+}
+
+describe('CareCascade', () => {
+  beforeEach(async () => {
+    window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    await signInWith(['App: act.registry']);
+  });
+
+  it.each([
+    ['primary care', ['RHD Community'], 'primaryCareClinic'],
+    ['cardiac', ['RHD District'], 'cardiacClinic'],
+  ])("counts the patients of the session's %s clinic, which it names", async (_, tags, param) => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', tags, `${param}-uuid`);
+
+    render(<CareCascade />);
+
+    expect(await screen.findByText('Patients enrolled at Kiswa HCIII')).toBeInTheDocument();
+    const [, params] = mockUseReportDataset.mock.lastCall;
+    expect(params).toEqual(expect.objectContaining({ [param]: `${param}-uuid` }));
+  });
+
+  it('evaluates nothing, rather than every clinic, while the session location is being looked up', async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', ['RHD Community'], 'pending-uuid');
+    vi.mocked(openmrsFetch).mockReturnValue(new Promise(() => {}) as never);
+
+    render(<CareCascade />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockUseReportDataset.mock.calls.length).toBeGreaterThan(0);
+    expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
+    expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
+  });
+
+  it("says it could not load, rather than counting every clinic, when the session location's kind cannot be read", async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Kiswa HCIII', ['RHD Community'], 'unreadable-uuid');
+    vi.mocked(openmrsFetch).mockRejectedValue(new Error('Internal Server Error'));
+
+    render(<CareCascade />);
+
+    expect(await screen.findByText('Could not load the care cascade')).toBeInTheDocument();
+    expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
+  });
+
+  it('counts every clinic at a location of neither kind', async () => {
+    dataset({ rows: cascade });
+    atSessionLocation('Head office', [], 'head-office');
+
+    render(<CareCascade />);
+
+    await waitFor(() => expect(screen.getAllByTestId('cascade-step')).toHaveLength(5));
+    const [, params] = mockUseReportDataset.mock.lastCall;
+    expect(Object.keys(params)).toEqual(['endDate']);
+    expect(screen.queryByText(/Patients enrolled at/)).not.toBeInTheDocument();
+  });
+
+  it("draws the report's five cascade steps, leaving out its Oral and BPG split", () => {
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual([
+      'active20',
+      'prescribed17',
+      'initiated11',
+      'coveredToday9',
+      'adherentEightyPercent0',
+    ]);
+  });
+
+  it('still draws a report that names its steps as the cascade report did before Covered today, while a distro catches up', () => {
+    dataset({
+      rows: [
+        { step_order: 1, step: 'Active', patients: 20 },
+        { step_order: 2, step: 'Prescribed Prophylaxis', patients: 17 },
+        { step_order: 3, step: 'Oral', patients: 2 },
+        { step_order: 4, step: 'BPG', patients: 15 },
+        { step_order: 5, step: 'Initiated BPG', patients: 11 },
+        { step_order: 6, step: 'Adherent', patients: 0 },
+      ],
+    });
+
+    render(<CareCascade />);
+
+    expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual([
+      'active20',
+      'prescribed17',
+      'initiated11',
+      'adherentEightyPercent0',
+    ]);
+  });
+
+  it("draws each step under its configured label, not the report's step name", async () => {
+    await signInWith(['App: act.registry'], {
+      careCascade: {
+        report: 'r',
+        reportUrl: '${openmrsSpaBase}/reports',
+        steps: [{ step: 'Covered today', label: 'Covered' }],
+      },
+    });
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual(['Covered9']);
+  });
+
+  it('leaves out a configured step the report does not return', async () => {
+    await signInWith(['App: act.registry'], {
+      careCascade: {
+        report: 'r',
+        reportUrl: '${openmrsSpaBase}/reports',
+        steps: [
+          { step: 'Active', label: 'Active' },
+          { step: 'Retained in care', label: 'Retained in care' },
+        ],
+      },
+    });
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(screen.getAllByTestId('cascade-step').map((step) => step.textContent)).toEqual(['Active20']);
+  });
+
+  it('sizes each bar against the largest step', () => {
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    const widths = screen.getAllByTestId('cascade-bar').map((bar) => bar.style.width);
+    expect(widths).toEqual(['100%', '85%', '55%', '45%', '0%']);
+  });
+
+  it('evaluates the configured report for today as a plain date', () => {
+    vi.useFakeTimers({ now: new Date(2026, 8, 28, 10, 30) });
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    vi.useRealTimers();
+    const [report, params] = mockUseReportDataset.mock.calls.at(-1);
+    expect(report).toBe('9c6751ae-65fc-5f25-9aa6-8c65cb1dff68');
+    expect(params.endDate).toBe('2026-09-28');
+  });
+
+  it('evaluates the report set in the config', async () => {
+    await signInWith(['App: act.registry'], {
+      careCascade: {
+        report: 'RHD Care Cascade',
+        reportUrl: '${openmrsSpaBase}/reports',
+        steps: [{ step: 'Active', label: 'Active' }],
+      },
+    });
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(mockUseReportDataset.mock.calls.at(-1)[0]).toBe('RHD Care Cascade');
+  });
+
+  it('links to the full report', () => {
+    dataset({ rows: cascade });
+
+    render(<CareCascade />);
+
+    expect(screen.getByRole('link', { name: /report/i })).toHaveAttribute('href', '/openmrs/spa/reports');
+  });
+
+  it('says so when the report has no rows', () => {
+    dataset({ rows: [] });
+
+    render(<CareCascade />);
+
+    expect(screen.getByText('No care cascade data')).toBeInTheDocument();
+  });
+
+  it('says so when the report cannot be evaluated', () => {
+    dataset({ error: new Error('Server responded with 404') });
+
+    render(<CareCascade />);
+
+    expect(screen.getByText('Could not load the care cascade')).toBeInTheDocument();
+    expect(screen.queryByTestId('cascade-step')).not.toBeInTheDocument();
+  });
+
+  it('shows a placeholder while the report runs', () => {
+    dataset({ isLoading: true });
+
+    render(<CareCascade />);
+
+    expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
+  });
+});

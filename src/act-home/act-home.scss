@@ -1,0 +1,43 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.dashboard {
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.widgets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: layout.$spacing-06;
+
+  > :global([data-extension-id='act-home-quick-actions']),
+  > :global([data-extension-id='act-home-worklists']),
+  > :global([data-extension-id='act-community-home-quick-actions']),
+  > :global([data-extension-id='act-instance-admin-quick-actions']),
+  > :global([data-extension-id='act-instance-admin-kpis']),
+  > :global([data-extension-id='act-due-for-prophylaxis-widget']),
+  > :global([data-extension-id='act-home-due-for-prophylaxis']) {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: $breakpoint-tablet-max) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}
+
+// 60px plus this margin fills the 92px a framework pictogram takes.
+.emblem {
+  margin: layout.$spacing-05;
+}
+
+.role {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin-right: layout.$spacing-05;
+}

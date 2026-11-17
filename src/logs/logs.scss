@@ -1,0 +1,292 @@
+@use '@carbon/colors' as colors;
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: layout.$spacing-05 layout.$spacing-07 layout.$spacing-09;
+}
+
+.tabHint {
+  @include type.type-style('label-01');
+  margin-left: layout.$spacing-03;
+  color: $text-02;
+}
+
+.tab {
+  display: grid;
+  gap: layout.$spacing-05;
+  padding-top: layout.$spacing-05;
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: layout.$spacing-05;
+}
+
+.filters {
+  flex: 1 1 36rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: layout.$spacing-05;
+  align-items: end;
+}
+
+.filterActions {
+  display: flex;
+  align-items: end;
+}
+
+.summaryLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-07;
+}
+
+.stat {
+  display: grid;
+
+  strong {
+    @include type.type-style('heading-03');
+  }
+
+  span {
+    @include type.type-style('label-01');
+    color: $text-02;
+  }
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.timeCell {
+  white-space: nowrap;
+}
+
+.stacked > * {
+  display: block;
+}
+
+.subline {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.muted {
+  color: $text-02;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.actId {
+  @include type.type-style('code-01');
+  margin-left: layout.$spacing-03;
+}
+
+.expandedRow td {
+  background-color: $ui-02;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  gap: layout.$spacing-05 layout.$spacing-07;
+  padding: layout.$spacing-04 0;
+}
+
+.detailHeading {
+  @include type.type-style('label-01');
+  color: $text-02;
+  margin-bottom: layout.$spacing-03;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: 0 layout.$spacing-07;
+  margin: 0;
+
+  > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: layout.$spacing-03;
+    padding: layout.$spacing-03 0;
+    border-bottom: 1px solid $ui-03;
+  }
+
+  dt {
+    color: $text-02;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.previous {
+  color: $text-02;
+  text-decoration: line-through;
+  margin-right: layout.$spacing-03;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  margin-bottom: layout.$spacing-05;
+}
+
+.reads {
+  margin: 0;
+
+  > div {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: layout.$spacing-03;
+    padding: layout.$spacing-02 0;
+  }
+
+  dt {
+    color: $text-02;
+    font-variant-numeric: tabular-nums;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.detailLine {
+  @include type.type-style('body-compact-01');
+  margin-bottom: layout.$spacing-03;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+
+  > :last-child {
+    flex: 1 1 auto;
+  }
+}
+
+.newestFirst {
+  @include type.type-style('label-01');
+  color: $text-02;
+  white-space: nowrap;
+  padding-left: layout.$spacing-05;
+}
+
+.windowNote {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.explanation {
+  @include type.type-style('body-01');
+  color: $text-02;
+}
+
+.panel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  max-height: 80vh;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  padding: layout.$spacing-05;
+  border-bottom: 1px solid $ui-03;
+
+  h2 {
+    @include type.type-style('heading-02');
+  }
+}
+
+.panelCounts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  border-bottom: 1px solid $ui-03;
+}
+
+.panelEntries {
+  overflow-y: auto;
+  margin: 0;
+
+  > div {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: layout.$spacing-03;
+    padding: layout.$spacing-04 layout.$spacing-05;
+    border-bottom: 1px solid $ui-03;
+  }
+
+  dt {
+    @include type.type-style('label-01');
+    color: $text-02;
+  }
+
+  dd {
+    margin: 0;
+
+    .subline {
+      margin-left: layout.$spacing-02;
+    }
+  }
+}
+
+.panelFooter {
+  display: grid;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-05;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  @include type.type-style('label-01');
+}
+
+.dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  margin-right: layout.$spacing-03;
+}
+
+// One colour per source, as the panel's legend names them.
+.dotActivity {
+  background-color: $support-02;
+}
+
+.dotReads {
+  background-color: $interactive-01;
+}
+
+.dotDownloads {
+  background-color: colors.$purple-60;
+}
+
+.dotSignIns {
+  background-color: $text-02;
+}
