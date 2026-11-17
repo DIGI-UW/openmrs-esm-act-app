@@ -35,7 +35,7 @@ export function useSectionNames(): Record<ExportSection, string> {
     waitlist: t('proceduralWaitlist', 'Procedural waitlist'),
     optimisation: t('medicalOptimisation', 'Medical optimisation'),
     screeningCascade: t('screeningCascade', 'Screening cascade'),
-    rhdScreening: t('rhdScreening', 'RHD screening'),
+    rhdScreening: t('screeningCounts', 'Screening counts'),
     registrations: t('screeningFromRegistrations', 'Screening, from registrations'),
     runCharts: t('runCharts', 'Run charts'),
   };

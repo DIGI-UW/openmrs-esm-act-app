@@ -313,7 +313,7 @@ export default function ScreeningCounts() {
           <p className={styles.explanation}>
             {t(
               'screeningCountsExplanation',
-              "Screen-negative people are never registered, so each clinic enters its screening counts once a month. The Dashboard's RHD screening section reads them.",
+              "Screen-negative people are never registered, so each clinic enters its screening counts once a month. The Dashboard's Screening counts tab reads them.",
             )}
           </p>
           <div className={styles.pickers}>

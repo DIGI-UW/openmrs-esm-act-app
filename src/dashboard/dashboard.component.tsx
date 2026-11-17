@@ -579,10 +579,11 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const onlyWaitlistFigures = Boolean(waitlistReport.error) && !optimisationReport.error && waitlistFigures.length > 0;
   const optimisationMeasures = measures.filter((measure) => !waitlistMeasures.includes(measure.measure));
 
-  // The report's first step is active RHD, which is not part of screening; the rest are named as the design reads them.
+  // The report's first step is active RHD, which is not part of screening. The rest are named for what the report counts:
+  // its Diagnosed step is a diagnosis Category recorded on Patient Information, not an Echocardiogram encounter (AR-201).
   const screeningStepNames: Record<string, string> = {
     'Confirmatory Diagnosis': t('screenedPositive', 'Screened positive'),
-    Diagnosed: t('hadConfirmatoryEcho', 'Had a confirmatory echo'),
+    Diagnosed: t('diagnosisRecorded', 'Diagnosis recorded'),
     'Heart Disease': t('heartDisease', 'Heart disease'),
   };
   const screening = screeningReport.rows
@@ -722,14 +723,17 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       ),
     ]),
     ...loaded(optimisationReport, () =>
-      measureRows(t('medicalOptimisation', 'Medical optimisation'), optimisationMeasures, [t('yes', 'Yes'), t('no', 'No')]),
+      measureRows(t('medicalOptimisation', 'Medical optimisation'), optimisationMeasures, [
+        t('yes', 'Yes'),
+        t('no', 'No'),
+      ]),
     ),
     ...(dashboard.showScreening && !screeningReport.error && !diagnosesReport.error
       ? [
           ...countRows(t('screeningCascade', 'Screening cascade'), t('cascade', 'Cascade'), screening, asOf),
           ...countRows(
             t('screeningCascade', 'Screening cascade'),
-            t('diagnosesAfterTheEcho', 'Diagnoses after the echo'),
+            t('whatTheDiagnosisFound', 'What the diagnosis found'),
             diagnoses,
             asOf,
           ),
@@ -975,6 +979,14 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               testId="dashboard-waitlist-total"
             />
           )}
+          {!onlyWaitlistFigures && (
+            // Beside the waiting recommendations it switches, not under the Done bar and the performed counts (AR-204).
+            <div className={styles.chartToggle}>
+              <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
+                {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
+              </Button>
+            </div>
+          )}
           {optimisationReport.error ? (
             <p className={styles.performed}>
               {t('waitlistFigureCouldNotLoad', '{{figure}} could not load', {
@@ -1021,9 +1033,6 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   }}
                 />
               </p>
-              <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
-                {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
-              </Button>
             </div>
           )}
         </Section>
@@ -1065,7 +1074,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               <Tabs>
                 <TabList aria-label={t('screening', 'Screening')}>
                   <Tab>{t('screeningCascade', 'Screening cascade')}</Tab>
-                  <Tab>{t('rhdScreening', 'RHD screening')}</Tab>
+                  <Tab>{t('screeningCounts', 'Screening counts')}</Tab>
                   <Tab>{t('screeningFromRegistrations', 'Screening, from registrations')}</Tab>
                 </TabList>
                 <TabPanels>
@@ -1074,7 +1083,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                       title={t('screeningCascade', 'Screening cascade')}
                       description={t(
                         'screeningCascadeDescription',
-                        'Registrants found by screening (Screen + Yes), and what their confirmatory echo showed',
+                        'Registrants found by screening (Screen + Yes), and the diagnosis each was given',
                       )}
                       state={{
                         isLoading: screeningReport.isLoading || diagnosesReport.isLoading,
@@ -1104,10 +1113,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                         </div>
                         <div>
                           <h4 className={styles.subheading}>
-                            {t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
+                            {t('whatTheDiagnosisFound', 'What the diagnosis found')}
                           </h4>
                           <CountsDonut
-                            name={t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
+                            name={t('whatTheDiagnosisFound', 'What the diagnosis found')}
                             counts={diagnoses}
                             centre={t('diagnosed', 'diagnosed')}
                             testId="dashboard-screening-category"
@@ -1145,7 +1154,20 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
 
 const screenOrder = ['Yes', 'No', 'Not recorded'];
 const registrationAgeOrder = ['Children 0-9', 'Adolescents 10-19', 'Adults 20+', 'Age unknown'];
-const detectionOrder = ['School', 'Community', 'Health facility', 'Other', 'Not recorded'];
+// The screening settings, then the answers that are not screening, as the form lists them; then a screen-positive
+// patient with no answer, and a patient never asked, as the form asks only when Screen + is Yes (AR-203).
+const detectionOrder = [
+  'School',
+  'Community',
+  'Health facility',
+  'Clinical presentation',
+  'Pregnancy / labor',
+  'Coincidental finding',
+  'Post-mortem',
+  'Other',
+  'Not recorded',
+  'Not screen-positive',
+];
 
 /** The rows of a breakdown in the order given, a label the order does not name last. */
 const inOrder = (rows: Array<ReportRow>, breakdown: string, order: Array<string>): Array<Count> =>
@@ -1292,13 +1314,22 @@ function ScreeningFromRegistrations({
             centre={t('registeredCentre', 'registered')}
             testId="dashboard-detected"
           />
+          <p className={styles.note}>
+            {t(
+              'notScreenPositiveNote',
+              'Patient Information asks where a patient was screened only when Screen + is Yes. Not screen-positive counts the patients never asked; Not recorded, the screen-positive with no answer.',
+            )}
+          </p>
         </div>
       </div>
     </Section>
   );
 }
 
-/** ACT 2.0's RHD screening section: the monthly counts the clinics enter on the Screening counts page, for a period. */
+/**
+ * ACT 2.0's RHD screening section, named for the Screening counts page whose monthly counts it sums for a period. It
+ * says how many of the period's months were entered, as a month not entered adds nothing and the sums look complete.
+ */
 function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: string | null; onShowAll: () => void }) {
   const { t } = useTranslation();
   const months = useMemo(() => recentMonths(screeningMonthsOffered), []);
@@ -1320,6 +1351,30 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
   );
   const { summary, error, isLoading, mutate } = useScreeningSummary(params);
   const screened = summary?.screened ?? 0;
+  // The clinics summed: those chosen, else a clinic-limited administrator's own; none known when every clinic is summed.
+  const clinicsSummed = new Set(Object.values(scope)).size || (limit.status === 'ready' ? limit.uuids.length : 0);
+  const monthsInPeriod = dayjs(`${end}-01`).diff(dayjs(`${start}-01`), 'month') + 1;
+  const expected = clinicsSummed * monthsInPeriod;
+  // ACT Core counts the clinic months saved in the period.
+  const entered = summary?.months ?? 0;
+  const incomplete = clinicsSummed > 0 && entered < expected;
+  const coverage = !clinicsSummed
+    ? t('screeningMonthsEnteredEveryClinic', 'Counts entered for {{count}} months across all clinics', {
+        count: entered,
+      })
+    : !incomplete
+      ? t('screeningMonthsAllEntered', 'Counts entered for every month in the period')
+      : clinicsSummed > 1
+        ? t(
+            'screeningMonthsEnteredAcross',
+            'Counts entered for {{entered}} of {{expected}} months across {{clinics}} clinics. A month not entered adds nothing to these figures.',
+            { entered, expected, clinics: clinicsSummed },
+          )
+        : t(
+            'screeningMonthsEnteredOf',
+            'Counts entered for {{entered}} of {{expected}} months. A month not entered adds nothing to these figures.',
+            { entered, expected },
+          );
   const monthSelect = (id: string, label: string, value: string, key: 'start' | 'end', options: Array<string>) => (
     <Select
       id={id}
@@ -1340,7 +1395,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
     (limit.status === 'ready'
       ? limit.names.join(', ') || t('yourClinics', 'your clinics')
       : t('everyClinic', 'every clinic'));
-  const section = t('rhdScreening', 'RHD screening');
+  const section = t('screeningCounts', 'Screening counts');
   const period = t('periodRange', '{{start}} to {{end}}', { start, end });
   useCountsCsv(
     'rhdScreening',
@@ -1351,6 +1406,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
             section,
             '',
             [
+              { label: t('monthsEntered', 'Months entered'), value: entered },
               { label: metricLabel.screened, value: screened },
               { label: metricLabel.females, value: summary.females ?? 0 },
               { label: metricLabel.positive, value: summary.positive ?? 0 },
@@ -1389,7 +1445,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
 
   return (
     <Section
-      title={t('rhdScreening', 'RHD screening')}
+      title={t('screeningCounts', 'Screening counts')}
       description={t('rhdScreeningDescription', 'Monthly counts, {{clinic}}, {{start}} to {{end}}', {
         clinic: counting,
         start: monthName(start),
@@ -1424,6 +1480,21 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
         </div>
       }
     >
+      {incomplete ? (
+        <InlineNotification
+          kind="warning"
+          statusIconDescription={t('warningIcon', 'warning icon')}
+          lowContrast
+          hideCloseButton
+          className={styles.screeningCoverage}
+          title={coverage}
+          data-testid="dashboard-screening-coverage"
+        />
+      ) : (
+        <p className={styles.screeningCoverage} data-testid="dashboard-screening-coverage">
+          {coverage}
+        </p>
+      )}
       <div className={styles.screeningTiles}>
         <Tile className={styles.tile} data-testid="dashboard-screening-tile">
           <span className={styles.tileLabel}>{metricLabel.screened}</span>
@@ -1545,7 +1616,7 @@ export default function Dashboard() {
   const session = useSession();
   const { dashboard } = useConfig<Config>();
   const showScreening = dashboard.showScreening;
-  // As RHD screening names what it counts: a site administrator's own clinics when no clinic is chosen.
+  // As Screening counts names what it counts: a site administrator's own clinics when no clinic is chosen.
   const limit = useClinicLimit();
   const clinicsCounted =
     [clinicNames.cardiac, clinicNames.primaryCare].filter(Boolean).join(', ') ||

@@ -394,7 +394,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        "Show the Dashboard's screening sections: the screening cascade, RHD screening from the monthly screening counts, and the screening from registrations. Turn it off at a site without a screening programme.",
+        "Show the Dashboard's screening sections: the screening cascade, the monthly screening counts, and the screening from registrations. Turn it off at a site without a screening programme.",
     },
     screeningReport: {
       _type: Type.String,

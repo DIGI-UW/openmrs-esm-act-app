@@ -558,6 +558,12 @@
 }
 
 // Under a section's chart: a note on one side, a count or a control on the other.
+.chartToggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-block: layout.$spacing-02 layout.$spacing-03;
+}
+
 .sectionFooter {
   display: flex;
   flex-wrap: wrap;
@@ -590,6 +596,13 @@
   display: grid;
   gap: layout.$spacing-05;
   margin-bottom: layout.$spacing-06;
+}
+
+.screeningCoverage {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin: layout.$spacing-05 0;
+  max-width: none;
 }
 
 .screeningTiles {

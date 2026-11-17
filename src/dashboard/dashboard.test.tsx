@@ -57,10 +57,11 @@ const screeningRows = [
   { breakdown: 'age', label: 'Adults 20+', patients: 1 },
   { breakdown: 'age', label: 'Children 0-9', patients: 1 },
   { breakdown: 'age', label: 'Adolescents 10-19', patients: 3 },
+  // The two Yes were screened at school; one No was found by clinical presentation, an answer ACT 2.0 asked of everyone;
+  // the other No and the unanswered were never asked where they were screened.
+  { breakdown: 'detected', label: 'Not screen-positive', patients: 2 },
   { breakdown: 'detected', label: 'School', patients: 2 },
-  { breakdown: 'detected', label: 'Community', patients: 1 },
-  { breakdown: 'detected', label: 'Other', patients: 1 },
-  { breakdown: 'detected', label: 'Not recorded', patients: 1 },
+  { breakdown: 'detected', label: 'Clinical presentation', patients: 1 },
 ];
 
 /** The design's twelve months at one clinic: 6,840 screened, whose settings ACT 2.0 would have truncated to 99%. */
@@ -472,9 +473,7 @@ describe('Dashboard', () => {
     renderPage();
     await screen.findAllByTestId('dashboard-measure');
 
-    await userEvent.click(
-      within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'No' }),
-    );
+    await userEvent.click(within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'No' }));
     const echo = screen.getAllByTestId('dashboard-measure')[1];
     expect(
       within(echo)
@@ -495,8 +494,14 @@ describe('Dashboard', () => {
     expect(texts('dashboard-waitlist-total')).toEqual(['Balloon valvuloplasty1', 'Mitral valve repair/replacement2']);
     expect(segmentsOf('dashboard-waitlist-total')).toEqual([[`${EMERGENT}: 1`], [`${EMERGENT}: 1`, `${URGENT}: 1`]]);
     expect(screen.queryByTestId('dashboard-waitlist-row')).not.toBeInTheDocument();
+    // The button sits by the waiting chart it switches, before the Done bar and the performed counts it leaves alone.
+    const toggle = screen.getByRole('button', { name: 'Show as a table' });
+    const follows = (element: HTMLElement) =>
+      Boolean(toggle.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows((await screen.findAllByTestId('dashboard-procedure-measure'))[0])).toBe(true);
+    expect(follows(screen.getByTestId('dashboard-performed'))).toBe(true);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Show as a table' }));
+    await userEvent.click(toggle);
 
     expect(
       screen.getAllByTestId('dashboard-waitlist-row').map((row) =>
@@ -618,7 +623,7 @@ describe('Dashboard', () => {
     expect(await screen.findAllByTestId('dashboard-screening-step')).toHaveLength(3);
     expect(texts('dashboard-screening-step')).toEqual([
       'Screened positive4',
-      'Had a confirmatory echo4100%',
+      'Diagnosis recorded4100%',
       'Heart disease375%',
     ]);
     expect(screen.getByText('Screening programme sites')).toBeInTheDocument();
@@ -626,7 +631,7 @@ describe('Dashboard', () => {
     expect(screen.getByRole('heading', { name: 'RHD details of the 2' })).toBeInTheDocument();
     expect(texts('dashboard-screening-details')).toEqual(['RHD A2']);
     expect(chartData(SimpleBarChart, 'Screening cascade')).toHaveLength(3);
-    expect(chartData(DonutChart, 'Diagnoses after the echo')).toEqual([
+    expect(chartData(DonutChart, 'What the diagnosis found')).toEqual([
       { group: 'RHD', value: 3 },
       { group: 'Normal', value: 1 },
     ]);
@@ -640,7 +645,7 @@ describe('Dashboard', () => {
     const scaleOf = (title: string) =>
       (chartOptions(DonutChart, title) as unknown as { color: { scale: object } }).color.scale;
     expect(scaleOf('Registrant status')).toEqual({ Active: '#009d9a', 'Voluntary inactivity': '#ba4e00' });
-    expect(scaleOf('Diagnoses after the echo')).toEqual({
+    expect(scaleOf('What the diagnosis found')).toEqual({
       RHD: '#007d79',
       Normal: '#198038',
     });
@@ -988,7 +993,7 @@ describe('Dashboard', () => {
     const tabs = await screen.findAllByRole('tab');
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Screening cascade',
-      'RHD screening',
+      'Screening counts',
       'Screening, from registrations',
     ]);
     expect(screen.getAllByTestId('dashboard-screening-step')[0]).toBeVisible();
@@ -1711,7 +1716,7 @@ describe('Dashboard', () => {
             'every clinic',
           ],
           [
-            'RHD screening',
+            'Screening counts',
             '',
             'Screened',
             '6840',
@@ -1815,9 +1820,9 @@ describe('Dashboard', () => {
       expect(recorded().at(-1)).toEqual(
         expect.objectContaining({
           list: 'dashboard:pdf',
-          columns: ['Registrant status', 'RHD screening'],
+          columns: ['Registrant status', 'Screening counts'],
           identifiers: false,
-          // RHD screening's months are logged with it, and the registration dates of a section not exported are not.
+          // Screening counts' months are logged with it, and the registration dates of a section not exported are not.
           filters: {
             endDate: today,
             screeningFromMonth: dayjs().subtract(12, 'month').format('YYYY-MM'),
@@ -1929,7 +1934,7 @@ describe('Dashboard', () => {
     });
   });
 
-  describe('RHD screening', () => {
+  describe('Screening counts', () => {
     const lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
     const yearToLastMonth = dayjs().subtract(12, 'month').format('YYYY-MM');
 
@@ -1954,6 +1959,54 @@ describe('Dashboard', () => {
       expect(summaryUrls().at(-1)).toMatch(
         new RegExp(`/summary\\?startMonth=${yearToLastMonth}&endMonth=${lastMonth}$`),
       );
+    });
+
+    it('says how many months the sums hold, as a month not entered adds nothing', async () => {
+      await signIn();
+      renderPage();
+
+      // Summed over every clinic, the months a clinic could have entered are not known.
+      expect(await screen.findByTestId('dashboard-screening-coverage')).toHaveTextContent(
+        'Counts entered for 12 months across all clinics',
+      );
+
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('dashboard-screening-coverage')).toHaveTextContent(
+          'Counts entered for every month in the period',
+        ),
+      );
+      expect(screen.getByTestId('dashboard-screening-coverage').tagName).toBe('P');
+    });
+
+    it('warns when months are missing from the period at one clinic', async () => {
+      await signIn();
+      const answer = vi.mocked(openmrsFetch).getMockImplementation();
+      vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: unknown) =>
+        /\/summary\?clinic=lira&startMonth/.test(url)
+          ? Promise.resolve({ data: { ...screeningSummary, months: 3 } })
+          : answer(url, init as never)) as never);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?cardiacClinic=lira');
+      renderPage();
+
+      expect(
+        await screen.findByText(
+          'Counts entered for 3 of 12 months. A month not entered adds nothing to these figures.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-screening-coverage').tagName).not.toBe('P');
+    });
+
+    it('counts the months two clinics could have entered, as ACT Core adds them together', async () => {
+      await signIn();
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&primaryCareClinic=hq');
+      renderPage();
+
+      expect(
+        await screen.findByText(
+          'Counts entered for 12 of 24 months across 2 clinics. A month not entered adds nothing to these figures.',
+        ),
+      ).toBeInTheDocument();
     });
 
     it('counts the clinics chosen and the months picked', async () => {
@@ -2040,7 +2093,10 @@ describe('Dashboard', () => {
       expect(texts('dashboard-registration-tile')).toEqual(['Registered5', 'Female60%']);
       expect(texts('dashboard-screen-positive')).toEqual(['Yes2', 'No2', 'Not recorded1']);
       expect(texts('dashboard-registration-age')).toEqual(['Children 0-91', 'Adolescents 10-193', 'Adults 20+1']);
-      expect(texts('dashboard-detected')).toEqual(['School2', 'Community1', 'Other1', 'Not recorded1']);
+      expect(texts('dashboard-detected')).toEqual(['School2', 'Clinical presentation1', 'Not screen-positive2']);
+      expect(
+        screen.getByText(/^Patient Information asks where a patient was screened only when Screen \+ is Yes\./),
+      ).toBeInTheDocument();
     });
 
     it('shows a label the report adds after the ones it knows, so the bars still sum to the registered', async () => {
@@ -2056,19 +2112,18 @@ describe('Dashboard', () => {
       await screen.findByText('Screening, from registrations');
       expect(texts('dashboard-detected')).toEqual([
         'School2',
-        'Community1',
-        'Other1',
-        'Not recorded1',
+        'Clinical presentation1',
+        'Not screen-positive2',
         'Teacher referral1',
       ]);
       expect(
         (chartOptions(DonutChart, 'Case detected by') as unknown as { color: { scale: object } }).color.scale,
       ).toEqual({
         School: '#002d9c',
-        Community: '#0f62fe',
-        Other: '#d02670',
-        'Not recorded': '#c6c6c6',
-        'Teacher referral': '#9f1853',
+        // An answer with no colour of its own takes the spare colours in turn.
+        'Clinical presentation': '#9f1853',
+        'Not screen-positive': '#8d8d8d',
+        'Teacher referral': '#491d8b',
       });
       expect(t).toHaveBeenCalledWith('registeredCentre', 'registered');
       t.mockRestore();
@@ -2144,7 +2199,7 @@ describe('Dashboard', () => {
       await screen.findAllByTestId('dashboard-tile');
       expect(screen.queryByText('Screening cascade')).not.toBeInTheDocument();
       expect(screen.queryByText('Screening, from registrations')).not.toBeInTheDocument();
-      expect(screen.queryByText('RHD screening')).not.toBeInTheDocument();
+      expect(screen.queryByText('Screening counts')).not.toBeInTheDocument();
       expect(summaryUrls()).toEqual([]);
       const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
       [SCREENING, DIAGNOSES, SCREENING_REGISTRATIONS].forEach((report) => expect(evaluated).not.toContain(report));
