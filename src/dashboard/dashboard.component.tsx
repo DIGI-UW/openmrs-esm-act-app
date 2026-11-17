@@ -464,12 +464,14 @@ function MeasureBars({
 }) {
   const { t } = useTranslation();
   const waiting = unit === 'recommendations';
+  // Each optimisation row is a question (retained? an echo in 13 months?), so its segments answer Yes or No; the
+  // waitlist's row counts recommendations done or still waiting.
   return (
     <SegmentedBars
       name={name}
       segments={[
-        { label: t('done', 'Done'), colour: doneColours[0] },
-        { label: waiting ? t('stillWaiting', 'Still waiting') : t('notDone', 'Not done'), colour: doneColours[1] },
+        { label: waiting ? t('done', 'Done') : t('yes', 'Yes'), colour: doneColours[0] },
+        { label: waiting ? t('stillWaiting', 'Still waiting') : t('no', 'No'), colour: doneColours[1] },
       ]}
       rows={measures
         .filter((measure): measure is Measure & { notDone: number } => measure.notDone !== null)
@@ -508,8 +510,8 @@ function MeasureBars({
                   ) : (
                     <Trans
                       t={t}
-                      i18nKey="doneNotDoneOf"
-                      defaults="<done>{{done}}</done> done, <notDone>{{notDone}}</notDone> not done, of {{total}}"
+                      i18nKey="yesNoOf"
+                      defaults="<done>{{done}}</done> yes, <notDone>{{notDone}}</notDone> no, of {{total}}"
                       values={values}
                       components={links}
                     />
@@ -629,10 +631,11 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const activeName = t('activeRegistrants', 'Active registrants');
   const ofTheActive = t(
     'medicalOptimisationDescription',
-    'Of the {{count}} active registrants, unless a row says otherwise',
+    'Of the {{count}} active registrants, except the warfarin row, which counts only those on warfarin',
     { count: registrants.active },
   );
-  const measureRows = (sectionName: string, list: Array<Measure>, notDone = t('notDone', 'Not done')) =>
+  // The export names each bar's two segments as the card does: Yes and No, or Done and Still waiting.
+  const measureRows = (sectionName: string, list: Array<Measure>, [done, notDone]: [string, string]) =>
     list.flatMap((measure) =>
       countRows(
         sectionName,
@@ -640,7 +643,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         measure.notDone === null
           ? [{ label: '', value: measure.done }]
           : [
-              { label: t('done', 'Done'), value: measure.done },
+              { label: done, value: measure.done },
               { label: notDone, value: measure.notDone },
             ],
         asOf,
@@ -706,7 +709,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       ),
     ]),
     ...loaded(optimisationReport, () =>
-      measureRows(waitlistSection, waitlistFigures, t('stillWaiting', 'Still waiting')),
+      measureRows(waitlistSection, waitlistFigures, [t('done', 'Done'), t('stillWaiting', 'Still waiting')]),
     ),
     ...loaded(waitlistReport, () => [
       ...countRows(
@@ -720,7 +723,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       ),
     ]),
     ...loaded(optimisationReport, () =>
-      measureRows(t('medicalOptimisation', 'Medical optimisation'), optimisationMeasures),
+      measureRows(t('medicalOptimisation', 'Medical optimisation'), optimisationMeasures, [t('yes', 'Yes'), t('no', 'No')]),
     ),
     ...(dashboard.showScreening && !screeningReport.error && !diagnosesReport.error
       ? [
