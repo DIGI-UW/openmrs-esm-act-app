@@ -577,10 +577,11 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const onlyWaitlistFigures = Boolean(waitlistReport.error) && !optimisationReport.error && waitlistFigures.length > 0;
   const optimisationMeasures = measures.filter((measure) => !waitlistMeasures.includes(measure.measure));
 
-  // The report's first step is active RHD, which is not part of screening; the rest are named as the design reads them.
+  // The report's first step is active RHD, which is not part of screening. The rest are named for what the report counts:
+  // its Diagnosed step is a diagnosis Category recorded on Patient Information, not an Echocardiogram encounter (AR-201).
   const screeningStepNames: Record<string, string> = {
     'Confirmatory Diagnosis': t('screenedPositive', 'Screened positive'),
-    Diagnosed: t('hadConfirmatoryEcho', 'Had a confirmatory echo'),
+    Diagnosed: t('diagnosisRecorded', 'Diagnosis recorded'),
     'Heart Disease': t('heartDisease', 'Heart disease'),
   };
   const screening = screeningReport.rows
@@ -726,7 +727,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           ...countRows(t('screeningCascade', 'Screening cascade'), t('cascade', 'Cascade'), screening, asOf),
           ...countRows(
             t('screeningCascade', 'Screening cascade'),
-            t('diagnosesAfterTheEcho', 'Diagnoses after the echo'),
+            t('whatTheDiagnosisFound', 'What the diagnosis found'),
             diagnoses,
             asOf,
           ),
@@ -1071,7 +1072,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                       title={t('screeningCascade', 'Screening cascade')}
                       description={t(
                         'screeningCascadeDescription',
-                        'Registrants found by screening (Screen + Yes), and what their confirmatory echo showed',
+                        'Registrants found by screening (Screen + Yes), and the diagnosis each was given',
                       )}
                       state={{
                         isLoading: screeningReport.isLoading || diagnosesReport.isLoading,
@@ -1101,10 +1102,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                         </div>
                         <div>
                           <h4 className={styles.subheading}>
-                            {t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
+                            {t('whatTheDiagnosisFound', 'What the diagnosis found')}
                           </h4>
                           <CountsDonut
-                            name={t('diagnosesAfterTheEcho', 'Diagnoses after the echo')}
+                            name={t('whatTheDiagnosisFound', 'What the diagnosis found')}
                             counts={diagnoses}
                             centre={t('diagnosed', 'diagnosed')}
                             testId="dashboard-screening-category"
