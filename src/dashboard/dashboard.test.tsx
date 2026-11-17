@@ -494,8 +494,14 @@ describe('Dashboard', () => {
     expect(texts('dashboard-waitlist-total')).toEqual(['Balloon valvuloplasty1', 'Mitral valve repair/replacement2']);
     expect(segmentsOf('dashboard-waitlist-total')).toEqual([[`${EMERGENT}: 1`], [`${EMERGENT}: 1`, `${URGENT}: 1`]]);
     expect(screen.queryByTestId('dashboard-waitlist-row')).not.toBeInTheDocument();
+    // The button sits by the waiting chart it switches, before the Done bar and the performed counts it leaves alone.
+    const toggle = screen.getByRole('button', { name: 'Show as a table' });
+    const follows = (element: HTMLElement) =>
+      Boolean(toggle.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows((await screen.findAllByTestId('dashboard-procedure-measure'))[0])).toBe(true);
+    expect(follows(screen.getByTestId('dashboard-performed'))).toBe(true);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Show as a table' }));
+    await userEvent.click(toggle);
 
     expect(
       screen.getAllByTestId('dashboard-waitlist-row').map((row) =>

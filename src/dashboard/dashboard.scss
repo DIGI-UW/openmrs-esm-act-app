@@ -558,6 +558,12 @@
 }
 
 // Under a section's chart: a note on one side, a count or a control on the other.
+.chartToggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-block: layout.$spacing-02 layout.$spacing-03;
+}
+
 .sectionFooter {
   display: flex;
   flex-wrap: wrap;

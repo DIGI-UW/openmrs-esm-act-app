@@ -979,6 +979,14 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               testId="dashboard-waitlist-total"
             />
           )}
+          {!onlyWaitlistFigures && (
+            // Beside the waiting recommendations it switches, not under the Done bar and the performed counts (AR-204).
+            <div className={styles.chartToggle}>
+              <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
+                {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
+              </Button>
+            </div>
+          )}
           {optimisationReport.error ? (
             <p className={styles.performed}>
               {t('waitlistFigureCouldNotLoad', '{{figure}} could not load', {
@@ -1025,9 +1033,6 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
                   }}
                 />
               </p>
-              <Button kind="ghost" size="sm" onClick={() => setWaitlistAsTable(!waitlistAsTable)}>
-                {waitlistAsTable ? t('showAsAChart', 'Show as a chart') : t('showAsATable', 'Show as a table')}
-              </Button>
             </div>
           )}
         </Section>
