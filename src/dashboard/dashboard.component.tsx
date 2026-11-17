@@ -723,7 +723,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
       ),
     ]),
     ...loaded(optimisationReport, () =>
-      measureRows(t('medicalOptimisation', 'Medical optimisation'), optimisationMeasures, [t('yes', 'Yes'), t('no', 'No')]),
+      measureRows(t('medicalOptimisation', 'Medical optimisation'), optimisationMeasures, [
+        t('yes', 'Yes'),
+        t('no', 'No'),
+      ]),
     ),
     ...(dashboard.showScreening && !screeningReport.error && !diagnosesReport.error
       ? [
@@ -1146,7 +1149,20 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
 
 const screenOrder = ['Yes', 'No', 'Not recorded'];
 const registrationAgeOrder = ['Children 0-9', 'Adolescents 10-19', 'Adults 20+', 'Age unknown'];
-const detectionOrder = ['School', 'Community', 'Health facility', 'Other', 'Not recorded'];
+// The screening settings, then the answers that are not screening, as the form lists them; then a screen-positive
+// patient with no answer, and a patient never asked, as the form asks only when Screen + is Yes (AR-203).
+const detectionOrder = [
+  'School',
+  'Community',
+  'Health facility',
+  'Clinical presentation',
+  'Pregnancy / labor',
+  'Coincidental finding',
+  'Post-mortem',
+  'Other',
+  'Not recorded',
+  'Not screen-positive',
+];
 
 /** The rows of a breakdown in the order given, a label the order does not name last. */
 const inOrder = (rows: Array<ReportRow>, breakdown: string, order: Array<string>): Array<Count> =>
@@ -1293,6 +1309,12 @@ function ScreeningFromRegistrations({
             centre={t('registeredCentre', 'registered')}
             testId="dashboard-detected"
           />
+          <p className={styles.note}>
+            {t(
+              'notScreenPositiveNote',
+              'Patient Information asks where a patient was screened only when Screen + is Yes. Not screen-positive counts the patients never asked; Not recorded, the screen-positive with no answer.',
+            )}
+          </p>
         </div>
       </div>
     </Section>

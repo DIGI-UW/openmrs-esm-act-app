@@ -57,10 +57,11 @@ const screeningRows = [
   { breakdown: 'age', label: 'Adults 20+', patients: 1 },
   { breakdown: 'age', label: 'Children 0-9', patients: 1 },
   { breakdown: 'age', label: 'Adolescents 10-19', patients: 3 },
+  // The two Yes were screened at school; one No was found by clinical presentation, an answer ACT 2.0 asked of everyone;
+  // the other No and the unanswered were never asked where they were screened.
+  { breakdown: 'detected', label: 'Not screen-positive', patients: 2 },
   { breakdown: 'detected', label: 'School', patients: 2 },
-  { breakdown: 'detected', label: 'Community', patients: 1 },
-  { breakdown: 'detected', label: 'Other', patients: 1 },
-  { breakdown: 'detected', label: 'Not recorded', patients: 1 },
+  { breakdown: 'detected', label: 'Clinical presentation', patients: 1 },
 ];
 
 /** The design's twelve months at one clinic: 6,840 screened, whose settings ACT 2.0 would have truncated to 99%. */
@@ -2086,7 +2087,10 @@ describe('Dashboard', () => {
       expect(texts('dashboard-registration-tile')).toEqual(['Registered5', 'Female60%']);
       expect(texts('dashboard-screen-positive')).toEqual(['Yes2', 'No2', 'Not recorded1']);
       expect(texts('dashboard-registration-age')).toEqual(['Children 0-91', 'Adolescents 10-193', 'Adults 20+1']);
-      expect(texts('dashboard-detected')).toEqual(['School2', 'Community1', 'Other1', 'Not recorded1']);
+      expect(texts('dashboard-detected')).toEqual(['School2', 'Clinical presentation1', 'Not screen-positive2']);
+      expect(
+        screen.getByText(/^Patient Information asks where a patient was screened only when Screen \+ is Yes\./),
+      ).toBeInTheDocument();
     });
 
     it('shows a label the report adds after the ones it knows, so the bars still sum to the registered', async () => {
@@ -2102,19 +2106,18 @@ describe('Dashboard', () => {
       await screen.findByText('Screening, from registrations');
       expect(texts('dashboard-detected')).toEqual([
         'School2',
-        'Community1',
-        'Other1',
-        'Not recorded1',
+        'Clinical presentation1',
+        'Not screen-positive2',
         'Teacher referral1',
       ]);
       expect(
         (chartOptions(DonutChart, 'Case detected by') as unknown as { color: { scale: object } }).color.scale,
       ).toEqual({
         School: '#002d9c',
-        Community: '#0f62fe',
-        Other: '#d02670',
-        'Not recorded': '#c6c6c6',
-        'Teacher referral': '#9f1853',
+        // An answer with no colour of its own takes the spare colours in turn.
+        'Clinical presentation': '#9f1853',
+        'Not screen-positive': '#8d8d8d',
+        'Teacher referral': '#491d8b',
       });
       expect(t).toHaveBeenCalledWith('registeredCentre', 'registered');
       t.mockRestore();
