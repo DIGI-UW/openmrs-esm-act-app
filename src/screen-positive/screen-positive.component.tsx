@@ -100,16 +100,11 @@ export function ScreenPositiveTable() {
     },
     { key: 'actId', header: t('actId', 'ACT ID'), text: text('rhd_id') },
     { key: 'ageSex', header: t('ageSex', 'Age, sex'), text: ageSex },
-    { key: 'screened', header: t('screened', 'Screened'), text: screenDate, render: screenDate },
-    {
-      key: 'screeningSite',
-      header: t('screeningSite', 'Screening site'),
-      text: text('screening_site'),
-      render: text('screening_site'),
-    },
+    { key: 'screened', header: t('screened', 'Screened'), text: screenDate },
+    { key: 'screeningSite', header: t('screeningSite', 'Screening site'), text: text('screening_site') },
     // The follow-up status column went with the question, which AR-167 took off Patient Information.
   ];
-  const tableColumns = columns.filter((column) => column.render);
+  const tableColumns = columns.filter((column) => column.key !== 'actId' && column.key !== 'ageSex');
 
   // Where the session location's kind cannot be read, opening on every clinic would show patients not its own.
   if (error || clinicKind === 'error') {
@@ -179,7 +174,7 @@ export function ScreenPositiveTable() {
               {results.map((row) => (
                 <TableRow key={String(row.patient_uuid)}>
                   {tableColumns.map((column) => (
-                    <TableCell key={column.header}>{column.render(row)}</TableCell>
+                    <TableCell key={column.header}>{column.render?.(row) ?? column.text(row)}</TableCell>
                   ))}
                   <TableCell>
                     {row.form_uuid && (

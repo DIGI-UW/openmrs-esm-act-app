@@ -238,6 +238,24 @@ describe('Diagnosis to confirm', () => {
     });
   });
 
+  it('downloads the patients in the order the table shows them', async () => {
+    await signInWith(['App: act.screenPositive', 'Add Encounters', 'Task: act.lists.export']);
+    dataset({ rows: screenPositiveRows });
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
+    render(<ScreenPositive />);
+
+    await userEvent.selectOptions(screen.getByLabelText('Sex'), 'M');
+    await userEvent.click(screen.getByRole('button', { name: /^Patient/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^Patient/ }));
+    const onScreen = shownNames();
+    expect(onScreen[0]).not.toBe('Patient 2');
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
+    const rows = vi.mocked(downloadCsv).mock.lastCall[2];
+    expect(rows.slice(0, onScreen.length).map((row) => row[0])).toEqual(onScreen);
+  });
+
   it('offers no download to a user who may not export lists', () => {
     dataset({ rows: screenPositiveRows });
 
