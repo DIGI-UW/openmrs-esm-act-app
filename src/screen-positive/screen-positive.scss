@@ -36,3 +36,9 @@
 .notContacted {
   @include act-yellow-tag;
 }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-05;
+}

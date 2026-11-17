@@ -27,6 +27,7 @@ import { type Config } from '../config-schema';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { parseReportDate } from '../reports/report-date';
 import { useSessionClinicKind } from '../session-clinic';
+import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import { FilterSelect } from '../table-filters/filter-select.component';
 import { distinctValues } from '../table-filters/distinct-values';
 import { type ColumnSort, type SortValue, sortHeaderProps, sortItems } from '../table-filters/column-sort';
@@ -83,18 +84,27 @@ export function ScreenPositiveTable() {
     />
   );
   const text = (column: string) => (row: ReportRow) => String(row[column] ?? '');
-  const columns: Array<{ key: string; header: string; render: (row: ReportRow) => React.ReactNode }> = [
+  const ageSex = (row: ReportRow) => [text('age_years')(row), text('sex')(row)].filter(Boolean).join(' ');
+  // The table's Patient cell shows the ACT ID, age and sex too; the file gives them their own columns.
+  const columns: Array<{
+    key: string;
+    header: string;
+    text: (row: ReportRow) => string;
+    render?: (row: ReportRow) => React.ReactNode;
+  }> = [
     {
       key: 'patient',
       header: t('patient', 'Patient'),
-      render: (row) => (
-        <PatientCell row={row} detail={[text('age_years')(row), text('sex')(row)].filter(Boolean).join(' ')} />
-      ),
+      text: text('full_name'),
+      render: (row) => <PatientCell row={row} detail={ageSex(row)} />,
     },
-    { key: 'screened', header: t('screened', 'Screened'), render: screenDate },
-    { key: 'screeningSite', header: t('screeningSite', 'Screening site'), render: text('screening_site') },
+    { key: 'actId', header: t('actId', 'ACT ID'), text: text('rhd_id') },
+    { key: 'ageSex', header: t('ageSex', 'Age, sex'), text: ageSex },
+    { key: 'screened', header: t('screened', 'Screened'), text: screenDate },
+    { key: 'screeningSite', header: t('screeningSite', 'Screening site'), text: text('screening_site') },
     // The follow-up status column went with the question, which AR-167 took off Patient Information.
   ];
+  const tableColumns = columns.filter((column) => column.key !== 'actId' && column.key !== 'ageSex');
 
   // Where the session location's kind cannot be read, opening on every clinic would show patients not its own.
   if (error || clinicKind === 'error') {
@@ -113,7 +123,7 @@ export function ScreenPositiveTable() {
     return (
       <DataTableSkeleton
         role="progressbar"
-        columnCount={columns.length + 1}
+        columnCount={tableColumns.length + 1}
         rowCount={paginationProps.pageSize}
         compact={desktop}
         zebra
@@ -136,12 +146,23 @@ export function ScreenPositiveTable() {
         {filterSelect('primaryCare', t('primaryCareClinic', 'Primary care clinic'))}
         {filterSelect('sex', t('sex', 'Sex'))}
       </div>
+      <div className={styles.actions}>
+        <DownloadCsvButton
+          name="diagnosis-to-confirm"
+          list={`worklist:${t('diagnosisToConfirm', 'Diagnosis to confirm')}`}
+          identifiers
+          filters={filters}
+          headers={columns.map((column) => column.header)}
+          rows={() => shown.map((row) => columns.map((column) => column.text(row)))}
+          disabled={!shown.length}
+        />
+      </div>
       {shown.length ? (
         <div className={styles.tableContainer}>
           <Table size={desktop ? 'sm' : 'lg'} useZebraStyles>
             <TableHead>
               <TableRow>
-                {columns.map((column) => (
+                {tableColumns.map((column) => (
                   <TableHeader key={column.key} {...sortHeaderProps(sort, column.key, setSort)}>
                     {column.header}
                   </TableHeader>
@@ -152,8 +173,8 @@ export function ScreenPositiveTable() {
             <TableBody>
               {results.map((row) => (
                 <TableRow key={String(row.patient_uuid)}>
-                  {columns.map((column) => (
-                    <TableCell key={column.header}>{column.render(row)}</TableCell>
+                  {tableColumns.map((column) => (
+                    <TableCell key={column.header}>{column.render?.(row) ?? column.text(row)}</TableCell>
                   ))}
                   <TableCell>
                     {row.form_uuid && (
