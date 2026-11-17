@@ -39,6 +39,8 @@ const labelColours: Record<string, string> = {
   Community: '#0f62fe',
   'Health facility': '#4589ff',
   'Not recorded': notRecorded,
+  // Never asked, as the form asks where a patient was screened only when Screen + is Yes: darker than not recorded.
+  'Not screen-positive': '#8d8d8d',
   'No status recorded': notRecorded,
   'No diagnosis yet': notRecorded,
 };
@@ -96,6 +98,11 @@ export function useCountName() {
     School: t('school', 'School'),
     Community: t('community', 'Community'),
     'Health facility': t('healthFacility', 'Health facility'),
+    'Clinical presentation': t('clinicalPresentation', 'Clinical presentation'),
+    'Pregnancy / labor': t('pregnancyLabor', 'Pregnancy / labor'),
+    'Coincidental finding': t('coincidentalFinding', 'Coincidental finding'),
+    'Post-mortem': t('postMortem', 'Post-mortem'),
+    'Not screen-positive': t('notScreenPositive', 'Not screen-positive'),
     Yes: t('yes', 'Yes'),
     No: t('no', 'No'),
   };

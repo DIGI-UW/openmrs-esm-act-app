@@ -78,9 +78,9 @@ export const waitlistMeasures = ['interventionAssigned', 'interventions'];
 
 export function measureLabel(t: TFunction, measure: string) {
   const labels: Record<string, string> = {
-    consultations: t('consultationsLastYear', 'Consultations in the last year'),
+    consultations: t('consultationVisitsLastYear', 'Consultation visits in the last year'),
     echocardiogram: t('echoLast13Months', 'Echocardiogram in the last 13 months'),
-    retainedInCare: t('retainedInCare', 'Retained in care (seen in the last 7 months)'),
+    retainedInCare: t('retainedInCare', 'Retained in care (seen or given prophylaxis in the last 7 months)'),
     interventionAssigned: t('patientsWaitingForProcedure', 'Patients waiting for a procedure'),
     interventions: t('latestRecommendationsCarriedOut', 'Latest recommendations carried out'),
     warfarin: t('inrLast90Days', 'On warfarin, with an INR in the last 90 days'),
@@ -139,7 +139,15 @@ export function figureNames(t: TFunction, figure: Figure, cascadeSteps: Config['
         section: waitlistMeasures.includes(figure.measure)
           ? t('proceduralWaitlist', 'Procedural waitlist')
           : t('medicalOptimisation', 'Medical optimisation'),
-        label: [measureLabel(t, figure.measure), figure.outcome === 'notDone' ? t('notDone', 'Not done') : undefined]
+        // The waitlist's bar answers Done or Still waiting; the optimisation bars answer Yes or No.
+        label: [
+          measureLabel(t, figure.measure),
+          figure.outcome !== 'notDone'
+            ? undefined
+            : waitlistMeasures.includes(figure.measure)
+              ? t('stillWaiting', 'Still waiting')
+              : t('no', 'No'),
+        ]
           .filter(Boolean)
           .join(', '),
       };
