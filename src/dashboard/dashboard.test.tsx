@@ -473,14 +473,14 @@ describe('Dashboard', () => {
     await screen.findAllByTestId('dashboard-measure');
 
     await userEvent.click(
-      within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'Not done' }),
+      within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'No' }),
     );
     const echo = screen.getAllByTestId('dashboard-measure')[1];
     expect(
       within(echo)
         .getAllByTestId('dashboard-segment')
         .map((segment) => segment.title),
-    ).toEqual(['Not done: 7']);
+    ).toEqual(['No: 7']);
     expect(within(echo).getByTestId('dashboard-segment-fill')).toHaveStyle({ width: '70%' });
   });
 
@@ -528,23 +528,25 @@ describe('Dashboard', () => {
     expect(screen.queryByTestId('dashboard-waitlist-row')).not.toBeInTheDocument();
   });
 
-  it('stacks medical optimisation done against not done, printing both counts and the denominator', async () => {
+  it('stacks each medical optimisation answer, yes against no, printing both counts and the denominator', async () => {
     await signIn();
 
     renderPage();
 
     expect(await screen.findAllByTestId('dashboard-measure')).toHaveLength(3);
     expect(texts('dashboard-measure')).toEqual([
-      'Retained in care (seen in the last 7 months)80%8 done, 2 not done, of 10',
-      'Echocardiogram in the last 13 months30%3 done, 7 not done, of 10',
-      'On warfarin, with an INR in the last 90 days50%1 done, 1 not done, of 2',
+      'Retained in care (seen or given prophylaxis in the last 7 months)80%8 yes, 2 no, of 10',
+      'Echocardiogram in the last 13 months30%3 yes, 7 no, of 10',
+      'On warfarin, with an INR in the last 90 days50%1 yes, 1 no, of 2',
     ]);
-    expect(texts('dashboard-measure-count')).toEqual(['Consultations in the last year12']);
+    expect(texts('dashboard-measure-count')).toEqual(['Consultation visits in the last year12']);
     expect(
-      within(exportSection('optimisation')).getByText(/^Of the \d+ active registrants, unless a row says otherwise$/),
+      within(exportSection('optimisation')).getByText(
+        /^Of the \d+ active registrants, except the warfarin row, which counts only those on warfarin$/,
+      ),
     ).toBeInTheDocument();
-    expect(segmentsOf('dashboard-measure')[1]).toEqual(['Done: 3', 'Not done: 7']);
-    expect(keyColours('Outcome')).toEqual({ Done: '#009d9a', 'Not done': '#d0e2ff' });
+    expect(segmentsOf('dashboard-measure')[1]).toEqual(['Yes: 3', 'No: 7']);
+    expect(keyColours('Outcome')).toEqual({ Yes: '#009d9a', No: '#d0e2ff' });
   });
 
   it('draws the recommendations done in the Procedural waitlist, and counts the patients waiting in its title', async () => {
@@ -559,7 +561,7 @@ describe('Dashboard', () => {
         .getAllByTestId('dashboard-procedure-measure')
         .map((row) => row.textContent),
     ).toEqual(['Latest recommendations carried out25%1 done, 3 still waiting, of 4 recommendations']);
-    expect(within(waitlist).queryByText(/unless a row says otherwise/)).not.toBeInTheDocument();
+    expect(within(waitlist).queryByText(/except the warfarin row/)).not.toBeInTheDocument();
     expect(
       within(waitlist).getByText("Open recommendations in each active patient's latest consultation, by urgency"),
     ).toBeInTheDocument();
@@ -1308,13 +1310,13 @@ describe('Dashboard', () => {
 
       expect(
         await screen.findByText(
-          /^Opened from the Dashboard: Medical optimisation, Consultations in the last year, 2 consultations/,
+          /^Opened from the Dashboard: Medical optimisation, Consultation visits in the last year, 2 consultations/,
         ),
       ).toBeInTheDocument();
       expect(paramsOf(OPTIMISATION_PATIENTS)).toEqual({ endDate: today, measure: 'consultations' });
       expect(screen.queryByRole('button', { name: /^Medical optimisation: / })).not.toBeInTheDocument();
       const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
-      expect(headers).toContain('Consultations in the last year');
+      expect(headers).toContain('Consultation visits in the last year');
       expect(headers).not.toContain('Medical optimisation');
     });
 
@@ -1733,10 +1735,10 @@ describe('Dashboard', () => {
         'Performed in the last 12 months',
       ]);
       expect(groupsOf('Medical optimisation')).toEqual([
-        'Retained in care (seen in the last 7 months)',
+        'Retained in care (seen or given prophylaxis in the last 7 months)',
         'Echocardiogram in the last 13 months',
         'On warfarin, with an INR in the last 90 days',
-        'Consultations in the last year',
+        'Consultation visits in the last year',
       ]);
     });
 
