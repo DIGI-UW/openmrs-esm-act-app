@@ -592,6 +592,13 @@
   margin-bottom: layout.$spacing-06;
 }
 
+.screeningCoverage {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin: layout.$spacing-05 0;
+  max-width: none;
+}
+
 .screeningTiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));

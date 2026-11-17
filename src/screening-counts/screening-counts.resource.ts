@@ -40,7 +40,7 @@ const screeningCountsUrl = `${restBaseUrl}/actcore/screeningcounts`;
 
 export const column = (setting: Setting, metric: Metric) => `${setting}_${metric}`;
 
-/** How many months back the Screening counts page and the Dashboard's RHD screening section go. */
+/** How many months back the Screening counts page and the Dashboard's Screening counts tab go. */
 export const screeningMonthsOffered = 36;
 
 /** This month and the ones before it, newest first, as YYYY-MM. */
