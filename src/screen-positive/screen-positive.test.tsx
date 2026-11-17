@@ -7,6 +7,7 @@ import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
 import { columnHeaders } from '../column-headers.test-helper';
 import { layouts, setLayout, tableSkeleton } from '../table-skeleton.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
+import { downloadCsv } from '../table-filters/csv';
 import { screenPositiveRows } from './screen-positive.fixture';
 import ScreenPositive from './screen-positive.component';
 
@@ -16,6 +17,7 @@ vi.mock('../access/may-enter-form', () => ({
   useMayEnterForm: () => true,
 }));
 vi.mock('../reports/report-dataset.resource', () => ({ useReportDataset: vi.fn() }));
+vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 // The stylesheet's class names, so a test can tell the tag drawn yellow.
 vi.mock('./screen-positive.scss', () => ({ default: { notContacted: 'notContacted' } }));
 const mockUseReportDataset = vi.mocked(useReportDataset);
@@ -208,6 +210,40 @@ describe('Diagnosis to confirm', () => {
     render(<ScreenPositive />);
 
     expect(screen.getByText('Could not load the screen positive list')).toBeInTheDocument();
+  });
+
+  it('downloads the patients as filtered, every page of them, and records the download', async () => {
+    await signInWith(['App: act.screenPositive', 'Add Encounters', 'Task: act.lists.export']);
+    dataset({ rows: screenPositiveRows });
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
+    render(<ScreenPositive />);
+
+    await userEvent.selectOptions(screen.getByLabelText('Sex'), 'M');
+    await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+    await waitFor(() => expect(vi.mocked(downloadCsv)).toHaveBeenCalled());
+    const [name, headers, rows] = vi.mocked(downloadCsv).mock.lastCall;
+    expect(name).toMatch(/^diagnosis-to-confirm-/);
+    expect(headers).toEqual(['Patient', 'ACT ID', 'Age, sex', 'Screened', 'Screening site']);
+    const male = screenPositiveRows.filter((row) => row.sex === 'M');
+    expect(rows).toHaveLength(male.length);
+    expect(rows[0]).toEqual(['Patient 2', 'rhd00002', '9 M', '17-Sept-2026', 'Layibi College']);
+    expect(rows.map((row) => row[1])).toEqual(male.map((row) => row.rhd_id));
+    const logged = vi.mocked(openmrsFetch).mock.calls.find(([url]) => String(url).endsWith('/actcore/download/record'));
+    expect(logged[1].body).toMatchObject({
+      list: 'worklist:Diagnosis to confirm',
+      rows: male.length,
+      identifiers: true,
+      filters: expect.objectContaining({ sex: 'M' }),
+    });
+  });
+
+  it('offers no download to a user who may not export lists', () => {
+    dataset({ rows: screenPositiveRows });
+
+    render(<ScreenPositive />);
+
+    expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
   });
 
   it.each(layouts)(
