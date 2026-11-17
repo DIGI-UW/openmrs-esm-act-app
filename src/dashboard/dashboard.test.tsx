@@ -472,9 +472,7 @@ describe('Dashboard', () => {
     renderPage();
     await screen.findAllByTestId('dashboard-measure');
 
-    await userEvent.click(
-      within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'No' }),
-    );
+    await userEvent.click(within(screen.getByRole('list', { name: 'Outcome' })).getByRole('button', { name: 'No' }));
     const echo = screen.getAllByTestId('dashboard-measure')[1];
     expect(
       within(echo)
@@ -988,7 +986,7 @@ describe('Dashboard', () => {
     const tabs = await screen.findAllByRole('tab');
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Screening cascade',
-      'RHD screening',
+      'Screening counts',
       'Screening, from registrations',
     ]);
     expect(screen.getAllByTestId('dashboard-screening-step')[0]).toBeVisible();
@@ -1711,7 +1709,7 @@ describe('Dashboard', () => {
             'every clinic',
           ],
           [
-            'RHD screening',
+            'Screening counts',
             '',
             'Screened',
             '6840',
@@ -1815,9 +1813,9 @@ describe('Dashboard', () => {
       expect(recorded().at(-1)).toEqual(
         expect.objectContaining({
           list: 'dashboard:pdf',
-          columns: ['Registrant status', 'RHD screening'],
+          columns: ['Registrant status', 'Screening counts'],
           identifiers: false,
-          // RHD screening's months are logged with it, and the registration dates of a section not exported are not.
+          // Screening counts' months are logged with it, and the registration dates of a section not exported are not.
           filters: {
             endDate: today,
             screeningFromMonth: dayjs().subtract(12, 'month').format('YYYY-MM'),
@@ -1929,7 +1927,7 @@ describe('Dashboard', () => {
     });
   });
 
-  describe('RHD screening', () => {
+  describe('Screening counts', () => {
     const lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
     const yearToLastMonth = dayjs().subtract(12, 'month').format('YYYY-MM');
 
@@ -1954,6 +1952,54 @@ describe('Dashboard', () => {
       expect(summaryUrls().at(-1)).toMatch(
         new RegExp(`/summary\\?startMonth=${yearToLastMonth}&endMonth=${lastMonth}$`),
       );
+    });
+
+    it('says how many months the sums hold, as a month not entered adds nothing', async () => {
+      await signIn();
+      renderPage();
+
+      // Summed over every clinic, the months a clinic could have entered are not known.
+      expect(await screen.findByTestId('dashboard-screening-coverage')).toHaveTextContent(
+        'Counts entered for 12 months across all clinics',
+      );
+
+      await userEvent.selectOptions(screen.getByLabelText('Cardiac clinic'), 'lira');
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('dashboard-screening-coverage')).toHaveTextContent(
+          'Counts entered for every month in the period',
+        ),
+      );
+      expect(screen.getByTestId('dashboard-screening-coverage').tagName).toBe('P');
+    });
+
+    it('warns when months are missing from the period at one clinic', async () => {
+      await signIn();
+      const answer = vi.mocked(openmrsFetch).getMockImplementation();
+      vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: unknown) =>
+        /\/summary\?clinic=lira&startMonth/.test(url)
+          ? Promise.resolve({ data: { ...screeningSummary, months: 3 } })
+          : answer(url, init as never)) as never);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?cardiacClinic=lira');
+      renderPage();
+
+      expect(
+        await screen.findByText(
+          'Counts entered for 3 of 12 months. A month not entered adds nothing to these figures.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-screening-coverage').tagName).not.toBe('P');
+    });
+
+    it('counts the months two clinics could have entered, as ACT Core adds them together', async () => {
+      await signIn();
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard?cardiacClinic=lira&primaryCareClinic=hq');
+      renderPage();
+
+      expect(
+        await screen.findByText(
+          'Counts entered for 12 of 24 months across 2 clinics. A month not entered adds nothing to these figures.',
+        ),
+      ).toBeInTheDocument();
     });
 
     it('counts the clinics chosen and the months picked', async () => {
@@ -2144,7 +2190,7 @@ describe('Dashboard', () => {
       await screen.findAllByTestId('dashboard-tile');
       expect(screen.queryByText('Screening cascade')).not.toBeInTheDocument();
       expect(screen.queryByText('Screening, from registrations')).not.toBeInTheDocument();
-      expect(screen.queryByText('RHD screening')).not.toBeInTheDocument();
+      expect(screen.queryByText('Screening counts')).not.toBeInTheDocument();
       expect(summaryUrls()).toEqual([]);
       const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
       [SCREENING, DIAGNOSES, SCREENING_REGISTRATIONS].forEach((report) => expect(evaluated).not.toContain(report));
