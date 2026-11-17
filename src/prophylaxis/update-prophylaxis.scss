@@ -1,0 +1,38 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.current {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: layout.$spacing-03 layout.$spacing-05;
+
+  dt {
+    @include type.type-style('label-01');
+    color: $text-02;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.footer {
+  width: 100%;
+}
+
+.button {
+  height: layout.$spacing-10;
+  align-items: baseline;
+  min-width: 50%;
+}

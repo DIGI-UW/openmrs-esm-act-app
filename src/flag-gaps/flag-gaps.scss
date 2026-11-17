@@ -1,0 +1,30 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.container {
+  padding: layout.$spacing-05;
+}
+
+.message {
+  @include type.type-style('body-compact-01');
+}
+
+.flag + .flag {
+  margin-top: layout.$spacing-07;
+}
+
+.flagName {
+  @include type.type-style('heading-compact-02');
+  margin-bottom: layout.$spacing-03;
+}
+
+.status {
+  margin-bottom: layout.$spacing-03;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+}

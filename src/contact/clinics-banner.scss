@@ -1,0 +1,9 @@
+@use '@carbon/layout';
+
+.clinic + .clinic {
+  margin-left: layout.$spacing-02;
+}
+
+.separator {
+  margin-right: layout.$spacing-02;
+}

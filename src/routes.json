@@ -1,0 +1,1188 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.40.0",
+    "actcore": ">=1.0.0-0",
+    "cohort": ">=3.7.3",
+    "reportingrest": ">=2.0.0",
+    "patientflags": ">=3.0.10"
+  },
+  "extensions": [
+    {
+      "name": "act-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "actHomeDashboardLink",
+      "meta": {
+        "name": "act-home",
+        "slot": "rhd-home-dashboard-slot",
+        "title": "actHome"
+      },
+      "privileges": "App: act.home"
+    },
+    {
+      "name": "act-home-dashboard",
+      "slot": "rhd-home-dashboard-slot",
+      "component": "actHomeDashboard",
+      "privileges": "App: act.home"
+    },
+    {
+      "name": "act-home-quick-actions",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeQuickActions",
+      "order": 1,
+      "privileges": "App: act.home"
+    },
+    {
+      "name": "act-home-record-bpg",
+      "slot": "act-home-quick-actions-slot",
+      "component": "recordBpgQuickAction",
+      "order": 1,
+      "privileges": "Add Encounters",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-record-oral",
+      "slot": "act-home-quick-actions-slot",
+      "component": "recordOralQuickAction",
+      "order": 2,
+      "privileges": "Add Encounters",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-register-patient",
+      "slot": "act-home-quick-actions-slot",
+      "component": "registerPatientQuickAction",
+      "order": 3,
+      "privileges": "Add Patients"
+    },
+    {
+      "name": "act-home-enter-prophylaxis",
+      "slot": "act-home-quick-actions-slot",
+      "component": "enterProphylaxisQuickAction",
+      "order": 4,
+      "privileges": [
+        "Add Encounters",
+        "App: act.registry"
+      ],
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-find-patient",
+      "slot": "act-home-quick-actions-slot",
+      "component": "findPatientQuickAction",
+      "order": 5,
+      "privileges": "Get Patients"
+    },
+    {
+      "name": "act-home-due-for-prophylaxis",
+      "slot": "rhd-home-widgets-slot",
+      "component": "dueForProphylaxisWidget",
+      "order": 2,
+      "privileges": "App: act.dueList",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-worklists",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeWorklists",
+      "order": 4,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-worklists-beside-cascade",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeWorklists",
+      "order": 4,
+      "privileges": "App: act.worklists",
+      "displayExpression": "session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-overdue-consultation",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeOverdueConsultation",
+      "order": 5,
+      "privileges": "App: act.registry",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-home-care-cascade",
+      "slot": "rhd-home-widgets-slot",
+      "component": "actHomeCareCascade",
+      "order": 6,
+      "privileges": "App: act.registry"
+    },
+    {
+      "name": "act-registry-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "registryDashboardLink",
+      "meta": {
+        "name": "act-registry",
+        "slot": "rhd-registry-dashboard-slot",
+        "title": "registry"
+      },
+      "privileges": "App: act.registry"
+    },
+    {
+      "name": "act-registry-dashboard",
+      "slot": "rhd-registry-dashboard-slot",
+      "component": "registryDashboard",
+      "privileges": "App: act.registry"
+    },
+    {
+      "name": "act-worklists-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "worklistsDashboardLink",
+      "meta": {
+        "name": "act-worklists",
+        "slot": "rhd-worklists-dashboard-slot",
+        "title": "worklists"
+      },
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklists-dashboard",
+      "slot": "rhd-worklists-dashboard-slot",
+      "component": "worklistsDashboard",
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-due-for-prophylaxis",
+      "slot": "act-worklists-slot",
+      "component": "dueForProphylaxisWorklist",
+      "order": 1,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-confirmatory-echo",
+      "slot": "act-worklists-slot",
+      "component": "confirmatoryEchoWorklist",
+      "order": 2,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-cardiology-follow-up",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 3,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-lost-to-follow-up",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 4,
+      "privileges": "App: act.worklists"
+    },
+    {
+      "name": "act-worklist-post-procedural-follow-up",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 5,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-worklist-pregnancy-outcome",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 6,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-worklist-inr-review",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 7,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-worklist-referred-to-clinician",
+      "slot": "act-worklists-slot",
+      "component": "flagWorklist",
+      "order": 8,
+      "privileges": "App: act.worklists",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-worklist-waiting-list",
+      "slot": "act-worklists-slot",
+      "component": "waitingListWorklist",
+      "order": 9,
+      "privileges": "App: act.waitingList",
+      "displayExpression": "!session.user.roles.some((role) => role.display === 'Organizational: ACT Community Clinician')"
+    },
+    {
+      "name": "act-waiting-list-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "waitingListDashboardLink",
+      "meta": {
+        "name": "act-waiting-list",
+        "slot": "rhd-waiting-list-dashboard-slot",
+        "title": "waitingList"
+      },
+      "privileges": "App: act.waitingList"
+    },
+    {
+      "name": "act-waiting-list-dashboard",
+      "slot": "rhd-waiting-list-dashboard-slot",
+      "component": "waitingListDashboard",
+      "privileges": "App: act.waitingList"
+    },
+    {
+      "name": "act-screen-positive-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "screenPositiveDashboardLink",
+      "meta": {
+        "name": "act-screen-positive",
+        "slot": "rhd-screen-positive-dashboard-slot",
+        "title": "screenPositive"
+      },
+      "privileges": "App: act.screenPositive"
+    },
+    {
+      "name": "act-screen-positive-dashboard",
+      "slot": "rhd-screen-positive-dashboard-slot",
+      "component": "screenPositiveDashboard",
+      "privileges": "App: act.screenPositive"
+    },
+    {
+      "name": "act-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "dashboardLink",
+      "meta": {
+        "name": "act-dashboard",
+        "slot": "act-dashboard-slot",
+        "title": "dashboard"
+      },
+      "privileges": "App: act.dashboard"
+    },
+    {
+      "name": "act-dashboard",
+      "slot": "act-dashboard-slot",
+      "component": "dashboard",
+      "privileges": "App: act.dashboard"
+    },
+    {
+      "name": "act-run-charts-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "runChartsDashboardLink",
+      "meta": {
+        "name": "act-run-charts",
+        "slot": "act-run-charts-dashboard-slot",
+        "title": "runCharts"
+      },
+      "privileges": "App: act.dashboard"
+    },
+    {
+      "name": "act-run-charts-dashboard",
+      "slot": "act-run-charts-dashboard-slot",
+      "component": "runChartsDashboard",
+      "privileges": "App: act.dashboard"
+    },
+    {
+      "name": "act-reports-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "reportsDashboardLink",
+      "meta": {
+        "name": "act-reports",
+        "slot": "act-reports-dashboard-slot",
+        "title": "reports"
+      },
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-reports-dashboard",
+      "slot": "act-reports-dashboard-slot",
+      "component": "reportsDashboard",
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-report-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "reportViewDashboardLink",
+      "meta": {
+        "name": "act-report",
+        "slot": "act-report-dashboard-slot",
+        "title": "reports"
+      },
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-report-dashboard",
+      "slot": "act-report-dashboard-slot",
+      "component": "reportViewDashboard",
+      "privileges": "App: act.reports"
+    },
+    {
+      "name": "act-facility-reports-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "facilityReportsDashboardLink",
+      "meta": {
+        "name": "act-facility-reports",
+        "slot": "act-facility-reports-dashboard-slot",
+        "title": "facilityReports"
+      },
+      "privileges": "App: act.dataClerk"
+    },
+    {
+      "name": "act-facility-reports-dashboard",
+      "slot": "act-facility-reports-dashboard-slot",
+      "component": "facilityReportsDashboard",
+      "privileges": "App: act.dataClerk"
+    },
+    {
+      "name": "act-instance-admin-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "instanceAdminDashboardLink",
+      "meta": {
+        "name": "act-instance-admin",
+        "slot": "act-instance-admin-dashboard-slot",
+        "title": "home"
+      },
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-dashboard",
+      "slot": "act-instance-admin-dashboard-slot",
+      "component": "instanceAdminDashboard",
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-quick-actions",
+      "slot": "act-instance-admin-widgets-slot",
+      "component": "instanceAdminQuickActions",
+      "order": 1,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-kpis",
+      "slot": "act-instance-admin-widgets-slot",
+      "component": "instanceAdminKpis",
+      "order": 2,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-forms-and-sites",
+      "slot": "act-instance-admin-quick-actions-slot",
+      "component": "formsAndSitesQuickAction",
+      "order": 1,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-role-permissions",
+      "slot": "act-instance-admin-quick-actions-slot",
+      "component": "rolePermissionsQuickAction",
+      "order": 2,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-research-participation",
+      "slot": "act-instance-admin-quick-actions-slot",
+      "component": "researchParticipationQuickAction",
+      "order": 3,
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-instance-admin-nav",
+      "slot": "homepage-dashboard-slot",
+      "component": "instanceAdminNav",
+      "privileges": "App: act.instanceAdmin"
+    },
+    {
+      "name": "act-users-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "usersDashboardLink",
+      "meta": {
+        "name": "act-users",
+        "slot": "act-users-dashboard-slot",
+        "title": "usersAndRoles"
+      },
+      "privileges": "Edit Users"
+    },
+    {
+      "name": "act-users-dashboard",
+      "slot": "act-users-dashboard-slot",
+      "component": "usersDashboard",
+      "privileges": "Edit Users"
+    },
+    {
+      "name": "act-clinics-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "clinicsDashboardLink",
+      "meta": {
+        "name": "act-clinics",
+        "slot": "act-clinics-dashboard-slot",
+        "title": "clinics"
+      },
+      "privileges": "Manage Locations"
+    },
+    {
+      "name": "act-clinics-dashboard",
+      "slot": "act-clinics-dashboard-slot",
+      "component": "clinicsDashboard",
+      "privileges": "Manage Locations"
+    },
+    {
+      "name": "act-role-permissions-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "rolePermissionsDashboardLink",
+      "meta": {
+        "name": "act-role-permissions",
+        "slot": "act-role-permissions-dashboard-slot",
+        "title": "rolePermissions"
+      },
+      "privileges": "Manage Roles"
+    },
+    {
+      "name": "act-role-permissions-dashboard",
+      "slot": "act-role-permissions-dashboard-slot",
+      "component": "rolePermissionsDashboard",
+      "privileges": "Manage Roles"
+    },
+    {
+      "name": "act-studies-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "studiesDashboardLink",
+      "meta": {
+        "name": "act-studies",
+        "slot": "act-studies-dashboard-slot",
+        "title": "studies"
+      },
+      "privileges": "App: act.studies"
+    },
+    {
+      "name": "act-studies-dashboard",
+      "slot": "act-studies-dashboard-slot",
+      "component": "studiesDashboard",
+      "privileges": "App: act.studies"
+    },
+    {
+      "name": "act-refresh-flags-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "refreshFlagsDashboardLink",
+      "meta": {
+        "name": "act-refresh-flags",
+        "slot": "act-refresh-flags-dashboard-slot",
+        "title": "flagsAndAdherence"
+      },
+      "privileges": "Task: act.refreshFlags"
+    },
+    {
+      "name": "act-refresh-flags-dashboard",
+      "slot": "act-refresh-flags-dashboard-slot",
+      "component": "refreshFlagsDashboard",
+      "privileges": "Task: act.refreshFlags"
+    },
+    {
+      "name": "act-screening-counts-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "screeningCountsDashboardLink",
+      "meta": {
+        "name": "act-screening-counts",
+        "slot": "act-screening-counts-dashboard-slot",
+        "title": "screeningCounts"
+      },
+      "privileges": "App: act.screeningCounts"
+    },
+    {
+      "name": "act-screening-counts-dashboard",
+      "slot": "act-screening-counts-dashboard-slot",
+      "component": "screeningCountsDashboard",
+      "privileges": "App: act.screeningCounts"
+    },
+    {
+      "name": "act-download-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "downloadDashboardLink",
+      "meta": {
+        "name": "act-download",
+        "slot": "act-download-dashboard-slot",
+        "title": "downloadData"
+      },
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
+    },
+    {
+      "name": "act-download-dashboard",
+      "slot": "act-download-dashboard-slot",
+      "component": "downloadDashboard",
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['Task: act.downloadData', 'Task: act.downloadResearchData'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
+    },
+    {
+      "name": "act-logs-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "logsDashboardLink",
+      "meta": {
+        "name": "act-logs",
+        "slot": "act-logs-dashboard-slot",
+        "title": "logs"
+      },
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
+    },
+    {
+      "name": "act-logs-dashboard",
+      "slot": "act-logs-dashboard-slot",
+      "component": "logsDashboard",
+      "displayExpression": "!!session?.user?.privileges?.some((privilege) => ['View Audit Logs', 'View Read Audit Logs', 'View Security Audit Logs'].includes(privilege.display)) || !!session?.user?.roles?.some((role) => role.display === 'System Developer')"
+    },
+    {
+      "name": "act-community-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "communityHomeDashboardLink",
+      "meta": {
+        "name": "act-community-home",
+        "slot": "act-community-home-dashboard-slot",
+        "title": "home"
+      },
+      "privileges": "App: act.communityHome"
+    },
+    {
+      "name": "act-community-home-dashboard",
+      "slot": "act-community-home-dashboard-slot",
+      "component": "communityHomeDashboard",
+      "privileges": "App: act.communityHome"
+    },
+    {
+      "name": "act-community-home-quick-actions",
+      "slot": "act-community-home-widgets-slot",
+      "component": "communityHomeQuickActions",
+      "order": 1,
+      "privileges": "App: act.communityHome"
+    },
+    {
+      "name": "act-community-home-record-bpg",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "recordBpgQuickAction",
+      "order": 1,
+      "privileges": "Add Encounters"
+    },
+    {
+      "name": "act-community-home-record-oral",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "recordOralQuickAction",
+      "order": 2,
+      "privileges": "Add Encounters"
+    },
+    {
+      "name": "act-community-home-register-patient",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "registerPatientQuickAction",
+      "order": 3,
+      "privileges": "Add Patients"
+    },
+    {
+      "name": "act-community-home-find-patient",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "findPatientQuickAction",
+      "order": 4,
+      "privileges": "Get Patients"
+    },
+    {
+      "name": "act-community-home-facility-report",
+      "slot": "act-community-home-quick-actions-slot",
+      "component": "facilityReportQuickAction",
+      "order": 5,
+      "privileges": "App: act.dataClerk"
+    },
+    {
+      "name": "act-enter-prophylaxis-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "patientsOnProphylaxisDashboardLink",
+      "meta": {
+        "name": "act-enter-prophylaxis",
+        "slot": "act-enter-prophylaxis-dashboard-slot",
+        "title": "enterProphylaxis"
+      },
+      "privileges": "App: act.registry"
+    },
+    {
+      "name": "act-enter-prophylaxis-dashboard",
+      "slot": "act-enter-prophylaxis-dashboard-slot",
+      "component": "patientsOnProphylaxisDashboard",
+      "privileges": "App: act.registry"
+    },
+    {
+      "name": "act-due-for-prophylaxis-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "dueForProphylaxisDashboardLink",
+      "meta": {
+        "name": "act-due-for-prophylaxis",
+        "slot": "rhd-due-for-prophylaxis-dashboard-slot",
+        "title": "dueForProphylaxis"
+      },
+      "privileges": "App: act.dueList"
+    },
+    {
+      "name": "act-admin-nav",
+      "slot": "homepage-dashboard-slot",
+      "component": "adminNav"
+    },
+    {
+      "name": "act-due-for-prophylaxis-dashboard",
+      "slot": "rhd-due-for-prophylaxis-dashboard-slot",
+      "component": "dueForProphylaxisDashboard",
+      "privileges": "App: act.dueList"
+    },
+    {
+      "name": "act-due-for-prophylaxis-widget",
+      "slot": "act-community-home-widgets-slot",
+      "component": "dueForProphylaxisWidget",
+      "order": 2,
+      "privileges": "App: act.dueList"
+    },
+    {
+      "name": "act-back-to-act-link",
+      "slot": "top-of-all-patient-dashboards-slot",
+      "component": "backToActLink",
+      "privileges": "Get Patients"
+    },
+    {
+      "name": "act-session-timeout",
+      "slot": "top-nav-actions-slot",
+      "component": "sessionTimeout",
+      "order": 99
+    },
+    {
+      "name": "act-help-contact",
+      "slot": "help-menu-slot",
+      "component": "actHelpContact"
+    },
+    {
+      "name": "act-help-docs",
+      "slot": "help-menu-slot",
+      "component": "actHelpDocs"
+    },
+    {
+      "name": "act-scan-patient-card-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "scanPatientCardDashboardLink",
+      "meta": {
+        "name": "act-scan-patient-card",
+        "slot": "act-scan-patient-card-dashboard-slot",
+        "title": "scanPatientCard"
+      },
+      "privileges": "Task: act.enterProphylaxis"
+    },
+    {
+      "name": "act-scan-patient-card-dashboard",
+      "slot": "act-scan-patient-card-dashboard-slot",
+      "component": "scanPatientCardDashboard",
+      "privileges": "Task: act.enterProphylaxis"
+    },
+    {
+      "name": "act-anaphylaxis-alert",
+      "slot": "patient-banner-tags-slot",
+      "component": "anaphylaxisAlert",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-patient-status-flags",
+      "slot": "patient-banner-tags-slot",
+      "component": "patientStatusFlags",
+      "privileges": [
+        "App: act.statusFlags",
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-status-flag",
+      "slot": "patient-banner-tags-slot",
+      "component": "inrStatusFlag",
+      "privileges": [
+        "App: act.statusFlags",
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-allergies-pill",
+      "slot": "patient-banner-tags-slot",
+      "component": "allergiesPill",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-clinical-flags",
+      "slot": "patient-banner-tags-slot",
+      "component": "clinicalFlags",
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-prophylaxis-dashboard-link",
+      "component": "prophylaxisPageDashboardLink",
+      "meta": {
+        "slot": "act-prophylaxis-dashboard-slot",
+        "path": "act-prophylaxis",
+        "title": "Prophylaxis",
+        "icon": "omrs-icon-medication"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-prophylaxis-dashboard",
+      "slot": "act-prophylaxis-dashboard-slot",
+      "component": "prophylaxisPageDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-research-dashboard-link",
+      "component": "researchPageDashboardLink",
+      "meta": {
+        "slot": "act-research-dashboard-slot",
+        "path": "act-research",
+        "title": "Research participation",
+        "icon": "omrs-icon-microscope"
+      },
+      "privileges": "App: act.studies"
+    },
+    {
+      "name": "act-research-dashboard",
+      "slot": "act-research-dashboard-slot",
+      "component": "researchPageDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": "App: act.studies"
+    },
+    {
+      "name": "act-consultations-dashboard-link",
+      "component": "consultationsDashboardLink",
+      "meta": {
+        "slot": "act-consultations-dashboard-slot",
+        "path": "act-consultations",
+        "title": "Consultation visits",
+        "icon": "omrs-icon-calendar-heat-map"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-consultations-dashboard",
+      "slot": "act-consultations-dashboard-slot",
+      "component": "consultationsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-allergies-dashboard-link",
+      "component": "allergiesDashboardLink",
+      "meta": {
+        "slot": "act-allergies-dashboard-slot",
+        "path": "act-allergies",
+        "title": "Allergies",
+        "icon": "omrs-icon-warning"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-allergies-dashboard",
+      "slot": "act-allergies-dashboard-slot",
+      "component": "allergiesDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-medications-dashboard-link",
+      "component": "medicationsDashboardLink",
+      "meta": {
+        "slot": "act-medications-dashboard-slot",
+        "path": "act-medications",
+        "title": "Medications",
+        "icon": "omrs-icon-medication"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-medications-dashboard",
+      "slot": "act-medications-dashboard-slot",
+      "component": "medicationsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-reviews-dashboard-link",
+      "component": "inrReviewsDashboardLink",
+      "meta": {
+        "slot": "act-inr-reviews-dashboard-slot",
+        "path": "act-inr-reviews",
+        "title": "INR reviews",
+        "icon": "omrs-icon-chart-average"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-reviews-dashboard",
+      "slot": "act-inr-reviews-dashboard-slot",
+      "component": "inrReviewsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-consultation-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "consultationCard",
+      "meta": { "fullWidth": true },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-procedural-recommendations-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "proceduralRecommendationsCard",
+      "meta": { "fullWidth": true },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-inr-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "inrCard",
+      "meta": { "fullWidth": true },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-clinics-banner",
+      "slot": "patient-banner-bottom-slot",
+      "component": "clinicsBanner",
+      "privileges": [
+        "Get People"
+      ]
+    },
+    {
+      "name": "act-medications-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "medicationsCard",
+      "meta": { "fullWidth": true },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-update-patient-status",
+      "slot": "patient-actions-slot",
+      "component": "updatePatientStatusButton",
+      "privileges": "Edit Patient Programs"
+    },
+    {
+      "name": "act-clinicians-only-note",
+      "component": "cliniciansOnlyNote",
+      "privileges": [
+        "Get Patients"
+      ]
+    },
+    {
+      "name": "act-cardiac-tests-dashboard-link",
+      "component": "cardiacTestsDashboardLink",
+      "meta": {
+        "slot": "act-cardiac-tests-dashboard-slot",
+        "path": "act-cardiac-tests",
+        "title": "Cardiac tests",
+        "icon": "omrs-icon-activity"
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-cardiac-tests-dashboard",
+      "slot": "act-cardiac-tests-dashboard-slot",
+      "component": "cardiacTestsDashboard",
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    },
+    {
+      "name": "act-next-steps-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "nextStepsCard",
+      "order": -1,
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations",
+        "Add Encounters"
+      ]
+    },
+    {
+      "name": "act-prophylaxis-card",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "prophylaxisCard",
+      "order": 0,
+      "meta": {
+        "fullWidth": true
+      },
+      "privileges": [
+        "Get Encounters",
+        "Get Observations"
+      ]
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "act-waiting-list",
+      "scopePattern": "/home/act-waiting-list"
+    },
+    {
+      "name": "act-record-dose",
+      "scopePattern": "^/home/([^/]+)"
+    },
+    {
+      "name": "act-screen-positive",
+      "scopePattern": "/home/act-screen-positive"
+    },
+    {
+      "name": "act-clinics",
+      "scopePattern": "^/home/act-clinics"
+    },
+    {
+      "name": "act-studies",
+      "scopePattern": "^/home/act-studies"
+    },
+    {
+      "name": "act-users",
+      "scopePattern": "^/home/act-users"
+    },
+    {
+      "name": "act-dashboard",
+      "scopePattern": "^/home/act-dashboard"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "act-waiting-list-form-entry",
+      "group": "act-waiting-list",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-record-dose-form-entry",
+      "group": "act-record-dose",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-screen-positive-form-entry",
+      "group": "act-screen-positive",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-cardiac-test-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-allergy-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-update-patient-status",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-update-prophylaxis",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-inr-monitoring",
+      "group": "patient-chart"
+    },
+    {
+      "name": "act-inr-form-entry",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    },
+    {
+      "name": "act-vitals-form",
+      "group": "patient-chart",
+      "width": "wider"
+    },
+    {
+      "name": "act-research-form",
+      "group": "patient-chart",
+      "width": "narrow"
+    },
+    {
+      "name": "act-clinics-form",
+      "group": "act-clinics",
+      "width": "narrow"
+    },
+    {
+      "name": "act-studies-form",
+      "group": "act-studies",
+      "width": "narrow"
+    },
+    {
+      "name": "act-users-form",
+      "group": "act-users",
+      "width": "wider"
+    },
+    {
+      "name": "act-reset-password",
+      "group": "act-users",
+      "width": "narrow"
+    },
+    {
+      "name": "act-dashboard-export",
+      "group": "act-dashboard",
+      "width": "narrow"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "rhd-flag-gaps-workspace",
+      "component": "flagGapsWorkspace",
+      "window": "patient-chart-clinical-forms"
+    },
+    {
+      "name": "act-waiting-list-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-waiting-list-form-entry"
+    },
+    {
+      "name": "act-record-dose-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-record-dose-form-entry"
+    },
+    {
+      "name": "act-screen-positive-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-screen-positive-form-entry"
+    },
+    {
+      "name": "act-cardiac-test-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-cardiac-test-form-entry"
+    },
+    {
+      "name": "act-allergy-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "act-allergy-form-entry"
+    },
+    {
+      "name": "act-vitals-form-workspace",
+      "component": "@openmrs/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
+      "window": "act-vitals-form"
+    },
+    {
+      "name": "act-update-patient-status-workspace",
+      "component": "updatePatientStatusWorkspace",
+      "window": "act-update-patient-status"
+    },
+    {
+      "name": "act-update-prophylaxis-workspace",
+      "component": "updateProphylaxisWorkspace",
+      "window": "act-update-prophylaxis"
+    },
+    {
+      "name": "act-inr-edit-workspace",
+      "component": "inrEditWorkspace",
+      "window": "act-inr-monitoring"
+    },
+    {
+      "name": "act-inr-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#patientFormEntryWorkspace",
+      "window": "act-inr-form-entry"
+    },
+    {
+      "name": "act-enrollment-workspace",
+      "component": "enrollmentWorkspace",
+      "window": "act-research-form"
+    },
+    {
+      "name": "act-clinic-form-workspace",
+      "component": "clinicFormWorkspace",
+      "window": "act-clinics-form"
+    },
+    {
+      "name": "act-study-form-workspace",
+      "component": "studyFormWorkspace",
+      "window": "act-studies-form"
+    },
+    {
+      "name": "act-user-form-workspace",
+      "component": "userFormWorkspace",
+      "window": "act-users-form"
+    },
+    {
+      "name": "act-reset-password-workspace",
+      "component": "resetPasswordWorkspace",
+      "window": "act-reset-password"
+    },
+    {
+      "name": "act-dashboard-export-workspace",
+      "component": "dashboardExportWorkspace",
+      "window": "act-dashboard-export"
+    }
+  ]
+}

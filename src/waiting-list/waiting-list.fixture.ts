@@ -1,0 +1,21 @@
+/** Rows shaped as the Procedural Waiting List report returns them. */
+export const waitingListRows = Array.from({ length: 30 }, (_, i) => ({
+  rhd_id: `rhd${String(i + 1).padStart(5, '0')}`,
+  sex: i % 2 ? 'M' : 'F',
+  age_years: 10 + i,
+  date_of_birth: i === 0 ? '2016-03-15' : null,
+  procedure_type: i % 3 ? 'Surgery' : 'Catheterization',
+  procedure_name: i % 3 ? 'Mitral valve repair/replacement' : 'Mitral balloon valvuloplasty',
+  urgency: '3: elective (180 days/6 months)',
+  urgency_concept: '2666bf97-7400-57c7-b535-7903e22ced34',
+  date_added: '2026-09-01',
+  district: i % 2 ? 'GULU' : 'KITGUM',
+  contraindications: i === 0 ? 'Yes' : 'No',
+  suitable_for_repair: i === 0 ? 'No' : 'Yes',
+  cardiac_clinic: i % 2 ? 'Gulu RRH' : 'Lira RRH',
+  primary_care_clinic: i % 2 ? 'Anyeke HCIV' : null,
+  patient_uuid: `patient-${i + 1}`,
+  encounter_uuid: `encounter-${i + 1}`,
+  recommendation_uuid: `recommendation-${i + 1}`,
+  form_uuid: '4b063fc7-996f-3001-8500-8940e201be8f',
+}));

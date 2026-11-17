@@ -1,0 +1,524 @@
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { type ScopedMutator, SWRConfig, useSWRConfig } from 'swr';
+import {
+  getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  openmrsFetch,
+  restBaseUrl,
+  showSnackbar,
+  useConfig,
+  usePatient,
+  useSession,
+} from '@openmrs/esm-framework';
+import { atSessionLocation, signInWith } from '../access/sign-in.test-helper';
+import { type Config, configSchema } from '../config-schema';
+import { useOpenFormInVisit } from '../visits/open-form-in-visit';
+import { type NextStep } from './next-steps.resource';
+import NextStepsCard from './next-steps-card.component';
+
+vi.mock('../visits/open-form-in-visit', () => ({ useOpenFormInVisit: vi.fn() }));
+
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const openForm = vi.fn();
+const bpgForm = '0119d2e6-e2e1-391c-9b88-d59a10b0780d';
+const echoForm = '88e54fb0-1243-3f7a-b925-f64648ca6635';
+
+// Grace Achieng on the seeded distro: BPG overdue and no echo, from actcore's /actcore/nextsteps.
+const grace: Array<NextStep> = [
+  {
+    key: 'bpg',
+    form: bpgForm,
+    title: 'Give BPG injection',
+    reason: 'Overdue: was due 03-Oct-2026',
+    isNew: false,
+    done: false,
+  },
+  {
+    key: 'echo',
+    form: echoForm,
+    title: 'Echocardiogram',
+    reason: 'No echocardiogram recorded',
+    isNew: false,
+    done: false,
+  },
+];
+
+const forms = [
+  { uuid: bpgForm, published: true, retired: false, encounterType: { editPrivilege: null } },
+  {
+    uuid: echoForm,
+    published: true,
+    retired: false,
+    encounterType: { editPrivilege: { display: 'Task: act.enterClinicalForms' } },
+  },
+  { uuid: 'old', published: true, retired: true, encounterType: null },
+];
+
+let steps: Array<NextStep> = grace;
+
+function respond() {
+  mockOpenmrsFetch.mockImplementation(((url: string) =>
+    Promise.resolve({ data: url.includes('/actcore/nextsteps') ? { steps } : { results: forms } })) as never);
+}
+
+let mutateCache: ScopedMutator;
+
+function CacheMutator() {
+  mutateCache = useSWRConfig().mutate;
+  return null;
+}
+
+function renderCard() {
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      <CacheMutator />
+      <NextStepsCard patientUuid="grace" />
+    </SWRConfig>,
+  );
+}
+
+// The chart's invalidatePatientEncounters, which the forms app runs after every save.
+const invalidatePatientEncounters = () =>
+  mutateCache(
+    (key) => typeof key === 'string' && key.includes(`${restBaseUrl}/encounter`) && key.includes('patient=grace'),
+  );
+
+const rows = () => screen.getAllByRole('listitem');
+
+describe('NextStepsCard', () => {
+  beforeEach(async () => {
+    await signInWith(['Add Encounters']);
+    vi.mocked(useConfig<Config>).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
+    vi.mocked(usePatient).mockReturnValue({
+      patient: { name: [{ given: ['Grace'], family: 'Achieng' }] },
+      isLoading: false,
+    } as never);
+    vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
+    vi.mocked(showSnackbar).mockClear();
+    openForm.mockClear();
+    steps = grace;
+    respond();
+  });
+
+  it("lists each step with its title, reason and action, under the card's header", async () => {
+    renderCard();
+
+    expect(await screen.findByText('Give BPG injection')).toBeInTheDocument();
+    expect(screen.getByText('Next steps for this visit')).toBeInTheDocument();
+    expect(screen.getByText('Forms show up here only when Grace needs them')).toBeInTheDocument();
+    expect(rows().map((row) => row.textContent)).toEqual([
+      'Give BPG injectionOverdue: was due 03-Oct-2026Record BPG',
+      'EchocardiogramNo echocardiogram recordedEnter result',
+    ]);
+  });
+
+  it('asks ACT Core for the patient', async () => {
+    renderCard();
+
+    await screen.findByText('Give BPG injection');
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/actcore/nextsteps?patient=grace`);
+  });
+
+  it("opens the step's form in the patient's visit", async () => {
+    renderCard();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Record BPG' }));
+
+    expect(openForm).toHaveBeenCalledWith(bpgForm);
+  });
+
+  it('counts the forms the user may open, and opens Clinical forms from All forms', async () => {
+    renderCard();
+
+    const allForms = await screen.findByRole('button', { name: 'All forms (1)' });
+    await userEvent.click(allForms);
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('clinical-forms-workspace');
+  });
+
+  it('counts the forms the forms list offers this patient, which can leave out some of the published forms', async () => {
+    const pregnancy = { uuid: 'pregnancy', published: true, retired: false, encounterType: { editPrivilege: null } };
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('/actcore/nextsteps')
+          ? { steps }
+          : { results: url.includes('/form?patient=grace&') ? forms : [...forms, pregnancy] },
+      })) as never);
+    renderCard();
+
+    expect(await screen.findByRole('button', { name: 'All forms (1)' })).toBeInTheDocument();
+  });
+
+  it('marks a new step New, and shows a done step Completed after the rest', async () => {
+    steps = [
+      {
+        key: 'consult',
+        form: 'consult',
+        title: 'Consultation visit',
+        reason: 'Anaphylaxis reported after BPG: review before the next dose',
+        isNew: true,
+        done: false,
+      },
+      {
+        key: 'bpg',
+        form: bpgForm,
+        title: 'Give BPG injection',
+        reason: 'Entered this visit',
+        isNew: false,
+        done: true,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Consultation visit');
+    const [consult, bpg] = rows();
+    expect(consult).toHaveAttribute('data-new', 'true');
+    expect(within(consult).getByText('New')).toBeInTheDocument();
+    expect(within(consult).getByRole('button', { name: 'Start' })).toBeInTheDocument();
+    expect(bpg).toHaveAttribute('data-done', 'true');
+    expect(within(bpg).getByText('Completed')).toBeInTheDocument();
+    expect(within(bpg).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('offers no action for a referral, which no form records', async () => {
+    steps = [
+      {
+        key: 'refer',
+        form: null,
+        title: 'Refer to clinician',
+        reason: 'Anaphylaxis reported: a clinician must review before the next dose',
+        isNew: true,
+        done: false,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Refer to clinician');
+    expect(within(rows()[0]).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  describe('Send referral', () => {
+    const referralType = 'referral-type';
+    const refer = (done = false): NextStep => ({
+      key: 'refer',
+      form: null,
+      title: 'Refer to clinician',
+      reason: 'Anaphylaxis reported: a clinician must review before the next dose',
+      isNew: !done,
+      done,
+      referralType,
+    });
+
+    beforeEach(async () => {
+      await signInWith(['Add Encounters', 'Task: act.sendReferral']);
+      atSessionLocation('Akunalaber HCIII', [], 'akunalaber');
+      steps = [refer()];
+      respond();
+    });
+
+    it('records a referral at the session location and shows the step Completed after asking again', async () => {
+      renderCard();
+
+      mockOpenmrsFetch.mockImplementation(((url: string, options?: { method?: string }) => {
+        if (options?.method === 'POST') {
+          steps = [refer(true)];
+        }
+        return Promise.resolve({ data: url.includes('/actcore/nextsteps') ? { steps } : { results: forms } });
+      }) as never);
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+
+      expect(await screen.findByText('Completed')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
+    });
+
+    it('posts the encounter with no date, so the server stamps it', async () => {
+      renderCard();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+
+      const post = mockOpenmrsFetch.mock.calls.find(
+        ([, options]) => (options as { method?: string })?.method === 'POST',
+      );
+      expect(post?.[0]).toBe(`${restBaseUrl}/encounter`);
+      expect((post?.[1] as { body: unknown }).body).toEqual({
+        patient: 'grace',
+        encounterType: referralType,
+        location: 'akunalaber',
+      });
+      expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'success', title: 'Referral sent' }),
+      );
+    });
+
+    it('says why, and keeps the button, when the referral cannot be saved', async () => {
+      mockOpenmrsFetch.mockImplementation(((url: string, options?: { method?: string }) =>
+        options?.method === 'POST'
+          ? Promise.reject({
+              message: 'Server responded with 403',
+              responseBody: { error: { message: 'Privileges required: Add Encounters' } },
+            })
+          : Promise.resolve({ data: url.includes('/actcore/nextsteps') ? { steps } : { results: forms } })) as never);
+      renderCard();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+
+      await waitFor(() =>
+        expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(
+          expect.objectContaining({ kind: 'error', subtitle: 'Privileges required: Add Encounters' }),
+        ),
+      );
+      expect(screen.getByRole('button', { name: 'Send referral' })).toBeEnabled();
+    });
+
+    it('posts once for two clicks in the same tick', async () => {
+      renderCard();
+      const button = await screen.findByRole('button', { name: 'Send referral' });
+
+      act(() => {
+        button.click();
+        button.click();
+      });
+
+      await screen.findByText('Completed').catch(() => undefined);
+      expect(
+        mockOpenmrsFetch.mock.calls.filter(([, options]) => (options as { method?: string })?.method === 'POST'),
+      ).toHaveLength(1);
+    });
+
+    it('does not post, and says why, when the session has no location', async () => {
+      vi.mocked(useSession).mockReturnValue({ ...vi.mocked(useSession)(), sessionLocation: undefined } as never);
+      renderCard();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Send referral' }));
+
+      expect(
+        mockOpenmrsFetch.mock.calls.some(([, options]) => (options as { method?: string })?.method === 'POST'),
+      ).toBe(false);
+      expect(vi.mocked(showSnackbar)).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'error', subtitle: 'Choose a login location first' }),
+      );
+    });
+
+    it('offers no button to a user holding the referral privilege without Add Encounters', async () => {
+      await signInWith(['Task: act.sendReferral']);
+      renderCard();
+
+      await screen.findByText('Refer to clinician');
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
+    });
+
+    it('offers no button to a user without the privilege to send a referral', async () => {
+      await signInWith(['Add Encounters']);
+      renderCard();
+
+      await screen.findByText('Refer to clinician');
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
+    });
+
+    it('offers no button when no encounter type is mapped to the referral', async () => {
+      steps = [{ ...refer(), referralType: null }];
+      respond();
+      renderCard();
+
+      await screen.findByText('Refer to clinician');
+      expect(screen.queryByRole('button', { name: 'Send referral' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('marks a BPG step ACT Core holds back as On hold, with no action, beside the referral it waits for', async () => {
+    steps = [
+      {
+        key: 'refer',
+        form: null,
+        title: 'Refer to clinician',
+        reason: 'Anaphylaxis reported: a clinician must review before the next dose',
+        isNew: true,
+        done: false,
+      },
+      {
+        key: 'bpg',
+        form: null,
+        title: 'Give BPG injection',
+        reason: 'On hold: a clinician must review before the next dose',
+        isNew: false,
+        done: false,
+        onHold: true,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Give BPG injection');
+    const [refer, bpg] = rows();
+    expect(within(bpg).getByTestId('step-on-hold')).toHaveTextContent('On hold');
+    expect(within(bpg).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(refer).queryByTestId('step-on-hold')).not.toBeInTheDocument();
+  });
+
+  it('draws an anaphylaxis review and the BPG it holds as alerts, apart from routine steps', async () => {
+    steps = [
+      {
+        key: 'consult',
+        form: 'consult',
+        title: 'Consultation visit',
+        reason: 'Anaphylaxis reported after BPG: review before the next dose',
+        isNew: true,
+        done: false,
+        alert: true,
+      },
+      {
+        key: 'bpg',
+        form: null,
+        title: 'Give BPG injection',
+        reason: 'On hold: complete the consultation before giving BPG',
+        isNew: false,
+        done: false,
+        onHold: true,
+        alert: true,
+      },
+      grace[1],
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Consultation visit');
+    const [consult, bpg, echo] = rows();
+    expect(consult).toHaveAttribute('data-alert', 'true');
+    expect(within(consult).getByTestId('step-alert-icon')).toBeInTheDocument();
+    expect(within(consult).getByText('New', { selector: '.cds--tag--red .cds--tag__label' })).toBeInTheDocument();
+    expect(bpg).toHaveAttribute('data-alert', 'true');
+    expect(within(bpg).getByTestId('step-on-hold')).toHaveClass('cds--tag--red');
+    expect(echo).not.toHaveAttribute('data-alert');
+    expect(within(echo).queryByTestId('step-alert-icon')).not.toBeInTheDocument();
+  });
+
+  it('keeps a new step that is no alert, such as an echo to review, in the routine style', async () => {
+    steps = [
+      {
+        key: 'consult',
+        form: 'consult',
+        title: 'Consultation visit',
+        reason: 'Review the new echo result and update the care plan',
+        isNew: true,
+        done: false,
+        alert: false,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Consultation visit');
+    const [consult] = rows();
+    expect(consult).toHaveAttribute('data-new', 'true');
+    expect(consult).not.toHaveAttribute('data-alert');
+    expect(within(consult).getByText('New', { selector: '.cds--tag--blue .cds--tag__label' })).toBeInTheDocument();
+  });
+
+  it('says so when nothing is due', async () => {
+    steps = [];
+    respond();
+
+    renderCard();
+
+    expect(await screen.findByText('Nothing due for this patient today.')).toBeInTheDocument();
+  });
+
+  it('asks again after a save, and names the steps the save added', async () => {
+    renderCard();
+    await screen.findByText('Give BPG injection');
+    expect(showSnackbar).not.toHaveBeenCalled();
+
+    steps = [
+      {
+        key: 'consult',
+        form: 'consult',
+        title: 'Consultation visit',
+        reason: 'Anaphylaxis reported after BPG: review before the next dose',
+        isNew: true,
+        done: false,
+      },
+      ...grace.slice(1),
+      { ...grace[0], reason: 'Entered this visit', done: true },
+    ];
+    respond();
+    await invalidatePatientEncounters();
+
+    await screen.findByText('Consultation visit');
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Next step added: Consultation visit' }),
+    );
+  });
+
+  it('lists a pregnancy step from the delivery outcome flag with its own icon and the default action', async () => {
+    const pregnancyForm = 'f3bfa5d3-5bfd-3c82-9c71-dbe3bc01e8e4';
+    steps = [
+      {
+        key: 'pregnancy',
+        form: pregnancyForm,
+        title: 'Pregnancy',
+        reason: 'Delivery outcome due',
+        isNew: false,
+        done: false,
+      },
+    ];
+    respond();
+
+    renderCard();
+
+    await screen.findByText('Pregnancy');
+    expect(rows().map((row) => row.textContent)).toEqual(['PregnancyDelivery outcome dueStart']);
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }));
+    expect(openForm).toHaveBeenCalledWith(pregnancyForm);
+  });
+
+  it('shows nothing when turned off', async () => {
+    vi.mocked(useConfig<Config>).mockReturnValue({
+      ...(getDefaultsFromConfigSchema(configSchema) as Config),
+      nextSteps: { enabled: false },
+    });
+
+    const { container } = renderCard();
+
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(expect.stringContaining('/actcore/nextsteps'));
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(expect.stringContaining('/form?'));
+  });
+
+  it('keeps the last list when asking again after a save fails', async () => {
+    renderCard();
+    await screen.findByText('Give BPG injection');
+
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      url.includes('/actcore/nextsteps')
+        ? Promise.reject(new Error('timeout'))
+        : Promise.resolve({ data: { results: forms } })) as never);
+    await invalidatePatientEncounters();
+
+    await waitFor(() =>
+      expect(mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).includes('/actcore/nextsteps'))).toHaveLength(2),
+    );
+    expect(screen.getByText('Give BPG injection')).toBeInTheDocument();
+  });
+
+  it('shows nothing when ACT Core cannot be reached', async () => {
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      url.includes('/actcore/nextsteps')
+        ? Promise.reject(new Error('Not found'))
+        : Promise.resolve({ data: { results: [] } })) as never);
+
+    const { container } = renderCard();
+
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+  });
+});

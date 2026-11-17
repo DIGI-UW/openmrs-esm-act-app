@@ -1,0 +1,31 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
+.worklists {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-06;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.description {
+  @include type.type-style('body-01');
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: layout.$spacing-04;
+
+  // A worklist with no list in this deployment renders nothing, and takes no cell.
+  > :empty {
+    display: none;
+  }
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}

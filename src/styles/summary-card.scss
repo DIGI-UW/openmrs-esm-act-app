@@ -1,0 +1,135 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.card {
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  margin-bottom: layout.$spacing-05;
+}
+
+// On the patient summary the dashboard's grid gap spaces the cards, as it does upstream's.
+:global([data-extension-slot-name='patient-chart-summary-dashboard-slot']) {
+  .card {
+    margin-bottom: 0;
+  }
+
+  // A card that renders nothing, such as INR review for a patient not on warfarin, leaves no empty grid row.
+  > :global(:has([data-extension-id]:empty)) {
+    display: none;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.needsPrescription {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  padding: 0 layout.$spacing-03;
+  white-space: nowrap;
+}
+
+// Sits with the header's ghost buttons, at their text size.
+.headerLink {
+  @include type.type-style('body-compact-01');
+  padding: 0 layout.$spacing-03;
+  white-space: nowrap;
+}
+
+// Each field's outline fills the 1px gap beside it, so a row the fields do not fill ends in the card's colour.
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1px;
+  border-top: 1px solid $ui-03;
+}
+
+.field {
+  padding: layout.$spacing-05;
+  background-color: $ui-02;
+  outline: 1px solid $ui-03;
+}
+
+// A field whose value runs long, such as a diagnosis, given two columns where the card has them.
+.wideField {
+  grid-column: span 2;
+}
+
+.label {
+  @include type.type-style('label-01');
+  color: $text-02;
+  margin-bottom: layout.$spacing-02;
+}
+
+.value {
+  @include type.type-style('body-02');
+  color: $ui-05;
+
+  &[data-overdue='true'] {
+    color: $danger;
+  }
+}
+
+// A ghost button under a field's value, flush with the value's text.
+.fieldAction {
+  display: flex;
+  margin-top: layout.$spacing-02;
+  margin-left: -(layout.$spacing-05);
+}
+
+// A second line under a field's value, such as the on-time count under adherence.
+.detail {
+  @include type.type-style('label-01');
+  display: block;
+  color: $text-02;
+  margin-top: layout.$spacing-02;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+}
+
+.chart {
+  padding: 0 layout.$spacing-05 layout.$spacing-03;
+}
+
+.dot {
+  display: inline-block;
+  width: layout.$spacing-03;
+  height: layout.$spacing-03;
+  margin-right: layout.$spacing-03;
+  border-radius: 50%;
+
+  &[data-tone='green'] {
+    background-color: #24a148;
+  }
+
+  &[data-tone='orange'] {
+    background-color: #ff832b;
+  }
+
+  &[data-tone='red'] {
+    background-color: #da1e28;
+  }
+}
+
+.seeAll {
+  padding: layout.$spacing-03 layout.$spacing-05;
+  text-align: right;
+}
+
+.note {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  padding: 0 layout.$spacing-05 layout.$spacing-05;
+}
+
+// A note under a table, spaced from its last row.
+.recommendationNote {
+  padding-top: layout.$spacing-04;
+}

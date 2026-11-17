@@ -1,0 +1,65 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
+
+// A column that can shrink to nothing keeps the page at the screen's width on a tablet, so the table scrolls.
+.waitingList {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-09;
+}
+
+.description {
+  @include type.type-style('body-01');
+  margin-bottom: layout.$spacing-06;
+}
+
+.tableContainer {
+  // The row's actions stay in view while a table wider than the screen scrolls sideways.
+  th:last-child,
+  td:last-child {
+    position: sticky;
+    right: 0;
+  }
+
+  th:last-child {
+    background-color: $ui-03;
+  }
+}
+
+.message {
+  @include type.type-style('body-01');
+  padding: layout.$spacing-05;
+}
+
+.filters {
+  display: grid;
+  // Wraps onto more rows where five filters do not fit, as on a tablet.
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: layout.$spacing-05;
+  align-items: end;
+  margin-bottom: layout.$spacing-05;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-05;
+}
+
+// A recommendation past the deadline for its urgency; the tests read the same attribute.
+.tableContainer :global(.cds--data-table--zebra) tbody tr[data-overdue='true']:not(.cds--parent-row) td {
+  background-color: $act-risk-background;
+}
+
+// The figure that makes a row overdue reads in red, as the mockup shows; the tests read the same attribute.
+.tableContainer tr[data-overdue='true'] td[data-days-pending='true'] {
+  color: $act-risk;
+}
+
+// Record procedure and Open consultation side by side, on one line.
+.rowActions {
+  display: flex;
+  white-space: nowrap;
+}

@@ -1,0 +1,57 @@
+name: OpenMRS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types:
+      - published
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    uses: openmrs/openmrs-contrib-gha-workflows/.github/workflows/build-frontend-module.yml@main
+    with:
+      node_version: '20'
+      pre_verify_command: yarn check-translations
+
+  release:
+    needs: build
+    permissions:
+      contents: write
+      id-token: write
+    uses: openmrs/openmrs-contrib-gha-workflows/.github/workflows/release-frontend-module.yml@main
+    with:
+      node_version: '20'
+      publish: true
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
+  # Triggered here rather than by the release workflow, which dispatches before npm's next tag shows the new version.
+  # Drop this job and restore downstream_repository once O3-6013 lands in the shared release workflow.
+  # A [skip-pre] commit publishes nothing, so it has nothing to wait for or to build.
+  build-distro-frontend:
+    needs: release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip-pre]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            package.json
+            .github/scripts
+
+      - name: Wait until npm serves this run's pre-release
+        id: npm
+        run: bash .github/scripts/wait-for-npm-pre-release.sh "${{ github.run_number }}"
+
+      - name: Build the distro's frontend image
+        if: steps.npm.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_PAT }}
+        run: gh workflow run build-frontend.yml --repo DIGI-UW/openmrs-distro-referenceapplication

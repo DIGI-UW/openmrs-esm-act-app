@@ -1,0 +1,30 @@
+@use '@carbon/layout';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.actions {
+  display: flex;
+  gap: layout.$spacing-03;
+}
+
+.footer {
+  width: 100%;
+}
+
+.button {
+  height: layout.$spacing-10;
+  align-items: baseline;
+  min-width: 50%;
+}
