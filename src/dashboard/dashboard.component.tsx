@@ -40,6 +40,7 @@ import { ClinicFilters } from '../programme-report/programme-report.component';
 import { useProgrammeScope } from '../programme-report/programme-scope';
 import { type ReportRow, useReportDataset } from '../reports/report-dataset.resource';
 import { urlWithFilters, useUrlFilters } from '../table-filters/url-filters';
+import { type DiseaseCategory, useDiseaseCategories } from './disease-categories.resource';
 import {
   CascadeBars,
   CountLink,
@@ -527,7 +528,27 @@ function MeasureBars({
   );
 }
 
-function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onShowAll: () => void }) {
+function Figures({
+  scope,
+  asOf,
+  onShowAll,
+  category,
+  categoryName,
+  categories,
+  categoryPending,
+  categoryError,
+  onCategory,
+}: {
+  scope: Scope;
+  asOf: string;
+  onShowAll: () => void;
+  category: string;
+  categoryName?: string;
+  categories: Array<DiseaseCategory>;
+  categoryPending: boolean;
+  categoryError?: { error: Error; retry: () => void };
+  onCategory: (category: string) => void;
+}) {
   const { t } = useTranslation();
   const { careCascade, dashboard } = useConfig<Config>();
   const params = useMemo(() => ({ endDate: asOf, ...scope }), [asOf, scope]);
@@ -542,6 +563,14 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   });
   const registrantsReport = whileLimitRead(useReportDataset(counted ? dashboard.registrantsReport : null, countParams));
   const registrants = useMemo(() => registrantCounts(registrantsReport.rows), [registrantsReport.rows]);
+  // Only sex, age and disease take the category; the tiles and status keep every disease.
+  const categoryParams = useMemo(() => ({ ...countParams, category }), [countParams, category]);
+  const categoryReport = whileLimitRead(
+    useReportDataset(counted && category ? dashboard.registrantsReport : null, categoryParams),
+  );
+  const demographicReport = category ? categoryReport : registrantsReport;
+  const demographics = useMemo(() => registrantCounts(demographicReport.rows), [demographicReport.rows]);
+  const activeCounted = category ? demographics.sex.reduce((sum, { value }) => sum + value, 0) : registrants.active;
 
   const cascadeReport = whileLimitRead(useReportDataset(counted ? careCascade.report : null, countParams));
   const isPast = asOf < dayjs().format('YYYY-MM-DD');
@@ -629,6 +658,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   const loaded = (report: { error?: Error }, rows: () => Array<CountRow>) => (report.error ? [] : rows());
   const waitlistSection = t('proceduralWaitlist', 'Procedural waitlist');
   const activeName = t('activeRegistrants', 'Active registrants');
+  const withCategory = (group: string) => (categoryName ? `${group}, ${categoryName}` : group);
   const ofTheActive = t(
     'medicalOptimisationDescription',
     'Of the {{count}} active registrants, except the warfarin row, which counts only those on warfarin',
@@ -693,10 +723,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
         asOf,
       ),
     ),
-    ...loaded(registrantsReport, () => [
-      ...countRows(activeName, t('sex', 'Sex'), registrants.sex, asOf),
-      ...countRows(activeName, t('age', 'Age'), registrants.age, asOf),
-      ...countRows(activeName, t('disease', 'Disease'), registrants.category, asOf),
+    ...loaded({ ...demographicReport, ...categoryError }, () => [
+      ...countRows(activeName, withCategory(t('sex', 'Sex')), demographics.sex, asOf),
+      ...countRows(activeName, withCategory(t('age', 'Age')), demographics.age, asOf),
+      ...countRows(activeName, withCategory(t('disease', 'Disease')), demographics.category, asOf),
     ]),
     ...loaded(waitlistReport, () => [
       ...waitlist.rows.flatMap((row) =>
@@ -744,7 +774,10 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
   useCountsCsv(
     'figures',
     csvRows,
-    [registrantsReport, cascadeReport, waitlistReport, optimisationReport].some((report) => report.isLoading) ||
+    categoryPending ||
+      [registrantsReport, demographicReport, cascadeReport, waitlistReport, optimisationReport].some(
+        (report) => report.isLoading,
+      ) ||
       screeningReport.isLoading ||
       diagnosesReport.isLoading,
   );
@@ -836,10 +869,51 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
           />
         </Section>
         <Section
-          title={t('activeRegistrantsCount', 'Active registrants: {{count}}', { count: registrants.active })}
-          name={t('activeRegistrants', 'Active registrants')}
-          description={t('activeRegistrantsDescription', 'Sex, age and disease of the patients active today')}
-          state={stateOf(registrantsReport, !registrants.active)}
+          title={
+            categoryPending
+              ? activeName
+              : t('activeRegistrantsCount', 'Active registrants: {{count}}', { count: activeCounted })
+          }
+          name={activeName}
+          description={
+            categoryName
+              ? t(
+                  'activeRegistrantsWithDiseaseDescription',
+                  'Sex, age and disease of the patients active today with {{disease}}',
+                  {
+                    disease: categoryName,
+                    interpolation: { escapeValue: false },
+                  },
+                )
+              : t('activeRegistrantsDescription', 'Sex, age and disease of the patients active today')
+          }
+          state={{
+            ...stateOf(demographicReport, !activeCounted),
+            isLoading: demographicReport.isLoading || categoryPending,
+            ...categoryError,
+          }}
+          emptyText={
+            categoryName
+              ? t('nobodyWithDiseaseToCount', 'Nobody with {{disease}} to count', {
+                  disease: categoryName,
+                  interpolation: { escapeValue: false },
+                })
+              : undefined
+          }
+          controls={
+            <Select
+              id="dashboard-disease"
+              className={styles.diseaseFilter}
+              labelText={t('disease', 'Disease')}
+              value={category}
+              onChange={(event) => onCategory(event.target.value)}
+            >
+              <SelectItem value="" text={t('allDiseases', 'All diseases')} />
+              {categories.map(({ uuid, display }) => (
+                <SelectItem key={uuid} value={uuid} text={display} />
+              ))}
+            </Select>
+          }
           wide
           collapse={collapsible('active')}
           exportId="active"
@@ -850,7 +924,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               <h4 className={styles.subheading}>{t('sex', 'Sex')}</h4>
               <CountsDonut
                 name={t('sex', 'Sex')}
-                counts={registrants.sex}
+                counts={demographics.sex}
                 centre={t('activeCentre', 'active')}
                 testId="dashboard-sex"
                 withShare
@@ -861,7 +935,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
               <h4 className={styles.subheading}>{t('age', 'Age')}</h4>
               <Columns
                 name={t('age', 'Age')}
-                counts={registrants.age}
+                counts={demographics.age}
                 testId="dashboard-age"
                 figureOf={registrantsBy('age')}
               />
@@ -869,7 +943,7 @@ function Figures({ scope, asOf, onShowAll }: { scope: Scope; asOf: string; onSho
             <div>
               <h4 className={styles.subheading}>{t('disease', 'Disease')}</h4>
               <Bars
-                counts={registrants.category}
+                counts={demographics.category}
                 testId="dashboard-category"
                 figureOf={registrantsBy('disease')}
                 coloured
@@ -1550,7 +1624,7 @@ function RhdScreening({ scope, clinic, onShowAll }: { scope: Scope; clinic: stri
   );
 }
 
-const urlKeys = ['cardiacClinic', 'primaryCareClinic', 'asOf', ...figureKeys] as const;
+const urlKeys = ['cardiacClinic', 'primaryCareClinic', 'asOf', 'category', ...figureKeys] as const;
 type UrlKey = (typeof urlKeys)[number];
 const noFigure = Object.fromEntries(figureKeys.map((key) => [key, ''])) as Record<(typeof figureKeys)[number], string>;
 
@@ -1603,6 +1677,20 @@ export default function Dashboard() {
     open: (next: Figure) => go({ ...noFigure, ...next }),
   };
   const clinicNames = useClinicNames(scope ?? {});
+  const {
+    categories,
+    error: categoriesError,
+    isLoading: categoriesLoading,
+    retry: retryCategories,
+  } = useDiseaseCategories();
+  const categoryName = categories.find(({ uuid }) => uuid === url.category)?.display;
+  // A category no answer names, such as one an old link carries, counts every disease.
+  const category = categoryName ? url.category : '';
+  const categoryPending = Boolean(url.category) && categoriesLoading;
+  // A category asked for whose answers failed to load is an error, not every disease.
+  const categoryError =
+    url.category && categoriesError ? { error: categoriesError, retry: retryCategories } : undefined;
+  const setCategory = (next: string) => setUrl({ category: next });
   const [csv, setCsv] = useState<
     Partial<Record<CsvPart, { rows: Array<CountRow>; isLoading: boolean; filters: PartFilters }>>
   >({});
@@ -1663,6 +1751,11 @@ export default function Dashboard() {
             scope={scope}
             asOf={asOf}
             clinicNames={clinicNames}
+            category={category}
+            categoryName={categoryName}
+            categoryPending={categoryPending}
+            categoryFailed={Boolean(categoryError)}
+            onCategory={setCategory}
             onFigure={(next) => setUrl({ ...noFigure, ...next })}
             onScope={setScope}
             onAsOf={setAsOf}
@@ -1696,6 +1789,7 @@ export default function Dashboard() {
                   sectionFilters={{
                     rhdScreening: csv.rhdScreening?.filters,
                     registrations: csv.registrations?.filters,
+                    active: categoryName ? { disease: categoryName } : undefined,
                   }}
                   clinics={clinicsCounted}
                   asOf={asOf}
@@ -1705,7 +1799,17 @@ export default function Dashboard() {
             </div>
             <FigureLinks.Provider value={figureLinks}>
               <CountsCsv.Provider value={putCsv}>
-                <Figures scope={scope} asOf={asOf} onShowAll={() => setScope({})} />
+                <Figures
+                  scope={scope}
+                  asOf={asOf}
+                  onShowAll={() => setScope({})}
+                  category={category}
+                  categoryName={categoryName}
+                  categories={categories}
+                  categoryPending={categoryPending}
+                  categoryError={categoryError}
+                  onCategory={setCategory}
+                />
               </CountsCsv.Provider>
             </FigureLinks.Provider>
           </>
