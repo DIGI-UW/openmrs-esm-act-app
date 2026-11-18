@@ -39,7 +39,16 @@ import { UserLogPanel } from '../logs/user-log-panel.component';
 import { restErrorMessage } from '../rest-error-message';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
-import { type ActUser, clinicsOf, fullName, lastSignIn, roleLabel, useClinicChoices, useUsers } from './users.resource';
+import {
+  type ActUser,
+  clinicsOf,
+  fullName,
+  lastSignIn,
+  roleLabel,
+  useClinicChoices,
+  useMayManageUser,
+  useUsers,
+} from './users.resource';
 import styles from './users.scss';
 
 const PRIVILEGE_ADD_USERS = 'Add Users';
@@ -72,6 +81,7 @@ export default function Users() {
   const limit = useClinicLimit();
   const { users, error, isLoading } = useUsers();
   const clinicChoices = useClinicChoices();
+  const mayManage = useMayManageUser();
   const [query, setQuery] = useState('');
   const [showDisabled, setShowDisabled] = useState(false);
   const [activity, setActivity] = useState<Activity | null>(null);
@@ -183,7 +193,7 @@ export default function Users() {
           </TableHead>
           <TableBody>
             {results.map((user) => {
-              const self = user.uuid === me?.uuid;
+              const manageable = user.uuid !== me?.uuid && mayManage(user);
               const signedIn = lastSignIn(user);
               return (
                 <TableRow key={user.uuid} data-testid="act-user-row">
@@ -198,7 +208,7 @@ export default function Users() {
                     </Tag>
                   </TableCell>
                   <TableCell className={styles.actions}>
-                    {!user.retired && !self && (
+                    {!user.retired && manageable && (
                       <>
                         <Button
                           kind="ghost"
@@ -230,7 +240,7 @@ export default function Users() {
                         />
                       </>
                     )}
-                    {user.retired && !self && (
+                    {user.retired && manageable && (
                       <Button
                         kind="ghost"
                         size="sm"

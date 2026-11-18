@@ -4,10 +4,10 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { formatDate, launchWorkspace2 } from '@openmrs/esm-framework';
+import { formatDate, launchWorkspace2, useSession } from '@openmrs/esm-framework';
 import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Users from './users.component';
-import { backend, IA, SA, signInAs, user, CC, CL, DC } from './users.test-helper';
+import { backend, IA, SA, SD, signInAs, user, users, CC, CL, DC } from './users.test-helper';
 
 function renderPage() {
   return render(
@@ -159,7 +159,7 @@ describe('Users', () => {
   });
 
   it.each([IA, SA])('offers Enable instead of Disable for a disabled user to administrator %s', async (role) => {
-    backend();
+    backend(undefined, { list: [users[0], user('ruth', 'Ruth', [CL], 'akuna', true)] });
     await signInAs(role);
     renderPage();
 
@@ -172,7 +172,7 @@ describe('Users', () => {
 
   it('opens the confirmation to enable the disabled user of its row', async () => {
     const writes = backend();
-    await signInAs(IA);
+    await signInAs(SA);
     renderPage();
 
     await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
@@ -182,9 +182,67 @@ describe('Users', () => {
     expect(writes).toEqual([]);
   });
 
-  it('does not offer Enable for the signed-in user', async () => {
-    backend(undefined, { list: [user('me', 'Admin', [IA], 'acimi', true)] });
+  const rowActions = ['Edit user', 'Reset password', 'Disable user', 'Enable user'];
+  const actionsOf = async (name: string) => {
+    const row = within(await rowOf(name));
+    return rowActions.filter((action) => row.queryByRole('button', { name: action }));
+  };
+
+  async function signedInAsSeesRows(role: string) {
+    backend(undefined, {
+      list: [
+        user('grace', 'Grace', [CC], 'acimi'),
+        user('dora', 'Dora', [DC], 'acimi'),
+        user('mia', 'Mia', [CL, DC], 'acimi'),
+        user('paul', 'Paul', [CL], 'acimi', true),
+        user('ruth', 'Ruth', [DC], 'acimi', true),
+      ],
+    });
+    await signInAs(role);
+    renderPage();
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+  }
+
+  it('offers no row actions to an instance administrator on a user with a role it may not give', async () => {
+    await signedInAsSeesRows(IA);
+
+    expect(await actionsOf('Grace Okot')).toEqual(['Edit user', 'Reset password', 'Disable user']);
+    expect(await actionsOf('Dora Okot')).toEqual([]);
+    expect(await actionsOf('Mia Okot')).toEqual([]);
+    expect(await actionsOf('Paul Okot')).toEqual(['Enable user']);
+    expect(await actionsOf('Ruth Okot')).toEqual([]);
+  });
+
+  it.each([
+    ['a site administrator', SA],
+    ['a System Developer', SD],
+  ])('offers %s the row actions on a Data Clerk', async (_, role) => {
+    await signedInAsSeesRows(role);
+
+    expect(await actionsOf('Dora Okot')).toEqual(['Edit user', 'Reset password', 'Disable user']);
+    expect(await actionsOf('Ruth Okot')).toEqual(['Enable user']);
+    expect(await actionsOf('Paul Okot')).toEqual(['Enable user']);
+  });
+
+  it('offers no row actions to an administrator without Edit Users', async () => {
+    backend();
     await signInAs(IA);
+    const session = vi.mocked(useSession)();
+    vi.mocked(useSession).mockReturnValue({
+      ...session,
+      user: {
+        ...session.user,
+        privileges: session.user.privileges.filter((privilege) => privilege.display !== 'Edit Users'),
+      },
+    } as never);
+    renderPage();
+
+    expect(await actionsOf('Grace Okot')).toEqual([]);
+  });
+
+  it('does not offer Enable for the signed-in user', async () => {
+    backend(undefined, { list: [user('me', 'Admin', [SD], 'acimi', true)] });
+    await signInAs(SD);
     renderPage();
 
     await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
