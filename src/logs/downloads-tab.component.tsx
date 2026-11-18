@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Select, SelectItem, Tag } from '@carbon/react';
 import { formatDate } from '@openmrs/esm-framework';
 import { PRIVILEGE_DOWNLOAD_IDENTIFIERS } from '../constants';
-import { type DownloadLogDetail, type DownloadLogEntry, useDownloadForms } from '../download/download.resource';
+import {
+  type DownloadLogDetail,
+  type DownloadLogEntry,
+  patientFieldLabels,
+  useDownloadForms,
+} from '../download/download.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import {
   LogFilterBar,
@@ -26,6 +31,9 @@ type IdentifierKind = (typeof identifierKinds)[number];
 
 const identifierKind = (detail: DownloadLogDetail | null): IdentifierKind =>
   detail?.identifiers ? 'with' : detail?.researchOnly ? 'research' : 'without';
+
+const narrowed = (detail: DownloadLogDetail) =>
+  Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
 
 const date = (iso: string) => formatDate(new Date(iso), { time: false, noToday: true });
 
@@ -61,12 +69,20 @@ export function DownloadsTab({
     research: 'purple',
   };
 
+  const patientLabels = patientFieldLabels(t);
+
+  const statusLabels: Record<string, string> = {
+    active: t('active', 'Active'),
+    inactive: t('inactive', 'Inactive'),
+  };
+
   const period = (detail: DownloadLogDetail) =>
     detail.startDate || detail.endDate
       ? t('downloadPeriod', '{{from}} to {{to}}', { from: detail.startDate ?? '...', to: detail.endDate ?? '...' })
       : t('allDates', 'All dates');
 
-  const targetName = (entry: DownloadLogEntry) => entry.list?.name ?? entry.form?.name ?? '';
+  const targetName = (entry: DownloadLogEntry) =>
+    entry.list?.name ?? entry.form?.name ?? (entry.detail?.forms ?? []).map((form) => form.name).join(', ');
 
   const summary = (entry: DownloadLogEntry) => {
     if (!entry.detail) {
@@ -135,8 +151,8 @@ export function DownloadsTab({
               <p className={styles.detailHeading}>{t('whyIdentifiers', 'Why identifiers were included')}</p>
               <p data-testid="why-identifiers">
                 {t(
-                  'identifiersPrivilegeHeld',
-                  'The user holds {{privilege}}, so the file keeps names, birth dates, ID numbers and phones.',
+                  'identifyingFieldsKept',
+                  'The user holds {{privilege}}, so the file keeps fields that identify the patient.',
                   {
                     privilege: PRIVILEGE_DOWNLOAD_IDENTIFIERS,
                   },
@@ -152,8 +168,41 @@ export function DownloadsTab({
           <DetailLine label={t('patients', 'Patients')}>
             {entry.detail.researchOnly
               ? t('researchParticipantsOnly', 'Only those who opted in to research')
-              : t('everyPatient', 'Every patient on the registry')}
+              : !entry.list && narrowed(entry.detail)
+                ? t('patientsTheFiltersKept', 'Only those the filters kept')
+                : t('everyPatient', 'Every patient on the registry')}
           </DetailLine>
+          {!entry.list && (
+            <>
+              {entry.detail.filters?.status && (
+                <DetailLine label={t('status', 'Status')}>
+                  {statusLabels[entry.detail.filters.status] ?? entry.detail.filters.status}
+                </DetailLine>
+              )}
+              {entry.detail.filters?.cardiacClinic && (
+                <DetailLine label={t('cardiacClinic', 'Cardiac clinic')}>
+                  {entry.detail.filters.cardiacClinic}
+                </DetailLine>
+              )}
+              {entry.detail.filters?.primaryCareClinic && (
+                <DetailLine label={t('primaryCareClinic', 'Primary care clinic')}>
+                  {entry.detail.filters.primaryCareClinic}
+                </DetailLine>
+              )}
+              {entry.detail.patient && (
+                <DetailLine label={t('patientFields', 'Patient fields')}>
+                  {[t('actId', 'ACT ID'), ...entry.detail.patient.map((key) => patientLabels[key] ?? key)].join(', ')}
+                </DetailLine>
+              )}
+              {entry.detail.rowPerPatient !== undefined && (
+                <DetailLine label={t('layout', 'Layout')}>
+                  {entry.detail.rowPerPatient
+                    ? t('rowPerPatient', 'A row per patient')
+                    : t('rowPerSavedForm', 'A row per saved form')}
+                </DetailLine>
+              )}
+            </>
+          )}
         </div>
       </>
     ) : (

@@ -578,15 +578,136 @@ describe('Logs', () => {
       expect(within(detail).getByTestId('fields-in-file')).toHaveTextContent('ACT IDGiven nameDate of Injection');
       expect(within(detail).getByTestId('fields-left-out')).toHaveTextContent('None');
       expect(within(detail).getByTestId('why-identifiers')).toHaveTextContent(
-        'The user holds Task: act.downloadIdentifiers',
+        'The user holds Task: act.downloadIdentifiers, so the file keeps fields that identify the patient.',
       );
       expect(line(detail, 'Recorded')).toHaveTextContent(/10:50:31/);
       expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
+      expect(line(detail, 'Layout')).toBeUndefined();
+      expect(line(detail, 'Patient fields')).toBeUndefined();
 
       detail = await expand(1);
       expect(within(detail).getByTestId('fields-left-out')).toHaveTextContent('Given namePrimary Phone');
       expect(within(detail).queryByText('Why identifiers were included')).not.toBeInTheDocument();
       expect(line(detail, 'Period')).toHaveTextContent('2026-07-01 to 2026-09-30');
+    });
+
+    it('names a download of several forms by its forms', async () => {
+      backend({
+        '/actcore/download?': {
+          results: [
+            {
+              ...downloadEntries[0],
+              form: null,
+              detail: {
+                ...downloadEntries[0].detail,
+                forms: [
+                  { uuid: 'f-echo', name: 'Echocardiogram', fields: ['EF'] },
+                  { uuid: 'f-consult', name: 'Consultation Visit', fields: ['NYHA'] },
+                ],
+                rowPerPatient: true,
+              },
+            },
+            ...downloadEntries,
+          ],
+          totalCount: downloadEntries.length + 1,
+          from: '2025-10-22',
+          to: null,
+        },
+      });
+      await signInWith(BOTH);
+      renderPage();
+
+      await open();
+
+      expect(rowTexts()[0][4]).toBe('Echocardiogram, Consultation Visit');
+    });
+
+    it("shows the status, clinics and row layout a form download was narrowed by, and leaves a list's own filters out", async () => {
+      backend({
+        '/actcore/download?': {
+          results: [
+            {
+              ...downloadEntries[0],
+              detail: {
+                ...downloadEntries[0].detail,
+                rowPerPatient: true,
+                filters: {
+                  status: 'active',
+                  cardiacClinic: 'Uganda Heart Institute Tertiary',
+                  primaryCareClinic: null,
+                },
+              },
+            },
+            {
+              ...downloadEntries[1],
+              detail: {
+                ...downloadEntries[1].detail,
+                rowPerPatient: false,
+                filters: { status: null, cardiacClinic: null, primaryCareClinic: null },
+              },
+            },
+            {
+              ...downloadEntries[2],
+              detail: { ...downloadEntries[2].detail, filters: { status: 'active', sex: 'F' } },
+            },
+          ],
+          totalCount: downloadEntries.length,
+          from: '2025-10-22',
+          to: null,
+        },
+      });
+      await signInWith(BOTH);
+      renderPage();
+      await open();
+
+      let detail = await expand(0);
+      expect(line(detail, 'Patients')).toHaveTextContent('Only those the filters kept');
+      expect(line(detail, 'Status')).toHaveTextContent('Active');
+      expect(line(detail, 'Cardiac clinic')).toHaveTextContent('Uganda Heart Institute Tertiary');
+      expect(line(detail, 'Primary care clinic')).toBeUndefined();
+      expect(line(detail, 'Layout')).toHaveTextContent('A row per patient');
+
+      detail = await expand(1);
+      expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
+      expect(line(detail, 'Status')).toBeUndefined();
+      expect(line(detail, 'Cardiac clinic')).toBeUndefined();
+      expect(line(detail, 'Layout')).toHaveTextContent('A row per saved form');
+
+      detail = await expand(2);
+      expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
+      expect(line(detail, 'Status')).toBeUndefined();
+      expect(line(detail, 'Layout')).toBeUndefined();
+    });
+
+    it('shows the patient fields a form download gave, and says it kept identifiers only when ACT Core says so', async () => {
+      backend({
+        '/actcore/download?': {
+          results: [
+            {
+              ...downloadEntries[0],
+              detail: { ...downloadEntries[0].detail, patient: ['sex', 'age'], identifiers: false },
+            },
+            { ...downloadEntries[0], detail: { ...downloadEntries[0].detail, patient: ['sex', 'age'] } },
+            downloadEntries[2],
+          ],
+          totalCount: 3,
+          from: '2025-10-22',
+          to: null,
+        },
+      });
+      await signInWith(BOTH);
+      renderPage();
+      await open();
+
+      expect(rowTexts().map((row) => row[6])).toEqual(['Without identifiers', 'With identifiers', 'With identifiers']);
+      let detail = await expand(0);
+      expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
+      expect(within(detail).queryByTestId('why-identifiers')).not.toBeInTheDocument();
+
+      // Judging by patient fields again would hide the reason for a kept identifying question.
+      detail = await expand(1);
+      expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
+      expect(within(detail).getByTestId('why-identifiers')).toBeInTheDocument();
     });
 
     it('folds the form and identifiers filters into the request, and fetches every matching download', async () => {

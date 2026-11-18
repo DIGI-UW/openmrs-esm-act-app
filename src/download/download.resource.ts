@@ -1,4 +1,5 @@
 import useSWR from 'swr';
+import { type TFunction } from 'i18next';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 export interface DownloadForm {
@@ -15,7 +16,7 @@ export interface DownloadField {
 export interface DownloadResult {
   headers: Array<string>;
   rows: Array<Array<string>>;
-  /** Whether the rows keep the names, birth dates, ID numbers and phones. */
+  /** Whether the rows keep a patient field or question that identifies the patient. */
   identifiers: boolean;
   /** Whether the rows are only of patients who opted in to research. */
   researchOnly: boolean;
@@ -85,12 +86,46 @@ export function useFormFields(formUuid: string) {
   return { fields: data ?? [], error, isLoading };
 }
 
-/** The form's chosen fields, one row per saved form, which ACT Core records in its download log. */
-export async function downloadForm(request: {
-  form: string;
-  fields: Array<DownloadField>;
+export type DownloadStatus = 'active' | 'inactive';
+
+/** ACT Core's FormDownload.PATIENT_FIELDS, in its columns' order; a key it does not list is refused. */
+export const patientFields = ['givenName', 'familyName', 'birthDate', 'identifiers', 'phones', 'sex', 'age'] as const;
+
+export type PatientField = (typeof patientFields)[number];
+
+/** The patient fields only a user with the identifiers privilege gets; a de-identified download withholds them. */
+export const identifyingPatientFields: Array<PatientField> = [
+  'givenName',
+  'familyName',
+  'birthDate',
+  'identifiers',
+  'phones',
+];
+
+export const patientFieldLabels = (t: TFunction): Record<PatientField, string> => ({
+  givenName: t('givenName', 'Given name'),
+  familyName: t('familyName', 'Family name'),
+  birthDate: t('birthDate', 'Birth date'),
+  identifiers: t('idNumbers', 'ID numbers'),
+  phones: t('phoneNumbers', 'Phone numbers'),
+  sex: t('sex', 'Sex'),
+  age: t('age', 'Age'),
+});
+
+/**
+ * The chosen fields of each form, which ACT Core records in its download log: one form as a row per saved form unless
+ * rowPerPatient, several as a row per patient. A filter left out keeps every patient.
+ */
+export async function downloadForms(request: {
+  forms: Array<{ form: string; fields: Array<DownloadField> }>;
   startDate: string | null;
   endDate: string | null;
+  rowPerPatient?: boolean;
+  /** The patient columns after the ACT ID. */
+  patient: Array<PatientField>;
+  status?: DownloadStatus;
+  cardiacClinic?: string;
+  primaryCareClinic?: string;
 }) {
   const { data } = await openmrsFetch<DownloadResult>(`${restBaseUrl}/actcore/download`, {
     method: 'POST',
@@ -111,6 +146,16 @@ export interface DownloadLogDetail {
   rows: number;
   identifiers: boolean;
   researchOnly: boolean;
+  /** The forms the download gave, each with its fields; absent on a list or a download recorded before them. */
+  forms?: Array<{ uuid: string; name: string; fields: Array<string> }>;
+  rowPerPatient?: boolean;
+  /**
+   * The filters the download was made with: Download data's status and clinic names, null when unset, or a list's own
+   * free-form filters.
+   */
+  filters?: Record<string, string | null>;
+  /** The patient fields the file gave after the ACT ID; absent on a list or a download recorded before they could be chosen. */
+  patient?: Array<PatientField>;
 }
 
 export interface DownloadLogEntry {
