@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectItem, Tag } from '@carbon/react';
 import { formatDate } from '@openmrs/esm-framework';
@@ -21,6 +22,7 @@ import {
 import { DetailLine, LogActionCell, LogTable, LogUserCell, type TagType } from './log-table.component';
 import { fullTime, logTime } from './log-time';
 import { useAllDownloads } from './logs.resource';
+import { type Figure, FigureTiles } from '../figure-tiles/figure-tiles.component';
 import styles from './logs.scss';
 
 const downloadsFilterKeys = ['user', 'from', 'to', 'form', 'identifiers'] as const;
@@ -37,9 +39,12 @@ const narrowed = (detail: DownloadLogDetail) =>
 
 const date = (iso: string) => formatDate(new Date(iso), { time: false, noToday: true });
 
+/** A plain YYYY-MM-DD day as that day where the browser is, not as UTC midnight. */
+const localDate = (day: string) => formatDate(dayjs(day).toDate(), { time: false, noToday: true });
+
 /**
  * Every CSV that left ACT: Download data's forms, the registry and worklist lists and these logs, from ACT Core's
- * download log, with a summary line over every matching download.
+ * download log, with summary figures over every matching download.
  */
 export function DownloadsTab({
   filters,
@@ -106,6 +111,30 @@ export function DownloadsTab({
     users: new Set(all.map((entry) => entry.user.username)).size,
     rows: all.reduce((sum, entry) => sum + (entry.detail?.rows ?? 0), 0),
   };
+
+  // Use the period the server returned, so a pending or refused filter cannot mislabel the counts.
+  let periodCaption: string | undefined;
+  if (page?.from && page.to) {
+    periodCaption = t('downloadPeriod', '{{from}} to {{to}}', { from: localDate(page.from), to: localDate(page.to) });
+  } else if (page?.from) {
+    periodCaption = t('sinceDate', 'since {{date}}', { date: localDate(page.from) });
+  }
+  const figures: Array<Figure> = [
+    {
+      key: 'downloads',
+      label: t('downloads', 'Downloads'),
+      value: stats.downloads.toLocaleString(),
+      caption: periodCaption,
+    },
+    {
+      key: 'identifiers',
+      label: t('withIdentifiers', 'With identifiers'),
+      value: stats.withIdentifiers.toLocaleString(),
+      tone: stats.withIdentifiers > 0 ? 'alert' : undefined,
+    },
+    { key: 'users', label: t('users', 'Users'), value: stats.users.toLocaleString() },
+    { key: 'rows', label: t('rowsDownloaded', 'Rows downloaded'), value: stats.rows.toLocaleString() },
+  ];
 
   const rows = all.slice(paging.startIndex, paging.startIndex + paging.limit).map((entry, index) => ({
     key: `${entry.date}-${paging.startIndex + index}`,
@@ -272,30 +301,7 @@ export function DownloadsTab({
         </Select>
       </LogFilterBar>
       <LogWindowNote from={page?.from} filters={filters} />
-      {all.length > 0 && (
-        <div className={styles.summaryLine} data-testid="downloads-summary">
-          <div className={styles.stat}>
-            <strong>{stats.downloads.toLocaleString()}</strong>
-            <span>
-              {filters.from
-                ? t('downloadsSince', 'downloads since {{date}}', { date: date(filters.from) })
-                : t('downloadsLower', 'downloads')}
-            </span>
-          </div>
-          <div className={styles.stat}>
-            <strong>{stats.withIdentifiers.toLocaleString()}</strong>
-            <span>{t('withIdentifiersLower', 'with identifiers')}</span>
-          </div>
-          <div className={styles.stat}>
-            <strong>{stats.users.toLocaleString()}</strong>
-            <span>{t('usersLower', 'users')}</span>
-          </div>
-          <div className={styles.stat}>
-            <strong>{stats.rows.toLocaleString()}</strong>
-            <span>{t('rowsInTotal', 'rows in total')}</span>
-          </div>
-        </div>
-      )}
+      {all.length > 0 && <FigureTiles figures={figures} columns={4} testId="downloads-figure" />}
       <LogTable
         label={t('downloads', 'Downloads')}
         columns={[t('rows', 'Rows'), t('identifiers', 'Identifiers')]}

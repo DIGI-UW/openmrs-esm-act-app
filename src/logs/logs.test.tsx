@@ -44,7 +44,16 @@ function backend(overrides: Record<string, unknown> = {}) {
       return { data: {} };
     }
     if (path.startsWith('/actcore/download?')) {
-      return { data: { results: downloadEntries, totalCount: downloadEntries.length, from: '2025-10-22', to: null } };
+      // As ACT Core does, the window echoes the dates asked for, or starts 12 months back.
+      const params = new URLSearchParams(path.split('?')[1]);
+      return {
+        data: {
+          results: downloadEntries,
+          totalCount: downloadEntries.length,
+          from: params.get('startDate') ?? '2025-10-22',
+          to: params.get('endDate'),
+        },
+      };
     }
     if (path.startsWith('/securityauditlogs?')) {
       const failures = path.includes('eventType=LOGIN_FAILURE');
@@ -562,10 +571,23 @@ describe('Logs', () => {
           'With identifiers',
         ],
       ]);
-      expect(screen.getByTestId('downloads-summary')).toHaveTextContent(
-        '3downloads2with identifiers3users906rows in total',
-      );
+      expect(screen.getAllByTestId('downloads-figure').map((tile) => tile.textContent)).toEqual([
+        'Downloads3since 22-Oct-2025',
+        'With identifiers2',
+        'Users3',
+        'Rows downloaded906',
+      ]);
       expect(screen.getByTestId('log-window')).toHaveTextContent('Showing since 22-Oct-2025');
+    });
+
+    it('names the period the downloads figures cover, from the From and To filters', async () => {
+      backend();
+      await signInWith(BOTH);
+      window.history.replaceState(null, '', '/openmrs/spa/home/act-logs?tab=downloads&from=2026-10-01&to=2026-10-21');
+      renderPage();
+      await screen.findByText('Registry list');
+
+      expect(screen.getAllByTestId('downloads-figure')[0]).toHaveTextContent('Downloads301-Oct-2026 to 21-Oct-2026');
     });
 
     it('expands a download to the fields in the file, those left out, why identifiers were kept, and when it was recorded', async () => {
