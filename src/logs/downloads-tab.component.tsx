@@ -27,6 +27,9 @@ type IdentifierKind = (typeof identifierKinds)[number];
 const identifierKind = (detail: DownloadLogDetail | null): IdentifierKind =>
   detail?.identifiers ? 'with' : detail?.researchOnly ? 'research' : 'without';
 
+const narrowed = (detail: DownloadLogDetail) =>
+  Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
+
 const date = (iso: string) => formatDate(new Date(iso), { time: false, noToday: true });
 
 /**
@@ -59,6 +62,11 @@ export function DownloadsTab({
     with: 'red',
     without: 'gray',
     research: 'purple',
+  };
+
+  const statusLabels: Record<string, string> = {
+    active: t('active', 'Active'),
+    inactive: t('inactive', 'Inactive'),
   };
 
   const period = (detail: DownloadLogDetail) =>
@@ -153,8 +161,36 @@ export function DownloadsTab({
           <DetailLine label={t('patients', 'Patients')}>
             {entry.detail.researchOnly
               ? t('researchParticipantsOnly', 'Only those who opted in to research')
-              : t('everyPatient', 'Every patient on the registry')}
+              : !entry.list && narrowed(entry.detail)
+                ? t('patientsTheFiltersKept', 'Only those the filters kept')
+                : t('everyPatient', 'Every patient on the registry')}
           </DetailLine>
+          {!entry.list && (
+            <>
+              {entry.detail.filters?.status && (
+                <DetailLine label={t('status', 'Status')}>
+                  {statusLabels[entry.detail.filters.status] ?? entry.detail.filters.status}
+                </DetailLine>
+              )}
+              {entry.detail.filters?.cardiacClinic && (
+                <DetailLine label={t('cardiacClinic', 'Cardiac clinic')}>
+                  {entry.detail.filters.cardiacClinic}
+                </DetailLine>
+              )}
+              {entry.detail.filters?.primaryCareClinic && (
+                <DetailLine label={t('primaryCareClinic', 'Primary care clinic')}>
+                  {entry.detail.filters.primaryCareClinic}
+                </DetailLine>
+              )}
+              {entry.detail.rowPerPatient !== undefined && (
+                <DetailLine label={t('layout', 'Layout')}>
+                  {entry.detail.rowPerPatient
+                    ? t('rowPerPatient', 'A row per patient')
+                    : t('rowPerSavedForm', 'A row per saved form')}
+                </DetailLine>
+              )}
+            </>
+          )}
         </div>
       </>
     ) : (

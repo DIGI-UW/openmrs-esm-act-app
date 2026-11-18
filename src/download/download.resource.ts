@@ -122,6 +122,11 @@ export interface DownloadLogDetail {
   /** The forms the download gave, each with its fields; absent on a list or a download recorded before them. */
   forms?: Array<{ uuid: string; name: string; fields: Array<string> }>;
   rowPerPatient?: boolean;
+  /**
+   * The filters the download was made with: Download data's status and clinic names, null when unset, or a list's own
+   * free-form filters.
+   */
+  filters?: Record<string, string | null>;
 }
 
 export interface DownloadLogEntry {

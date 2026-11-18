@@ -582,6 +582,7 @@ describe('Logs', () => {
       );
       expect(line(detail, 'Recorded')).toHaveTextContent(/10:50:31/);
       expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
+      expect(line(detail, 'Layout')).toBeUndefined();
 
       detail = await expand(1);
       expect(within(detail).getByTestId('fields-left-out')).toHaveTextContent('Given namePrimary Phone');
@@ -618,6 +619,63 @@ describe('Logs', () => {
       await open();
 
       expect(rowTexts()[0][4]).toBe('Echocardiogram, Consultation Visit');
+    });
+
+    it("shows the status, clinics and row layout a form download was narrowed by, and leaves a list's own filters out", async () => {
+      backend({
+        '/actcore/download?': {
+          results: [
+            {
+              ...downloadEntries[0],
+              detail: {
+                ...downloadEntries[0].detail,
+                rowPerPatient: true,
+                filters: {
+                  status: 'active',
+                  cardiacClinic: 'Uganda Heart Institute Tertiary',
+                  primaryCareClinic: null,
+                },
+              },
+            },
+            {
+              ...downloadEntries[1],
+              detail: {
+                ...downloadEntries[1].detail,
+                rowPerPatient: false,
+                filters: { status: null, cardiacClinic: null, primaryCareClinic: null },
+              },
+            },
+            {
+              ...downloadEntries[2],
+              detail: { ...downloadEntries[2].detail, filters: { status: 'active', sex: 'F' } },
+            },
+          ],
+          totalCount: downloadEntries.length,
+          from: '2025-10-22',
+          to: null,
+        },
+      });
+      await signInWith(BOTH);
+      renderPage();
+      await open();
+
+      let detail = await expand(0);
+      expect(line(detail, 'Patients')).toHaveTextContent('Only those the filters kept');
+      expect(line(detail, 'Status')).toHaveTextContent('Active');
+      expect(line(detail, 'Cardiac clinic')).toHaveTextContent('Uganda Heart Institute Tertiary');
+      expect(line(detail, 'Primary care clinic')).toBeUndefined();
+      expect(line(detail, 'Layout')).toHaveTextContent('A row per patient');
+
+      detail = await expand(1);
+      expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
+      expect(line(detail, 'Status')).toBeUndefined();
+      expect(line(detail, 'Cardiac clinic')).toBeUndefined();
+      expect(line(detail, 'Layout')).toHaveTextContent('A row per saved form');
+
+      detail = await expand(2);
+      expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
+      expect(line(detail, 'Status')).toBeUndefined();
+      expect(line(detail, 'Layout')).toBeUndefined();
     });
 
     it('folds the form and identifiers filters into the request, and fetches every matching download', async () => {
