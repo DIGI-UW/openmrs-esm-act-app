@@ -41,6 +41,9 @@ export function logTimeRange(t: TFunction, from: string, to: string, now = new D
       });
 }
 
+/** A plain YYYY-MM-DD day as that day where the browser is, not as UTC midnight. */
+export const logDay = (day: string) => formatDate(dayjs(day).toDate(), { time: false, noToday: true });
+
 /** The exact timestamp, to the second, for the expanded row. */
 export const fullTime = (iso: string) =>
   `${formatDate(new Date(iso), { time: false, noToday: true })}, ${dayjs(iso).format('HH:mm:ss')}`;

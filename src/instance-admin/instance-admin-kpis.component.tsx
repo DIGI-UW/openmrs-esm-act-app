@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { SkeletonText, Tile } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { type Figure, FigureTiles } from '../figure-tiles/figure-tiles.component';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
-import styles from './instance-admin-kpis.scss';
 
 const sum = (reportRows: Array<ReportRow>, column: string) =>
   reportRows.reduce((total, row) => total + Number(row[column] ?? 0), 0);
@@ -55,49 +54,39 @@ export function InstanceAdminKpis() {
   const entered = count(row, 'encounters');
   const completeness = dataCompleteness(row);
 
-  const kpis = [
+  const kpis: Array<Figure> = [
     {
+      key: 'active',
       label: t('activePatients', 'Active patients'),
       value: programme.error ? '–' : sum(programme.rows, 'active_patients'),
       caption: t('acrossYourSites', 'across your sites'),
       loading: programme.isLoading,
     },
     {
+      key: 'overdue',
       label: t('overdueProphylaxis', 'Overdue prophylaxis'),
       value: programme.error ? '–' : sum(programme.rows, 'overdue'),
       caption: t('needsFollowUp', 'needs follow-up'),
-      tone: styles.alert,
+      tone: 'alert',
       loading: programme.isLoading,
     },
     {
+      key: 'entered',
       label: t('enteredThisWeek', 'Entered this week'),
       value: counts.error || entered === null ? '–' : entered,
       // The report filters on each form's own date, not the day it was saved, as the encounters export does.
       caption: t('formsDatedLastSevenDays', 'forms dated in the last 7 days'),
-      tone: styles.info,
+      tone: 'info',
       loading: counts.isLoading,
     },
     {
+      key: 'completeness',
       label: t('dataCompleteness', 'Data completeness'),
       value: counts.error || completeness === null ? '–' : `${completeness}%`,
       caption: t('activePatientsWithNoMissingData', 'active patients with no missing data'),
-      tone: styles.success,
+      tone: 'success',
       loading: counts.isLoading,
     },
   ];
-  return (
-    <div className={styles.kpis}>
-      {kpis.map((kpi) => (
-        <Tile key={kpi.label} className={styles.kpi} data-testid="instance-admin-kpi">
-          <span className={styles.label}>{kpi.label}</span>
-          {kpi.loading ? (
-            <SkeletonText heading width="40%" />
-          ) : (
-            <span className={`${styles.value} ${kpi.tone ?? ''}`}>{kpi.value}</span>
-          )}
-          <span className={styles.caption}>{kpi.caption}</span>
-        </Tile>
-      ))}
-    </div>
-  );
+  return <FigureTiles figures={kpis} columns={4} testId="instance-admin-kpi" />;
 }

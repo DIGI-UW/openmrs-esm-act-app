@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { TextInput } from '@carbon/react';
-import { formatDate, OpenmrsDatePicker } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker } from '@openmrs/esm-framework';
+import { logDay } from './log-time';
 import { PAGE_SIZES, type Paging, type SharedQuery } from './logs.resource';
 import styles from './logs.scss';
 
@@ -50,7 +51,7 @@ export function LogWindowNote({ from, filters }: { from: string | undefined; fil
   return (
     <p className={styles.windowNote} data-testid="log-window">
       {t('showingSince', 'Showing since {{date}}; set From to go further back', {
-        date: formatDate(dayjs(from).toDate(), { time: false, noToday: true }),
+        date: logDay(from),
       })}
     </p>
   );
