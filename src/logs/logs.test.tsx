@@ -704,7 +704,7 @@ describe('Logs', () => {
       expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
       expect(within(detail).queryByTestId('why-identifiers')).not.toBeInTheDocument();
 
-      // Judging identifiers by the patient fields again would hide the reason for a kept identifying question.
+      // Judging by patient fields again would hide the reason for a kept identifying question.
       detail = await expand(1);
       expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
       expect(within(detail).getByTestId('why-identifiers')).toBeInTheDocument();
