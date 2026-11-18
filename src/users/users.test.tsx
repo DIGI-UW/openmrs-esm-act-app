@@ -66,7 +66,7 @@ describe('Users', () => {
     backend(undefined, {
       list: [
         withSignIn('Anna', [CL], twoDaysAgo),
-        withSignIn('Bea', [CL], dayjs().subtract(30, 'day').startOf('day').add(23, 'hour')),
+        withSignIn('Bea', [CL], dayjs().subtract(30, 'day').startOf('day')),
         withSignIn('Carl', [CC], dayjs().subtract(31, 'day').endOf('day')),
         withSignIn('Dora', [DC], null),
         withSignIn('Ezra', [DC], null, true),
