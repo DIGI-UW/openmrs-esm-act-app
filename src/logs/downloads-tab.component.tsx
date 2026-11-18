@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react';
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectItem, Tag } from '@carbon/react';
-import { formatDate } from '@openmrs/esm-framework';
 import { PRIVILEGE_DOWNLOAD_IDENTIFIERS } from '../constants';
 import {
   type DownloadLogDetail,
@@ -20,7 +18,7 @@ import {
   useLogPaging,
 } from './log-filters.component';
 import { DetailLine, LogActionCell, LogTable, LogUserCell, type TagType } from './log-table.component';
-import { fullTime, logTime } from './log-time';
+import { fullTime, logDay, logTime } from './log-time';
 import { useAllDownloads } from './logs.resource';
 import { type Figure, FigureTiles } from '../figure-tiles/figure-tiles.component';
 import styles from './logs.scss';
@@ -36,11 +34,6 @@ const identifierKind = (detail: DownloadLogDetail | null): IdentifierKind =>
 
 const narrowed = (detail: DownloadLogDetail) =>
   Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
-
-const date = (iso: string) => formatDate(new Date(iso), { time: false, noToday: true });
-
-/** A plain YYYY-MM-DD day as that day where the browser is, not as UTC midnight. */
-const localDate = (day: string) => formatDate(dayjs(day).toDate(), { time: false, noToday: true });
 
 /**
  * Every CSV that left ACT: Download data's forms, the registry and worklist lists and these logs, from ACT Core's
@@ -115,9 +108,9 @@ export function DownloadsTab({
   // Use the period the server returned, so a pending or refused filter cannot mislabel the counts.
   let periodCaption: string | undefined;
   if (page?.from && page.to) {
-    periodCaption = t('downloadPeriod', '{{from}} to {{to}}', { from: localDate(page.from), to: localDate(page.to) });
+    periodCaption = t('downloadPeriod', '{{from}} to {{to}}', { from: logDay(page.from), to: logDay(page.to) });
   } else if (page?.from) {
-    periodCaption = t('sinceDate', 'since {{date}}', { date: localDate(page.from) });
+    periodCaption = t('sinceDate', 'since {{date}}', { date: logDay(page.from) });
   }
   const figures: Array<Figure> = [
     {
