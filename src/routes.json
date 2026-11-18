@@ -1093,6 +1093,11 @@
       "width": "narrow"
     },
     {
+      "name": "act-user-status",
+      "group": "act-users",
+      "width": "narrow"
+    },
+    {
       "name": "act-dashboard-export",
       "group": "act-dashboard",
       "width": "narrow"
@@ -1178,6 +1183,11 @@
       "name": "act-reset-password-workspace",
       "component": "resetPasswordWorkspace",
       "window": "act-reset-password"
+    },
+    {
+      "name": "act-user-status-workspace",
+      "component": "userStatusWorkspace",
+      "window": "act-user-status"
     },
     {
       "name": "act-dashboard-export-workspace",

@@ -1,6 +1,13 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
-import { type LoggedInUser, openmrsFetch, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
+import {
+  type LoggedInUser,
+  openmrsFetch,
+  restBaseUrl,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CLINICS_PROPERTY, parseClinics } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { fetchAll } from '../fetch-all';
@@ -18,6 +25,8 @@ export interface ActUser {
   };
   roles: Array<{ uuid: string; display: string }>;
 }
+
+const PRIVILEGE_EDIT_USERS = 'Edit Users';
 
 const userRep =
   'custom:(uuid,username,retired,userProperties,person:(uuid,gender,preferredName:(uuid,givenName,familyName)),roles:(uuid,display))';
@@ -60,17 +69,37 @@ export const roleLabel = (display: string) => display.replace(/^Organizational: 
  * administrator those and Site Administrator, and a global administrator any role. A super user gets the first
  * choice's roles; anyone else none.
  */
-export function useRoleChoices() {
+function useGrantableRoles() {
   const { users } = useConfig<Config>();
   const { user } = useSession();
-  const roleUuids = useMemo(() => {
+  return useMemo(() => {
     const held = new Set((user?.roles ?? []).map((role) => role.uuid));
     const superUser = (user?.roles ?? []).some((role) => role.display === 'System Developer');
     const choice = superUser
       ? users.roleChoices[0]
       : users.roleChoices.find(({ administratorRole }) => held.has(administratorRole));
-    return choice?.roles ?? [];
+    return { roleUuids: choice?.roles ?? [], superUser };
   }, [user, users.roleChoices]);
+}
+
+/**
+ * Whether the signed-in administrator may change a user, by ACT Core's rule (AdministratorRoleAssignment): it
+ * holds Edit Users and may give every role the user has. A super user may change anyone.
+ */
+export function useMayManageUser() {
+  const { roleUuids, superUser } = useGrantableRoles();
+  const { user: me } = useSession();
+  return useCallback(
+    (user: ActUser) =>
+      superUser ||
+      (!!me && userHasAccess(PRIVILEGE_EDIT_USERS, me) && user.roles.every((role) => roleUuids.includes(role.uuid))),
+    [me, roleUuids, superUser],
+  );
+}
+
+/** The job roles the signed-in administrator may give, fetched for their names. */
+export function useRoleChoices() {
+  const { roleUuids } = useGrantableRoles();
   const { data, error } = useSWR<Array<{ uuid: string; display: string }>, Error>(
     roleUuids.length ? ['act-role-choices', ...roleUuids] : null,
     () =>
@@ -164,4 +193,13 @@ export function resetPassword(user: ActUser, newPassword: string) {
 /** Disables a user, as ACT 2.0 did, by retiring them: they can no longer sign in, and their records stay. */
 export function disableUser(user: ActUser, reason: string) {
   return openmrsFetch(`${restBaseUrl}/user/${user.uuid}?reason=${encodeURIComponent(reason)}`, { method: 'DELETE' });
+}
+
+/** Enables a disabled user by unretiring their account so they can sign in again. */
+export function enableUser(user: ActUser) {
+  return openmrsFetch(`${restBaseUrl}/user/${user.uuid}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { retired: false },
+  });
 }

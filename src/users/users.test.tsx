@@ -2,12 +2,12 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { formatDate, getCoreTranslation, launchWorkspace2 } from '@openmrs/esm-framework';
+import { formatDate, launchWorkspace2, useSession } from '@openmrs/esm-framework';
 import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Users from './users.component';
-import { backend, IA, SA, signInAs, user, CC, CL, DC } from './users.test-helper';
+import { backend, IA, SA, SD, signInAs, user, users, CC, CL, DC } from './users.test-helper';
 
 function renderPage() {
   return render(
@@ -40,7 +40,7 @@ describe('Users', () => {
     expect(screen.getAllByTestId('act-user-row')).toHaveLength(2);
   });
 
-  it("shows its switch state and notice icon, and the disable dialog's close button from the core translations", async () => {
+  it('shows its switch state and notice icon', async () => {
     backend();
     await signInAs(SA);
     renderPage();
@@ -50,11 +50,6 @@ describe('Users', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Show disabled users' }));
     expect(screen.getByText('On')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear search input' })).toBeInTheDocument();
-
-    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Disable user' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
-    expect(getCoreTranslation).toHaveBeenCalledWith('close');
   });
 
   it('counts the enabled users who signed in in the last 30 days and those who never have, and lists them', async () => {
@@ -152,19 +147,108 @@ describe('Users', () => {
     expect(restoresOpenWorkspace(add, propsOfLaunch())).toBe(true);
   });
 
-  it('disables a user', async () => {
+  it('opens the confirmation to disable the user of its row', async () => {
     const writes = backend();
     await signInAs(SA);
     renderPage();
 
     await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Disable user' }));
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: /Disable$/ }));
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0]).toEqual({
-      url: expect.stringMatching(/\/user\/grace\?reason=/),
-      method: 'DELETE',
-      body: undefined,
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-user-status-workspace', { userUuid: 'grace', enable: false });
+    expect(writes).toEqual([]);
+  });
+
+  it.each([IA, SA])('offers Enable instead of Disable for a disabled user to administrator %s', async (role) => {
+    backend(undefined, { list: [users[0], user('ruth', 'Ruth', [CL], 'akuna', true)] });
+    await signInAs(role);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+    const row = within(await rowOf('Ruth Okot'));
+    expect(row.getByRole('button', { name: 'Enable user' })).toBeInTheDocument();
+    expect(row.queryByRole('button', { name: 'Disable user' })).not.toBeInTheDocument();
+    expect(within(await rowOf('Grace Okot')).queryByRole('button', { name: 'Enable user' })).not.toBeInTheDocument();
+  });
+
+  it('opens the confirmation to enable the disabled user of its row', async () => {
+    const writes = backend();
+    await signInAs(SA);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+    await userEvent.click(within(await rowOf('Ruth Okot')).getByRole('button', { name: 'Enable user' }));
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-user-status-workspace', { userUuid: 'ruth', enable: true });
+    expect(writes).toEqual([]);
+  });
+
+  const rowActions = ['Edit user', 'Reset password', 'Disable user', 'Enable user'];
+  const actionsOf = async (name: string) => {
+    const row = within(await rowOf(name));
+    return rowActions.filter((action) => row.queryByRole('button', { name: action }));
+  };
+
+  async function signedInAsSeesRows(role: string) {
+    backend(undefined, {
+      list: [
+        user('grace', 'Grace', [CC], 'acimi'),
+        user('dora', 'Dora', [DC], 'acimi'),
+        user('mia', 'Mia', [CL, DC], 'acimi'),
+        user('paul', 'Paul', [CL], 'acimi', true),
+        user('ruth', 'Ruth', [DC], 'acimi', true),
+      ],
     });
+    await signInAs(role);
+    renderPage();
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+  }
+
+  it('offers no row actions to an instance administrator on a user with a role it may not give', async () => {
+    await signedInAsSeesRows(IA);
+
+    expect(await actionsOf('Grace Okot')).toEqual(['Edit user', 'Reset password', 'Disable user']);
+    expect(await actionsOf('Dora Okot')).toEqual([]);
+    expect(await actionsOf('Mia Okot')).toEqual([]);
+    expect(await actionsOf('Paul Okot')).toEqual(['Enable user']);
+    expect(await actionsOf('Ruth Okot')).toEqual([]);
+  });
+
+  it.each([
+    ['a site administrator', SA],
+    ['a System Developer', SD],
+  ])('offers %s the row actions on a Data Clerk', async (_, role) => {
+    await signedInAsSeesRows(role);
+
+    expect(await actionsOf('Dora Okot')).toEqual(['Edit user', 'Reset password', 'Disable user']);
+    expect(await actionsOf('Ruth Okot')).toEqual(['Enable user']);
+    expect(await actionsOf('Paul Okot')).toEqual(['Enable user']);
+  });
+
+  it('offers no row actions to an administrator without Edit Users', async () => {
+    backend();
+    await signInAs(IA);
+    const session = vi.mocked(useSession)();
+    vi.mocked(useSession).mockReturnValue({
+      ...session,
+      user: {
+        ...session.user,
+        privileges: session.user.privileges.filter((privilege) => privilege.display !== 'Edit Users'),
+      },
+    } as never);
+    renderPage();
+
+    expect(await actionsOf('Grace Okot')).toEqual([]);
+  });
+
+  it('does not offer Enable for the signed-in user', async () => {
+    backend(undefined, { list: [user('me', 'Admin', [SD], 'acimi', true)] });
+    await signInAs(SD);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+    const row = within(await rowOf('Admin Okot'));
+    expect(row.getByText('Disabled')).toBeInTheDocument();
+    expect(row.queryByRole('button', { name: 'Enable user' })).not.toBeInTheDocument();
+    expect(row.queryByRole('button', { name: 'Disable user' })).not.toBeInTheDocument();
   });
 });

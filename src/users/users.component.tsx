@@ -5,7 +5,6 @@ import {
   Button,
   DataTableSkeleton,
   InlineNotification,
-  Modal,
   Pagination,
   Search,
   Table,
@@ -17,13 +16,11 @@ import {
   Tag,
   Toggle,
 } from '@carbon/react';
-import { Add, Catalog, Edit, Locked, Password } from '@carbon/react/icons';
+import { Add, Catalog, Edit, Locked, Password, Unlocked } from '@carbon/react/icons';
 import {
-  getCoreTranslation,
   isDesktop,
   launchWorkspace2,
   RegistrationPictogram,
-  showSnackbar,
   useLayoutType,
   UserHasAccess,
   userHasAccess,
@@ -45,11 +42,11 @@ import { usePagedRows } from '../table-filters/paged-rows';
 import {
   type ActUser,
   clinicsOf,
-  disableUser,
   fullName,
   lastSignIn,
   roleLabel,
   useClinicChoices,
+  useMayManageUser,
   useUsers,
 } from './users.resource';
 import styles from './users.scss';
@@ -72,60 +69,9 @@ function activityOf(user: ActUser, since: number): Activity | null {
 
 const recentSince = () => dayjs().subtract(RECENT_DAYS, 'day').startOf('day').valueOf();
 
-function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () => void; onSaved: () => void }) {
-  const { t } = useTranslation();
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const submit = async () => {
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await disableUser(user, 'Disabled from the ACT Users page');
-      showSnackbar({ kind: 'success', title: t('userDisabled', 'User disabled') });
-      onSaved();
-      onClose();
-    } catch (e) {
-      setSaveError(restErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-  return (
-    <Modal
-      closeButtonLabel={getCoreTranslation('close')}
-      open
-      danger
-      modalHeading={t('disableUserNamed', 'Disable {{name}}?', { name: fullName(user) || user.username })}
-      primaryButtonText={saving ? t('saving', 'Saving...') : t('disable', 'Disable')}
-      secondaryButtonText={t('cancel', 'Cancel')}
-      primaryButtonDisabled={saving}
-      onRequestSubmit={submit}
-      onRequestClose={onClose}
-      size="sm"
-    >
-      {saveError && (
-        <InlineNotification
-          kind="error"
-          statusIconDescription={t('errorIcon', 'error icon')}
-          lowContrast
-          hideCloseButton
-          title={t('couldNotDisableUser', 'Could not disable the user')}
-          subtitle={saveError}
-        />
-      )}
-      <p>
-        {t(
-          'disableUserBody',
-          'They will no longer be able to sign in. Everything they recorded stays, and an instance administrator can enable them again.',
-        )}
-      </p>
-    </Modal>
-  );
-}
-
 /**
  * ACT's Users page, as ACT 2.0's: each administrator sees the users they may administer, with their roles,
- * clinics and status, and adds, edits, resets the password of or disables them. ACT Core holds a site
+ * clinics and status, and adds, edits, resets the password of, disables or enables them. ACT Core holds a site
  * administrator to the users of its clinics and the clinician roles; the page offers only what the server allows.
  */
 export default function Users() {
@@ -133,12 +79,12 @@ export default function Users() {
   const desktop = isDesktop(useLayoutType());
   const { user: me } = useSession();
   const limit = useClinicLimit();
-  const { users, error, isLoading, mutate } = useUsers();
+  const { users, error, isLoading } = useUsers();
   const clinicChoices = useClinicChoices();
+  const mayManage = useMayManageUser();
   const [query, setQuery] = useState('');
   const [showDisabled, setShowDisabled] = useState(false);
   const [activity, setActivity] = useState<Activity | null>(null);
-  const [disabling, setDisabling] = useState<ActUser | null>(null);
   const [logOf, setLogOf] = useState<ActUser | null>(null);
   const clinicName = useMemo(
     () => new Map(clinicChoices.map((clinic) => [clinic.uuid, clinic.display])),
@@ -247,7 +193,7 @@ export default function Users() {
           </TableHead>
           <TableBody>
             {results.map((user) => {
-              const self = user.uuid === me?.uuid;
+              const manageable = user.uuid !== me?.uuid && mayManage(user);
               const signedIn = lastSignIn(user);
               return (
                 <TableRow key={user.uuid} data-testid="act-user-row">
@@ -262,7 +208,7 @@ export default function Users() {
                     </Tag>
                   </TableCell>
                   <TableCell className={styles.actions}>
-                    {!user.retired && !self && (
+                    {!user.retired && manageable && (
                       <>
                         <Button
                           kind="ghost"
@@ -288,9 +234,23 @@ export default function Users() {
                           hasIconOnly
                           renderIcon={Locked}
                           iconDescription={t('disableUser', 'Disable user')}
-                          onClick={() => setDisabling(user)}
+                          onClick={() =>
+                            launchWorkspace2('act-user-status-workspace', { userUuid: user.uuid, enable: false })
+                          }
                         />
                       </>
+                    )}
+                    {user.retired && manageable && (
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Unlocked}
+                        iconDescription={t('enableUser', 'Enable user')}
+                        onClick={() =>
+                          launchWorkspace2('act-user-status-workspace', { userUuid: user.uuid, enable: true })
+                        }
+                      />
                     )}
                     {mayReadLogs && (
                       <Button
@@ -381,7 +341,6 @@ export default function Users() {
           body
         )}
       </div>
-      {disabling && <DisableModal user={disabling} onClose={() => setDisabling(null)} onSaved={mutate} />}
     </div>
   );
 }

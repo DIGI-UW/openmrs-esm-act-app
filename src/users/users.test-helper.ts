@@ -10,12 +10,14 @@ export const DC = '61e9bb28-11df-4df1-965d-11ef928d5239';
 export const CL = '60625a0c-3cea-4fe5-b6ca-615c743ad9d4';
 export const SA = 'a1295a20-7273-4339-b5df-2f8a3a841c77';
 export const IA = '07a7affa-b7de-46d9-9faa-aac4ef2eccba';
+export const SD = '8d94f280-c2cc-11de-8d13-0010c6dffd0f';
 export const roleNames: Record<string, string> = {
   [CC]: 'Organizational: ACT Community Clinician',
   [DC]: 'Organizational: ACT Data Clerk',
   [CL]: 'Organizational: ACT Clinician',
   [SA]: 'Organizational: ACT Site Administrator',
   [IA]: 'Organizational: ACT Instance Administrator',
+  [SD]: 'System Developer',
 };
 export const clinics = [
   { uuid: 'acimi', display: 'Acimi HCIII' },
@@ -46,20 +48,27 @@ type Call = { url: string; method: string; body: unknown };
 type ServerUser = ReturnType<typeof user>;
 
 /**
- * The server: `list` as the users, plus the roles and clinics; every write recorded, and `fails` the error each write
- * answers with. `current` holds a user's properties as the server has them now, when they differ from the list's.
+ * The server: `list` as the users, which a disable or enable changes, plus roles and clinics; each write recorded and
+ * answered with `fails` if given. `current` holds a user's properties as the server has them, where the list's differ.
  */
 export function backend(
   fails?: string,
   { list = users, current = {} }: { list?: Array<ServerUser>; current?: Record<string, Record<string, string>> } = {},
 ) {
   const writes: Array<Call> = [];
+  let serverUsers = list;
   mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
     const method = init?.method ?? 'GET';
     if (method !== 'GET') {
       writes.push({ url, method, body: init?.body });
       if (fails) {
         throw Object.assign(new Error('403'), { responseBody: { error: { message: fails } } });
+      }
+      const userUuid = /\/user\/([^?]+)(\?reason=.*)?$/.exec(url)?.[1];
+      const enabling = (init?.body as { retired?: boolean })?.retired === false;
+      const retired = method === 'DELETE' ? true : enabling ? false : undefined;
+      if (userUuid && retired !== undefined) {
+        serverUsers = serverUsers.map((one) => (one.uuid === userUuid ? { ...one, retired } : one));
       }
       return { data: url.endsWith('/user') ? { uuid: 'new-user', person: { uuid: 'new-person' } } : {} };
     }
@@ -80,7 +89,7 @@ export function backend(
       return { data: { display: 'Acimi HCIII' } };
     }
     if (url.includes('/user?')) {
-      return { data: { results: list, totalCount: list.length } };
+      return { data: { results: serverUsers, totalCount: serverUsers.length } };
     }
     return { data: { results: [] } };
   }) as never);
