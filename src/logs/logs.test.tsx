@@ -578,7 +578,7 @@ describe('Logs', () => {
       expect(within(detail).getByTestId('fields-in-file')).toHaveTextContent('ACT IDGiven nameDate of Injection');
       expect(within(detail).getByTestId('fields-left-out')).toHaveTextContent('None');
       expect(within(detail).getByTestId('why-identifiers')).toHaveTextContent(
-        'The user holds Task: act.downloadIdentifiers',
+        'The user holds Task: act.downloadIdentifiers, so the file keeps fields that identify the patient.',
       );
       expect(line(detail, 'Recorded')).toHaveTextContent(/10:50:31/);
       expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
@@ -679,12 +679,15 @@ describe('Logs', () => {
       expect(line(detail, 'Layout')).toBeUndefined();
     });
 
-    it('shows the patient fields a form download gave, and gives no reason for identifiers it did not keep', async () => {
+    it('shows the patient fields a form download gave, and says it kept identifiers only when ACT Core says so', async () => {
       backend({
         '/actcore/download?': {
           results: [
+            {
+              ...downloadEntries[0],
+              detail: { ...downloadEntries[0].detail, patient: ['sex', 'age'], identifiers: false },
+            },
             { ...downloadEntries[0], detail: { ...downloadEntries[0].detail, patient: ['sex', 'age'] } },
-            { ...downloadEntries[0], detail: { ...downloadEntries[0].detail, patient: ['birthDate'] } },
             downloadEntries[2],
           ],
           totalCount: 3,
@@ -696,12 +699,14 @@ describe('Logs', () => {
       renderPage();
       await open();
 
+      expect(rowTexts().map((row) => row[6])).toEqual(['Without identifiers', 'With identifiers', 'With identifiers']);
       let detail = await expand(0);
       expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
       expect(within(detail).queryByTestId('why-identifiers')).not.toBeInTheDocument();
 
+      // Judging identifiers by the patient fields again would hide the reason for a kept identifying question.
       detail = await expand(1);
-      expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Birth date');
+      expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
       expect(within(detail).getByTestId('why-identifiers')).toBeInTheDocument();
     });
 

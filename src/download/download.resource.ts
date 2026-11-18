@@ -16,7 +16,7 @@ export interface DownloadField {
 export interface DownloadResult {
   headers: Array<string>;
   rows: Array<Array<string>>;
-  /** Whether the rows keep the names, birth dates, ID numbers and phones. */
+  /** Whether the rows keep a patient field or question that identifies the patient. */
   identifiers: boolean;
   /** Whether the rows are only of patients who opted in to research. */
   researchOnly: boolean;
@@ -121,7 +121,7 @@ export async function downloadForms(request: {
   startDate: string | null;
   endDate: string | null;
   rowPerPatient?: boolean;
-  /** The patient columns after the ACT ID; left out, ACT Core gives the columns it gave before they could be chosen. */
+  /** The patient columns after the ACT ID. */
   patient: Array<PatientField>;
   status?: DownloadStatus;
   cardiacClinic?: string;

@@ -6,7 +6,6 @@ import { PRIVILEGE_DOWNLOAD_IDENTIFIERS } from '../constants';
 import {
   type DownloadLogDetail,
   type DownloadLogEntry,
-  identifyingPatientFields,
   patientFieldLabels,
   useDownloadForms,
 } from '../download/download.resource';
@@ -35,10 +34,6 @@ const identifierKind = (detail: DownloadLogDetail | null): IdentifierKind =>
 
 const narrowed = (detail: DownloadLogDetail) =>
   Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
-
-// A download that chose no identifying patient field kept none, whatever the user may download.
-const keptIdentifiers = (detail: DownloadLogDetail) =>
-  detail.identifiers && (!detail.patient || detail.patient.some((key) => identifyingPatientFields.includes(key)));
 
 const date = (iso: string) => formatDate(new Date(iso), { time: false, noToday: true });
 
@@ -151,13 +146,13 @@ export function DownloadsTab({
               <span className={styles.muted}>{t('none', 'None')}</span>
             )}
           </div>
-          {keptIdentifiers(entry.detail) && (
+          {entry.detail.identifiers && (
             <>
               <p className={styles.detailHeading}>{t('whyIdentifiers', 'Why identifiers were included')}</p>
               <p data-testid="why-identifiers">
                 {t(
-                  'identifiersPrivilegeHeld',
-                  'The user holds {{privilege}}, so the file keeps names, birth dates, ID numbers and phones.',
+                  'identifyingFieldsKept',
+                  'The user holds {{privilege}}, so the file keeps fields that identify the patient.',
                   {
                     privilege: PRIVILEGE_DOWNLOAD_IDENTIFIERS,
                   },
