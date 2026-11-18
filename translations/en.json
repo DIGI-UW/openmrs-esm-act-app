@@ -278,7 +278,7 @@
   "disable": "Disable",
   "disabled": "Disabled",
   "disableUser": "Disable user",
-  "disableUserBody": "They will no longer be able to sign in. Everything they recorded stays, and an instance administrator can enable them again.",
+  "disableUserBody": "They will no longer be able to sign in. Everything they recorded stays. You can enable them again from this page.",
   "disableUserNamed": "Disable {{name}}?",
   "disease": "Disease",
   "dismiss": "Dismiss",

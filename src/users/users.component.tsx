@@ -164,7 +164,7 @@ function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () =
       <p>
         {t(
           'disableUserBody',
-          'They will no longer be able to sign in. Everything they recorded stays, and an instance administrator can enable them again.',
+          'They will no longer be able to sign in. Everything they recorded stays. You can enable them again from this page.',
         )}
       </p>
     </Modal>
