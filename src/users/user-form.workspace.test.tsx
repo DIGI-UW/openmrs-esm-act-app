@@ -132,6 +132,28 @@ describe('User form workspace', () => {
     });
   });
 
+  it('keeps the properties the server holds now, such as a sign-in since the list loaded', async () => {
+    const writes = backend(undefined, {
+      current: {
+        grace: { [CLINICS_PROPERTY]: 'acimi', defaultLocation: 'acimi', lastLoginTimestamp: '1794990000000' },
+      },
+    });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Akunalaber HCIII' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].body).toEqual({
+      roles: [CC],
+      userProperties: {
+        [CLINICS_PROPERTY]: 'acimi,akuna',
+        defaultLocation: 'acimi',
+        lastLoginTimestamp: '1794990000000',
+      },
+    });
+  });
+
   it("shows the server's reason when it refuses a change", async () => {
     backend('This user is not at one of your clinics, so you cannot change them');
     await signInAs(SA);

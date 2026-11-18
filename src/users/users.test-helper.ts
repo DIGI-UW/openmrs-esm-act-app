@@ -43,8 +43,16 @@ export const users = [
 
 type Call = { url: string; method: string; body: unknown };
 
-/** The server: users, roles and clinics; every write recorded, and `fails` the error each write answers with. */
-export function backend(fails?: string) {
+type ServerUser = ReturnType<typeof user>;
+
+/**
+ * The server: `list` as the users, plus the roles and clinics; every write recorded, and `fails` the error each write
+ * answers with. `current` holds a user's properties as the server has them now, when they differ from the list's.
+ */
+export function backend(
+  fails?: string,
+  { list = users, current = {} }: { list?: Array<ServerUser>; current?: Record<string, Record<string, string>> } = {},
+) {
   const writes: Array<Call> = [];
   mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
     const method = init?.method ?? 'GET';
@@ -54,6 +62,12 @@ export function backend(fails?: string) {
         throw Object.assign(new Error('403'), { responseBody: { error: { message: fails } } });
       }
       return { data: url.endsWith('/user') ? { uuid: 'new-user', person: { uuid: 'new-person' } } : {} };
+    }
+    const properties = /\/user\/([^?]+)\?v=custom:\(userProperties\)/.exec(url)?.[1];
+    if (properties) {
+      return {
+        data: { userProperties: current[properties] ?? list.find((one) => one.uuid === properties)?.userProperties },
+      };
     }
     const role = /\/role\/([^?]+)/.exec(url)?.[1];
     if (role) {
@@ -66,7 +80,7 @@ export function backend(fails?: string) {
       return { data: { display: 'Acimi HCIII' } };
     }
     if (url.includes('/user?')) {
-      return { data: { results: users, totalCount: users.length } };
+      return { data: { results: list, totalCount: list.length } };
     }
     return { data: { results: [] } };
   }) as never);

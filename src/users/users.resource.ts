@@ -41,6 +41,16 @@ export const fullName = (user: ActUser) =>
 export const clinicsOf = (user: Pick<ActUser, 'userProperties'> | LoggedInUser) =>
   parseClinics(user?.userProperties?.[CLINICS_PROPERTY]);
 
+/** The property OpenMRS stamps with the time, in epoch milliseconds, at each successful sign-in. */
+export const LAST_SIGN_IN_PROPERTY = 'lastLoginTimestamp';
+
+/** When a user last signed in; null if never, or if the stamp is not a time after 1970. */
+export function lastSignIn(user: Pick<ActUser, 'userProperties'>) {
+  const raw = user.userProperties?.[LAST_SIGN_IN_PROPERTY];
+  const stamp = raw ? Number(raw) : NaN;
+  return stamp > 0 ? new Date(stamp) : null;
+}
+
 /** A role's name without OpenMRS's "Organizational: ACT " prefix, as the prototype names the job roles. */
 export const roleLabel = (display: string) => display.replace(/^Organizational: (ACT )?/, '');
 
@@ -93,7 +103,7 @@ export interface UserForm {
 
 /**
  * Creates a user with their person and, so they can record forms, a provider; or saves an existing user's name,
- * roles and clinics, keeping their other properties such as the default location.
+ * roles and clinics, keeping their other properties, as the server holds them now, such as the default location.
  */
 export async function saveUser(form: UserForm, existing?: ActUser) {
   const clinics = form.clinics.join(',');
@@ -127,12 +137,16 @@ export async function saveUser(form: UserForm, existing?: ActUser) {
       body: { givenName: form.givenName.trim(), familyName: form.familyName.trim() },
     });
   }
+  // Read fresh: the server replaces the whole map, and the list's copy may predate a sign-in.
+  const { data: current } = await openmrsFetch<Pick<ActUser, 'userProperties'>>(
+    `${restBaseUrl}/user/${existing.uuid}?v=custom:(userProperties)`,
+  );
   await openmrsFetch(`${restBaseUrl}/user/${existing.uuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: {
       roles: form.roles,
-      userProperties: { ...(existing.userProperties ?? {}), [CLINICS_PROPERTY]: clinics },
+      userProperties: { ...(current.userProperties ?? {}), [CLINICS_PROPERTY]: clinics },
     },
   });
   return existing.uuid;
