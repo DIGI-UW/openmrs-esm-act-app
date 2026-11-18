@@ -1,11 +1,23 @@
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
+@use '../styles/act-colours' as *;
 
-.kpis {
+.figures {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: layout.$spacing-05;
+}
+
+.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @media (max-width: $breakpoint-phone-max) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 
   @media (max-width: $breakpoint-tablet-max) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -16,10 +28,11 @@
   }
 }
 
-.kpi {
+.figure {
   display: flex;
   flex-direction: column;
   gap: layout.$spacing-02;
+  height: 100%;
   padding: layout.$spacing-05;
   background-color: $ui-01;
   border: 1px solid $ui-03;
@@ -50,4 +63,30 @@
 
 .success {
   color: $support-02;
+}
+
+// Resets the native button so a filter looks like the plain figure tile.
+.toggle {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:focus-visible > * {
+    @include act-focus;
+  }
+
+  &:hover > * {
+    background-color: $ui-03;
+  }
+}
+
+.pressed {
+  @include brand-01(border-color);
+  box-shadow: inset 0 0 0 1px var(--brand-01);
+  background-color: $ui-02;
 }

@@ -7,7 +7,6 @@ import {
   InlineNotification,
   Pagination,
   Search,
-  SkeletonText,
   Table,
   TableBody,
   TableCell,
@@ -15,7 +14,6 @@ import {
   TableHeader,
   TableRow,
   Tag,
-  Tile,
   Toggle,
 } from '@carbon/react';
 import { Add, Catalog, Edit, Locked, Password, Unlocked } from '@carbon/react/icons';
@@ -29,6 +27,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
+import { type Figure, FigureTiles } from '../figure-tiles/figure-tiles.component';
 import { useClinicLimit } from '../clinic-limit';
 import {
   PRIVILEGE_VIEW_AUDIT_LOGS,
@@ -41,7 +40,6 @@ import { restErrorMessage } from '../rest-error-message';
 import { TableEmptyState } from '../table-filters/empty-state.component';
 import { usePagedRows } from '../table-filters/paged-rows';
 import { type ActUser, clinicsOf, fullName, lastSignIn, roleLabel, useClinicChoices, useUsers } from './users.resource';
-import kpiStyles from '../instance-admin/instance-admin-kpis.scss';
 import styles from './users.scss';
 
 const PRIVILEGE_ADD_USERS = 'Add Users';
@@ -104,21 +102,28 @@ export default function Users() {
       never: activities.filter((one) => one === 'never').length,
     };
   }, [users]);
-  const figures: Array<{ label: string; value: number; filter?: Activity; action?: string }> = [
-    { label: t('enabledUsers', 'Enabled users'), value: counts.enabled },
+  const toggle = (filter: Activity) => () => setActivity(activity === filter ? null : filter);
+  const figures: Array<Figure> = [
+    { key: 'enabled', label: t('enabledUsers', 'Enabled users'), value: counts.enabled, loading: isLoading },
     {
+      key: 'recent',
       label: t('signedInLastDays', 'Signed in, last {{days}} days', { days: RECENT_DAYS }),
       value: counts.recent,
-      filter: 'recent',
+      loading: isLoading,
+      onPress: toggle('recent'),
+      pressed: activity === 'recent',
       action: t('showUsersSignedInLastDays', 'Show only the {{count}} users who signed in in the last {{days}} days', {
         count: counts.recent,
         days: RECENT_DAYS,
       }),
     },
     {
+      key: 'never',
       label: t('neverSignedIn', 'Never signed in'),
       value: counts.never,
-      filter: 'never',
+      loading: isLoading,
+      onPress: toggle('never'),
+      pressed: activity === 'never',
       action: t('showUsersNeverSignedIn', 'Show only the {{count}} users who never signed in', { count: counts.never }),
     },
   ];
@@ -275,41 +280,7 @@ export default function Users() {
             )}
           />
         )}
-        {!error && (
-          <div className={styles.figures}>
-            {figures.map((figure) => {
-              const content = (
-                <>
-                  <span className={kpiStyles.label}>{figure.label}</span>
-                  {isLoading ? (
-                    <SkeletonText heading width="40%" />
-                  ) : (
-                    <span className={kpiStyles.value}>{figure.value}</span>
-                  )}
-                </>
-              );
-              return figure.filter && !isLoading ? (
-                <button
-                  key={figure.label}
-                  type="button"
-                  className={styles.figureButton}
-                  aria-label={figure.action}
-                  aria-pressed={activity === figure.filter}
-                  data-testid="act-users-figure"
-                  onClick={() => setActivity(activity === figure.filter ? null : figure.filter)}
-                >
-                  <Tile className={`${kpiStyles.kpi} ${activity === figure.filter ? styles.pressed : ''}`}>
-                    {content}
-                  </Tile>
-                </button>
-              ) : (
-                <Tile key={figure.label} className={kpiStyles.kpi} data-testid="act-users-figure">
-                  {content}
-                </Tile>
-              );
-            })}
-          </div>
-        )}
+        {!error && <FigureTiles figures={figures} columns={3} testId="act-users-figure" />}
         <div className={styles.toolbar}>
           <Search
             closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
