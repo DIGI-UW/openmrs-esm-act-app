@@ -108,7 +108,7 @@ const ResetPasswordWorkspace: React.FC<Workspace2DefinitionProps<ResetPasswordWo
   const user = users.find((candidate) => candidate.uuid === workspaceProps.userUuid);
   const disabled = Boolean(user?.retired);
 
-  // Disabling the user closes the form, as the modal kept the two apart.
+  // Disabling the user closes the form.
   useEffect(() => {
     if (disabled) {
       closeWorkspace({ discardUnsavedChanges: true });

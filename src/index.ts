@@ -165,6 +165,8 @@ export const userFormWorkspace = getAsyncLifecycle(() => import('./users/user-fo
 
 export const resetPasswordWorkspace = getAsyncLifecycle(() => import('./users/reset-password.workspace'), options);
 
+export const userStatusWorkspace = getAsyncLifecycle(() => import('./users/user-status.workspace'), options);
+
 export const dashboardExportWorkspace = getAsyncLifecycle(
   () => import('./dashboard/dashboard-export.workspace'),
   options,

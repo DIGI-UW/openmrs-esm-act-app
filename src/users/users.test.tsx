@@ -2,9 +2,9 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { formatDate, getCoreTranslation, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { formatDate, launchWorkspace2 } from '@openmrs/esm-framework';
 import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Users from './users.component';
 import { backend, IA, SA, signInAs, user, CC, CL, DC } from './users.test-helper';
@@ -40,7 +40,7 @@ describe('Users', () => {
     expect(screen.getAllByTestId('act-user-row')).toHaveLength(2);
   });
 
-  it("shows its switch state and notice icon, and the disable dialog's close button from the core translations", async () => {
+  it('shows its switch state and notice icon', async () => {
     backend();
     await signInAs(SA);
     renderPage();
@@ -50,11 +50,6 @@ describe('Users', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Show disabled users' }));
     expect(screen.getByText('On')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear search input' })).toBeInTheDocument();
-
-    await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Disable user' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
-    expect(getCoreTranslation).toHaveBeenCalledWith('close');
   });
 
   it('counts the enabled users who signed in in the last 30 days and those who never have, and lists them', async () => {
@@ -152,20 +147,15 @@ describe('Users', () => {
     expect(restoresOpenWorkspace(add, propsOfLaunch())).toBe(true);
   });
 
-  it('disables a user', async () => {
+  it('opens the confirmation to disable the user of its row', async () => {
     const writes = backend();
     await signInAs(SA);
     renderPage();
 
     await userEvent.click(within(await rowOf('Grace Okot')).getByRole('button', { name: 'Disable user' }));
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: /Disable$/ }));
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0]).toEqual({
-      url: expect.stringMatching(/\/user\/grace\?reason=/),
-      method: 'DELETE',
-      body: undefined,
-    });
+
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-user-status-workspace', { userUuid: 'grace', enable: false });
+    expect(writes).toEqual([]);
   });
 
   it.each([IA, SA])('offers Enable instead of Disable for a disabled user to administrator %s', async (role) => {
@@ -180,42 +170,16 @@ describe('Users', () => {
     expect(within(await rowOf('Grace Okot')).queryByRole('button', { name: 'Enable user' })).not.toBeInTheDocument();
   });
 
-  it('enables a user after confirmation and refreshes the list', async () => {
+  it('opens the confirmation to enable the disabled user of its row', async () => {
     const writes = backend();
     await signInAs(IA);
     renderPage();
 
     await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
     await userEvent.click(within(await rowOf('Ruth Okot')).getByRole('button', { name: 'Enable user' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Enable Ruth Okot?' });
-    expect(within(dialog).getByText('They will be able to sign in again.')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
-    expect(writes).toHaveLength(0);
-    await userEvent.click(within(dialog).getByRole('button', { name: /Enable$/ }));
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(writes).toEqual([{ url: expect.stringMatching(/\/user\/ruth$/), method: 'POST', body: { retired: false } }]);
-    expect(showSnackbar).toHaveBeenCalledWith({ kind: 'success', title: 'User enabled' });
-    await waitFor(async () => expect(within(await rowOf('Ruth Okot')).getByText('Enabled')).toBeInTheDocument());
-    expect(within(await rowOf('Ruth Okot')).getByRole('button', { name: 'Disable user' })).toBeInTheDocument();
-  });
-
-  it('keeps the enable dialog open with an error notification when enabling fails', async () => {
-    const writes = backend('You may not enable this user');
-    await signInAs(IA);
-    renderPage();
-
-    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
-    await userEvent.click(within(await rowOf('Ruth Okot')).getByRole('button', { name: 'Enable user' }));
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: /Enable$/ }));
-
-    expect(await within(dialog).findByText('Could not enable the user')).toBeInTheDocument();
-    expect(within(dialog).getByText('You may not enable this user')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: /Enable$/ })).toBeEnabled();
-    expect(writes).toHaveLength(1);
-    expect(showSnackbar).not.toHaveBeenCalled();
-    expect(within(await rowOf('Ruth Okot')).getByText('Disabled')).toBeInTheDocument();
+    expect(launchWorkspace2).toHaveBeenCalledWith('act-user-status-workspace', { userUuid: 'ruth', enable: true });
+    expect(writes).toEqual([]);
   });
 
   it('does not offer Enable for the signed-in user', async () => {

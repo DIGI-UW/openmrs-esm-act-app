@@ -46,8 +46,8 @@ type Call = { url: string; method: string; body: unknown };
 type ServerUser = ReturnType<typeof user>;
 
 /**
- * The server: `list` as the users, plus the roles and clinics; every write recorded, and `fails` the error each write
- * answers with. `current` holds a user's properties as the server has them now, when they differ from the list's.
+ * The server: `list` as the users, which a disable or enable changes, plus roles and clinics; each write recorded and
+ * answered with `fails` if given. `current` holds a user's properties as the server has them, where the list's differ.
  */
 export function backend(
   fails?: string,
@@ -62,9 +62,11 @@ export function backend(
       if (fails) {
         throw Object.assign(new Error('403'), { responseBody: { error: { message: fails } } });
       }
-      const userUuid = /\/user\/([^?]+)$/.exec(url)?.[1];
-      if (method === 'POST' && userUuid && (init?.body as { retired?: boolean })?.retired === false) {
-        serverUsers = serverUsers.map((one) => (one.uuid === userUuid ? { ...one, retired: false } : one));
+      const userUuid = /\/user\/([^?]+)(\?reason=.*)?$/.exec(url)?.[1];
+      const enabling = (init?.body as { retired?: boolean })?.retired === false;
+      const retired = method === 'DELETE' ? true : enabling ? false : undefined;
+      if (userUuid && retired !== undefined) {
+        serverUsers = serverUsers.map((one) => (one.uuid === userUuid ? { ...one, retired } : one));
       }
       return { data: url.endsWith('/user') ? { uuid: 'new-user', person: { uuid: 'new-person' } } : {} };
     }

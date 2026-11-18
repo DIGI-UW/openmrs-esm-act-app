@@ -255,7 +255,7 @@ const UserFormWorkspace: React.FC<Workspace2DefinitionProps<UserFormWorkspacePro
   const user = users.find((candidate) => candidate.uuid === userUuid);
   const disabled = Boolean(user?.retired);
 
-  // Disabling the user being edited closes the form, as the modal kept the two apart.
+  // Disabling the user being edited closes the form.
   useEffect(() => {
     if (disabled) {
       closeWorkspace({ discardUnsavedChanges: true });
