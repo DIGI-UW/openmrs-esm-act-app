@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -7,6 +8,7 @@ import {
   Modal,
   Pagination,
   Search,
+  SkeletonText,
   Table,
   TableBody,
   TableCell,
@@ -14,6 +16,7 @@ import {
   TableHeader,
   TableRow,
   Tag,
+  Tile,
   Toggle,
 } from '@carbon/react';
 import { Add, Catalog, Edit, Locked, Password } from '@carbon/react/icons';
@@ -35,6 +38,7 @@ import {
   PRIVILEGE_VIEW_READ_AUDIT_LOGS,
   PRIVILEGE_VIEW_SECURITY_AUDIT_LOGS,
 } from '../constants';
+import { logTime } from '../logs/log-time';
 import { UserLogPanel } from '../logs/user-log-panel.component';
 import { restErrorMessage } from '../rest-error-message';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -44,14 +48,31 @@ import {
   clinicsOf,
   disableUser,
   fullName,
+  lastSignIn,
   roleLabel,
   useClinicChoices,
   useUsers,
 } from './users.resource';
+import kpiStyles from '../instance-admin/instance-admin-kpis.scss';
 import styles from './users.scss';
 
 const PRIVILEGE_ADD_USERS = 'Add Users';
 const PRIVILEGE_EDIT_USER_PASSWORDS = 'Edit User Passwords';
+
+const RECENT_DAYS = 30;
+
+type Activity = 'recent' | 'never';
+
+/** 'recent' for a sign-in on or after `since`, as ACT 2.0 counted active users by day; null for an older one. */
+function activityOf(user: ActUser, since: number): Activity | null {
+  const at = lastSignIn(user);
+  if (!at) {
+    return 'never';
+  }
+  return at.getTime() >= since ? 'recent' : null;
+}
+
+const recentSince = () => dayjs().subtract(RECENT_DAYS, 'day').startOf('day').valueOf();
 
 function DisableModal({ user, onClose, onSaved }: { user: ActUser; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation();
@@ -118,6 +139,7 @@ export default function Users() {
   const clinicChoices = useClinicChoices();
   const [query, setQuery] = useState('');
   const [showDisabled, setShowDisabled] = useState(false);
+  const [activity, setActivity] = useState<Activity | null>(null);
   const [disabling, setDisabling] = useState<ActUser | null>(null);
   const [logOf, setLogOf] = useState<ActUser | null>(null);
   const clinicName = useMemo(
@@ -136,10 +158,43 @@ export default function Users() {
       userHasAccess(one, me),
     );
 
+  const counts = useMemo(() => {
+    const since = recentSince();
+    const enabled = users.filter((user) => !user.retired);
+    const activities = enabled.map((user) => activityOf(user, since));
+    return {
+      enabled: enabled.length,
+      recent: activities.filter((one) => one === 'recent').length,
+      never: activities.filter((one) => one === 'never').length,
+    };
+  }, [users]);
+  const figures: Array<{ label: string; value: number; filter?: Activity; action?: string }> = [
+    { label: t('enabledUsers', 'Enabled users'), value: counts.enabled },
+    {
+      label: t('signedInLastDays', 'Signed in, last {{days}} days', { days: RECENT_DAYS }),
+      value: counts.recent,
+      filter: 'recent',
+      action: t('showUsersSignedInLastDays', 'Show only the {{count}} users who signed in in the last {{days}} days', {
+        count: counts.recent,
+        days: RECENT_DAYS,
+      }),
+    },
+    {
+      label: t('neverSignedIn', 'Never signed in'),
+      value: counts.never,
+      filter: 'never',
+      action: t('showUsersNeverSignedIn', 'Show only the {{count}} users who never signed in', { count: counts.never }),
+    },
+  ];
+
+  // An activity figure counts enabled users only, so while one is pressed the table lists only those.
   const shown = useMemo(() => {
     const text = query.trim().toLowerCase();
+    const since = recentSince();
     return users
-      .filter((user) => showDisabled || !user.retired)
+      .filter((user) =>
+        activity ? !user.retired && activityOf(user, since) === activity : showDisabled || !user.retired,
+      )
       .filter(
         (user) =>
           !text ||
@@ -148,8 +203,8 @@ export default function Users() {
           user.roles.some((role) => role.display.toLowerCase().includes(text)),
       )
       .sort((a, b) => fullName(a).localeCompare(fullName(b)));
-  }, [users, query, showDisabled]);
-  const filters = useMemo(() => ({ query, showDisabled }), [query, showDisabled]);
+  }, [users, query, showDisabled, activity]);
+  const filters = useMemo(() => ({ query, showDisabled, activity }), [query, showDisabled, activity]);
   const { results, paginationProps } = usePagedRows(shown, filters);
 
   let body: React.ReactNode;
@@ -166,7 +221,7 @@ export default function Users() {
     );
   } else if (isLoading) {
     body = (
-      <DataTableSkeleton role="progressbar" columnCount={6} compact={desktop} showHeader={false} showToolbar={false} />
+      <DataTableSkeleton role="progressbar" columnCount={7} compact={desktop} showHeader={false} showToolbar={false} />
     );
   } else if (!shown.length) {
     body = <TableEmptyState message={t('noUsers', 'There are no users to display')} />;
@@ -180,6 +235,7 @@ export default function Users() {
               <TableHeader>{t('username', 'Username')}</TableHeader>
               <TableHeader>{t('roles', 'Roles')}</TableHeader>
               <TableHeader>{t('clinics', 'Clinics')}</TableHeader>
+              <TableHeader>{t('lastSignedIn', 'Last signed in')}</TableHeader>
               <TableHeader>{t('status', 'Status')}</TableHeader>
               <TableHeader aria-label={t('actions', 'Actions')} />
             </TableRow>
@@ -187,12 +243,14 @@ export default function Users() {
           <TableBody>
             {results.map((user) => {
               const self = user.uuid === me?.uuid;
+              const signedIn = lastSignIn(user);
               return (
                 <TableRow key={user.uuid} data-testid="act-user-row">
                   <TableCell>{fullName(user)}</TableCell>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.roles.map((role) => roleLabel(role.display)).join(', ')}</TableCell>
                   <TableCell>{clinicNames(user)}</TableCell>
+                  <TableCell>{signedIn ? logTime(t, signedIn.toISOString()) : t('never', 'Never')}</TableCell>
                   <TableCell>
                     <Tag size="sm" type={user.retired ? 'gray' : 'green'}>
                       {user.retired ? t('disabled', 'Disabled') : t('enabled', 'Enabled')}
@@ -267,6 +325,41 @@ export default function Users() {
             )}
           />
         )}
+        {!error && (
+          <div className={styles.figures}>
+            {figures.map((figure) => {
+              const content = (
+                <>
+                  <span className={kpiStyles.label}>{figure.label}</span>
+                  {isLoading ? (
+                    <SkeletonText heading width="40%" />
+                  ) : (
+                    <span className={kpiStyles.value}>{figure.value}</span>
+                  )}
+                </>
+              );
+              return figure.filter && !isLoading ? (
+                <button
+                  key={figure.label}
+                  type="button"
+                  className={styles.figureButton}
+                  aria-label={figure.action}
+                  aria-pressed={activity === figure.filter}
+                  data-testid="act-users-figure"
+                  onClick={() => setActivity(activity === figure.filter ? null : figure.filter)}
+                >
+                  <Tile className={`${kpiStyles.kpi} ${activity === figure.filter ? styles.pressed : ''}`}>
+                    {content}
+                  </Tile>
+                </button>
+              ) : (
+                <Tile key={figure.label} className={kpiStyles.kpi} data-testid="act-users-figure">
+                  {content}
+                </Tile>
+              );
+            })}
+          </div>
+        )}
         <div className={styles.toolbar}>
           <Search
             closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
@@ -282,7 +375,8 @@ export default function Users() {
             id="users-show-disabled"
             size="sm"
             labelText={t('showDisabledUsers', 'Show disabled users')}
-            toggled={showDisabled}
+            disabled={activity !== null}
+            toggled={showDisabled && activity === null}
             onToggle={(toggled) => setShowDisabled(toggled)}
           />
           <UserHasAccess privilege={PRIVILEGE_ADD_USERS}>

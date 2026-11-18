@@ -1,12 +1,13 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { getCoreTranslation, launchWorkspace2 } from '@openmrs/esm-framework';
+import { formatDate, getCoreTranslation, launchWorkspace2 } from '@openmrs/esm-framework';
 import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Users from './users.component';
-import { backend, IA, SA, signInAs } from './users.test-helper';
+import { backend, IA, SA, signInAs, user, CC, CL, DC } from './users.test-helper';
 
 function renderPage() {
   return render(
@@ -22,7 +23,7 @@ const rowOf = async (name: string) =>
 describe('Users', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('lists the enabled users with their roles, clinics and status, and the disabled ones on request', async () => {
+  it('lists the enabled users with their roles, clinics, last sign-in and status, and the disabled ones on request', async () => {
     backend();
     await signInAs(IA, ['Task: act.allClinics']);
 
@@ -30,8 +31,8 @@ describe('Users', () => {
 
     const rows = await screen.findAllByTestId('act-user-row');
     expect(rows.map((row) => row.textContent)).toEqual([
-      'Grace OkotgraceCommunity ClinicianAcimi HCIIIEnabledEdit userReset passwordDisable user',
-      'James OkotjamesClinicianAcimi HCIII, Akunalaber HCIIIEnabledEdit userReset passwordDisable user',
+      'Grace OkotgraceCommunity ClinicianAcimi HCIIINeverEnabledEdit userReset passwordDisable user',
+      'James OkotjamesClinicianAcimi HCIII, Akunalaber HCIIINeverEnabledEdit userReset passwordDisable user',
     ]);
     await userEvent.click(screen.getByRole('switch', { name: 'Show disabled users' }));
     expect(await rowOf('Ruth Okot')).toHaveTextContent('Disabled');
@@ -54,6 +55,54 @@ describe('Users', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
     expect(getCoreTranslation).toHaveBeenCalledWith('close');
+  });
+
+  it('counts the enabled users who signed in in the last 30 days and those who never have, and lists them', async () => {
+    const withSignIn = (given: string, roles: Array<string>, at: dayjs.Dayjs | null, retired = false) => {
+      const one = user(given.toLowerCase(), given, roles, 'acimi', retired);
+      return at ? { ...one, userProperties: { ...one.userProperties, lastLoginTimestamp: String(at.valueOf()) } } : one;
+    };
+    const twoDaysAgo = dayjs().subtract(2, 'day').hour(9).minute(5);
+    backend(undefined, {
+      list: [
+        withSignIn('Anna', [CL], twoDaysAgo),
+        withSignIn('Bea', [CL], dayjs().subtract(30, 'day').startOf('day').add(23, 'hour')),
+        withSignIn('Carl', [CC], dayjs().subtract(31, 'day').endOf('day')),
+        withSignIn('Dora', [DC], null),
+        withSignIn('Ezra', [DC], null, true),
+      ],
+    });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderPage();
+
+    expect(await rowOf('Dora Okot')).toHaveTextContent('Never');
+    const figures = screen.getAllByTestId('act-users-figure');
+    expect(figures.map((figure) => figure.textContent)).toEqual([
+      'Enabled users4',
+      'Signed in, last 30 days2',
+      'Never signed in1',
+    ]);
+    expect(await rowOf('Anna Okot')).toHaveTextContent(
+      `${formatDate(twoDaysAgo.toDate(), { time: false, noToday: true })}, 09:05`,
+    );
+
+    await userEvent.click(screen.getByRole('switch', { name: 'Show disabled users' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Show only the 1 users who never signed in' }));
+    expect(screen.getByRole('switch', { name: 'Show disabled users' })).toBeDisabled();
+    expect(screen.getAllByTestId('act-user-row').map((row) => row.textContent)).toEqual([
+      expect.stringMatching(/^Dora Okot/),
+    ]);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show only the 2 users who signed in in the last 30 days' }),
+    );
+    expect(screen.getAllByTestId('act-user-row').map((row) => row.textContent)).toEqual([
+      expect.stringMatching(/^Anna Okot/),
+      expect.stringMatching(/^Bea Okot/),
+    ]);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show only the 2 users who signed in in the last 30 days' }),
+    );
+    expect(screen.getAllByTestId('act-user-row')).toHaveLength(5);
   });
 
   it('tells a site administrator it administers the users of its clinics', async () => {
