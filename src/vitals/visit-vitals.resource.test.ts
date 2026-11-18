@@ -5,6 +5,7 @@ import {
   fetchVisitVitalsText,
   registerVisitVitals,
   type VisitObs,
+  visitVitalsControl,
   visitVitalsHelper,
   vitalsNotRecorded,
   vitalsText,
@@ -100,5 +101,19 @@ describe('registerVisitVitals', () => {
     expect(registry.expressionHelpers[visitVitalsHelper]).toBe(fetchVisitVitalsText);
     expect(registry.expressionHelpers.other).toBe(1);
     expect(visitVitalsHelper).toBe('actVisitVitals');
+  });
+
+  it('adds the control that keeps Vitals at this visit current, once however often the app starts', async () => {
+    getGlobalStore<Record<string, unknown>>('forms-engine-store').setState({ controls: [], expressionHelpers: {} });
+
+    registerVisitVitals();
+    registerVisitVitals();
+
+    const { controls } = getGlobalStore<{
+      controls: Array<{ name: string; type: string; load: () => Promise<{ default: unknown }> }>;
+    }>('forms-engine-store').getState();
+    expect(controls.map((one) => [one.name, one.type])).toEqual([[visitVitalsControl, visitVitalsControl]]);
+    expect(typeof (await controls[0].load()).default).toBe('function');
+    expect(visitVitalsControl).toBe('act-visit-vitals');
   });
 });
