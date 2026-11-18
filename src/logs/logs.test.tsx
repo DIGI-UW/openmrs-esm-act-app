@@ -589,6 +589,37 @@ describe('Logs', () => {
       expect(line(detail, 'Period')).toHaveTextContent('2026-07-01 to 2026-09-30');
     });
 
+    it('names a download of several forms by its forms', async () => {
+      backend({
+        '/actcore/download?': {
+          results: [
+            {
+              ...downloadEntries[0],
+              form: null,
+              detail: {
+                ...downloadEntries[0].detail,
+                forms: [
+                  { uuid: 'f-echo', name: 'Echocardiogram', fields: ['EF'] },
+                  { uuid: 'f-consult', name: 'Consultation Visit', fields: ['NYHA'] },
+                ],
+                rowPerPatient: true,
+              },
+            },
+            ...downloadEntries,
+          ],
+          totalCount: downloadEntries.length + 1,
+          from: '2025-10-22',
+          to: null,
+        },
+      });
+      await signInWith(BOTH);
+      renderPage();
+
+      await open();
+
+      expect(rowTexts()[0][4]).toBe('Echocardiogram, Consultation Visit');
+    });
+
     it('folds the form and identifiers filters into the request, and fetches every matching download', async () => {
       const calls = backend();
       await signInWith(BOTH);

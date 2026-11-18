@@ -66,7 +66,8 @@ export function DownloadsTab({
       ? t('downloadPeriod', '{{from}} to {{to}}', { from: detail.startDate ?? '...', to: detail.endDate ?? '...' })
       : t('allDates', 'All dates');
 
-  const targetName = (entry: DownloadLogEntry) => entry.list?.name ?? entry.form?.name ?? '';
+  const targetName = (entry: DownloadLogEntry) =>
+    entry.list?.name ?? entry.form?.name ?? (entry.detail?.forms ?? []).map((form) => form.name).join(', ');
 
   const summary = (entry: DownloadLogEntry) => {
     if (!entry.detail) {

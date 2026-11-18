@@ -85,12 +85,20 @@ export function useFormFields(formUuid: string) {
   return { fields: data ?? [], error, isLoading };
 }
 
-/** The form's chosen fields, one row per saved form, which ACT Core records in its download log. */
-export async function downloadForm(request: {
-  form: string;
-  fields: Array<DownloadField>;
+export type DownloadStatus = 'active' | 'inactive';
+
+/**
+ * The chosen fields of each form, which ACT Core records in its download log: one form as a row per saved form unless
+ * rowPerPatient, several as a row per patient. A filter left out keeps every patient.
+ */
+export async function downloadForms(request: {
+  forms: Array<{ form: string; fields: Array<DownloadField> }>;
   startDate: string | null;
   endDate: string | null;
+  rowPerPatient?: boolean;
+  status?: DownloadStatus;
+  cardiacClinic?: string;
+  primaryCareClinic?: string;
 }) {
   const { data } = await openmrsFetch<DownloadResult>(`${restBaseUrl}/actcore/download`, {
     method: 'POST',
@@ -111,6 +119,9 @@ export interface DownloadLogDetail {
   rows: number;
   identifiers: boolean;
   researchOnly: boolean;
+  /** The forms the download gave, each with its fields; absent on a list or a download recorded before them. */
+  forms?: Array<{ uuid: string; name: string; fields: Array<string> }>;
+  rowPerPatient?: boolean;
 }
 
 export interface DownloadLogEntry {
