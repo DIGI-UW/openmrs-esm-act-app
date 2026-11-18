@@ -162,7 +162,7 @@ export default function DownloadData() {
   const primaryCareClinics = useClinics(clinicLocationTags.primaryCare);
   const may = (privilege: string) => !!user && userHasAccess(privilege, user);
   const researchOnly = !may(PRIVILEGE_DOWNLOAD_DATA);
-  // ACT Core withholds the identifying fields from anyone else, so offering them would only promise columns it drops.
+  // ACT Core withholds identifying fields from anyone else; offering them would promise dropped columns.
   const offeredPatientFields = patientFields.filter(
     (key) => (!researchOnly && may(PRIVILEGE_DOWNLOAD_IDENTIFIERS)) || !identifyingPatientFields.includes(key),
   );
@@ -170,7 +170,7 @@ export default function DownloadData() {
   const [chosenForms, setChosenForms] = useState<Array<string>>([]);
   const [fieldsByForm, setFieldsByForm] = useState<Record<string, Array<DownloadField> | null>>({});
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
-  // Nothing identifying leaves unless the user ticks it (AR-76: only the chosen variables, plus the ACT ID).
+  // Nothing identifying leaves unless ticked: AR-76 wants only the chosen variables plus the ACT ID.
   const [patientChecked, setPatientChecked] = useState<Set<string>>(new Set<PatientField>(['sex', 'age']));
   const [rowPerPatient, setRowPerPatient] = useState(false);
   const [status, setStatus] = useState<DownloadStatus | ''>('');
