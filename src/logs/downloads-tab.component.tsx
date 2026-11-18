@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Select, SelectItem, Tag } from '@carbon/react';
 import { formatDate } from '@openmrs/esm-framework';
 import { PRIVILEGE_DOWNLOAD_IDENTIFIERS } from '../constants';
-import { type DownloadLogDetail, type DownloadLogEntry, useDownloadForms } from '../download/download.resource';
+import {
+  type DownloadLogDetail,
+  type DownloadLogEntry,
+  identifyingPatientFields,
+  patientFieldLabels,
+  useDownloadForms,
+} from '../download/download.resource';
 import { DownloadCsvButton } from '../table-filters/download-csv-button.component';
 import {
   LogFilterBar,
@@ -29,6 +35,10 @@ const identifierKind = (detail: DownloadLogDetail | null): IdentifierKind =>
 
 const narrowed = (detail: DownloadLogDetail) =>
   Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
+
+// A download that chose no identifying patient field kept none, whatever the user may download.
+const keptIdentifiers = (detail: DownloadLogDetail) =>
+  detail.identifiers && (!detail.patient || detail.patient.some((key) => identifyingPatientFields.includes(key)));
 
 const date = (iso: string) => formatDate(new Date(iso), { time: false, noToday: true });
 
@@ -63,6 +73,8 @@ export function DownloadsTab({
     without: 'gray',
     research: 'purple',
   };
+
+  const patientLabels = patientFieldLabels(t);
 
   const statusLabels: Record<string, string> = {
     active: t('active', 'Active'),
@@ -139,7 +151,7 @@ export function DownloadsTab({
               <span className={styles.muted}>{t('none', 'None')}</span>
             )}
           </div>
-          {entry.detail.identifiers && (
+          {keptIdentifiers(entry.detail) && (
             <>
               <p className={styles.detailHeading}>{t('whyIdentifiers', 'Why identifiers were included')}</p>
               <p data-testid="why-identifiers">
@@ -180,6 +192,11 @@ export function DownloadsTab({
               {entry.detail.filters?.primaryCareClinic && (
                 <DetailLine label={t('primaryCareClinic', 'Primary care clinic')}>
                   {entry.detail.filters.primaryCareClinic}
+                </DetailLine>
+              )}
+              {entry.detail.patient && (
+                <DetailLine label={t('patientFields', 'Patient fields')}>
+                  {[t('actId', 'ACT ID'), ...entry.detail.patient.map((key) => patientLabels[key] ?? key)].join(', ')}
                 </DetailLine>
               )}
               {entry.detail.rowPerPatient !== undefined && (

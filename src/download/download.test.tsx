@@ -137,6 +137,7 @@ describe('DownloadData', () => {
         forms: [{ form: 'echo', fields: [{ concept: 'echo-date', label: 'Date of Echocardiogram' }] }],
         startDate: '2026-01-01',
         endDate: '2026-06-30',
+        patient: ['sex', 'age'],
       },
     ]);
     expect(vi.mocked(downloadCsv).mock.calls[0][0]).toMatch(/^echocardiogram-\d{4}-\d{2}-\d{2}\.csv$/);
@@ -186,6 +187,7 @@ describe('DownloadData', () => {
         ],
         startDate: null,
         endDate: null,
+        patient: ['sex', 'age'],
       },
     ]);
     expect(vi.mocked(downloadCsv).mock.calls[0][0]).toMatch(/^act-download-\d{4}-\d{2}-\d{2}\.csv$/);
@@ -225,6 +227,57 @@ describe('DownloadData', () => {
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toMatchObject({ status: 'active', cardiacClinic: 'uhi' });
     expect(posts[0]).not.toHaveProperty('primaryCareClinic');
+  });
+
+  it("sends the patient fields ticked, in ACT Core's order, a clinician's identifying ones unticked until chosen", async () => {
+    await signInWith(['Task: act.downloadData', 'Task: act.downloadIdentifiers']);
+    const posts = backendAnswers();
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Echocardiogram' }));
+    await screen.findByRole('checkbox', { name: 'Date of Echocardiogram' });
+    const patient = screen.getByRole('group', { name: /Patient: 2 of 7 fields/ });
+    expect(within(patient).getByRole('checkbox', { name: 'Given name' })).not.toBeChecked();
+    expect(within(patient).getByRole('checkbox', { name: 'Phone numbers' })).not.toBeChecked();
+    expect(within(patient).getByRole('checkbox', { name: 'Sex' })).toBeChecked();
+    await user.click(within(patient).getByRole('checkbox', { name: 'Phone numbers' }));
+    await user.click(within(patient).getByRole('checkbox', { name: 'Given name' }));
+    await user.click(within(patient).getByRole('checkbox', { name: 'Age' }));
+    await user.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toMatchObject({ patient: ['givenName', 'phones', 'sex'] });
+  });
+
+  it('offers only sex and age to a user who may not download identifiers, and sends none once unchecked', async () => {
+    await signInWith(['Task: act.downloadData']);
+    const posts = backendAnswers();
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Echocardiogram' }));
+    await screen.findByRole('checkbox', { name: 'Date of Echocardiogram' });
+    const patient = screen.getByRole('group', { name: /Patient: 2 of 2 fields/ });
+    expect(
+      within(patient)
+        .getAllByRole('checkbox')
+        .map((box) => box.getAttribute('id')),
+    ).toEqual(['download-patient-sex', 'download-patient-age']);
+    await user.click(within(patient).getByRole('button', { name: 'Uncheck all' }));
+    await user.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toMatchObject({ patient: [] });
+  });
+
+  it('offers only sex and age to a research-only user, even one who holds the identifiers privilege', async () => {
+    await signInWith(['Task: act.downloadResearchData', 'Task: act.downloadIdentifiers']);
+    backendAnswers();
+    renderPage();
+
+    expect(await screen.findByRole('group', { name: /Patient: 2 of 2 fields/ })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Given name' })).not.toBeInTheDocument();
   });
 
   it('says a clinician gets the identifiers', async () => {

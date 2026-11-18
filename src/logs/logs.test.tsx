@@ -583,6 +583,7 @@ describe('Logs', () => {
       expect(line(detail, 'Recorded')).toHaveTextContent(/10:50:31/);
       expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
       expect(line(detail, 'Layout')).toBeUndefined();
+      expect(line(detail, 'Patient fields')).toBeUndefined();
 
       detail = await expand(1);
       expect(within(detail).getByTestId('fields-left-out')).toHaveTextContent('Given namePrimary Phone');
@@ -676,6 +677,32 @@ describe('Logs', () => {
       expect(line(detail, 'Patients')).toHaveTextContent('Every patient on the registry');
       expect(line(detail, 'Status')).toBeUndefined();
       expect(line(detail, 'Layout')).toBeUndefined();
+    });
+
+    it('shows the patient fields a form download gave, and gives no reason for identifiers it did not keep', async () => {
+      backend({
+        '/actcore/download?': {
+          results: [
+            { ...downloadEntries[0], detail: { ...downloadEntries[0].detail, patient: ['sex', 'age'] } },
+            { ...downloadEntries[0], detail: { ...downloadEntries[0].detail, patient: ['birthDate'] } },
+            downloadEntries[2],
+          ],
+          totalCount: 3,
+          from: '2025-10-22',
+          to: null,
+        },
+      });
+      await signInWith(BOTH);
+      renderPage();
+      await open();
+
+      let detail = await expand(0);
+      expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
+      expect(within(detail).queryByTestId('why-identifiers')).not.toBeInTheDocument();
+
+      detail = await expand(1);
+      expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Birth date');
+      expect(within(detail).getByTestId('why-identifiers')).toBeInTheDocument();
     });
 
     it('folds the form and identifiers filters into the request, and fetches every matching download', async () => {

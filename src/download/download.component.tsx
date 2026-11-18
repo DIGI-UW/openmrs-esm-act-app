@@ -36,7 +36,11 @@ import {
   type DownloadField,
   type DownloadForm,
   type DownloadStatus,
+  type PatientField,
   downloadForms,
+  identifyingPatientFields,
+  patientFieldLabels,
+  patientFields,
   useDownloadForms,
   useFormFields,
 } from './download.resource';
@@ -45,6 +49,48 @@ import styles from './download.scss';
 const isoDate = (date: Date | null) => (date ? dayjs(date).format('YYYY-MM-DD') : null);
 
 const fieldKey = (form: string, concept: string) => `${form}:${concept}`;
+
+/** Fields to tick under a legend, with Check all and Uncheck all. */
+function FieldChecklist({
+  legend,
+  fields,
+  isChecked,
+  onToggle,
+  onAll,
+}: {
+  legend: string;
+  fields: Array<{ key: string; id: string; label: string }>;
+  isChecked: (key: string) => boolean;
+  onToggle: (key: string, checked: boolean) => void;
+  onAll: (keys: Array<string>, checked: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const keys = fields.map((field) => field.key);
+  return (
+    <fieldset className={styles.fields}>
+      <legend className={styles.legend}>{legend}</legend>
+      <div className={styles.fieldActions}>
+        <Button kind="ghost" size="sm" onClick={() => onAll(keys, true)}>
+          {t('checkAll', 'Check all')}
+        </Button>
+        <Button kind="ghost" size="sm" onClick={() => onAll(keys, false)}>
+          {t('uncheckAll', 'Uncheck all')}
+        </Button>
+      </div>
+      <div className={styles.fieldGrid}>
+        {fields.map((field) => (
+          <Checkbox
+            key={field.key}
+            id={field.id}
+            labelText={field.label}
+            checked={isChecked(field.key)}
+            onChange={(_, { checked }) => onToggle(field.key, checked)}
+          />
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 /**
  * One chosen form's fields to tick, under its name. Tells the page the fields once they load, which it needs to build
@@ -85,39 +131,22 @@ function FormFieldList({
     );
   }
   const keys = fields.map((field) => fieldKey(form.uuid, field.concept));
-  const chosen = keys.filter((key) => !unchecked.has(key)).length;
   return (
-    <fieldset className={styles.fields}>
-      <legend className={styles.legend}>
-        {t('formFieldsChosen', '{{form}}: {{chosen}} of {{total}} fields', {
-          form: form.name,
-          chosen,
-          total: fields.length,
-        })}
-      </legend>
-      <div className={styles.fieldActions}>
-        <Button kind="ghost" size="sm" onClick={() => onAll(keys, true)}>
-          {t('checkAll', 'Check all')}
-        </Button>
-        <Button kind="ghost" size="sm" onClick={() => onAll(keys, false)}>
-          {t('uncheckAll', 'Uncheck all')}
-        </Button>
-      </div>
-      <div className={styles.fieldGrid}>
-        {fields.map((field) => {
-          const key = fieldKey(form.uuid, field.concept);
-          return (
-            <Checkbox
-              key={key}
-              id={`download-field-${form.uuid}-${field.concept}`}
-              labelText={field.label}
-              checked={!unchecked.has(key)}
-              onChange={(_, { checked }) => onToggle(key, checked)}
-            />
-          );
-        })}
-      </div>
-    </fieldset>
+    <FieldChecklist
+      legend={t('formFieldsChosen', '{{form}}: {{chosen}} of {{total}} fields', {
+        form: form.name,
+        chosen: keys.filter((key) => !unchecked.has(key)).length,
+        total: fields.length,
+      })}
+      fields={fields.map((field) => ({
+        key: fieldKey(form.uuid, field.concept),
+        id: `download-field-${form.uuid}-${field.concept}`,
+        label: field.label,
+      }))}
+      isChecked={(key) => !unchecked.has(key)}
+      onToggle={onToggle}
+      onAll={onAll}
+    />
   );
 }
 
@@ -133,10 +162,16 @@ export default function DownloadData() {
   const primaryCareClinics = useClinics(clinicLocationTags.primaryCare);
   const may = (privilege: string) => !!user && userHasAccess(privilege, user);
   const researchOnly = !may(PRIVILEGE_DOWNLOAD_DATA);
+  // ACT Core withholds the identifying fields from anyone else, so offering them would only promise columns it drops.
+  const offeredPatientFields = patientFields.filter(
+    (key) => (!researchOnly && may(PRIVILEGE_DOWNLOAD_IDENTIFIERS)) || !identifyingPatientFields.includes(key),
+  );
   const { forms, error: formsError, isLoading: formsLoading } = useDownloadForms();
   const [chosenForms, setChosenForms] = useState<Array<string>>([]);
   const [fieldsByForm, setFieldsByForm] = useState<Record<string, Array<DownloadField> | null>>({});
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
+  // Nothing identifying leaves unless the user ticks it (AR-76: only the chosen variables, plus the ACT ID).
+  const [patientChecked, setPatientChecked] = useState<Set<string>>(new Set<PatientField>(['sex', 'age']));
   const [rowPerPatient, setRowPerPatient] = useState(false);
   const [status, setStatus] = useState<DownloadStatus | ''>('');
   const [cardiacClinic, setCardiacClinic] = useState('');
@@ -182,6 +217,15 @@ export default function DownloadData() {
       return next;
     });
 
+  const patientLabels = patientFieldLabels(t);
+
+  const setPatientFieldsChecked = (keys: Array<string>, checked: boolean) =>
+    setPatientChecked((current) => {
+      const next = new Set(current);
+      keys.forEach((key) => (checked ? next.add(key) : next.delete(key)));
+      return next;
+    });
+
   const download = async () => {
     setDownloading(true);
     try {
@@ -189,6 +233,7 @@ export default function DownloadData() {
         forms: request,
         startDate: isoDate(startDate),
         endDate: isoDate(endDate),
+        patient: offeredPatientFields.filter((key) => patientChecked.has(key)),
         ...(!several && rowPerPatient ? { rowPerPatient: true } : {}),
         ...(status ? { status } : {}),
         ...(cardiacClinic ? { cardiacClinic } : {}),
@@ -241,7 +286,7 @@ export default function DownloadData() {
               : may(PRIVILEGE_DOWNLOAD_IDENTIFIERS)
                 ? t(
                     'downloadIdentifiedExplanation',
-                    "The download comes with the patient's names, birth date, ID numbers and phones. Each download is recorded.",
+                    "The download can come with the patient's names, birth date, ID numbers and phones, those ticked under Patient. Each download is recorded.",
                   )
                 : t(
                     'downloadDeidentifiedExplanation',
@@ -357,6 +402,20 @@ export default function DownloadData() {
               />
             ) : null;
           })}
+          <FieldChecklist
+            legend={t('patientFieldsChosen', 'Patient: {{chosen}} of {{total}} fields, after the ACT ID', {
+              chosen: offeredPatientFields.filter((key) => patientChecked.has(key)).length,
+              total: offeredPatientFields.length,
+            })}
+            fields={offeredPatientFields.map((key) => ({
+              key,
+              id: `download-patient-${key}`,
+              label: patientLabels[key],
+            }))}
+            isChecked={(key) => patientChecked.has(key)}
+            onToggle={(key, checked) => setPatientFieldsChecked([key], checked)}
+            onAll={setPatientFieldsChecked}
+          />
           <Button
             kind="primary"
             size="md"
