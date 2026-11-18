@@ -165,3 +165,12 @@ export function resetPassword(user: ActUser, newPassword: string) {
 export function disableUser(user: ActUser, reason: string) {
   return openmrsFetch(`${restBaseUrl}/user/${user.uuid}?reason=${encodeURIComponent(reason)}`, { method: 'DELETE' });
 }
+
+/** Enables a disabled user by unretiring their account so they can sign in again. */
+export function enableUser(user: ActUser) {
+  return openmrsFetch(`${restBaseUrl}/user/${user.uuid}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { retired: false },
+  });
+}

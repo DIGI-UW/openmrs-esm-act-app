@@ -4,7 +4,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { formatDate, getCoreTranslation, launchWorkspace2 } from '@openmrs/esm-framework';
+import { formatDate, getCoreTranslation, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
 import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Users from './users.component';
 import { backend, IA, SA, signInAs, user, CC, CL, DC } from './users.test-helper';
@@ -166,5 +166,67 @@ describe('Users', () => {
       method: 'DELETE',
       body: undefined,
     });
+  });
+
+  it.each([IA, SA])('offers Enable instead of Disable for a disabled user to administrator %s', async (role) => {
+    backend();
+    await signInAs(role);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+    const row = within(await rowOf('Ruth Okot'));
+    expect(row.getByRole('button', { name: 'Enable user' })).toBeInTheDocument();
+    expect(row.queryByRole('button', { name: 'Disable user' })).not.toBeInTheDocument();
+    expect(within(await rowOf('Grace Okot')).queryByRole('button', { name: 'Enable user' })).not.toBeInTheDocument();
+  });
+
+  it('enables a user after confirmation and refreshes the list', async () => {
+    const writes = backend();
+    await signInAs(IA);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+    await userEvent.click(within(await rowOf('Ruth Okot')).getByRole('button', { name: 'Enable user' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Enable Ruth Okot?' });
+    expect(within(dialog).getByText('They will be able to sign in again.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(writes).toHaveLength(0);
+    await userEvent.click(within(dialog).getByRole('button', { name: /Enable$/ }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(writes).toEqual([{ url: expect.stringMatching(/\/user\/ruth$/), method: 'POST', body: { retired: false } }]);
+    expect(showSnackbar).toHaveBeenCalledWith({ kind: 'success', title: 'User enabled' });
+    await waitFor(async () => expect(within(await rowOf('Ruth Okot')).getByText('Enabled')).toBeInTheDocument());
+    expect(within(await rowOf('Ruth Okot')).getByRole('button', { name: 'Disable user' })).toBeInTheDocument();
+  });
+
+  it('keeps the enable dialog open with an error notification when enabling fails', async () => {
+    const writes = backend('You may not enable this user');
+    await signInAs(IA);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+    await userEvent.click(within(await rowOf('Ruth Okot')).getByRole('button', { name: 'Enable user' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: /Enable$/ }));
+
+    expect(await within(dialog).findByText('Could not enable the user')).toBeInTheDocument();
+    expect(within(dialog).getByText('You may not enable this user')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /Enable$/ })).toBeEnabled();
+    expect(writes).toHaveLength(1);
+    expect(showSnackbar).not.toHaveBeenCalled();
+    expect(within(await rowOf('Ruth Okot')).getByText('Disabled')).toBeInTheDocument();
+  });
+
+  it('does not offer Enable for the signed-in user', async () => {
+    backend(undefined, { list: [user('me', 'Admin', [IA], 'acimi', true)] });
+    await signInAs(IA);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show disabled users' }));
+    const row = within(await rowOf('Admin Okot'));
+    expect(row.getByText('Disabled')).toBeInTheDocument();
+    expect(row.queryByRole('button', { name: 'Enable user' })).not.toBeInTheDocument();
+    expect(row.queryByRole('button', { name: 'Disable user' })).not.toBeInTheDocument();
   });
 });

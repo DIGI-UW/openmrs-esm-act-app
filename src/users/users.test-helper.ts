@@ -54,12 +54,17 @@ export function backend(
   { list = users, current = {} }: { list?: Array<ServerUser>; current?: Record<string, Record<string, string>> } = {},
 ) {
   const writes: Array<Call> = [];
+  let serverUsers = list;
   mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
     const method = init?.method ?? 'GET';
     if (method !== 'GET') {
       writes.push({ url, method, body: init?.body });
       if (fails) {
         throw Object.assign(new Error('403'), { responseBody: { error: { message: fails } } });
+      }
+      const userUuid = /\/user\/([^?]+)$/.exec(url)?.[1];
+      if (method === 'POST' && userUuid && (init?.body as { retired?: boolean })?.retired === false) {
+        serverUsers = serverUsers.map((one) => (one.uuid === userUuid ? { ...one, retired: false } : one));
       }
       return { data: url.endsWith('/user') ? { uuid: 'new-user', person: { uuid: 'new-person' } } : {} };
     }
@@ -80,7 +85,7 @@ export function backend(
       return { data: { display: 'Acimi HCIII' } };
     }
     if (url.includes('/user?')) {
-      return { data: { results: list, totalCount: list.length } };
+      return { data: { results: serverUsers, totalCount: serverUsers.length } };
     }
     return { data: { results: [] } };
   }) as never);
