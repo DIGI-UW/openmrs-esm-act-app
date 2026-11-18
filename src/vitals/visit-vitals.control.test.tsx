@@ -46,9 +46,9 @@ function Revalidator() {
 const visitFetches = () => vi.mocked(openmrsFetch).mock.calls.filter(([url]) => String(url).includes('/visit/'));
 
 // The form engine runs the field's calculate before it renders the field.
-const openConsultation = async (visitUuid: string | undefined, beforeRender = () => {}) => {
+const openConsultation = async (visitUuid: string | undefined, beforeRender: () => unknown = () => {}) => {
   const value = await fetchVisitVitalsText('abebe', visitUuid);
-  beforeRender();
+  await beforeRender();
   const setFieldValue = vi.fn();
   const provider = new Map();
   const form = () => (
@@ -131,6 +131,30 @@ describe('the consultation form’s Vitals at this visit', () => {
     await act(() => revalidateVisits());
 
     expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('keeps its own visit when a past consultation runs the helper before it mounts', async () => {
+    visits['last-month'] = bloodPressure;
+    const setFieldValue = await openConsultation('today', () => fetchVisitVitalsText('abebe', 'last-month'));
+    await waitFor(() => expect(visitFetches().length).toBeGreaterThan(2));
+
+    visits.today = bloodPressure;
+    await act(() => revalidateVisits());
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith(recorded));
+  });
+
+  it('reads the latest visit when another form for its visit has since read a different line', async () => {
+    const setFieldValue = await openConsultation('today', () => {
+      visits.today = bloodPressure;
+      return fetchVisitVitalsText('abebe', 'today');
+    });
+    await waitFor(() => expect(visitFetches().length).toBeGreaterThan(2));
+
+    visits.today = [...bloodPressure, obs('5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 88)];
+    await act(() => revalidateVisits());
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith(`${recorded}, Pulse 88 bpm`));
   });
 
   it('reads no visit for a consultation outside one, even after one opened in a visit', async () => {

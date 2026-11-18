@@ -19,7 +19,7 @@ export default function VisitVitals({ field, value, setFieldValue }: ControlProp
   const { consultations } = useConfig<Config>({ externalModuleName: '@act-registry/esm-act-app' });
   const { patientUuid } = usePatient();
   // Read once: a past consultation the chart shows inline runs the helper again, for its own visit.
-  const [visitUuid] = useState(() => (patientUuid ? consultationVisitUuid(patientUuid) : undefined));
+  const [visitUuid] = useState(() => (patientUuid ? consultationVisitUuid(patientUuid, value) : undefined));
   const text = useVisitVitals(visitUuid, consultations.vitals);
   const lastRead = useRef<string | null>(null);
 

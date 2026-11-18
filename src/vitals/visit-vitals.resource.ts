@@ -20,9 +20,20 @@ export const visitVitalsControl = 'act-visit-vitals';
 const visitEncountersUrl = (visitUuid: string) =>
   `${restBaseUrl}/visit/${visitUuid}?v=custom:(encounters:(voided,obs:(concept:(uuid),value,obsDatetime,voided)))`;
 
-const consultationVisits = new Map<string, string | undefined>();
+const consultationVisits = new Map<string, Map<string | undefined, string>>();
 
-export const consultationVisitUuid = (patientUuid: string) => consultationVisits.get(patientUuid);
+/** Matched by the line the form shows, as another form for the patient may have run the helper since; else the latest. */
+export const consultationVisitUuid = (patientUuid: string, text: string) => {
+  const latestFirst = [...(consultationVisits.get(patientUuid) ?? [])].reverse();
+  return (latestFirst.find(([, read]) => read === text) ?? latestFirst[0])?.[0];
+};
+
+const remember = (patientUuid: string, visitUuid: string | undefined, text: string) => {
+  const read = consultationVisits.get(patientUuid) ?? new Map<string | undefined, string>();
+  read.delete(visitUuid);
+  consultationVisits.set(patientUuid, read.set(visitUuid, text));
+  return text;
+};
 
 const visitObs = (data: VisitEncounters | undefined) =>
   (data?.encounters ?? []).filter((one) => !one.voided).flatMap((one) => one.obs ?? []);
@@ -70,15 +81,14 @@ export async function fetchVisitVitalsText(patientUuid: string, visitUuid: strin
     if (!patientUuid) {
       throw new Error('No patient');
     }
-    consultationVisits.set(patientUuid, visitUuid);
     if (!visitUuid) {
-      return vitalsNotRecorded;
+      return remember(patientUuid, visitUuid, vitalsNotRecorded);
     }
     const { consultations } = (await getConfig('@act-registry/esm-act-app')) as Config;
     const { data } = await openmrsFetch<VisitEncounters>(visitEncountersUrl(visitUuid));
-    return vitalsText(visitObs(data), consultations.vitals);
+    return remember(patientUuid, visitUuid, vitalsText(visitObs(data), consultations.vitals));
   } catch {
-    return vitalsUnavailable;
+    return patientUuid ? remember(patientUuid, visitUuid, vitalsUnavailable) : vitalsUnavailable;
   }
 }
 
