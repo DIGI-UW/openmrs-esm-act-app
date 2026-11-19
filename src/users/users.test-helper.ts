@@ -49,11 +49,22 @@ type ServerUser = ReturnType<typeof user>;
 
 /**
  * The server: `list` as the users, which a disable or enable changes, plus roles and clinics; each write recorded and
- * answered with `fails` if given. `current` holds a user's properties as the server has them, where the list's differ.
+ * answered with `fails` if given, for the writes whose url `failing` matches. `current` holds a user's properties as
+ * the server has them, where the list's differ. Every user has a provider except those in `withoutProvider`.
  */
 export function backend(
   fails?: string,
-  { list = users, current = {} }: { list?: Array<ServerUser>; current?: Record<string, Record<string, string>> } = {},
+  {
+    list = users,
+    current = {},
+    failing = /./,
+    withoutProvider = [],
+  }: {
+    list?: Array<ServerUser>;
+    current?: Record<string, Record<string, string>>;
+    failing?: RegExp;
+    withoutProvider?: Array<string>;
+  } = {},
 ) {
   const writes: Array<Call> = [];
   let serverUsers = list;
@@ -61,7 +72,7 @@ export function backend(
     const method = init?.method ?? 'GET';
     if (method !== 'GET') {
       writes.push({ url, method, body: init?.body });
-      if (fails) {
+      if (fails && failing.test(url)) {
         throw Object.assign(new Error('403'), { responseBody: { error: { message: fails } } });
       }
       const userUuid = /\/user\/([^?]+)(\?reason=.*)?$/.exec(url)?.[1];
@@ -77,6 +88,10 @@ export function backend(
       return {
         data: { userProperties: current[properties] ?? list.find((one) => one.uuid === properties)?.userProperties },
       };
+    }
+    const providerOf = /\/provider\?user=([^&]+)/.exec(url)?.[1];
+    if (providerOf) {
+      return { data: { results: withoutProvider.includes(providerOf) ? [] : [{ uuid: `${providerOf}-provider` }] } };
     }
     const role = /\/role\/([^?]+)/.exec(url)?.[1];
     if (role) {

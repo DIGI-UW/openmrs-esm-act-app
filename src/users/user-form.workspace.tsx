@@ -17,6 +17,7 @@ import { restErrorMessage } from '../rest-error-message';
 import {
   type ActUser,
   clinicsOf,
+  ProviderNotCreated,
   roleLabel,
   saveUser,
   type UserForm,
@@ -92,6 +93,18 @@ function UserFormBody({ user, mutate, closeWorkspace }: UserFormBodyProps) {
       mutate();
       closeWorkspace({ discardUnsavedChanges: true });
     } catch (e) {
+      mutate();
+      if (e instanceof ProviderNotCreated) {
+        showSnackbar({
+          kind: 'error',
+          title: t('userAddedWithoutProvider', 'User added, but they cannot record forms yet'),
+          subtitle: t('saveUserAgainToFinish', 'Open them from the list and save to try again. {{reason}}', {
+            reason: restErrorMessage(e.reason),
+          }),
+        });
+        closeWorkspace({ discardUnsavedChanges: true });
+        return;
+      }
       setSaveError(restErrorMessage(e));
     } finally {
       setSaving(false);
