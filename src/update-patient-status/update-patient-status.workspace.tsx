@@ -47,7 +47,7 @@ export default function UpdatePatientStatusWorkspace({
   const [date, setDate] = useState(today);
   const [cause, setCause] = useState('');
   const [saving, setSaving] = useState(false);
-  // Set once the enrolment ended, so that a retry saves only the death, with the status and date it ended on.
+  // Set once the enrolment ended: a retry saves only the death, with the status and date kept.
   const [enrolmentSaved, setEnrolmentSaved] = useState(false);
 
   const mayEditPrograms = Boolean(user) && userHasAccess(PRIVILEGE_EDIT_PATIENT_PROGRAMS, user);
@@ -84,9 +84,12 @@ export default function UpdatePatientStatusWorkspace({
 
   const chooseState = (uuid: string) => {
     setStateUuid(uuid);
-    // A death already on the person is dated as it was recorded.
-    if (options.find((one) => one.uuid === uuid)?.death && person?.dead && person.deathDate) {
+    const death = options.find((one) => one.uuid === uuid)?.death;
+    // A death already on the person, or on the ended enrolment, is dated as it was recorded.
+    if (death && person?.dead && person.deathDate) {
       setDate(person.deathDate.slice(0, 10));
+    } else if (death && ended?.uuid === uuid) {
+      setDate(ended.since.slice(0, 10));
     }
   };
 
@@ -107,7 +110,7 @@ export default function UpdatePatientStatusWorkspace({
       return;
     }
     setSaving(true);
-    // The enrolment ends before the death is saved: ACT Core ends an open one when the person is saved dead.
+    // The enrolment ends first, as ACT Core ends an open one when the person is saved dead.
     let enrolmentEnded = enrolmentSaved;
     try {
       if (enrolmentActive && !enrolmentSaved && mayEditPrograms) {
@@ -193,7 +196,7 @@ export default function UpdatePatientStatusWorkspace({
                     value={date}
                     min={earliest || undefined}
                     max={today}
-                    disabled={enrolmentSaved}
+                    disabled={enrolmentSaved || Boolean(chosen?.death && ended?.uuid === chosen.uuid)}
                     onChange={(event) => setDate(event.target.value)}
                   />
                   {dyingNow && (
