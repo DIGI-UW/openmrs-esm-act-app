@@ -42,7 +42,7 @@ export function ReportCatalogueCard() {
           {t('allReportsDescription', 'Open a report as a table to sort and search it, then download what you see.')}
         </p>
         {heldTo && <p className={styles.heldTo}>{heldTo}</p>}
-        <div className={tileStyles.tiles}>
+        <div className={`${tileStyles.tiles} ${styles.reportTiles}`}>
           {entries.map((entry) => (
             <QuickActionTile
               key={entry.id}

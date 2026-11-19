@@ -47,6 +47,11 @@
   gap: layout.$spacing-03;
 }
 
+// Lets the row stretch its tiles to one height, so their footers line up.
+.reportTiles > * {
+  height: auto;
+}
+
 .heldTo {
   @include type.type-style('body-compact-01');
   margin-bottom: layout.$spacing-03;
