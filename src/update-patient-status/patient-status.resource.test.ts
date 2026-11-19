@@ -124,9 +124,9 @@ describe('statusOf', () => {
 describe('terminalStatesOf', () => {
   it("lists the workflow's terminal states that are not retired, marking the Deceased one", () => {
     expect(terminalStatesOf(program, deathConcept)).toEqual([
-      { uuid: 'ltfu', name: 'Lost to follow-up', death: false },
-      { uuid: 'reloc', name: 'Physical relocation', death: false },
-      { uuid: 'dead', name: 'Deceased', death: true },
+      { uuid: 'ltfu', name: 'Lost to follow-up', concept: 'c-ltfu', death: false },
+      { uuid: 'reloc', name: 'Physical relocation', concept: 'c-reloc', death: false },
+      { uuid: 'dead', name: 'Deceased', concept: deathConcept, death: true },
     ]);
   });
 });
@@ -178,11 +178,11 @@ describe('the requests', () => {
   const bodyOf = (call: number) => (vi.mocked(openmrsFetch).mock.calls[call][1] as { body: unknown }).body;
   const urlOf = (call: number) => vi.mocked(openmrsFetch).mock.calls[call][0];
 
-  it('marks a person dead with the date and the cause', async () => {
-    await markDead('person', '2020-10-24', 'Heart failure');
+  it('marks a person dead with the date and the coded cause', async () => {
+    await markDead('person', '2020-10-24', 'heart-failure');
 
     expect(urlOf(0)).toBe(`${restBaseUrl}/person/person`);
-    expect(bodyOf(0)).toEqual({ dead: true, deathDate: '2020-10-24', causeOfDeathNonCoded: 'Heart failure' });
+    expect(bodyOf(0)).toEqual({ dead: true, deathDate: '2020-10-24', causeOfDeath: 'heart-failure' });
   });
 
   it('ends an enrolment on the date in the terminal state', async () => {
