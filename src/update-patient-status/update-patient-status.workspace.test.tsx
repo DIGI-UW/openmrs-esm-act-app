@@ -66,17 +66,22 @@ function serve({
   failEnrolment = false,
   failPerson = false,
 } = {}) {
+  // An enrolment the workspace ends reads back ended, as the server would serve it.
+  let served = enrolments;
   vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: { method?: string }) => {
     if (init?.method === 'POST') {
       if (String(url).includes('/programenrollment/') && failEnrolment) {
         return Promise.reject(new Error('Enrolment refused'));
+      }
+      if (String(url).includes('/programenrollment/')) {
+        served = served.map((one) => ({ ...one, dateCompleted: today }));
       }
       return String(url).includes('/person/') && failPerson
         ? Promise.reject(new Error('Death refused'))
         : Promise.resolve({ data: {} });
     }
     if (String(url).includes('/programenrollment?')) {
-      return Promise.resolve({ data: { results: enrolments } });
+      return Promise.resolve({ data: { results: served } });
     }
     if (String(url).includes('/program/')) {
       return Promise.resolve({ data: program });
@@ -199,6 +204,7 @@ describe('UpdatePatientStatusWorkspace', () => {
     );
     expect(posts().map(([url]) => url)).toEqual([`${restBaseUrl}/programenrollment/pe`]);
     expect(closeWorkspace).not.toHaveBeenCalled();
+    expect(fetchChartPatient).toHaveBeenCalledTimes(1);
   });
 
   it('says the registry status was saved when the death is refused, reloads the patient, and repeats only the death', async () => {
@@ -216,6 +222,10 @@ describe('UpdatePatientStatusWorkspace', () => {
     );
     expect(closeWorkspace).not.toHaveBeenCalled();
     await waitFor(() => expect(fetchChartPatient).toHaveBeenCalledTimes(2));
+    // The enrolment now reads back ended; the status and date it ended with stay as they were.
+    await waitFor(() => expect(screen.getByTestId('current-status')).not.toHaveTextContent('Active'));
+    expect(screen.getByLabelText('Status')).toBeDisabled();
+    expect(screen.getByLabelText('Date of death')).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(posts()).toHaveLength(3));
     expect(posts().map(([url]) => url)).toEqual([

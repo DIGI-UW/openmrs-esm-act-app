@@ -47,13 +47,12 @@ export default function UpdatePatientStatusWorkspace({
   const [date, setDate] = useState(today);
   const [cause, setCause] = useState('');
   const [saving, setSaving] = useState(false);
-  // Set once the person is saved dead, or the enrolment ended, so that a retry does not save either again.
-  const [personSaved, setPersonSaved] = useState(false);
+  // Set once the enrolment ended, so that a retry saves only the death, with the status and date it ended on.
   const [enrolmentSaved, setEnrolmentSaved] = useState(false);
 
   const mayEditPrograms = Boolean(user) && userHasAccess(PRIVILEGE_EDIT_PATIENT_PROGRAMS, user);
   const mayEditPeople = Boolean(user) && userHasAccess(PRIVILEGE_EDIT_PEOPLE, user);
-  const personDead = Boolean(person?.dead) || personSaved;
+  const personDead = Boolean(person?.dead);
   const enrolmentActive = Boolean(enrolment) && !enrolment!.dateCompleted;
   const options =
     program && person
@@ -109,29 +108,28 @@ export default function UpdatePatientStatusWorkspace({
     }
     setSaving(true);
     // The enrolment ends before the death is saved: ACT Core ends an open one when the person is saved dead.
-    let ended = enrolmentSaved;
+    let enrolmentEnded = enrolmentSaved;
     try {
       if (enrolmentActive && !enrolmentSaved && mayEditPrograms) {
         await endEnrolment(enrolment!.uuid, chosen.uuid, date, enrolment!.dateEnrolled);
         setEnrolmentSaved(true);
-        ended = true;
+        enrolmentEnded = true;
       }
       if (chosen.death && !personDead && mayEditPeople) {
         await markDead(patientUuid, date, cause.trim());
-        setPersonSaved(true);
       }
     } catch (e) {
       showSnackbar({
         kind: 'error',
-        title: ended
+        title: enrolmentEnded
           ? t('statusSavedDeathNot', 'The registry status was saved but the death was not')
           : t('statusNotUpdated', 'The patient status could not be updated'),
-        subtitle: ended
+        subtitle: enrolmentEnded
           ? `${restErrorMessage(e)} ${t('saveAgainToFinish', 'Save again to finish.')}`
           : restErrorMessage(e),
       });
       setSaving(false);
-      if (ended) {
+      if (enrolmentEnded) {
         await refreshPatient();
       }
       return;
@@ -176,6 +174,7 @@ export default function UpdatePatientStatusWorkspace({
                     id="update-patient-status-state"
                     labelText={t('status', 'Status')}
                     value={stateUuid}
+                    disabled={enrolmentSaved}
                     onChange={(event) => chooseState(event.target.value)}
                   >
                     <SelectItem value="" text={t('chooseStatus', 'Choose a status')} />
@@ -194,6 +193,7 @@ export default function UpdatePatientStatusWorkspace({
                     value={date}
                     min={earliest || undefined}
                     max={today}
+                    disabled={enrolmentSaved}
                     onChange={(event) => setDate(event.target.value)}
                   />
                   {dyingNow && (
