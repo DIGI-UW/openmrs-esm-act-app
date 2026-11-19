@@ -3,7 +3,7 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { showSnackbar, Workspace2 } from '@openmrs/esm-framework';
+import { openmrsFetch, showSnackbar, Workspace2 } from '@openmrs/esm-framework';
 import { CLINICS_PROPERTY } from '../clinic-limit';
 import UserFormWorkspace from './user-form.workspace';
 import { backend, CC, CL, DC, IA, SA, signInAs } from './users.test-helper';
@@ -27,6 +27,20 @@ function renderWorkspace(userUuid?: string) {
     </SWRConfig>,
   );
 }
+
+/** Fills the Add form for Sarah Apio, a Data Clerk at Acimi. */
+async function fillNewUser() {
+  await userEvent.type(screen.getByLabelText('Given name'), 'Sarah');
+  await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
+  await userEvent.click(screen.getByText('Female'));
+  await userEvent.type(screen.getByLabelText('Username'), 'sapio');
+  await userEvent.type(screen.getByLabelText('Password'), 'Welcome123');
+  await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
+  await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
+}
+
+const listLoads = () => vi.mocked(openmrsFetch).mock.calls.filter(([url]) => String(url).includes('/user?')).length;
 
 describe('User form workspace', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -61,14 +75,7 @@ describe('User form workspace', () => {
     await signInAs(SA);
     renderWorkspace();
 
-    await userEvent.type(screen.getByLabelText('Given name'), 'Sarah');
-    await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
-    await userEvent.click(screen.getByText('Female'));
-    await userEvent.type(screen.getByLabelText('Username'), 'sapio');
-    await userEvent.type(screen.getByLabelText('Password'), 'Welcome123');
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
+    await fillNewUser();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(writes).toHaveLength(2));
@@ -88,6 +95,122 @@ describe('User form workspace', () => {
       method: 'POST',
       body: { person: 'new-person', identifier: 'sapio' },
     });
+  });
+
+  it('reloads the users and says the user was saved when their provider could not be', async () => {
+    const writes = backend('Provider service unavailable', { failing: /\/provider$/ });
+    await signInAs(SA);
+    renderWorkspace();
+
+    await fillNewUser();
+    const loadsBefore = listLoads();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    expect(writes.map((write) => write.url)).toEqual([
+      expect.stringMatching(/\/user$/),
+      expect.stringMatching(/\/provider$/),
+    ]);
+    expect(showSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'User saved, but they cannot record forms yet',
+      subtitle: 'Provider service unavailable Open them from the list and save to try again.',
+    });
+    await waitFor(() => expect(listLoads()).toBeGreaterThan(loadsBefore));
+  });
+
+  it('gives a user without a provider one when they are saved', async () => {
+    const writes = backend(undefined, { withoutProvider: ['grace'] });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByLabelText('Family name');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
+    expect(writes).toHaveLength(2);
+    expect(writes[0].url).toMatch(/\/user\/grace$/);
+    expect(writes[1]).toEqual({
+      url: expect.stringMatching(/\/provider$/),
+      method: 'POST',
+      body: { person: 'grace-person', identifier: 'grace' },
+    });
+  });
+
+  it('restores the provider of a user whose only provider is retired when they are saved', async () => {
+    const writes = backend(undefined, { retiredProvider: ['grace'] });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
+    expect(writes).toHaveLength(2);
+    expect(writes[0].url).toMatch(/\/user\/grace$/);
+    expect(writes[1]).toEqual({
+      url: expect.stringMatching(/\/provider\/grace-provider$/),
+      method: 'POST',
+      body: { retired: false },
+    });
+  });
+
+  it("shows the error, not a missing provider, when looking up an edited user's provider fails", async () => {
+    backend();
+    const serve = vi.mocked(openmrsFetch).getMockImplementation();
+    vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: object) =>
+      /\/provider\?user=/.test(url)
+        ? Promise.reject(Object.assign(new Error('503'), { responseBody: { error: { message: 'Server busy' } } }))
+        : serve(url, init)) as never);
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Server busy')).toBeInTheDocument();
+    expect(showSnackbar).not.toHaveBeenCalled();
+    expect(closeWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('says an edited user was saved when only their provider could not be', async () => {
+    backend('Provider service unavailable', { withoutProvider: ['grace'], failing: /\/provider$/ });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'error', title: 'User saved, but they cannot record forms yet' }),
+    );
+  });
+
+  it('reloads the users when an edit fails, as part of it may have saved', async () => {
+    backend('Could not save the roles', { failing: /\/user\/grace$/ });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByLabelText('Family name');
+    await userEvent.clear(screen.getByLabelText('Family name'));
+    await userEvent.type(screen.getByLabelText('Family name'), 'Akello');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    const loadsBefore = listLoads();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Could not save the roles')).toBeInTheDocument();
+    await waitFor(() => expect(listLoads()).toBeGreaterThan(loadsBefore));
+    expect(closeWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('does not reload the users when adding one fails before anything is saved', async () => {
+    backend('Username already in use', { failing: /\/user$/ });
+    await signInAs(SA);
+    renderWorkspace();
+
+    await fillNewUser();
+    const loadsBefore = listLoads();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Username already in use')).toBeInTheDocument();
+    expect(listLoads()).toBe(loadsBefore);
   });
 
   it('asks for a role, a clinic and matching passwords before it saves', async () => {
@@ -116,7 +239,8 @@ describe('User form workspace', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Akunalaber HCIII' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(writes).toHaveLength(2));
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
+    expect(writes).toHaveLength(2);
     expect(writes[0]).toEqual({
       url: expect.stringMatching(/\/person\/grace-person\/name\/grace-name$/),
       method: 'POST',
@@ -143,7 +267,8 @@ describe('User form workspace', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Akunalaber HCIII' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(writes).toHaveLength(1));
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
+    expect(writes).toHaveLength(1);
     expect(writes[0].body).toEqual({
       roles: [CC],
       userProperties: {

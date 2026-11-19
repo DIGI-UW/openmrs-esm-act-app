@@ -130,9 +130,32 @@ export interface UserForm {
   clinics: Array<string>;
 }
 
+/** The user was saved, but their provider was not, so they cannot record forms until they are saved again. */
+export class ProviderNotCreated extends Error {
+  constructor(readonly reason: unknown) {
+    super('The provider was not created');
+  }
+}
+
+async function providerStep(step: () => Promise<unknown>) {
+  try {
+    await step();
+  } catch (e) {
+    throw new ProviderNotCreated(e);
+  }
+}
+
+function createProvider(personUuid: string, username: string) {
+  return openmrsFetch(`${restBaseUrl}/provider`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { person: personUuid, identifier: username },
+  });
+}
+
 /**
- * Creates a user with their person and, so they can record forms, a provider; or saves an existing user's name,
- * roles and clinics, keeping their other properties, as the server holds them now, such as the default location.
+ * Creates a user with their person and a provider, so they can record forms; or saves an existing user's name,
+ * roles and clinics over the properties the server holds now, restoring or adding a provider if none is active.
  */
 export async function saveUser(form: UserForm, existing?: ActUser) {
   const clinics = form.clinics.join(',');
@@ -151,11 +174,7 @@ export async function saveUser(form: UserForm, existing?: ActUser) {
         userProperties: { [CLINICS_PROPERTY]: clinics },
       },
     });
-    await openmrsFetch(`${restBaseUrl}/provider`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: { person: created.person.uuid, identifier: form.username.trim() },
-    });
+    await providerStep(() => createProvider(created.person.uuid, form.username.trim()));
     return created.uuid;
   }
   const name = existing.person.preferredName;
@@ -178,6 +197,23 @@ export async function saveUser(form: UserForm, existing?: ActUser) {
       userProperties: { ...(current.userProperties ?? {}), [CLINICS_PROPERTY]: clinics },
     },
   });
+  // The search returns retired providers too, and a retired one cannot record forms.
+  const { data: providers } = await openmrsFetch<{ results: Array<{ uuid: string; retired: boolean }> }>(
+    `${restBaseUrl}/provider?user=${existing.uuid}&v=custom:(uuid,retired)`,
+  );
+  if (!providers.results.some((provider) => !provider.retired)) {
+    const retired = providers.results[0];
+    // Unretire rather than add one, so their encounters before and after stay with one provider.
+    await providerStep(() =>
+      retired
+        ? openmrsFetch(`${restBaseUrl}/provider/${retired.uuid}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: { retired: false },
+          })
+        : createProvider(existing.person.uuid, existing.username),
+    );
+  }
   return existing.uuid;
 }
 

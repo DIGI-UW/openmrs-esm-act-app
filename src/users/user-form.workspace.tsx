@@ -17,6 +17,7 @@ import { restErrorMessage } from '../rest-error-message';
 import {
   type ActUser,
   clinicsOf,
+  ProviderNotCreated,
   roleLabel,
   saveUser,
   type UserForm,
@@ -92,6 +93,19 @@ function UserFormBody({ user, mutate, closeWorkspace }: UserFormBodyProps) {
       mutate();
       closeWorkspace({ discardUnsavedChanges: true });
     } catch (e) {
+      // An edit, or an add that created the user, may have saved before it failed.
+      if (user || e instanceof ProviderNotCreated) {
+        mutate();
+      }
+      if (e instanceof ProviderNotCreated) {
+        showSnackbar({
+          kind: 'error',
+          title: t('userSavedWithoutProvider', 'User saved, but they cannot record forms yet'),
+          subtitle: `${restErrorMessage(e.reason)} ${t('saveUserAgainToFinish', 'Open them from the list and save to try again.')}`,
+        });
+        closeWorkspace({ discardUnsavedChanges: true });
+        return;
+      }
       setSaveError(restErrorMessage(e));
     } finally {
       setSaving(false);
