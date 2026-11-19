@@ -121,7 +121,7 @@ describe('clinic limit', () => {
   });
 
   it("keeps the programme report's facility rows, which the server holds to the clinics sent", () => {
-    // A cardiac clinic's patients come back under their primary care clinics, which are not among its names.
+    // A cardiac clinic's patients come back under primary care clinics the administrator does not hold.
     const facilities = [{ facility: 'Acimi HCIII' }, { facility: 'Lira HCIII' }];
     expect(limitRows(facilities, { status: 'ready', uuids: [ACIMI], names: ['Acimi HCIII'] })).toEqual(facilities);
   });

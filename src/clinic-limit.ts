@@ -79,7 +79,7 @@ export function useClinicLimit(): ClinicLimit {
 
 /**
  * The rows of the clinics a limited administrator is held to: those whose cardiac or primary care clinic is one of
- * them. A report with neither column, such as a count, which is sent the clinics instead, is left as it is.
+ * them. A report with neither column, such as a count or the programme report, is sent the clinics instead.
  */
 export function limitRows(rows: Array<ReportRow>, limit: ClinicLimit) {
   if (limit.status === 'none') {

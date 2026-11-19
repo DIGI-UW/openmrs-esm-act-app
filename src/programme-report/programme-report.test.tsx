@@ -218,7 +218,7 @@ describe('Reports', () => {
 
     renderPage();
 
-    await screen.findAllByTestId('report-tile');
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients0'));
     expect(reportCalls(programmeUuid())).toHaveLength(0);
   });
 
@@ -325,7 +325,8 @@ describe('Reports', () => {
 
     renderPage();
 
-    await screen.findAllByTestId('report-tile');
+    // Wait for the scope, so a skeleton tile can only mean the limit is still pending.
+    await screen.findByRole('combobox', { name: 'Cardiac clinic' });
     expect(reportCalls(programmeUuid())).toHaveLength(0);
     // The tiles wait for the limit rather than reading 0.
     expect(tile('Active patients')).toHaveTextContent(/^Active patients$/);
