@@ -48,8 +48,8 @@ type Call = { url: string; method: string; body: unknown };
 type ServerUser = ReturnType<typeof user>;
 
 /**
- * The server: users (`current` where its properties differ from `list`), roles, clinics and a provider each, none for
- * `withoutProvider` and a retired one for `retiredProvider`; writes are recorded, and those `failing` matches throw `fails`.
+ * The server: users (`current` where their properties differ from `list`), roles, clinics and a provider each, none
+ * for `withoutProvider` and retired for `retiredProvider`; writes are recorded, those `failing` matches throw `fails`.
  */
 export function backend(
   fails?: string,

@@ -137,7 +137,7 @@ export class ProviderNotCreated extends Error {
   }
 }
 
-async function ensureProvider(step: () => Promise<unknown>) {
+async function providerStep(step: () => Promise<unknown>) {
   try {
     await step();
   } catch (e) {
@@ -174,7 +174,7 @@ export async function saveUser(form: UserForm, existing?: ActUser) {
         userProperties: { [CLINICS_PROPERTY]: clinics },
       },
     });
-    await ensureProvider(() => createProvider(created.person.uuid, form.username.trim()));
+    await providerStep(() => createProvider(created.person.uuid, form.username.trim()));
     return created.uuid;
   }
   const name = existing.person.preferredName;
@@ -197,7 +197,7 @@ export async function saveUser(form: UserForm, existing?: ActUser) {
       userProperties: { ...(current.userProperties ?? {}), [CLINICS_PROPERTY]: clinics },
     },
   });
-  await ensureProvider(async () => {
+  await providerStep(async () => {
     // The search returns retired providers too, and a retired one cannot record forms.
     const { data: providers } = await openmrsFetch<{ results: Array<{ retired: boolean }> }>(
       `${restBaseUrl}/provider?user=${existing.uuid}&v=custom:(retired)`,

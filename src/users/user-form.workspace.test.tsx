@@ -28,6 +28,18 @@ function renderWorkspace(userUuid?: string) {
   );
 }
 
+/** Fills the Add form for Sarah Apio, a Data Clerk at Acimi. */
+async function fillNewUser() {
+  await userEvent.type(screen.getByLabelText('Given name'), 'Sarah');
+  await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
+  await userEvent.click(screen.getByText('Female'));
+  await userEvent.type(screen.getByLabelText('Username'), 'sapio');
+  await userEvent.type(screen.getByLabelText('Password'), 'Welcome123');
+  await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
+  await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
+}
+
 const listLoads = () => vi.mocked(openmrsFetch).mock.calls.filter(([url]) => String(url).includes('/user?')).length;
 
 describe('User form workspace', () => {
@@ -63,14 +75,7 @@ describe('User form workspace', () => {
     await signInAs(SA);
     renderWorkspace();
 
-    await userEvent.type(screen.getByLabelText('Given name'), 'Sarah');
-    await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
-    await userEvent.click(screen.getByText('Female'));
-    await userEvent.type(screen.getByLabelText('Username'), 'sapio');
-    await userEvent.type(screen.getByLabelText('Password'), 'Welcome123');
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
+    await fillNewUser();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(writes).toHaveLength(2));
@@ -97,14 +102,7 @@ describe('User form workspace', () => {
     await signInAs(SA);
     renderWorkspace();
 
-    await userEvent.type(screen.getByLabelText('Given name'), 'Sarah');
-    await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
-    await userEvent.click(screen.getByText('Female'));
-    await userEvent.type(screen.getByLabelText('Username'), 'sapio');
-    await userEvent.type(screen.getByLabelText('Password'), 'Welcome123');
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
+    await fillNewUser();
     const loadsBefore = listLoads();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -187,14 +185,7 @@ describe('User form workspace', () => {
     await signInAs(SA);
     renderWorkspace();
 
-    await userEvent.type(screen.getByLabelText('Given name'), 'Sarah');
-    await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
-    await userEvent.click(screen.getByText('Female'));
-    await userEvent.type(screen.getByLabelText('Username'), 'sapio');
-    await userEvent.type(screen.getByLabelText('Password'), 'Welcome123');
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
+    await fillNewUser();
     const loadsBefore = listLoads();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
