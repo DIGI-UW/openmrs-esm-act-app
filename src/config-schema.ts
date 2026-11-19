@@ -924,6 +924,72 @@ export const configSchema = {
       _description:
         "The concept of the workflow's Deceased state, which also marks the person dead as Mark patient deceased did.",
     },
+    relocationConcept: {
+      _type: Type.UUID,
+      _default: '7eea66ed-4405-5e56-8c4a-4585d59c5478',
+      _description:
+        "The concept of the workflow's Physical relocation state, for which the update asks where the patient went.",
+    },
+    encounterType: {
+      _type: Type.UUID,
+      _default: 'ffdc883f-f99f-496a-83f9-2c3c581e1af0',
+      _description:
+        "The encounter type that keeps the answers the update records with a status (a death's cause and details, whether a woman was pregnant or postpartum at death, and where a relocated patient went): they go on the patient's latest encounter of it, as ACT 2.0 kept them on RHD Patient Information, or on a new one under the form when the patient has none.",
+    },
+    form: {
+      _type: Type.UUID,
+      _default: 'a6646c51-130d-3b59-a442-959bea93487d',
+      _description:
+        'The form a new encounter of that type is recorded under, so the chart opens it as RHD Patient Information.',
+    },
+    concepts: {
+      causeOfDeath: {
+        _type: Type.UUID,
+        _default: '409f09ab-9a03-5c81-8d04-0e970531765b',
+        _description:
+          "The Cause of Death question, as RHD Patient Information asked it; the answer is also the person's coded cause of death.",
+      },
+      detailsOfDeath: {
+        _type: Type.UUID,
+        _default: 'a4d27e8c-0c90-571f-be54-a6132c7a1d69',
+        _description: 'The Details of Death question, as RHD Patient Information asked it.',
+      },
+      pregnantOrPostpartumAtDeath: {
+        _type: Type.UUID,
+        _default: '4e66ea66-6bac-5a83-93be-3c2c8aabf49f',
+        _description:
+          'The Pregnant or Postpartum at Death question, which a woman who died must have answered, as on RHD Patient Information.',
+      },
+      relocationArea: {
+        _type: Type.UUID,
+        _default: '32f3e45d-c2a8-5c19-b4d1-9306251426f6',
+        _description: 'The Relocation Area question, as RHD Patient Information asked it.',
+      },
+      yes: { _type: Type.UUID, _default: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', _description: 'The Yes answer.' },
+      no: { _type: Type.UUID, _default: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', _description: 'The No answer.' },
+    },
+    causesOfDeath: {
+      _type: Type.Array,
+      _elements: {
+        uuid: { _type: Type.UUID, _description: 'The cause answer.' },
+        label: { _type: Type.String, _description: 'The choice as the update shows it.' },
+      },
+      _default: [
+        { uuid: '04477cd8-be14-5f8d-bf25-9acdc37f8f37', label: 'Adverse drug reaction' },
+        { uuid: 'f149b958-f9b1-5df7-bd36-c6a97c1954c6', label: 'Anticoagulation related hemorrhage' },
+        { uuid: '0198e8a2-c475-58d7-b19b-a6391db1bc27', label: 'Arrhythmia' },
+        { uuid: '91a4d13f-4bc8-54b0-a107-f4ab84cb7d60', label: 'Catheterization' },
+        { uuid: '27f70da6-ee9e-5919-8b68-9977312f9ada', label: 'Heart failure' },
+        { uuid: '116128AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Malaria' },
+        { uuid: '490b4f2a-2421-56d3-b35e-c5c1c2e86ad2', label: 'RHD - endocarditis' },
+        { uuid: '58c4ddcb-4c29-5099-9b50-1ed234567c19', label: 'RHD - other' },
+        { uuid: '41b1a801-9d9d-5687-9de5-39e89c73c8c7', label: 'Stroke' },
+        { uuid: '69a18712-03ce-5ac0-af10-b08602085043', label: 'Trauma' },
+        { uuid: 'bea38eeb-60e2-5409-b89e-3d9ac08c660b', label: 'Within 30-days of cardiac surgery' },
+      ],
+      _description:
+        "The causes of death the update offers, as RHD Patient Information's Cause of Death list on ACT 2.0.",
+    },
   },
   actIdentifierType: {
     _type: Type.UUID,
@@ -1178,7 +1244,18 @@ export interface Config {
   };
   nextSteps: { enabled: boolean };
   prophylaxisCard: { bpgForm: string; oralForm: string };
-  patientStatus: { programUuid: string; deathConcept: string };
+  patientStatus: {
+    programUuid: string;
+    deathConcept: string;
+    relocationConcept: string;
+    encounterType: string;
+    form: string;
+    concepts: Record<
+      'causeOfDeath' | 'detailsOfDeath' | 'pregnantOrPostpartumAtDeath' | 'relocationArea' | 'yes' | 'no',
+      string
+    >;
+    causesOfDeath: Array<{ uuid: string; label: string }>;
+  };
   prophylaxisUpdate: {
     encounterType: string;
     concepts: Record<
