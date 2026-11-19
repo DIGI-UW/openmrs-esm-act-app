@@ -1104,7 +1104,7 @@ describe('Dashboard', () => {
     expect(texts('dashboard-tile').slice(0, 2)).toEqual(['0Registeredevery status', '0Activeenrolled and alive']);
   });
 
-  it("evaluates no count while a clinic-limited administrator's clinics are read", async () => {
+  it("evaluates no registrant, waitlist or screening count while a clinic-limited administrator's clinics are read", async () => {
     await signIn(undefined, {}, undefined, 'gulu');
     const answer = vi.mocked(openmrsFetch).getMockImplementation();
     vi.mocked(openmrsFetch).mockImplementation(((url: string, ...rest: Array<unknown>) =>
