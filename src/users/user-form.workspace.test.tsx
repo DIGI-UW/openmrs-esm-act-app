@@ -137,7 +137,7 @@ describe('User form workspace', () => {
     });
   });
 
-  it('gives a user whose only provider is retired a new one when they are saved', async () => {
+  it('restores the provider of a user whose only provider is retired when they are saved', async () => {
     const writes = backend(undefined, { retiredProvider: ['grace'] });
     await signInAs(IA, ['Task: act.allClinics']);
     renderWorkspace('grace');
@@ -145,10 +145,30 @@ describe('User form workspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
-    expect(writes.map((write) => write.url)).toEqual([
-      expect.stringMatching(/\/user\/grace$/),
-      expect.stringMatching(/\/provider$/),
-    ]);
+    expect(writes).toHaveLength(2);
+    expect(writes[0].url).toMatch(/\/user\/grace$/);
+    expect(writes[1]).toEqual({
+      url: expect.stringMatching(/\/provider\/grace-provider$/),
+      method: 'POST',
+      body: { retired: false },
+    });
+  });
+
+  it("shows the error, not a missing provider, when looking up an edited user's provider fails", async () => {
+    backend();
+    const serve = vi.mocked(openmrsFetch).getMockImplementation();
+    vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: object) =>
+      /\/provider\?user=/.test(url)
+        ? Promise.reject(Object.assign(new Error('503'), { responseBody: { error: { message: 'Server busy' } } }))
+        : serve(url, init)) as never);
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Server busy')).toBeInTheDocument();
+    expect(showSnackbar).not.toHaveBeenCalled();
+    expect(closeWorkspace).not.toHaveBeenCalled();
   });
 
   it('says an edited user was saved when only their provider could not be', async () => {

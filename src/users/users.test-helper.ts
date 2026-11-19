@@ -93,7 +93,9 @@ export function backend(
     const providerOf = /\/provider\?user=([^&]+)/.exec(url)?.[1];
     if (providerOf) {
       const retired = retiredProvider.includes(providerOf);
-      return { data: { results: withoutProvider.includes(providerOf) ? [] : [{ retired }] } };
+      return {
+        data: { results: withoutProvider.includes(providerOf) ? [] : [{ uuid: `${providerOf}-provider`, retired }] },
+      };
     }
     const role = /\/role\/([^?]+)/.exec(url)?.[1];
     if (role) {
