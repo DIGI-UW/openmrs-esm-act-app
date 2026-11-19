@@ -23,6 +23,7 @@ import { CareCascadeCard } from '../act-home/care-cascade.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
 import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
+import { useCountParams } from '../dashboard/dashboard-figure';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
 import { ReportCatalogueCard } from '../report-view/report-catalogue-card.component';
 import { TableEmptyState } from '../table-filters/empty-state.component';
@@ -175,7 +176,10 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
     }),
     [period, scope],
   );
-  const { rows, isLoading, error } = useReportDataset(scope ? programmeReport.report : null, params);
+  const { counted, countParams, pending } = useCountParams(params);
+  const programme = useReportDataset(scope && counted ? programmeReport.report : null, countParams);
+  const { rows, error } = programme;
+  const isLoading = programme.isLoading || pending;
   const limit = useClinicLimit();
   const scopeClinics = [scope?.cardiacClinic, scope?.primaryCareClinic].filter(Boolean);
   // The cascade report cannot be held to clinics, so a limited user sees it only at their own.

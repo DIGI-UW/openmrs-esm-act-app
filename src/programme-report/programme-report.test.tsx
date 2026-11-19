@@ -203,6 +203,25 @@ describe('Reports', () => {
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 
+  it("sends a limited administrator's clinics with the programme report, as the server holds the rows to them", async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'ready', uuids: ['gulu', 'acimi'], names: ['Gulu RRH', 'Acimi HCIII'] });
+
+    renderPage();
+
+    await waitFor(() => expect(lastParams()).toEqual(expect.objectContaining({ clinics: 'gulu,acimi' })));
+  });
+
+  it('evaluates no programme report for a limited administrator whose account holds no clinic', async () => {
+    await atLocation(['Visit Location']);
+    limitTo({ status: 'ready', uuids: [], names: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients0'));
+    expect(reportCalls(programmeUuid())).toHaveLength(0);
+  });
+
   it('draws no care cascade for a limited administrator when the page is at every clinic', async () => {
     await atLocation(['Visit Location']);
     limitTo({ status: 'ready', uuids: ['gulu', 'acimi'], names: ['Gulu RRH', 'Acimi HCIII'] });
@@ -221,7 +240,7 @@ describe('Reports', () => {
 
     renderPage();
 
-    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients0'));
     expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
@@ -265,7 +284,7 @@ describe('Reports', () => {
 
     renderPage();
 
-    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients0'));
     expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
@@ -306,7 +325,11 @@ describe('Reports', () => {
 
     renderPage();
 
-    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
+    // Wait for the scope, so a skeleton tile can only mean the limit is still pending.
+    await screen.findByRole('combobox', { name: 'Cardiac clinic' });
+    expect(reportCalls(programmeUuid())).toHaveLength(0);
+    // The tiles wait for the limit rather than reading 0.
+    expect(tile('Active patients')).toHaveTextContent(/^Active patients$/);
     expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
     expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
