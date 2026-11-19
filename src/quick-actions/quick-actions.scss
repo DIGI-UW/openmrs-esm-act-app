@@ -66,6 +66,14 @@
   color: $text-02;
 }
 
+// Pushed to the tile's foot, so the footers of a row line up whatever the subtitles' length.
+.footer {
+  @include type.type-style('label-01');
+  margin-top: auto;
+  padding-top: layout.$spacing-03;
+  @include brand-01(color);
+}
+
 // Enter prophylaxis's forms open over the page under its tile, so the tiles beside it keep their height.
 .choice {
   position: relative;

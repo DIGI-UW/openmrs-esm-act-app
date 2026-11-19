@@ -178,10 +178,32 @@ describe('Reports', () => {
 
     renderPage();
 
-    const link = await screen.findByRole('link', { name: 'Visits' });
+    const link = await screen.findByRole('link', { name: /^Visits/ });
     expect(link).toHaveAttribute('href', expect.stringContaining('/home/act-report?report=visits'));
-    expect(screen.getByRole('link', { name: 'Encounters' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'INR monitoring' })).toBeInTheDocument();
+    expect(
+      within(link).getByText('Each RHD clinic visit in a period, with its encounters and the patient.'),
+    ).toBeVisible();
+    expect(within(link).getByText('Opens as a table · Download CSV')).toBeVisible();
+    expect(screen.getByRole('link', { name: /^Encounters/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^INR monitoring/ })).toBeInTheDocument();
+    expect(screen.queryByText(/these tables show/i)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      ['acimi', 'lira'],
+      ['Acimi HCIII', 'Lira HCIII'],
+      "These tables show your clinics' rows: Acimi HCIII, Lira HCIII.",
+    ],
+    [[], [], 'Your account holds no clinic, so these tables show no rows.'],
+    [['acimi'], [], 'Your clinics could not be read, so these tables show no rows.'],
+  ])('tells a limited administrator with clinics %j whose rows the reports hold', async (uuids, names, line) => {
+    await atLocation(['RHD Tertiary']);
+    limitTo({ status: 'ready', uuids, names });
+
+    renderPage();
+
+    expect(await screen.findByText(line)).toBeInTheDocument();
   });
 
   it('offers no report list on Facility reports', async () => {
@@ -391,7 +413,7 @@ describe('Reports', () => {
     renderPage();
 
     expect(await screen.findByText('Could not load the report')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Visits' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Visits/ })).toBeInTheDocument();
   });
 
   it("lets the clinic be changed, starting at the session location's, as ACT 2.0's dashboard did", async () => {

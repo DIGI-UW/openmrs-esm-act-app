@@ -40,15 +40,14 @@
   justify-self: start;
 }
 
+// A column, not a grid: a grid item's stretched height would become the height of every tile in its row.
 .catalogue {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: layout.$spacing-03;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
-.catalogueItem {
-  display: grid;
-  gap: layout.$spacing-01;
+.heldTo {
+  @include type.type-style('body-compact-01');
+  margin-bottom: layout.$spacing-03;
 }
