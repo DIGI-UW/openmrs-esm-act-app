@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { fetchAll } from '../fetch-all';
 
 export interface Enrolment {
   uuid: string;
@@ -32,12 +33,20 @@ interface Person {
   dead: boolean;
   deathDate: string | null;
   birthdate: string | null;
+  gender: string | null;
 }
 
 export interface StatusOption {
   uuid: string;
   name: string;
+  concept: string;
   death: boolean;
+}
+
+/** An answer recorded with the status, under the question's concept: a coded answer's uuid, or text. */
+export interface StatusAnswer {
+  concept: string;
+  value: string;
 }
 
 const enrolmentRepresentation =
@@ -74,7 +83,12 @@ export function terminalStatesOf(program: Program, deathConcept: string): Array<
     .filter((workflow) => !workflow.retired)
     .flatMap((workflow) => workflow.states)
     .filter((one) => one.terminal && !one.retired)
-    .map((one) => ({ uuid: one.uuid, name: one.concept.display, death: one.concept.uuid === deathConcept }));
+    .map((one) => ({
+      uuid: one.uuid,
+      name: one.concept.display,
+      concept: one.concept.uuid,
+      death: one.concept.uuid === deathConcept,
+    }));
 }
 
 /**
@@ -117,7 +131,7 @@ export function usePatientStatus(patientUuid: string | null, programUuid: string
     (url: string) => openmrsFetch<Program>(url).then((response) => response.data),
   );
   const person = useSWR<Person, Error>(
-    patientUuid ? `${restBaseUrl}/person/${patientUuid}?v=custom:(dead,deathDate,birthdate)` : null,
+    patientUuid ? `${restBaseUrl}/person/${patientUuid}?v=custom:(dead,deathDate,birthdate,gender)` : null,
     (url: string) => openmrsFetch<Person>(url).then((response) => response.data),
   );
   return {
@@ -132,12 +146,55 @@ export function usePatientStatus(patientUuid: string | null, programUuid: string
 /** A date as the server takes it: today as the present moment, so that a clock ahead of the server's is not the future. */
 const serverDate = (date: string) => (dayjs(date).isSame(dayjs(), 'day') ? new Date().toISOString() : date);
 
-/** Marks the person dead on the date with a cause in words, which core requires of a dead person. */
-export async function markDead(personUuid: string, deathDate: string, cause: string) {
+/** Marks the person dead on the date with a coded cause, which core requires of a dead person. */
+export async function markDead(personUuid: string, deathDate: string, causeConcept: string) {
   await openmrsFetch(`${restBaseUrl}/person/${personUuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: { dead: true, deathDate: serverDate(deathDate), causeOfDeathNonCoded: cause },
+    body: { dead: true, deathDate: serverDate(deathDate), causeOfDeath: causeConcept },
+  });
+}
+
+/** The patient's latest encounter of the type, which keeps the status answers, or null when there is none. */
+export async function latestEncounterOf(patientUuid: string, encounterType: string) {
+  const encounters = await fetchAll<{ uuid: string; encounterDatetime: string }>(
+    `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=custom:(uuid,encounterDatetime)`,
+  );
+  return [...encounters].sort((a, b) => b.encounterDatetime.localeCompare(a.encounterDatetime))[0] ?? null;
+}
+
+/**
+ * Saves the answers recorded with a status, each dated with the status change, on the patient's latest encounter of
+ * the type, as ACT 2.0 kept them on Patient Information; a patient with no encounter of the type gets one under the
+ * form, so the chart opens it as that form.
+ */
+export async function saveStatusAnswers({
+  patient,
+  encounterType,
+  form,
+  location,
+  date,
+  answers,
+}: {
+  patient: string;
+  encounterType: string;
+  form: string;
+  location: string | null;
+  date: string;
+  answers: Array<StatusAnswer>;
+}) {
+  const obsDatetime = serverDate(date);
+  const obs = answers.map((one) => ({ concept: one.concept, person: patient, value: one.value, obsDatetime }));
+  const headers = { 'Content-Type': 'application/json' };
+  const latest = await latestEncounterOf(patient, encounterType);
+  if (latest) {
+    await openmrsFetch(`${restBaseUrl}/encounter/${latest.uuid}`, { method: 'POST', headers, body: { obs } });
+    return;
+  }
+  await openmrsFetch(`${restBaseUrl}/encounter`, {
+    method: 'POST',
+    headers,
+    body: { patient, encounterType, form, encounterDatetime: obsDatetime, obs, ...(location ? { location } : {}) },
   });
 }
 
