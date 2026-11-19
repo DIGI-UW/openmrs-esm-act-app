@@ -7,6 +7,8 @@ export interface QuickActionTileProps {
   label: string;
   Icon: typeof Add;
   subtitle?: string;
+  /** A last line set apart from the subtitle, seen but not read out: the page says it once for every tile. */
+  footer?: string;
   /** Where a link tile leads; without it, the tile is a button. */
   to?: string;
   onClick?: () => void;
@@ -14,7 +16,7 @@ export interface QuickActionTileProps {
 }
 
 /** One quick action, as every home draws it: an icon over its label and subtitle, as a link or a button. */
-export function QuickActionTile({ label, Icon, subtitle, to, onClick, expanded }: QuickActionTileProps) {
+export function QuickActionTile({ label, Icon, subtitle, footer, to, onClick, expanded }: QuickActionTileProps) {
   const content = (
     <>
       <span className={styles.icon}>
@@ -22,6 +24,11 @@ export function QuickActionTile({ label, Icon, subtitle, to, onClick, expanded }
       </span>
       <span className={styles.label}>{label}</span>
       {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
+      {footer && (
+        <span className={styles.footer} aria-hidden="true">
+          {footer}
+        </span>
+      )}
     </>
   );
   if (to) {
