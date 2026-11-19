@@ -118,12 +118,11 @@ describe('clinic limit', () => {
     const counts = [{ step: 'Active', patients: 4 }];
     expect(limitRows(counts, { status: 'ready', uuids: [ACIMI], names: ['Acimi HCIII'] })).toEqual(counts);
     expect(limitRows(registryRows, { status: 'pending' })).toEqual([]);
-    expect(
-      limitRows([{ facility: 'Acimi HCIII' }, { facility: 'Lira HCIII' }], {
-        status: 'ready',
-        uuids: [ACIMI],
-        names: ['Acimi HCIII'],
-      }),
-    ).toEqual([{ facility: 'Acimi HCIII' }]);
+  });
+
+  it("keeps the programme report's facility rows, which the server holds to the clinics sent", () => {
+    // A cardiac clinic's patients come back under their primary care clinics, which are not among its names.
+    const facilities = [{ facility: 'Acimi HCIII' }, { facility: 'Lira HCIII' }];
+    expect(limitRows(facilities, { status: 'ready', uuids: [ACIMI], names: ['Acimi HCIII'] })).toEqual(facilities);
   });
 });

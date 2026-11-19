@@ -9,8 +9,8 @@ export const CLINICS_PROPERTY = 'actcore.clinics';
 /** Held by the instance and global administrators, who work with every clinic. */
 export const ALL_CLINICS_PRIVILEGE = 'Task: act.allClinics';
 
-/** The report columns that name a patient's clinics, or a row's clinic, by location name. */
-const clinicColumns = ['cardiac_clinic', 'primary_care_clinic', 'facility'] as const;
+/** The report columns that name a patient's clinics by location name. */
+const clinicColumns = ['cardiac_clinic', 'primary_care_clinic'] as const;
 
 /** The location uuids in a clinics property value, without blanks or repeats. */
 export function parseClinics(value: string | null | undefined): Array<string> {
@@ -78,8 +78,8 @@ export function useClinicLimit(): ClinicLimit {
 }
 
 /**
- * The rows of the clinics a limited administrator is held to: those whose cardiac clinic, primary care clinic or
- * facility is one of them. A report with none of those columns, such as a count, is left as it is.
+ * The rows of the clinics a limited administrator is held to: those whose cardiac or primary care clinic is one of
+ * them. A report with neither column, such as a count, which is sent the clinics instead, is left as it is.
  */
 export function limitRows(rows: Array<ReportRow>, limit: ClinicLimit) {
   if (limit.status === 'none') {
