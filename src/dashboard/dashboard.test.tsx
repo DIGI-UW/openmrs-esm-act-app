@@ -1087,6 +1087,8 @@ describe('Dashboard', () => {
     await screen.findAllByTestId('dashboard-tile');
     await vi.waitFor(() => expect(paramsOf(REGISTRANTS)).toEqual({ endDate: today, clinics: 'gulu,lira' }));
     expect(paramsOf(DASHBOARD_WAITLIST)).toEqual({ endDate: today, clinics: 'gulu,lira' });
+    expect(paramsOf(SCREENING)).toEqual({ endDate: today, clinics: 'gulu,lira' });
+    expect(paramsOf(DIAGNOSES)).toEqual({ endDate: today, clinics: 'gulu,lira' });
   });
 
   it('counts nobody for a clinic-limited administrator with no clinic on their account', async () => {
@@ -1097,10 +1099,12 @@ describe('Dashboard', () => {
     const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
     expect(evaluated).not.toContain(REGISTRANTS);
     expect(evaluated).not.toContain(DASHBOARD_WAITLIST);
+    expect(evaluated).not.toContain(SCREENING);
+    expect(evaluated).not.toContain(DIAGNOSES);
     expect(texts('dashboard-tile').slice(0, 2)).toEqual(['0Registeredevery status', '0Activeenrolled and alive']);
   });
 
-  it("evaluates no registrant or waitlist count while a clinic-limited administrator's clinics are read", async () => {
+  it("evaluates no count while a clinic-limited administrator's clinics are read", async () => {
     await signIn(undefined, {}, undefined, 'gulu');
     const answer = vi.mocked(openmrsFetch).getMockImplementation();
     vi.mocked(openmrsFetch).mockImplementation(((url: string, ...rest: Array<unknown>) =>
@@ -1111,6 +1115,8 @@ describe('Dashboard', () => {
     const evaluated = vi.mocked(useReportDataset).mock.calls.map(([report]) => report);
     expect(evaluated).not.toContain(REGISTRANTS);
     expect(evaluated).not.toContain(DASHBOARD_WAITLIST);
+    expect(evaluated).not.toContain(SCREENING);
+    expect(evaluated).not.toContain(DIAGNOSES);
     expect(texts('dashboard-tile')[0]).toBe('Registered');
   });
 
@@ -1128,6 +1134,8 @@ describe('Dashboard', () => {
       expect(paramsOf(REGISTRANTS)).toEqual({ endDate: today, cardiacClinic: 'arua', clinics: 'gulu,lira' }),
     );
     expect(paramsOf(DASHBOARD_WAITLIST)).toEqual({ endDate: today, cardiacClinic: 'arua', clinics: 'gulu,lira' });
+    expect(paramsOf(SCREENING)).toEqual({ endDate: today, cardiacClinic: 'arua', clinics: 'gulu,lira' });
+    expect(paramsOf(DIAGNOSES)).toEqual({ endDate: today, cardiacClinic: 'arua', clinics: 'gulu,lira' });
   });
 
   it('prints the procedures performed even when nobody is waiting', async () => {

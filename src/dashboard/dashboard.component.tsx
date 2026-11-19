@@ -594,8 +594,12 @@ function Figures({
   const optimisationReport = whileLimitRead(
     useReportDataset(counted ? dashboard.medicalOptimisationReport : null, countParams),
   );
-  const screeningReport = useReportDataset(dashboard.showScreening ? dashboard.screeningCascadeReport : null, params);
-  const diagnosesReport = useReportDataset(dashboard.showScreening ? dashboard.screeningDiagnosesReport : null, params);
+  const screeningReport = whileLimitRead(
+    useReportDataset(counted && dashboard.showScreening ? dashboard.screeningCascadeReport : null, countParams),
+  );
+  const diagnosesReport = whileLimitRead(
+    useReportDataset(counted && dashboard.showScreening ? dashboard.screeningDiagnosesReport : null, countParams),
+  );
 
   const measures = optimisationReport.rows
     .map((row: ReportRow) => {
