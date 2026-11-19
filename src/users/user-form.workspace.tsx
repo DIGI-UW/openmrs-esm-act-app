@@ -93,14 +93,15 @@ function UserFormBody({ user, mutate, closeWorkspace }: UserFormBodyProps) {
       mutate();
       closeWorkspace({ discardUnsavedChanges: true });
     } catch (e) {
-      mutate();
+      // An edit, or an add that created the user, may have saved before it failed.
+      if (user || e instanceof ProviderNotCreated) {
+        mutate();
+      }
       if (e instanceof ProviderNotCreated) {
         showSnackbar({
           kind: 'error',
-          title: t('userAddedWithoutProvider', 'User added, but they cannot record forms yet'),
-          subtitle: t('saveUserAgainToFinish', 'Open them from the list and save to try again. {{reason}}', {
-            reason: restErrorMessage(e.reason),
-          }),
+          title: t('userSavedWithoutProvider', 'User saved, but they cannot record forms yet'),
+          subtitle: `${restErrorMessage(e.reason)} ${t('saveUserAgainToFinish', 'Open them from the list and save to try again.')}`,
         });
         closeWorkspace({ discardUnsavedChanges: true });
         return;

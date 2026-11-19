@@ -48,9 +48,8 @@ type Call = { url: string; method: string; body: unknown };
 type ServerUser = ReturnType<typeof user>;
 
 /**
- * The server: `list` as the users, which a disable or enable changes, plus roles and clinics; each write recorded and
- * answered with `fails` if given, for the writes whose url `failing` matches. `current` holds a user's properties as
- * the server has them, where the list's differ. Every user has a provider except those in `withoutProvider`.
+ * The server: users (`current` where its properties differ from `list`), roles, clinics and a provider each, none for
+ * `withoutProvider` and a retired one for `retiredProvider`; writes are recorded, and those `failing` matches throw `fails`.
  */
 export function backend(
   fails?: string,
@@ -59,11 +58,13 @@ export function backend(
     current = {},
     failing = /./,
     withoutProvider = [],
+    retiredProvider = [],
   }: {
     list?: Array<ServerUser>;
     current?: Record<string, Record<string, string>>;
     failing?: RegExp;
     withoutProvider?: Array<string>;
+    retiredProvider?: Array<string>;
   } = {},
 ) {
   const writes: Array<Call> = [];
@@ -91,7 +92,8 @@ export function backend(
     }
     const providerOf = /\/provider\?user=([^&]+)/.exec(url)?.[1];
     if (providerOf) {
-      return { data: { results: withoutProvider.includes(providerOf) ? [] : [{ uuid: `${providerOf}-provider` }] } };
+      const retired = retiredProvider.includes(providerOf);
+      return { data: { results: withoutProvider.includes(providerOf) ? [] : [{ retired }] } };
     }
     const role = /\/role\/([^?]+)/.exec(url)?.[1];
     if (role) {

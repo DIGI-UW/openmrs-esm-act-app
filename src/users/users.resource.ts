@@ -130,10 +130,18 @@ export interface UserForm {
   clinics: Array<string>;
 }
 
-/** The user was created, but their provider was not, so they cannot record forms until they are saved again. */
+/** The user was saved, but their provider was not, so they cannot record forms until they are saved again. */
 export class ProviderNotCreated extends Error {
   constructor(readonly reason: unknown) {
     super('The provider was not created');
+  }
+}
+
+async function ensureProvider(step: () => Promise<unknown>) {
+  try {
+    await step();
+  } catch (e) {
+    throw new ProviderNotCreated(e);
   }
 }
 
@@ -146,9 +154,8 @@ function createProvider(personUuid: string, username: string) {
 }
 
 /**
- * Creates a user with their person and, so they can record forms, a provider; or saves an existing user's name,
- * roles and clinics, keeping their other properties, as the server holds them now, such as the default location,
- * and gives them a provider if they have none.
+ * Creates a user with their person and a provider, so they can record forms; or saves an existing user's name, roles
+ * and clinics over the properties the server holds now, giving them a provider if they have no active one.
  */
 export async function saveUser(form: UserForm, existing?: ActUser) {
   const clinics = form.clinics.join(',');
@@ -167,11 +174,7 @@ export async function saveUser(form: UserForm, existing?: ActUser) {
         userProperties: { [CLINICS_PROPERTY]: clinics },
       },
     });
-    try {
-      await createProvider(created.person.uuid, form.username.trim());
-    } catch (e) {
-      throw new ProviderNotCreated(e);
-    }
+    await ensureProvider(() => createProvider(created.person.uuid, form.username.trim()));
     return created.uuid;
   }
   const name = existing.person.preferredName;
@@ -194,12 +197,15 @@ export async function saveUser(form: UserForm, existing?: ActUser) {
       userProperties: { ...(current.userProperties ?? {}), [CLINICS_PROPERTY]: clinics },
     },
   });
-  const { data: providers } = await openmrsFetch<{ results: Array<{ uuid: string }> }>(
-    `${restBaseUrl}/provider?user=${existing.uuid}&v=custom:(uuid)`,
-  );
-  if (!providers.results.length) {
-    await createProvider(existing.person.uuid, existing.username);
-  }
+  await ensureProvider(async () => {
+    // The search returns retired providers too, and a retired one cannot record forms.
+    const { data: providers } = await openmrsFetch<{ results: Array<{ retired: boolean }> }>(
+      `${restBaseUrl}/provider?user=${existing.uuid}&v=custom:(retired)`,
+    );
+    if (!providers.results.some((provider) => !provider.retired)) {
+      await createProvider(existing.person.uuid, existing.username);
+    }
+  });
   return existing.uuid;
 }
 

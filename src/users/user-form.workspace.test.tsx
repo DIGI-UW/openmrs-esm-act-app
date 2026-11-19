@@ -28,6 +28,8 @@ function renderWorkspace(userUuid?: string) {
   );
 }
 
+const listLoads = () => vi.mocked(openmrsFetch).mock.calls.filter(([url]) => String(url).includes('/user?')).length;
+
 describe('User form workspace', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -90,8 +92,8 @@ describe('User form workspace', () => {
     });
   });
 
-  it('reloads the users and says the user was added when their provider could not be', async () => {
-    const writes = backend('Identifier already in use', { failing: /\/provider$/ });
+  it('reloads the users and says the user was saved when their provider could not be', async () => {
+    const writes = backend('Provider service unavailable', { failing: /\/provider$/ });
     await signInAs(SA);
     renderWorkspace();
 
@@ -103,7 +105,6 @@ describe('User form workspace', () => {
     await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
-    const listLoads = () => vi.mocked(openmrsFetch).mock.calls.filter(([url]) => String(url).includes('/user?')).length;
     const loadsBefore = listLoads();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -112,13 +113,11 @@ describe('User form workspace', () => {
       expect.stringMatching(/\/user$/),
       expect.stringMatching(/\/provider$/),
     ]);
-    expect(showSnackbar).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'error',
-        title: 'User added, but they cannot record forms yet',
-        subtitle: expect.stringContaining('Identifier already in use'),
-      }),
-    );
+    expect(showSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'User saved, but they cannot record forms yet',
+      subtitle: 'Provider service unavailable Open them from the list and save to try again.',
+    });
     await waitFor(() => expect(listLoads()).toBeGreaterThan(loadsBefore));
   });
 
@@ -131,10 +130,8 @@ describe('User form workspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
-    expect(writes.map((write) => write.url)).toEqual([
-      expect.stringMatching(/\/user\/grace$/),
-      expect.stringMatching(/\/provider$/),
-    ]);
+    expect(writes).toHaveLength(2);
+    expect(writes[0].url).toMatch(/\/user\/grace$/);
     expect(writes[1]).toEqual({
       url: expect.stringMatching(/\/provider$/),
       method: 'POST',
@@ -142,19 +139,67 @@ describe('User form workspace', () => {
     });
   });
 
-  it('reloads the users when a save fails, so a partly saved user shows', async () => {
-    backend('Identifier already in use', { withoutProvider: ['grace'], failing: /\/provider$/ });
+  it('gives a user whose only provider is retired a new one when they are saved', async () => {
+    const writes = backend(undefined, { retiredProvider: ['grace'] });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
+    expect(writes.map((write) => write.url)).toEqual([
+      expect.stringMatching(/\/user\/grace$/),
+      expect.stringMatching(/\/provider$/),
+    ]);
+  });
+
+  it('says an edited user was saved when only their provider could not be', async () => {
+    backend('Provider service unavailable', { withoutProvider: ['grace'], failing: /\/provider$/ });
+    await signInAs(IA, ['Task: act.allClinics']);
+    renderWorkspace('grace');
+    await screen.findByRole('checkbox', { name: 'Clinician' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'error', title: 'User saved, but they cannot record forms yet' }),
+    );
+  });
+
+  it('reloads the users when an edit fails, as part of it may have saved', async () => {
+    backend('Could not save the roles', { failing: /\/user\/grace$/ });
     await signInAs(IA, ['Task: act.allClinics']);
     renderWorkspace('grace');
     await screen.findByLabelText('Family name');
+    await userEvent.clear(screen.getByLabelText('Family name'));
+    await userEvent.type(screen.getByLabelText('Family name'), 'Akello');
     await screen.findByRole('checkbox', { name: 'Clinician' });
-    const listLoads = () => vi.mocked(openmrsFetch).mock.calls.filter(([url]) => String(url).includes('/user?')).length;
     const loadsBefore = listLoads();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(await screen.findByText('Identifier already in use')).toBeInTheDocument();
+    expect(await screen.findByText('Could not save the roles')).toBeInTheDocument();
     await waitFor(() => expect(listLoads()).toBeGreaterThan(loadsBefore));
     expect(closeWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('does not reload the users when adding one fails before anything is saved', async () => {
+    backend('Username already in use', { failing: /\/user$/ });
+    await signInAs(SA);
+    renderWorkspace();
+
+    await userEvent.type(screen.getByLabelText('Given name'), 'Sarah');
+    await userEvent.type(screen.getByLabelText('Family name'), 'Apio');
+    await userEvent.click(screen.getByText('Female'));
+    await userEvent.type(screen.getByLabelText('Username'), 'sapio');
+    await userEvent.type(screen.getByLabelText('Password'), 'Welcome123');
+    await userEvent.type(screen.getByLabelText('Confirm password'), 'Welcome123');
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Data Clerk' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Acimi HCIII' }));
+    const loadsBefore = listLoads();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Username already in use')).toBeInTheDocument();
+    expect(listLoads()).toBe(loadsBefore);
   });
 
   it('asks for a role, a clinic and matching passwords before it saves', async () => {
