@@ -7,7 +7,7 @@ export interface QuickActionTileProps {
   label: string;
   Icon: typeof Add;
   subtitle?: string;
-  /** A last line, set apart from the subtitle, saying what opening the tile gives. */
+  /** A last line set apart from the subtitle, seen but not read out: the page says it once for every tile. */
   footer?: string;
   /** Where a link tile leads; without it, the tile is a button. */
   to?: string;
@@ -24,7 +24,11 @@ export function QuickActionTile({ label, Icon, subtitle, footer, to, onClick, ex
       </span>
       <span className={styles.label}>{label}</span>
       {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
-      {footer && <span className={styles.footer}>{footer}</span>}
+      {footer && (
+        <span className={styles.footer} aria-hidden="true">
+          {footer}
+        </span>
+      )}
     </>
   );
   if (to) {

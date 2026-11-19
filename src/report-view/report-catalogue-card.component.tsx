@@ -1,4 +1,5 @@
 import React from 'react';
+import { type TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@carbon/react/icons';
 import { useConfig } from '@openmrs/esm-framework';
@@ -10,9 +11,8 @@ import tileStyles from '../quick-actions/quick-actions.scss';
 import { reportsFor } from './report-catalogue';
 import styles from './report-view.scss';
 
-/** Whose rows a limited administrator's tables show, or why they show none. */
-function useHeldTo(limit: ClinicLimit) {
-  const { t } = useTranslation();
+/** The sentence saying whose rows a limited administrator's tables show, or why they show none. */
+function clinicLine(limit: ClinicLimit, t: TFunction) {
   if (limit.status !== 'ready') {
     return null;
   }
@@ -22,7 +22,11 @@ function useHeldTo(limit: ClinicLimit) {
   if (!limit.names.length) {
     return t('reportsClinicsUnread', 'Your clinics could not be read, so these tables show no rows.');
   }
-  return `${t('reportsHeldTo', "These tables show your clinics' rows:")} ${limit.names.join(', ')}.`;
+  return t('reportsHeldTo', "These tables show your clinics' rows: {{clinics}}.", {
+    count: limit.names.length,
+    clinics: limit.names.join(', '),
+    interpolation: { escapeValue: false },
+  });
 }
 
 /** The Reports page's reports that open as a table, each a tile; nothing when none is offered. */
@@ -30,7 +34,7 @@ export function ReportCatalogueCard() {
   const { t } = useTranslation();
   const { reportCatalogue } = useConfig<Config>();
   const limit = useClinicLimit();
-  const heldTo = useHeldTo(limit);
+  const heldTo = clinicLine(limit, t);
   const entries = reportsFor(reportCatalogue, limit);
   if (!entries.length) {
     return null;

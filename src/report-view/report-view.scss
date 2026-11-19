@@ -48,7 +48,8 @@
 }
 
 // Lets the row stretch its tiles to one height, so their footers line up.
-.reportTiles > * {
+.tiles.reportTiles > *,
+.reportTiles > a {
   height: auto;
 }
 
