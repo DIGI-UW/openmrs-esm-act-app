@@ -1118,6 +1118,10 @@ describe('Dashboard', () => {
     expect(evaluated).not.toContain(SCREENING);
     expect(evaluated).not.toContain(DIAGNOSES);
     expect(texts('dashboard-tile')[0]).toBe('Registered');
+    // Fails if the screening reports lose whileLimitRead and the cascade shows its empty state.
+    expect(exportSection('screeningCascade')).not.toHaveTextContent('No patients to count');
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(exportSection('screeningCascade').querySelector('.cds--skeleton__text')).toBeInTheDocument();
   });
 
   it('holds a clinic-limited administrator to their clinics at a clinic chosen, too, such as one they are signed in at', async () => {
