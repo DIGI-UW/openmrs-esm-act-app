@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { type Config } from '../config-schema';
+import { useCountParams } from '../dashboard/dashboard-figure';
 import { useProgrammeScope } from '../programme-report/programme-scope';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import { useSessionClinicScope } from '../session-clinic';
@@ -12,8 +13,9 @@ import { cascadeSteps } from './care-cascade-steps';
 import styles from './care-cascade.scss';
 
 /**
- * The care cascade as of today at one clinic scope, the report's clinic parameters; `null` while the scope is not
- * known, when nothing is evaluated. ACT home and Reports draw it alike, so they count alike.
+ * The care cascade as of today at one clinic scope, the report's clinic parameters, and only over a limited
+ * administrator's own clinics; `null` while the scope is not known, when nothing is evaluated. ACT home and Reports
+ * draw it alike, so they count alike.
  */
 export function CareCascadeCard({
   scope,
@@ -39,10 +41,11 @@ export function CareCascadeCard({
     }),
     [today, cardiacClinic, primaryCareClinic],
   );
-  const report = useReportDataset(scope ? careCascade.report : null, params);
+  const { counted, countParams, pending } = useCountParams(params);
+  const report = useReportDataset(scope && counted ? careCascade.report : null, countParams);
   const { rows } = report;
   const error = report.error ?? (scopeError ? new Error('The session location could not be read') : undefined);
-  const isLoading = report.isLoading || (!scope && !scopeError);
+  const isLoading = report.isLoading || pending || (!scope && !scopeError);
   const steps = cascadeSteps(rows, careCascade.steps).map(({ step, label, value }) => ({
     step,
     label,
