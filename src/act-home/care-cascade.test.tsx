@@ -1,7 +1,9 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import CareCascade from './care-cascade.component';
@@ -30,6 +32,8 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
     ...value,
   });
 }
+
+const careCascadeReport = () => (getDefaultsFromConfigSchema(configSchema) as Config).careCascade.report;
 
 /** Signs in a site administrator held to these clinics (location uuids separated by commas). */
 async function limitedTo(clinics: string) {
@@ -109,22 +113,21 @@ describe('CareCascade', () => {
 
     render(<CareCascade />);
 
-    await waitFor(() => expect(mockUseReportDataset.mock.lastCall[1]).toHaveProperty('clinics'));
-    expect(mockUseReportDataset.mock.lastCall[1]).toEqual({
-      endDate: expect.any(String),
-      ...scope,
-      clinics: 'acimi',
-    });
+    await screen.findAllByTestId('cascade-step');
+    expect(mockUseReportDataset.mock.lastCall).toEqual([
+      careCascadeReport(),
+      { endDate: dayjs().format('YYYY-MM-DD'), ...scope, clinics: 'acimi' },
+    ]);
   });
 
   it('evaluates nothing for a limited administrator whose account holds no clinic', async () => {
-    dataset({ rows: cascade });
+    dataset({ rows: [] });
     await limitedTo('');
     atSessionLocation('Head office', [], 'head-office');
 
     render(<CareCascade />);
-    await new Promise((resolve) => setTimeout(resolve, 20));
 
+    expect(await screen.findByText('No care cascade data')).toBeInTheDocument();
     expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
   });
 

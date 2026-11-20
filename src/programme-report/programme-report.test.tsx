@@ -275,7 +275,8 @@ describe('Reports', () => {
     renderPage();
 
     await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients0'));
-    expect(screen.getByRole('heading', { name: 'Care cascade' })).toBeInTheDocument();
+    expect(screen.getByText('No care cascade data')).toBeInTheDocument();
+    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 

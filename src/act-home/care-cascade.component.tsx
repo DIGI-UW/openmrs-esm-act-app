@@ -13,9 +13,8 @@ import { cascadeSteps } from './care-cascade-steps';
 import styles from './care-cascade.scss';
 
 /**
- * The care cascade as of today at one clinic scope, the report's clinic parameters, and only over a limited
- * administrator's own clinics; `null` while the scope is not known, when nothing is evaluated. ACT home and Reports
- * draw it alike, so they count alike.
+ * The care cascade as of today at one clinic scope, counted over a limited administrator's clinics only; `null` while
+ * the scope is not known, when nothing is evaluated. ACT home and Reports draw it alike, so they count alike.
  */
 export function CareCascadeCard({
   scope,

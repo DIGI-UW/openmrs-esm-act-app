@@ -179,7 +179,6 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   const programme = useReportDataset(scope && counted ? programmeReport.report : null, countParams);
   const { rows, error } = programme;
   const isLoading = programme.isLoading || pending;
-  const showCascade = clinicFilters && !!scope;
 
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
@@ -257,7 +256,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
             ))}
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
-          {showCascade && <CareCascadeCard scope={scope} />}
+          {clinicFilters && scope && <CareCascadeCard scope={scope} />}
         </>
       )}
       {clinicFilters && <ReportCatalogueCard />}
