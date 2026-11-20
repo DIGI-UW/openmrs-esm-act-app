@@ -21,7 +21,6 @@ import { FacilityPictogram, isDesktop, useConfig, useLayoutType, useSession } fr
 import { ActHomeCard } from '../act-home/act-home-card.component';
 import { CareCascadeCard } from '../act-home/care-cascade.component';
 import { ActPageHeader } from '../act-page-header/act-page-header.component';
-import { useClinicLimit } from '../clinic-limit';
 import { type Config } from '../config-schema';
 import { useCountParams } from '../dashboard/dashboard-figure';
 import { useReportDataset, type ReportRow } from '../reports/report-dataset.resource';
@@ -180,14 +179,6 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
   const programme = useReportDataset(scope && counted ? programmeReport.report : null, countParams);
   const { rows, error } = programme;
   const isLoading = programme.isLoading || pending;
-  const limit = useClinicLimit();
-  const scopeClinics = [scope?.cardiacClinic, scope?.primaryCareClinic].filter(Boolean);
-  // The cascade report cannot be held to clinics, so a limited user sees it only at their own.
-  const showCascade =
-    clinicFilters &&
-    !!scope &&
-    limit.status !== 'pending' &&
-    (limit.status === 'none' || (!!scopeClinics.length && scopeClinics.every((uuid) => limit.uuids.includes(uuid))));
 
   const timed = sum(rows, 'bpg_timed');
   const tiles = [
@@ -265,7 +256,7 @@ function ProgrammeNumbers({ clinicFilters }: { clinicFilters: boolean }) {
             ))}
           </div>
           <ByFacilityTable rows={rows} isLoading={isLoading || !scope} />
-          {showCascade && <CareCascadeCard scope={scope} />}
+          {clinicFilters && scope && <CareCascadeCard scope={scope} />}
         </>
       )}
       {clinicFilters && <ReportCatalogueCard />}

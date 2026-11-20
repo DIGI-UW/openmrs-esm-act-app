@@ -1,7 +1,9 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { type Config, configSchema } from '../config-schema';
 import { atSessionLocation, homePrivilege, signInWith } from '../access/sign-in.test-helper';
 import { useReportDataset } from '../reports/report-dataset.resource';
 import CareCascade from './care-cascade.component';
@@ -29,6 +31,20 @@ function dataset(value: Partial<ReturnType<typeof useReportDataset>>) {
     mutate: vi.fn(),
     ...value,
   });
+}
+
+const careCascadeReport = () => (getDefaultsFromConfigSchema(configSchema) as Config).careCascade.report;
+
+/** Signs in a site administrator held to these clinics (location uuids separated by commas). */
+async function limitedTo(clinics: string) {
+  await signInWith(['App: act.registry', 'Edit Users']);
+  const session = vi.mocked(useSession)();
+  vi.mocked(useSession).mockReturnValue({
+    ...session,
+    user: { ...session.user, userProperties: { 'actcore.clinics': clinics } },
+  } as never);
+  vi.mocked(openmrsFetch).mockImplementation(((url: string) =>
+    Promise.resolve({ data: String(url).includes('?v=custom:(display)') ? { display: 'Acimi HCIII' } : {} })) as never);
 }
 
 describe('CareCascade', () => {
@@ -85,6 +101,34 @@ describe('CareCascade', () => {
     const [, params] = mockUseReportDataset.mock.lastCall;
     expect(Object.keys(params)).toEqual(['endDate']);
     expect(screen.queryByText(/Patients enrolled at/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['a location of neither kind', [], 'head-office', {}],
+    ['a cardiac clinic that is not theirs', ['RHD Tertiary'], 'uhi', { cardiacClinic: 'uhi' }],
+  ])("counts only a limited administrator's clinics at %s", async (_, tags, uuid, scope) => {
+    dataset({ rows: cascade });
+    await limitedTo('acimi');
+    atSessionLocation('Somewhere', tags, uuid);
+
+    render(<CareCascade />);
+
+    await screen.findAllByTestId('cascade-step');
+    expect(mockUseReportDataset.mock.lastCall).toEqual([
+      careCascadeReport(),
+      { endDate: dayjs().format('YYYY-MM-DD'), ...scope, clinics: 'acimi' },
+    ]);
+  });
+
+  it('evaluates nothing for a limited administrator whose account holds no clinic', async () => {
+    dataset({ rows: [] });
+    await limitedTo('');
+    atSessionLocation('Head office', [], 'head-office');
+
+    render(<CareCascade />);
+
+    expect(await screen.findByText('No care cascade data')).toBeInTheDocument();
+    expect(mockUseReportDataset.mock.calls.every(([report]) => report === null)).toBe(true);
   });
 
   it("draws the report's five cascade steps, leaving out its Oral and BPG split", () => {

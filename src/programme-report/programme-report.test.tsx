@@ -244,26 +244,39 @@ describe('Reports', () => {
     expect(reportCalls(programmeUuid())).toHaveLength(0);
   });
 
-  it('draws no care cascade for a limited administrator when the page is at every clinic', async () => {
-    await atLocation(['Visit Location']);
-    limitTo({ status: 'ready', uuids: ['gulu', 'acimi'], names: ['Gulu RRH', 'Acimi HCIII'] });
+  it.each([
+    ['at every clinic', ['Visit Location'], ['gulu', 'acimi'], {}],
+    ['at a clinic that is not theirs', ['RHD Community'], ['acimi'], { primaryCareClinic: 'session-location' }],
+    ['at their own clinic', ['RHD Community'], ['session-location'], { primaryCareClinic: 'session-location' }],
+  ])(
+    'draws the care cascade for a limited administrator %s, over their clinics only',
+    async (_, tags, uuids, scope) => {
+      await atLocation(tags);
+      limitTo({ status: 'ready', uuids, names: uuids });
 
-    renderPage();
+      renderPage();
 
-    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
-    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
-    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
-    expect(reportCalls(cascadeUuid())).toHaveLength(0);
-  });
+      await screen.findAllByTestId('cascade-step');
+      expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
+        endDate: dayjs().format('YYYY-MM-DD'),
+        ...scope,
+        clinics: uuids.join(','),
+      });
+    },
+  );
 
-  it('draws no care cascade for a limited administrator whose account holds no clinic', async () => {
-    await atLocation(['Visit Location']);
+  it.each([
+    ['at every clinic', ['Visit Location']],
+    ['at a clinic', ['RHD Community']],
+  ])('evaluates no care cascade for a limited administrator whose account holds no clinic, %s', async (_, tags) => {
+    await atLocation(tags);
     limitTo({ status: 'ready', uuids: [], names: [] });
 
     renderPage();
 
     await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients0'));
-    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
+    expect(screen.getByText('No care cascade data')).toBeInTheDocument();
+    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 
@@ -276,42 +289,7 @@ describe('Reports', () => {
     expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({ endDate: dayjs().format('YYYY-MM-DD') });
   });
 
-  it('draws the care cascade at the clinic a limited administrator is at, with no clinics sent', async () => {
-    await atLocation(['RHD Community']);
-    limitTo({ status: 'ready', uuids: ['session-location'], names: ['Gulu RRH'] });
-
-    renderPage();
-
-    await screen.findAllByTestId('cascade-step');
-    expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
-      endDate: dayjs().format('YYYY-MM-DD'),
-      primaryCareClinic: 'session-location',
-    });
-  });
-
-  it('draws no care cascade for a limited administrator at a clinic that is not one of theirs', async () => {
-    await atLocation(['RHD Community']);
-    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
-
-    renderPage();
-
-    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients18'));
-    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
-    expect(reportCalls(cascadeUuid())).toHaveLength(0);
-  });
-
-  it('draws no care cascade for a limited administrator with no clinic, at a clinic', async () => {
-    await atLocation(['RHD Community']);
-    limitTo({ status: 'ready', uuids: [], names: [] });
-
-    renderPage();
-
-    await waitFor(() => expect(tile('Active patients')).toHaveTextContent('Active patients0'));
-    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
-    expect(reportCalls(cascadeUuid())).toHaveLength(0);
-  });
-
-  it("draws no care cascade while a clinic that is not a limited administrator's stays in the scope", async () => {
+  it("counts the care cascade over a limited administrator's clinics at the clinics they choose", async () => {
     await atLocation(['RHD Tertiary']);
     limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
 
@@ -319,41 +297,27 @@ describe('Reports', () => {
 
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Primary care clinic' }), 'acimi');
 
-    await waitFor(() => expect(lastParams()).toHaveProperty('primaryCareClinic', 'acimi'));
-    expect(lastParams()).toHaveProperty('cardiacClinic', 'session-location');
-    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
-    expect(reportCalls(cascadeUuid())).toHaveLength(0);
-  });
-
-  it('draws the care cascade once a limited administrator holds only their own clinics in the scope', async () => {
-    await atLocation(['RHD Tertiary']);
-    limitTo({ status: 'ready', uuids: ['acimi'], names: ['Acimi HCIII'] });
-
-    renderPage();
-
-    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Cardiac clinic' }), '');
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Primary care clinic' }), 'acimi');
-
-    await screen.findAllByTestId('cascade-step');
+    await waitFor(() => expect(reportCalls(cascadeUuid()).at(-1)[1]).toHaveProperty('primaryCareClinic', 'acimi'));
     expect(reportCalls(cascadeUuid()).at(-1)[1]).toEqual({
       endDate: dayjs().format('YYYY-MM-DD'),
+      cardiacClinic: 'session-location',
       primaryCareClinic: 'acimi',
+      clinics: 'acimi',
     });
   });
 
-  it('draws no care cascade while the limit is pending', async () => {
+  it('draws the care cascade loading, with nothing evaluated, while the limit is pending', async () => {
     await atLocation(['RHD Community']);
     limitTo({ status: 'pending' });
 
     renderPage();
 
-    // Wait for the scope, so a skeleton tile can only mean the limit is still pending.
+    // Wait for the scope, so a skeleton can only mean the limit is still pending.
     await screen.findByRole('combobox', { name: 'Cardiac clinic' });
     expect(reportCalls(programmeUuid())).toHaveLength(0);
     // The tiles wait for the limit rather than reading 0.
     expect(tile('Active patients')).toHaveTextContent(/^Active patients$/);
-    expect(screen.queryByRole('heading', { name: 'Care cascade' })).not.toBeInTheDocument();
-    expect(screen.queryByTestId('cascade-loading')).not.toBeInTheDocument();
+    expect(screen.getByTestId('cascade-loading')).toBeInTheDocument();
     expect(reportCalls(cascadeUuid())).toHaveLength(0);
   });
 
