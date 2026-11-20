@@ -55,7 +55,7 @@ export function registryEnrolmentOf(enrolments: Array<Enrolment>, programUuid: s
 
 /**
  * The status a completed enrolment ended in: its latest state by start, the later in the array on a tie as core
- * truncates starts to midnight. Null for an active enrolment; a null name when no state was recorded.
+ * truncates starts to midnight. Null for an active enrolment; a null name and uuid when no state was recorded.
  */
 export function statusOf(enrolment: Enrolment) {
   if (!enrolment.dateCompleted) {
@@ -65,7 +65,11 @@ export function statusOf(enrolment: Enrolment) {
     .map((one, index) => ({ ...one, index }))
     .filter((one) => !one.voided)
     .sort((a, b) => b.startDate.localeCompare(a.startDate) || b.index - a.index)[0];
-  return { name: latest?.state.concept.display ?? null, since: latest?.startDate ?? enrolment.dateCompleted };
+  return {
+    uuid: latest?.state.uuid ?? null,
+    name: latest?.state.concept.display ?? null,
+    since: latest?.startDate ?? enrolment.dateCompleted,
+  };
 }
 
 /** The workflow's terminal states that are not retired, in the order the workflow has them. */

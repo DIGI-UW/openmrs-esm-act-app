@@ -64,15 +64,24 @@ function serve({
     birthdate?: string;
   },
   failEnrolment = false,
+  failPerson = false,
 } = {}) {
+  // An enrolment the workspace ends reads back ended, as the server would serve it.
+  let served = enrolments;
   vi.mocked(openmrsFetch).mockImplementation(((url: string, init?: { method?: string }) => {
     if (init?.method === 'POST') {
-      return String(url).includes('/programenrollment/') && failEnrolment
-        ? Promise.reject(new Error('Enrolment refused'))
+      if (String(url).includes('/programenrollment/') && failEnrolment) {
+        return Promise.reject(new Error('Enrolment refused'));
+      }
+      if (String(url).includes('/programenrollment/')) {
+        served = served.map((one) => ({ ...one, dateCompleted: today }));
+      }
+      return String(url).includes('/person/') && failPerson
+        ? Promise.reject(new Error('Death refused'))
         : Promise.resolve({ data: {} });
     }
     if (String(url).includes('/programenrollment?')) {
-      return Promise.resolve({ data: { results: enrolments } });
+      return Promise.resolve({ data: { results: served } });
     }
     if (String(url).includes('/program/')) {
       return Promise.resolve({ data: program });
@@ -148,7 +157,7 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
   });
 
-  it('marks the person dead first, with the cause, then ends the enrolment, for Deceased', async () => {
+  it('ends the enrolment first, then marks the person dead with the cause, for Deceased', async () => {
     serve();
     await openWorkspace();
 
@@ -159,11 +168,11 @@ describe('UpdatePatientStatusWorkspace', () => {
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
     expect(posts().map(([url]) => url)).toEqual([
-      `${restBaseUrl}/person/winnie`,
       `${restBaseUrl}/programenrollment/pe`,
+      `${restBaseUrl}/person/winnie`,
     ]);
-    expect(posts()[0][1]).toMatchObject({ dead: true, causeOfDeathNonCoded: 'Heart failure' });
-    expect(posts()[1][1]).toMatchObject({ states: [{ state: 'dead' }] });
+    expect(posts()[0][1]).toMatchObject({ states: [{ state: 'dead' }] });
+    expect(posts()[1][1]).toMatchObject({ dead: true, causeOfDeathNonCoded: 'Heart failure' });
   });
 
   it("reloads the chart's patient after a death is saved, so the banner shows it", async () => {
@@ -180,7 +189,7 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(fetchOtherPatient).toHaveBeenCalledTimes(1);
   });
 
-  it('says the death was saved when the enrolment is refused, reloads the patient, and repeats only the enrolment', async () => {
+  it('saves nothing of a death when the enrolment is refused', async () => {
     serve({ failEnrolment: true });
     await openWorkspace();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
@@ -190,18 +199,48 @@ describe('UpdatePatientStatusWorkspace', () => {
 
     await waitFor(() =>
       expect(showSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'error', title: 'The death was saved but the registry status was not' }),
+        expect.objectContaining({ kind: 'error', title: 'The patient status could not be updated' }),
+      ),
+    );
+    expect(posts().map(([url]) => url)).toEqual([`${restBaseUrl}/programenrollment/pe`]);
+    expect(closeWorkspace).not.toHaveBeenCalled();
+    expect(fetchChartPatient).toHaveBeenCalledTimes(1);
+  });
+
+  it('says the registry status was saved when the death is refused, reloads the patient, and repeats only the death', async () => {
+    serve({ failPerson: true });
+    await openWorkspace();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    await userEvent.clear(screen.getByLabelText('Date of death'));
+    await userEvent.type(screen.getByLabelText('Date of death'), '2026-03-01');
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'error', title: 'The registry status was saved but the death was not' }),
       ),
     );
     expect(closeWorkspace).not.toHaveBeenCalled();
     await waitFor(() => expect(fetchChartPatient).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByTestId('current-status')).not.toHaveTextContent('Active'));
+    expect(screen.getByLabelText('Status')).toBeDisabled();
+    expect(screen.getByLabelText('Date of death')).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(posts()).toHaveLength(3));
     expect(posts().map(([url]) => url)).toEqual([
+      `${restBaseUrl}/programenrollment/pe`,
       `${restBaseUrl}/person/winnie`,
-      `${restBaseUrl}/programenrollment/pe`,
-      `${restBaseUrl}/programenrollment/pe`,
+      `${restBaseUrl}/person/winnie`,
     ]);
+    expect(posts()[2][1].deathDate).toBe(posts()[0][1].dateCompleted);
+    expect(posts()[2][1].deathDate).toBe(posts()[1][1].deathDate);
+    expect(vi.mocked(showSnackbar).mock.calls.map(([one]) => one.title)).toEqual([
+      'The registry status was saved but the death was not',
+      'The registry status was saved but the death was not',
+    ]);
+    await waitFor(() => expect(fetchChartPatient).toHaveBeenCalledTimes(3));
   });
 
   it('refuses a date before the enrolment or after today', async () => {
@@ -296,11 +335,34 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(screen.getByTestId('current-status')).toHaveTextContent('Lost to follow-up');
     expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    expect(screen.getByLabelText('Date of death')).toHaveValue(today);
+    expect(screen.getByLabelText('Date of death')).toBeEnabled();
     await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
     expect(posts().map(([url]) => url)).toEqual([`${restBaseUrl}/person/winnie`]);
+  });
+
+  it('dates a death as the enrolment that already ended in Deceased, and keeps that date', async () => {
+    const endedDead = {
+      ...completed,
+      states: [
+        { ...completed.states[0], state: { uuid: 'dead', concept: { uuid: deathConcept, display: 'Deceased' } } },
+      ],
+    };
+    serve({ enrolments: [endedDead] });
+    await openWorkspace();
+
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    expect(screen.getByLabelText('Date of death')).toHaveValue('2026-08-02');
+    expect(screen.getByLabelText('Date of death')).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Cause of death'), 'Heart failure');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    expect(posts().map(([url]) => url)).toEqual([`${restBaseUrl}/person/winnie`]);
+    expect(String(posts()[0][1].deathDate)).toMatch(/^2026-08-02/);
   });
 
   it('offers a patient in no programme Deceased as a person update, as Mark patient deceased did', async () => {

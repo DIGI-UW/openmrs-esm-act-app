@@ -47,12 +47,12 @@ export default function UpdatePatientStatusWorkspace({
   const [date, setDate] = useState(today);
   const [cause, setCause] = useState('');
   const [saving, setSaving] = useState(false);
-  // Set once the person is saved dead, so that a retry does not save the death again.
-  const [personSaved, setPersonSaved] = useState(false);
+  // Set once the enrolment ended: a retry saves only the death, with the status and date kept.
+  const [enrolmentSaved, setEnrolmentSaved] = useState(false);
 
   const mayEditPrograms = Boolean(user) && userHasAccess(PRIVILEGE_EDIT_PATIENT_PROGRAMS, user);
   const mayEditPeople = Boolean(user) && userHasAccess(PRIVILEGE_EDIT_PEOPLE, user);
-  const personDead = Boolean(person?.dead) || personSaved;
+  const personDead = Boolean(person?.dead);
   const enrolmentActive = Boolean(enrolment) && !enrolment!.dateCompleted;
   const options =
     program && person
@@ -84,9 +84,12 @@ export default function UpdatePatientStatusWorkspace({
 
   const chooseState = (uuid: string) => {
     setStateUuid(uuid);
-    // A death already on the person is dated as it was recorded.
-    if (options.find((one) => one.uuid === uuid)?.death && person?.dead && person.deathDate) {
+    const death = options.find((one) => one.uuid === uuid)?.death;
+    // A death already on the person, or on the ended enrolment, is dated as it was recorded.
+    if (death && person?.dead && person.deathDate) {
       setDate(person.deathDate.slice(0, 10));
+    } else if (death && ended?.uuid === uuid) {
+      setDate(ended.since.slice(0, 10));
     }
   };
 
@@ -107,28 +110,29 @@ export default function UpdatePatientStatusWorkspace({
       return;
     }
     setSaving(true);
-    let diedNow = false;
+    // The enrolment ends first, as ACT Core ends an open one when the person is saved dead.
+    let enrolmentEnded = enrolmentSaved;
     try {
+      if (enrolmentActive && !enrolmentSaved && mayEditPrograms) {
+        await endEnrolment(enrolment!.uuid, chosen.uuid, date, enrolment!.dateEnrolled);
+        setEnrolmentSaved(true);
+        enrolmentEnded = true;
+      }
       if (chosen.death && !personDead && mayEditPeople) {
         await markDead(patientUuid, date, cause.trim());
-        setPersonSaved(true);
-        diedNow = true;
-      }
-      if (enrolmentActive && mayEditPrograms) {
-        await endEnrolment(enrolment!.uuid, chosen.uuid, date, enrolment!.dateEnrolled);
       }
     } catch (e) {
       showSnackbar({
         kind: 'error',
-        title: diedNow
-          ? t('deathSavedEnrolmentNot', 'The death was saved but the registry status was not')
+        title: enrolmentEnded
+          ? t('statusSavedDeathNot', 'The registry status was saved but the death was not')
           : t('statusNotUpdated', 'The patient status could not be updated'),
-        subtitle: diedNow
+        subtitle: enrolmentEnded
           ? `${restErrorMessage(e)} ${t('saveAgainToFinish', 'Save again to finish.')}`
           : restErrorMessage(e),
       });
       setSaving(false);
-      if (diedNow) {
+      if (enrolmentEnded) {
         await refreshPatient();
       }
       return;
@@ -173,6 +177,7 @@ export default function UpdatePatientStatusWorkspace({
                     id="update-patient-status-state"
                     labelText={t('status', 'Status')}
                     value={stateUuid}
+                    disabled={enrolmentSaved}
                     onChange={(event) => chooseState(event.target.value)}
                   >
                     <SelectItem value="" text={t('chooseStatus', 'Choose a status')} />
@@ -191,6 +196,7 @@ export default function UpdatePatientStatusWorkspace({
                     value={date}
                     min={earliest || undefined}
                     max={today}
+                    disabled={enrolmentSaved || Boolean(chosen?.death && ended?.uuid === chosen.uuid)}
                     onChange={(event) => setDate(event.target.value)}
                   />
                   {dyingNow && (

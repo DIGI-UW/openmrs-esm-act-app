@@ -91,7 +91,7 @@ describe('statusOf', () => {
       }),
     );
 
-    expect(status).toEqual({ name: 'Lost to follow-up', since: '2026-08-02T00:00:00.000+0000' });
+    expect(status).toEqual({ uuid: 'ltfu', name: 'Lost to follow-up', since: '2026-08-02T00:00:00.000+0000' });
   });
 
   it('names the state recorded last when it starts the day the Active state did, as core truncates starts', () => {
@@ -114,6 +114,7 @@ describe('statusOf', () => {
 
   it('has no name for a completed enrolment that records no state', () => {
     expect(statusOf(enrolment({ dateCompleted: '2026-08-02T00:00:00.000+0000' }))).toEqual({
+      uuid: null,
       name: null,
       since: '2026-08-02T00:00:00.000+0000',
     });
