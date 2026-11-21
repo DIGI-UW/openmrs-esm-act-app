@@ -22,6 +22,11 @@ export function useRefreshStatus() {
 
 /** Runs ACT Core's flag and adherence refresh, and answers once it has finished. */
 export async function runRefresh() {
-  const { data } = await openmrsFetch<RefreshStatus>(refreshUrl, { method: 'POST' });
+  // ACT Core runs the refresh only for a JSON request, which another site's page cannot send unasked.
+  const { data } = await openmrsFetch<RefreshStatus>(refreshUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: {},
+  });
   return data;
 }

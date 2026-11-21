@@ -71,6 +71,10 @@ describe('Flags and adherence', () => {
 
     expect(await screen.findByText(`Last refreshed ${formatDatetime(new Date(now))}`)).toBeInTheDocument();
     expect(refresh).toHaveBeenCalledTimes(1);
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/actcore\/refresh$/),
+      expect.objectContaining({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: {} }),
+    );
     expect(showSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'success', title: 'Flags and adherence refreshed' }),
     );
