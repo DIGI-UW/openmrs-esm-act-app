@@ -82,6 +82,7 @@ describe('statusOf', () => {
             state: { uuid: 'active', concept: { uuid: 'c-active', display: 'Active' } },
           },
           {
+            uuid: 'ps-ltfu',
             startDate: '2026-08-02T00:00:00.000+0000',
             endDate: '2026-08-02T00:00:00.000+0000',
             voided: false,
@@ -91,7 +92,12 @@ describe('statusOf', () => {
       }),
     );
 
-    expect(status).toEqual({ uuid: 'ltfu', name: 'Lost to follow-up', since: '2026-08-02T00:00:00.000+0000' });
+    expect(status).toEqual({
+      uuid: 'ltfu',
+      patientState: 'ps-ltfu',
+      name: 'Lost to follow-up',
+      since: '2026-08-02T00:00:00.000+0000',
+    });
   });
 
   it('names the state recorded last when it starts the day the Active state did, as core truncates starts', () => {
@@ -115,6 +121,7 @@ describe('statusOf', () => {
   it('has no name for a completed enrolment that records no state', () => {
     expect(statusOf(enrolment({ dateCompleted: '2026-08-02T00:00:00.000+0000' }))).toEqual({
       uuid: null,
+      patientState: null,
       name: null,
       since: '2026-08-02T00:00:00.000+0000',
     });
@@ -124,9 +131,9 @@ describe('statusOf', () => {
 describe('terminalStatesOf', () => {
   it("lists the workflow's terminal states that are not retired, marking the Deceased one", () => {
     expect(terminalStatesOf(program, deathConcept)).toEqual([
-      { uuid: 'ltfu', name: 'Lost to follow-up', death: false },
-      { uuid: 'reloc', name: 'Physical relocation', death: false },
-      { uuid: 'dead', name: 'Deceased', death: true },
+      { uuid: 'ltfu', name: 'Lost to follow-up', concept: 'c-ltfu', death: false },
+      { uuid: 'reloc', name: 'Physical relocation', concept: 'c-reloc', death: false },
+      { uuid: 'dead', name: 'Deceased', concept: deathConcept, death: true },
     ]);
   });
 });
@@ -163,8 +170,37 @@ describe('statusOptionsOf', () => {
     expect(names(statusOptionsOf({ ...base, enrolmentActive: false, mayEditPrograms: false }))).toEqual([]);
   });
 
+  it('offers a living patient whose enrolment ended every state to correct it, and Active to enrol again', () => {
+    const again = { uuid: 'reenrol', name: 'Active (re-enrolled)', concept: '', death: false, reenrol: true };
+    const ended = { ...base, states: [...states, again], enrolmentActive: false, enrolmentEnded: true };
+    expect(names(statusOptionsOf(ended))).toEqual([
+      'Lost to follow-up',
+      'Physical relocation',
+      'Deceased',
+      'Active (re-enrolled)',
+    ]);
+    expect(names(statusOptionsOf({ ...ended, mayEditPeople: false }))).toEqual([
+      'Lost to follow-up',
+      'Physical relocation',
+      'Active (re-enrolled)',
+    ]);
+    expect(names(statusOptionsOf({ ...ended, mayEditPrograms: false }))).toEqual([]);
+    // Active is never offered to an active enrolment, nor to a patient in no programme.
+    expect(names(statusOptionsOf({ ...base, states: [...states, again] }))).toEqual([
+      'Lost to follow-up',
+      'Physical relocation',
+      'Deceased',
+    ]);
+    expect(names(statusOptionsOf({ ...base, states: [...states, again], enrolmentActive: false }))).toEqual([
+      'Deceased',
+    ]);
+  });
+
   it('offers nothing to a patient with no active enrolment who is already dead', () => {
     expect(names(statusOptionsOf({ ...base, enrolmentActive: false, personDead: true }))).toEqual([]);
+    expect(names(statusOptionsOf({ ...base, enrolmentActive: false, enrolmentEnded: true, personDead: true }))).toEqual(
+      [],
+    );
   });
 });
 
@@ -178,11 +214,11 @@ describe('the requests', () => {
   const bodyOf = (call: number) => (vi.mocked(openmrsFetch).mock.calls[call][1] as { body: unknown }).body;
   const urlOf = (call: number) => vi.mocked(openmrsFetch).mock.calls[call][0];
 
-  it('marks a person dead with the date and the cause', async () => {
-    await markDead('person', '2020-10-24', 'Heart failure');
+  it('marks a person dead with the date and the coded cause', async () => {
+    await markDead('person', '2020-10-24', 'heart-failure');
 
     expect(urlOf(0)).toBe(`${restBaseUrl}/person/person`);
-    expect(bodyOf(0)).toEqual({ dead: true, deathDate: '2020-10-24', causeOfDeathNonCoded: 'Heart failure' });
+    expect(bodyOf(0)).toEqual({ dead: true, deathDate: '2020-10-24', causeOfDeath: 'heart-failure' });
   });
 
   it('ends an enrolment on the date in the terminal state', async () => {
