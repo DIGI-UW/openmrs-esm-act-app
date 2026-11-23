@@ -81,7 +81,17 @@ describe('User form workspace', () => {
     expect(screen.queryByRole('checkbox', { name: 'Instance Administrator' })).not.toBeInTheDocument();
   });
 
-  it('offers a System Developer Instance Administrator and Global Administrator', async () => {
+  it('offers a user holding Global and Instance Administrator the roles of both', async () => {
+    backend();
+    await signInAs([GA, IA], ['Task: act.allClinics']);
+
+    renderWorkspace();
+
+    expect(await screen.findByRole('checkbox', { name: 'Instance Administrator' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Global Administrator' })).toBeInTheDocument();
+  });
+
+  it('offers a System Developer Instance Administrator, Global Administrator and Data Clerk', async () => {
     backend();
     await signInAs(SD, ['Task: act.allClinics']);
 
@@ -89,6 +99,7 @@ describe('User form workspace', () => {
 
     expect(await screen.findByRole('checkbox', { name: 'Instance Administrator' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Global Administrator' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Data Clerk' })).toBeInTheDocument();
   });
 
   it('adds a user with their person, roles and clinics, then their provider', async () => {

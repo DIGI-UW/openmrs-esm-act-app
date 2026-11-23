@@ -117,8 +117,8 @@ export function backend(
   return writes;
 }
 
-/** Signs in with a role and the privileges a user administrator holds; a site administrator's account names Acimi. */
-export async function signInAs(role: string, extra: Array<string> = []) {
+/** Signs in with roles and the privileges a user administrator holds; a site administrator's account names Acimi. */
+export async function signInAs(role: string | Array<string>, extra: Array<string> = []) {
   await signInWith(['Edit Users', 'Add Users', 'Edit User Passwords', ...extra]);
   const session = vi.mocked(useSession)();
   vi.mocked(useSession).mockReturnValue({
@@ -126,7 +126,7 @@ export async function signInAs(role: string, extra: Array<string> = []) {
     user: {
       ...session.user,
       uuid: 'me',
-      roles: [{ uuid: role, display: roleNames[role] }],
+      roles: [role].flat().map((uuid) => ({ uuid, display: roleNames[uuid] })),
       userProperties: { [CLINICS_PROPERTY]: 'acimi' },
     },
   } as never);

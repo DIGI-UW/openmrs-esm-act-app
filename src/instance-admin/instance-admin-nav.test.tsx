@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { type AssignedExtension, useAssignedExtensions } from '@openmrs/esm-framework';
+import { type AssignedExtension, useAssignedExtensions, useSession } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import routes from '../routes.json';
 import InstanceAdminNav from './instance-admin-nav.component';
@@ -45,8 +45,32 @@ describe('InstanceAdminNav', () => {
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Forms & sites']);
   });
 
-  it('shows nothing to a user whose home is ACT home, as the Instance admin Home link does', async () => {
-    await signInWith(['App: act.home', 'App: act.instanceAdmin']);
+  it('keeps Forms & sites and Role permissions for an Instance Administrator who also holds ACT home', async () => {
+    await signInWith(['App: act.home', 'App: act.instanceAdmin', 'Manage Roles']);
+    assign('act-role-permissions-dashboard-link');
+
+    render(<InstanceAdminNav />);
+
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Forms & sites', 'Role permissions']);
+  });
+
+  it('shows nothing to a super user, whose home is ACT home, as the Instance admin Home link does', async () => {
+    await signInWith([]);
+    const session = vi.mocked(useSession)();
+    vi.mocked(useSession).mockReturnValue({
+      ...session,
+      user: { ...session.user, roles: [{ uuid: 'sd', display: 'System Developer' }] },
+    } as never);
+    assign('act-role-permissions-dashboard-link');
+
+    const { container } = render(<InstanceAdminNav />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('shows nothing to a user whose home is ACT home without App: act.instanceAdmin, such as a global administrator', async () => {
+    await signInWith(['App: act.home', 'Manage Roles']);
+    assign('act-role-permissions-dashboard-link');
 
     const { container } = render(<InstanceAdminNav />);
 

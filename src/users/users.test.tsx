@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { formatDate, launchWorkspace2, useSession } from '@openmrs/esm-framework';
 import { restoresOpenWorkspace } from '../workspace-props.test-helper';
 import Users from './users.component';
-import { backend, IA, SA, SD, signInAs, user, users, CC, CL, DC } from './users.test-helper';
+import { backend, GA, IA, SA, SD, signInAs, user, users, CC, CL, DC } from './users.test-helper';
 
 function renderPage() {
   return render(
@@ -196,6 +196,7 @@ describe('Users', () => {
         user('mia', 'Mia', [CL, DC], 'acimi'),
         user('paul', 'Paul', [CL], 'acimi', true),
         user('ruth', 'Ruth', [DC], 'acimi', true),
+        user('ivan', 'Ivan', [IA], 'acimi'),
       ],
     });
     await signInAs(role);
@@ -211,6 +212,14 @@ describe('Users', () => {
     expect(await actionsOf('Mia Okot')).toEqual([]);
     expect(await actionsOf('Paul Okot')).toEqual(['Enable user']);
     expect(await actionsOf('Ruth Okot')).toEqual([]);
+    expect(await actionsOf('Ivan Okot')).toEqual(['Edit user', 'Reset password', 'Disable user']);
+  });
+
+  it('offers a global administrator no row actions on an instance administrator', async () => {
+    await signedInAsSeesRows(GA);
+
+    expect(await actionsOf('Grace Okot')).toEqual(['Edit user', 'Reset password', 'Disable user']);
+    expect(await actionsOf('Ivan Okot')).toEqual([]);
   });
 
   it.each([

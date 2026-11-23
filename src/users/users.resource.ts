@@ -64,8 +64,9 @@ export function lastSignIn(user: Pick<ActUser, 'userProperties'>) {
 export const roleLabel = (display: string) => display.replace(/^Organizational: (ACT )?/, '');
 
 /**
- * The job roles the signed-in administrator may give, by uuid: those of the first of `users.roleChoices` whose
- * administrator role they hold. A super user gets every choice's roles; anyone else none.
+ * The job roles the signed-in administrator may give, by uuid: those of every entry of `users.roleChoices` whose
+ * administrator role they hold, so a user holding two administrator roles may give the roles of both. A super user
+ * gets every entry's roles, and a user holding no administrator role gets none.
  */
 function useGrantableRoles() {
   const { users } = useConfig<Config>();
@@ -73,9 +74,13 @@ function useGrantableRoles() {
   return useMemo(() => {
     const held = new Set((user?.roles ?? []).map((role) => role.uuid));
     const superUser = (user?.roles ?? []).some((role) => role.display === 'System Developer');
-    const roleUuids = superUser
-      ? [...new Set(users.roleChoices.flatMap(({ roles }) => roles))]
-      : (users.roleChoices.find(({ administratorRole }) => held.has(administratorRole))?.roles ?? []);
+    const roleUuids = [
+      ...new Set(
+        users.roleChoices
+          .filter(({ administratorRole }) => superUser || held.has(administratorRole))
+          .flatMap(({ roles }) => roles),
+      ),
+    ];
     return { roleUuids, superUser };
   }, [user, users.roleChoices]);
 }
