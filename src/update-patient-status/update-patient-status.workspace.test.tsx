@@ -27,8 +27,19 @@ const HEART_FAILURE = causeUuid('Heart failure');
 const MALARIA = causeUuid('Malaria');
 const woman = { dead: false, deathDate: null, birthdate: '1990-05-01T00:00:00.000+0000', gender: 'F' };
 const information = [
-  { uuid: 'pi-old', encounterDatetime: '2026-01-05T09:00:00.000+0000' },
-  { uuid: 'pi-new', encounterDatetime: '2026-03-05T09:00:00.000+0000' },
+  { uuid: 'pi-old', encounterDatetime: '2026-01-05T09:00:00.000+0000', obs: [] },
+  { uuid: 'pi-new', encounterDatetime: '2026-03-05T09:00:00.000+0000', obs: [] },
+];
+// Patient Information already holding a relocation area and a voided one, as a migrated or earlier status left them.
+const informationWithArea = [
+  {
+    ...information[1],
+    obs: [
+      { uuid: 'obs-area', voided: false, concept: { uuid: concepts.relocationArea } },
+      { uuid: 'obs-area-old', voided: true, concept: { uuid: concepts.relocationArea } },
+      { uuid: 'obs-screen', voided: false, concept: { uuid: 'screen-positive' } },
+    ],
+  },
 ];
 
 const program = {
@@ -253,7 +264,6 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(screen.getByLabelText('Status')).toBeDisabled();
     expect(screen.getByLabelText('Date of death')).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(screen.getByLabelText('Cause of death')).toBeDisabled();
     await waitFor(() => expect(posts()).toHaveLength(4));
     expect(posts().map(([url]) => url)).toEqual([
       `${restBaseUrl}/programenrollment/pe`,
@@ -549,6 +559,47 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(posts()[1][1]).toEqual({
       obs: [{ concept: concepts.relocationArea, person: 'winnie', value: 'Gulu', obsDatetime: expect.any(String) }],
     });
+  });
+
+  it('replaces an earlier answer to the same question on the record, and leaves the other answers alone', async () => {
+    serve({ encounters: informationWithArea });
+    await openWorkspace();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'reloc');
+    await userEvent.type(screen.getByLabelText('Relocation area'), 'Lira');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    expect(posts()[1][0]).toBe(`${restBaseUrl}/encounter/pi-new`);
+    expect(posts()[1][1]).toEqual({
+      obs: [
+        { uuid: 'obs-area', voided: true },
+        { concept: concepts.relocationArea, person: 'winnie', value: 'Lira', obsDatetime: expect.any(String) },
+      ],
+    });
+  });
+
+  it('saves an answer edited after a refused death again, in place of the one saved first', async () => {
+    serve({ failPerson: true, encounters: information });
+    await openWorkspace();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
+    await userEvent.selectOptions(screen.getByLabelText('Cause of death'), HEART_FAILURE);
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+
+    await userEvent.selectOptions(screen.getByLabelText('Cause of death'), MALARIA);
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(posts()).toHaveLength(5));
+    expect(posts().map(([url]) => url)).toEqual([
+      `${restBaseUrl}/programenrollment/pe`,
+      `${restBaseUrl}/encounter/pi-new`,
+      `${restBaseUrl}/person/winnie`,
+      `${restBaseUrl}/encounter/pi-new`,
+      `${restBaseUrl}/person/winnie`,
+    ]);
+    expect((posts()[1][1].obs as Array<{ value: string }>)[0].value).toBe(HEART_FAILURE);
+    expect((posts()[3][1].obs as Array<{ value: string }>)[0].value).toBe(MALARIA);
+    expect(posts()[4][1]).toMatchObject({ causeOfDeath: MALARIA });
   });
 
   it('saves nothing but the enrolment for a relocation with no area given', async () => {

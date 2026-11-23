@@ -72,9 +72,15 @@ export default function UpdatePatientStatusWorkspace({
   const [relocationArea, setRelocationArea] = useState('');
   const [saving, setSaving] = useState(false);
   // Set once the enrolment ended, and once the answers are saved: a retry saves only what is left, with the status
-  // and date kept.
+  // and date kept. An answer or date changed after that is saved again, replacing what was saved.
   const [enrolmentSaved, setEnrolmentSaved] = useState(false);
   const [answersSaved, setAnswersSaved] = useState(false);
+  const answer =
+    <T,>(set: (value: T) => void) =>
+    (value: T) => {
+      set(value);
+      setAnswersSaved(false);
+    };
 
   const mayEditPrograms = Boolean(user) && userHasAccess(PRIVILEGE_EDIT_PATIENT_PROGRAMS, user);
   const mayEditPeople = Boolean(user) && userHasAccess(PRIVILEGE_EDIT_PEOPLE, user);
@@ -295,7 +301,7 @@ export default function UpdatePatientStatusWorkspace({
                     min={earliest || undefined}
                     max={today}
                     disabled={enrolmentSaved || Boolean(chosen?.death && ended?.uuid === chosen.uuid)}
-                    onChange={(event) => setDate(event.target.value)}
+                    onChange={(event) => answer(setDate)(event.target.value)}
                   />
                   {dyingNow && (
                     <>
@@ -303,8 +309,7 @@ export default function UpdatePatientStatusWorkspace({
                         id="update-patient-status-cause"
                         labelText={t('causeOfDeath', 'Cause of death')}
                         value={cause}
-                        disabled={answersSaved}
-                        onChange={(event) => setCause(event.target.value)}
+                        onChange={(event) => answer(setCause)(event.target.value)}
                       >
                         <SelectItem value="" text={t('chooseCause', 'Choose a cause')} />
                         {patientStatus.causesOfDeath.map((one) => (
@@ -317,8 +322,7 @@ export default function UpdatePatientStatusWorkspace({
                         helperText={t('detailsOfDeathHelp', 'The events leading up to the death, if known')}
                         rows={3}
                         value={details}
-                        disabled={answersSaved}
-                        onChange={(event) => setDetails(event.target.value)}
+                        onChange={(event) => answer(setDetails)(event.target.value)}
                       />
                       {female && (
                         <RadioButtonGroup
@@ -326,8 +330,7 @@ export default function UpdatePatientStatusWorkspace({
                           legendText={t('pregnantOrPostpartumAtDeath', 'Pregnant or postpartum at death')}
                           orientation="horizontal"
                           valueSelected={pregnant}
-                          disabled={answersSaved}
-                          onChange={(value) => setPregnant(String(value))}
+                          onChange={(value) => answer(setPregnant)(String(value))}
                         >
                           <RadioButton
                             id="update-patient-status-pregnant-yes"
@@ -349,8 +352,7 @@ export default function UpdatePatientStatusWorkspace({
                       labelText={t('relocationArea', 'Relocation area')}
                       helperText={t('relocationAreaHelp', 'Where the patient moved to, if known')}
                       value={relocationArea}
-                      disabled={answersSaved}
-                      onChange={(event) => setRelocationArea(event.target.value)}
+                      onChange={(event) => answer(setRelocationArea)(event.target.value)}
                     />
                   )}
                 </>

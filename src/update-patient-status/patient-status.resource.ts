@@ -172,10 +172,16 @@ export async function markDead(personUuid: string, deathDate: string, causeConce
   });
 }
 
+interface AnswerEncounter {
+  uuid: string;
+  encounterDatetime: string;
+  obs: Array<{ uuid: string; voided?: boolean; concept: { uuid: string } }>;
+}
+
 /** The patient's latest encounter of the type, which keeps the status answers, or null when there is none. */
 export async function latestEncounterOf(patientUuid: string, encounterType: string) {
-  const encounters = await fetchAll<{ uuid: string; encounterDatetime: string }>(
-    `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=custom:(uuid,encounterDatetime)`,
+  const encounters = await fetchAll<AnswerEncounter>(
+    `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=custom:(uuid,encounterDatetime,obs:(uuid,voided,concept:(uuid)))`,
   );
   return [...encounters].sort((a, b) => b.encounterDatetime.localeCompare(a.encounterDatetime))[0] ?? null;
 }
@@ -183,7 +189,8 @@ export async function latestEncounterOf(patientUuid: string, encounterType: stri
 /**
  * Saves the answers recorded with a status, each dated with the status change, on the patient's latest encounter of
  * the type, as ACT 2.0 kept them on Patient Information; a patient with no encounter of the type gets one under the
- * form, so the chart opens it as that form.
+ * form, so the chart opens it as that form. An earlier answer to the same question on that encounter is voided, so
+ * the record holds one answer per question, as the form kept it.
  */
 export async function saveStatusAnswers({
   patient,
@@ -205,7 +212,15 @@ export async function saveStatusAnswers({
   const headers = { 'Content-Type': 'application/json' };
   const latest = await latestEncounterOf(patient, encounterType);
   if (latest) {
-    await openmrsFetch(`${restBaseUrl}/encounter/${latest.uuid}`, { method: 'POST', headers, body: { obs } });
+    const asked = new Set(answers.map((one) => one.concept));
+    const replaced = (latest.obs ?? [])
+      .filter((one) => !one.voided && asked.has(one.concept.uuid))
+      .map((one) => ({ uuid: one.uuid, voided: true }));
+    await openmrsFetch(`${restBaseUrl}/encounter/${latest.uuid}`, {
+      method: 'POST',
+      headers,
+      body: { obs: [...replaced, ...obs] },
+    });
     return;
   }
   await openmrsFetch(`${restBaseUrl}/encounter`, {
