@@ -10,6 +10,7 @@ export const DC = '61e9bb28-11df-4df1-965d-11ef928d5239';
 export const CL = '60625a0c-3cea-4fe5-b6ca-615c743ad9d4';
 export const SA = 'a1295a20-7273-4339-b5df-2f8a3a841c77';
 export const IA = '07a7affa-b7de-46d9-9faa-aac4ef2eccba';
+export const GA = 'c95f35f4-0422-46a3-a593-a6615fab90bc';
 export const SD = '8d94f280-c2cc-11de-8d13-0010c6dffd0f';
 export const roleNames: Record<string, string> = {
   [CC]: 'Organizational: ACT Community Clinician',
@@ -17,6 +18,7 @@ export const roleNames: Record<string, string> = {
   [CL]: 'Organizational: ACT Clinician',
   [SA]: 'Organizational: ACT Site Administrator',
   [IA]: 'Organizational: ACT Instance Administrator',
+  [GA]: 'Organizational: ACT Global Administrator',
   [SD]: 'System Developer',
 };
 export const clinics = [

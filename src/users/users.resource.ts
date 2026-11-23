@@ -64,10 +64,8 @@ export function lastSignIn(user: Pick<ActUser, 'userProperties'>) {
 export const roleLabel = (display: string) => display.replace(/^Organizational: (ACT )?/, '');
 
 /**
- * The job roles the signed-in administrator may give, by uuid: the first of `users.roleChoices` whose
- * administrator role they hold, as ACT 2.0 offered a site administrator the clinician roles, an instance
- * administrator those and Site Administrator, and a global administrator any role. A super user gets the first
- * choice's roles; anyone else none.
+ * The job roles the signed-in administrator may give, by uuid: those of the first of `users.roleChoices` whose
+ * administrator role they hold. A super user gets every choice's roles; anyone else none.
  */
 function useGrantableRoles() {
   const { users } = useConfig<Config>();
@@ -75,16 +73,16 @@ function useGrantableRoles() {
   return useMemo(() => {
     const held = new Set((user?.roles ?? []).map((role) => role.uuid));
     const superUser = (user?.roles ?? []).some((role) => role.display === 'System Developer');
-    const choice = superUser
-      ? users.roleChoices[0]
-      : users.roleChoices.find(({ administratorRole }) => held.has(administratorRole));
-    return { roleUuids: choice?.roles ?? [], superUser };
+    const roleUuids = superUser
+      ? [...new Set(users.roleChoices.flatMap(({ roles }) => roles))]
+      : (users.roleChoices.find(({ administratorRole }) => held.has(administratorRole))?.roles ?? []);
+    return { roleUuids, superUser };
   }, [user, users.roleChoices]);
 }
 
 /**
- * Whether the signed-in administrator may change a user, by ACT Core's rule (AdministratorRoleAssignment): it
- * holds Edit Users and may give every role the user has. A super user may change anyone.
+ * Whether the signed-in administrator may change a user: it holds Edit Users and may give every role the user has,
+ * as OpenMRS saves a user only for one holding the privileges of all their roles. A super user may change anyone.
  */
 export function useMayManageUser() {
   const { roleUuids, superUser } = useGrantableRoles();

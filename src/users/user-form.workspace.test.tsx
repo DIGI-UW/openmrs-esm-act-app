@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { openmrsFetch, showSnackbar, Workspace2 } from '@openmrs/esm-framework';
 import { CLINICS_PROPERTY } from '../clinic-limit';
 import UserFormWorkspace from './user-form.workspace';
-import { backend, CC, CL, DC, IA, SA, signInAs } from './users.test-helper';
+import { backend, CC, CL, DC, GA, IA, SA, SD, signInAs } from './users.test-helper';
 
 const closeWorkspace = vi.fn();
 
@@ -59,15 +59,36 @@ describe('User form workspace', () => {
     ]);
   });
 
-  it('offers an instance administrator the clinician roles and Site Administrator, and every clinic', async () => {
+  it('offers an instance administrator the clinician roles, Site Administrator and Instance Administrator, and every clinic', async () => {
     backend();
     await signInAs(IA, ['Task: act.allClinics']);
 
     renderWorkspace();
 
     expect(await screen.findByRole('checkbox', { name: 'Site Administrator' })).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: 'Instance Administrator' })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Instance Administrator' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Akunalaber HCIII' })).toBeInTheDocument();
+  });
+
+  it('does not offer a global administrator Instance Administrator', async () => {
+    backend();
+    await signInAs(GA, ['Task: act.allClinics']);
+
+    renderWorkspace();
+
+    expect(await screen.findByRole('checkbox', { name: 'Global Administrator' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Site Administrator' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Instance Administrator' })).not.toBeInTheDocument();
+  });
+
+  it('offers a System Developer Instance Administrator and Global Administrator', async () => {
+    backend();
+    await signInAs(SD, ['Task: act.allClinics']);
+
+    renderWorkspace();
+
+    expect(await screen.findByRole('checkbox', { name: 'Instance Administrator' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Global Administrator' })).toBeInTheDocument();
   });
 
   it('adds a user with their person, roles and clinics, then their provider', async () => {

@@ -204,7 +204,6 @@ export const configSchema = {
             'b9ab4b76-e7b9-46a7-b4ec-5b7fdd8fa540',
             '60625a0c-3cea-4fe5-b6ca-615c743ad9d4',
             'a1295a20-7273-4339-b5df-2f8a3a841c77',
-            '07a7affa-b7de-46d9-9faa-aac4ef2eccba',
             'c95f35f4-0422-46a3-a593-a6615fab90bc',
           ],
         },
@@ -214,6 +213,7 @@ export const configSchema = {
             'b9ab4b76-e7b9-46a7-b4ec-5b7fdd8fa540',
             '60625a0c-3cea-4fe5-b6ca-615c743ad9d4',
             'a1295a20-7273-4339-b5df-2f8a3a841c77',
+            '07a7affa-b7de-46d9-9faa-aac4ef2eccba',
           ],
         },
         {
@@ -226,7 +226,7 @@ export const configSchema = {
         },
       ],
       _description:
-        "The roles the Users page offers, as ACT 2.0's: the first entry whose administrator role the signed-in user holds wins; a super user gets the first. By default a global administrator gives every ACT role but Data Clerk, an instance administrator the clinician roles and Site Administrator, and a site administrator the clinician roles and Data Clerk. Each is what ACT Core lets it give (actcore.users.globalAdministratorRoles, instanceAdministratorRoles and siteAdministratorRoles), so set both together.",
+        "The roles the Users page offers, as ACT 2.0's: the first entry whose administrator role the signed-in user holds wins; a super user gets every entry's roles. By default a global administrator gives the clinician roles, Site Administrator and Global Administrator, an instance administrator the clinician roles, Site Administrator and Instance Administrator, and a site administrator the clinician roles and Data Clerk. OpenMRS lets a user give a role only when they hold all its privileges, so each administrator role must hold those of the roles it is offered, and ACT Core limits a site administrator to those in actcore.users.siteAdministratorRoles.",
     },
   },
   helpMenu: {
