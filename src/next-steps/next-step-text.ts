@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate, parseDate } from '@openmrs/esm-framework';
+import { fullDate } from '../patient-status/due-tone';
 import { type NextStep } from './next-steps.resource';
 
 const REASON_PREFIX = 'actcore.nextStep.reason.';
@@ -30,7 +30,7 @@ export function useNextStepText() {
     const reason = (step: NextStep) => {
       const code = step.reasonCode?.startsWith(REASON_PREFIX) ? step.reasonCode.slice(REASON_PREFIX.length) : null;
       const args = step.reasonArgs ?? [];
-      const date = (value: unknown) => (typeof value === 'string' ? formatDate(parseDate(value), { time: false }) : '');
+      const date = (value: unknown) => (typeof value === 'string' ? fullDate(value) : '');
       switch (code) {
         case 'anaphylaxisReview':
           return t('nextStepReasonAnaphylaxisReview', 'Anaphylaxis reported after BPG: review before the next dose');

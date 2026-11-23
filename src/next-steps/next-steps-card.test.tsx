@@ -460,6 +460,33 @@ describe('NextStepsCard', () => {
     );
   });
 
+  it('names a step the save added by its coded title, not by the text the server wrote', async () => {
+    renderCard();
+    await screen.findByText('Give BPG injection');
+
+    steps = [
+      ...grace,
+      {
+        key: 'consult',
+        form: 'consult',
+        title: 'Visite de consultation',
+        reason: 'Revoir',
+        titleCode: 'actcore.nextStep.title.consult',
+        reasonCode: 'actcore.nextStep.reason.reviewEcho',
+        reasonArgs: [],
+        isNew: true,
+        done: false,
+      },
+    ];
+    respond();
+    await invalidatePatientEncounters();
+
+    await screen.findByText('Consultation visit');
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Next step added: Consultation visit' }),
+    );
+  });
+
   it('writes each step from its message codes, not from the text the server wrote', async () => {
     steps = [
       {

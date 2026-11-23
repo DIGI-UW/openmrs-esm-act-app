@@ -487,6 +487,37 @@ describe('ProphylaxisCard', () => {
     expect(screen.queryByRole('button', { name: /^Record BPG/ })).not.toBeInTheDocument();
   });
 
+  it("names a held BPG step's reason from its message code, not from the text the server wrote", async () => {
+    mockOpenmrsFetch.mockImplementation(((url: string) =>
+      Promise.resolve({
+        data: url.includes('nextsteps')
+          ? {
+              steps: [
+                {
+                  key: 'bpg',
+                  form: null,
+                  title: 'Donner une injection de BPG',
+                  reason: 'En attente: revue clinique',
+                  titleCode: 'actcore.nextStep.title.bpg',
+                  reasonCode: 'actcore.nextStep.reason.onHoldReview',
+                  reasonArgs: [],
+                  isNew: false,
+                  done: false,
+                  onHold: true,
+                },
+              ],
+            }
+          : winnie,
+      })) as never);
+
+    renderCard();
+
+    expect(await screen.findByTestId('bpg-on-hold')).toHaveAttribute(
+      'title',
+      'On hold: a clinician must review before the next dose',
+    );
+  });
+
   it('offers Record BPG while the BPG step is due but not on hold', async () => {
     mockOpenmrsFetch.mockImplementation(((url: string) =>
       Promise.resolve({
