@@ -34,7 +34,7 @@ describe('InstanceAdminDashboardLink', () => {
     expect(DashboardExtension).toHaveBeenCalled();
   });
 
-  it('is left out for a user whose home is ACT home without App: act.instanceAdmin, such as a global administrator', async () => {
+  it('is left out when ACT home replaces the Instance admin Home, for a holder of App: act.home without App: act.instanceAdmin', async () => {
     await signInWith([homePrivilege, 'Task: act.allClinics']);
 
     render(<InstanceAdminDashboardLink />);

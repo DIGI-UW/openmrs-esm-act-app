@@ -68,7 +68,7 @@ describe('InstanceAdminNav', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows nothing to a user whose home is ACT home without App: act.instanceAdmin, such as a global administrator', async () => {
+  it('shows nothing when ACT home replaces the Instance admin Home, for a holder of App: act.home without App: act.instanceAdmin', async () => {
     await signInWith(['App: act.home', 'Manage Roles']);
     assign('act-role-permissions-dashboard-link');
 

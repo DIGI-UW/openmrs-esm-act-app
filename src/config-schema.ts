@@ -226,7 +226,7 @@ export const configSchema = {
         },
       ],
       _description:
-        "The roles the Users page offers, as ACT 2.0's: the roles of every entry whose administrator role the signed-in user holds, and every entry's roles for a super user. By default a global administrator gives the clinician roles, Site Administrator and Global Administrator, an instance administrator the clinician roles, Site Administrator and Instance Administrator, and a site administrator the clinician roles and Data Clerk. OpenMRS lets a user give a role only when they hold all its privileges, so each administrator role must hold those of the roles it is offered, and ACT Core limits a site administrator to those in actcore.users.siteAdministratorRoles.",
+        "The roles the Users page offers, as ACT 2.0's: the roles of every entry whose administrator role the signed-in user holds, and every entry's roles for a super user. By default a global administrator gives the clinician roles, Site Administrator and Global Administrator, an instance administrator the clinician roles, Site Administrator and Instance Administrator, and a site administrator the clinician roles and Data Clerk. OpenMRS lets a user give a role only when they hold all its privileges, so each administrator role must hold those of the roles it is offered, and ACT Core limits an administrator without Task: act.allClinics, such as a site administrator, to the roles in actcore.users.siteAdministratorRoles when that list is set.",
     },
   },
   helpMenu: {
