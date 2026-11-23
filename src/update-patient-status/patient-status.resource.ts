@@ -10,6 +10,7 @@ export interface Enrolment {
   voided?: boolean;
   program: { uuid: string };
   states: Array<{
+    uuid?: string;
     startDate: string;
     endDate: string | null;
     voided?: boolean;
@@ -41,6 +42,8 @@ export interface StatusOption {
   name: string;
   concept: string;
   death: boolean;
+  /** Active again: a new enrolment for a patient who returned, rather than a state of the ended one. */
+  reenrol?: boolean;
 }
 
 /** An answer recorded with the status, under the question's concept: a coded answer's uuid, or text. */
@@ -50,7 +53,7 @@ export interface StatusAnswer {
 }
 
 const enrolmentRepresentation =
-  'custom:(uuid,dateEnrolled,dateCompleted,voided,program:(uuid),states:(startDate,endDate,voided,state:(uuid,concept:(uuid,display))))';
+  'custom:(uuid,dateEnrolled,dateCompleted,voided,program:(uuid),states:(uuid,startDate,endDate,voided,state:(uuid,concept:(uuid,display))))';
 const programRepresentation = 'custom:(allWorkflows:(retired,states:(uuid,terminal,retired,concept:(uuid,display))))';
 
 /** The patient's latest enrolment in the registry programme that is not voided. */
@@ -76,6 +79,7 @@ export function statusOf(enrolment: Enrolment) {
     .sort((a, b) => b.startDate.localeCompare(a.startDate) || b.index - a.index)[0];
   return {
     uuid: latest?.state.uuid ?? null,
+    patientState: latest?.uuid ?? null,
     name: latest?.state.concept.display ?? null,
     since: latest?.startDate ?? enrolment.dateCompleted,
   };
@@ -97,25 +101,34 @@ export function terminalStatesOf(program: Program, deathConcept: string): Array<
 
 /**
  * The statuses this user may record: ending an enrolment needs Edit Patient Programs, and a death Edit People too, so
- * only those who record patient status record a death. A dead patient's enrolment can only end as Deceased.
+ * only those who record patient status record a death. A dead patient's enrolment can only end as Deceased. A living
+ * patient whose enrolment ended may have it corrected to another status, or be enrolled again as Active.
  */
 export function statusOptionsOf({
   states,
   enrolmentActive,
+  enrolmentEnded = false,
   personDead,
   mayEditPrograms,
   mayEditPeople,
 }: {
   states: Array<StatusOption>;
   enrolmentActive: boolean;
+  enrolmentEnded?: boolean;
   personDead: boolean;
   mayEditPrograms: boolean;
   mayEditPeople: boolean;
 }) {
   const mayMarkDead = mayEditPeople && mayEditPrograms;
   return states.filter((one) => {
+    if (!enrolmentActive && enrolmentEnded && !personDead) {
+      return one.death ? mayMarkDead : mayEditPrograms;
+    }
     if (!enrolmentActive) {
       return one.death && !personDead && mayMarkDead;
+    }
+    if (one.reenrol) {
+      return false;
     }
     if (personDead) {
       return one.death && mayEditPrograms;
@@ -202,14 +215,69 @@ export async function saveStatusAnswers({
   });
 }
 
-/** Ends the enrolment on the date in the given terminal state, which the registry, worklists and Dashboard read. */
-export async function endEnrolment(enrolmentUuid: string, stateUuid: string, date: string, dateEnrolled: string) {
+/** The instant an enrolment ends on the date: not before it was enrolled, which carries a time of day. */
+const endOf = (date: string, dateEnrolled: string) => {
   // A bare day reads as midnight, which core rejects as before an enrolment that carries a time of day.
   const sent = serverDate(date);
-  const end = new Date(sent).getTime() < new Date(dateEnrolled).getTime() ? dateEnrolled : sent;
+  return new Date(sent).getTime() < new Date(dateEnrolled).getTime() ? dateEnrolled : sent;
+};
+
+/** Ends the enrolment on the date in the given terminal state, which the registry, worklists and Dashboard read. */
+export async function endEnrolment(enrolmentUuid: string, stateUuid: string, date: string, dateEnrolled: string) {
+  const end = endOf(date, dateEnrolled);
   await openmrsFetch(`${restBaseUrl}/programenrollment/${enrolmentUuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: { dateCompleted: end, states: [{ state: stateUuid, startDate: end }] },
+  });
+}
+
+/**
+ * Corrects an ended enrolment to another terminal state on the date: the state it ended in is voided, the end moved,
+ * and the new state recorded, in that order, as core refuses a state that starts after the end it still has.
+ */
+export async function correctEnrolment({
+  enrolmentUuid,
+  endedStateUuid,
+  stateUuid,
+  date,
+  dateEnrolled,
+}: {
+  enrolmentUuid: string;
+  endedStateUuid: string | null;
+  stateUuid: string;
+  date: string;
+  dateEnrolled: string;
+}) {
+  const headers = { 'Content-Type': 'application/json' };
+  const end = endOf(date, dateEnrolled);
+  if (endedStateUuid) {
+    await openmrsFetch(`${restBaseUrl}/programenrollment/${enrolmentUuid}/state/${endedStateUuid}`, {
+      method: 'DELETE',
+    });
+  }
+  await openmrsFetch(`${restBaseUrl}/programenrollment/${enrolmentUuid}`, {
+    method: 'POST',
+    headers,
+    body: { dateCompleted: end },
+  });
+  await openmrsFetch(`${restBaseUrl}/programenrollment/${enrolmentUuid}`, {
+    method: 'POST',
+    headers,
+    body: { states: [{ state: stateUuid, startDate: end }] },
+  });
+}
+
+/** Enrols a returning patient again from the date, at the login location, as ACT Core enrols on registration. */
+export async function reenrol(patientUuid: string, programUuid: string, date: string, location: string | null) {
+  await openmrsFetch(`${restBaseUrl}/programenrollment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: {
+      patient: patientUuid,
+      program: programUuid,
+      dateEnrolled: serverDate(date),
+      ...(location ? { location } : {}),
+    },
   });
 }

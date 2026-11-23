@@ -61,6 +61,7 @@ const completed = {
   dateCompleted: '2026-08-02T00:00:00.000+0000',
   states: [
     {
+      uuid: 'ps1',
       startDate: '2026-08-02T00:00:00.000+0000',
       endDate: '2026-08-02T00:00:00.000+0000',
       voided: false,
@@ -116,6 +117,11 @@ const posts = () =>
     .mocked(openmrsFetch)
     .mock.calls.filter(([, init]) => (init as { method?: string } | undefined)?.method === 'POST')
     .map(([url, init]) => [url, (init as { body: Record<string, unknown> }).body] as const);
+const deletes = () =>
+  vi
+    .mocked(openmrsFetch)
+    .mock.calls.filter(([, init]) => (init as { method?: string } | undefined)?.method === 'DELETE')
+    .map(([url]) => String(url));
 
 const closeWorkspace = vi.fn();
 // Reads this patient and another under the framework's usePatient key; only this one should reload.
@@ -350,12 +356,18 @@ describe('UpdatePatientStatusWorkspace', () => {
     expect(optionNames()).toEqual(['Choose a status', 'Lost to follow-up', 'Physical relocation']);
   });
 
-  it('offers a patient with no active enrolment Deceased alone, saved as its answers and a person update', async () => {
+  it('offers a living patient whose enrolment ended every status and Active again; Deceased saves its answers and the person', async () => {
     serve({ enrolments: [completed] });
     await openWorkspace();
 
     expect(screen.getByTestId('current-status')).toHaveTextContent('Lost to follow-up');
-    expect(optionNames()).toEqual(['Choose a status', 'Deceased']);
+    expect(optionNames()).toEqual([
+      'Choose a status',
+      'Lost to follow-up',
+      'Physical relocation',
+      'Deceased',
+      'Active (re-enrolled)',
+    ]);
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'dead');
     expect(screen.getByLabelText('Date of death')).toHaveValue(today);
     expect(screen.getByLabelText('Date of death')).toBeEnabled();
@@ -568,6 +580,56 @@ describe('UpdatePatientStatusWorkspace', () => {
     );
     expect(closeWorkspace).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Status')).toBeDisabled();
+  });
+
+  it('corrects an ended enrolment: voids the state it ended in, moves the end, records the new state, and asks where a relocated patient went', async () => {
+    serve({ enrolments: [completed], encounters: information });
+    await openWorkspace();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'reloc');
+    const date = screen.getByLabelText('Date of status change');
+    expect(date).toHaveValue(today);
+    await userEvent.clear(date);
+    await userEvent.type(date, '2026-01-05');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await userEvent.clear(date);
+    await userEvent.type(date, '2026-08-10');
+    await userEvent.type(screen.getByLabelText('Relocation area'), 'Gulu');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    expect(deletes()).toEqual([`${restBaseUrl}/programenrollment/pe/state/ps1`]);
+    expect(posts()).toEqual([
+      [`${restBaseUrl}/programenrollment/pe`, { dateCompleted: '2026-08-10' }],
+      [`${restBaseUrl}/programenrollment/pe`, { states: [{ state: 'reloc', startDate: '2026-08-10' }] }],
+      [
+        `${restBaseUrl}/encounter/pi-new`,
+        { obs: [{ concept: concepts.relocationArea, person: 'winnie', value: 'Gulu', obsDatetime: '2026-08-10' }] },
+      ],
+    ]);
+    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+  });
+
+  it('enrols a returning patient again from the chosen date, which cannot be before the enrolment ended', async () => {
+    serve({ enrolments: [completed] });
+    atSessionLocation('Clinic', []);
+    await openWorkspace();
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'reenrol');
+    const date = screen.getByLabelText('Date of re-enrolment');
+    await userEvent.clear(date);
+    await userEvent.type(date, '2026-08-01');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await userEvent.clear(date);
+    await userEvent.type(date, '2026-09-01');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    expect(deletes()).toEqual([]);
+    expect(posts()).toEqual([
+      [
+        `${restBaseUrl}/programenrollment`,
+        { patient: 'winnie', program: registry, dateEnrolled: '2026-09-01', location: 'Clinic' },
+      ],
+    ]);
   });
 
   it('asks no death questions when only ending the enrolment of a patient already dead', async () => {

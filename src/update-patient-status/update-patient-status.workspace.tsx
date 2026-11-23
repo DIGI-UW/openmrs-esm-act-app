@@ -29,8 +29,10 @@ import { type Config } from '../config-schema';
 import { PRIVILEGE_EDIT_PATIENT_PROGRAMS, PRIVILEGE_EDIT_PEOPLE } from '../constants';
 import { restErrorMessage } from '../rest-error-message';
 import {
+  correctEnrolment,
   endEnrolment,
   markDead,
+  reenrol,
   saveStatusAnswers,
   type StatusAnswer,
   statusOf,
@@ -42,11 +44,15 @@ import styles from './update-patient-status.scss';
 
 const day = (value: string) => formatDate(parseDate(value), { time: false });
 
+/** The option that enrols a returning patient again, beside the workflow's terminal states. */
+const REENROL = 'reenrol';
+
 /**
  * Update patient status, which replaces Mark patient deceased: ends the patient's registry enrolment in one of its
  * workflow's terminal states, as the registry, worklists and Dashboard read it, and marks the person dead for Deceased.
  * The questions ACT 2.0's Patient Information asked with a status are asked here and kept on that record: a death's
- * cause and details, whether a woman was pregnant or postpartum at death, and where a relocated patient went.
+ * cause and details, whether a woman was pregnant or postpartum at death, and where a relocated patient went. A
+ * living patient whose enrolment ended can have its status corrected, or be enrolled again as Active on their return.
  */
 export default function UpdatePatientStatusWorkspace({
   closeWorkspace,
@@ -75,11 +81,22 @@ export default function UpdatePatientStatusWorkspace({
   const personDead = Boolean(person?.dead);
   const female = person?.gender === 'F';
   const enrolmentActive = Boolean(enrolment) && !enrolment!.dateCompleted;
+  const enrolmentEnded = Boolean(enrolment) && !enrolmentActive;
   const options =
     program && person
       ? statusOptionsOf({
-          states: terminalStatesOf(program, patientStatus.deathConcept),
+          states: [
+            ...terminalStatesOf(program, patientStatus.deathConcept),
+            {
+              uuid: REENROL,
+              name: t('activeReenrolled', 'Active (re-enrolled)'),
+              concept: '',
+              death: false,
+              reenrol: true,
+            },
+          ],
           enrolmentActive,
+          enrolmentEnded,
           personDead,
           mayEditPrograms,
           mayEditPeople,
@@ -89,15 +106,24 @@ export default function UpdatePatientStatusWorkspace({
   // The death is saved last, so its questions stay through a retry until it is.
   const dyingNow = Boolean(chosen?.death) && !personDead;
   const relocating = Boolean(chosen) && chosen!.concept === patientStatus.relocationConcept;
+  const reenrolling = Boolean(chosen?.reenrol);
+  // An ended enrolment's other status is corrected in place; a death leaves it as it ended.
+  const correcting = enrolmentEnded && Boolean(chosen) && !chosen!.death && !reenrolling;
+  const ended = enrolment ? statusOf(enrolment) : null;
   const earliest = [
-    enrolmentActive ? enrolment!.dateEnrolled.slice(0, 10) : '',
-    // Core refuses to end a state before it started.
-    ...(enrolmentActive ? enrolment!.states.filter((one) => !one.voided).map((one) => one.startDate.slice(0, 10)) : []),
+    enrolmentActive || correcting ? enrolment!.dateEnrolled.slice(0, 10) : '',
+    // Core refuses to end a state before it started; the state being corrected does not count.
+    ...(enrolmentActive || correcting
+      ? enrolment!.states
+          .filter((one) => !one.voided && !(correcting && one.uuid === ended?.patientState))
+          .map((one) => one.startDate.slice(0, 10))
+      : []),
+    // A returning patient's new enrolment may not overlap the one that ended.
+    reenrolling ? enrolment!.dateCompleted!.slice(0, 10) : '',
     dyingNow ? (person?.birthdate?.slice(0, 10) ?? '') : '',
   ].reduce((a, b) => (a > b ? a : b));
   const deathAnswered = Boolean(cause) && (!female || Boolean(pregnant));
   const valid = Boolean(chosen && date && date <= today && date >= earliest && (!dyingNow || deathAnswered)) && !saving;
-  const ended = enrolment ? statusOf(enrolment) : null;
   const current = personDead
     ? t('deceasedOn', 'Deceased{{on}}', { on: person?.deathDate ? ` ${day(person.deathDate)}` : '' })
     : enrolmentActive
@@ -158,6 +184,19 @@ export default function UpdatePatientStatusWorkspace({
         await endEnrolment(enrolment!.uuid, chosen.uuid, date, enrolment!.dateEnrolled);
         setEnrolmentSaved(true);
         enrolmentEnded = true;
+      } else if (correcting && !enrolmentSaved) {
+        await correctEnrolment({
+          enrolmentUuid: enrolment!.uuid,
+          endedStateUuid: ended?.patientState ?? null,
+          stateUuid: chosen.uuid,
+          date,
+          dateEnrolled: enrolment!.dateEnrolled,
+        });
+        setEnrolmentSaved(true);
+        enrolmentEnded = true;
+      } else if (reenrolling && !enrolmentSaved) {
+        await reenrol(patientUuid, patientStatus.programUuid, date, sessionLocation?.uuid ?? null);
+        setEnrolmentSaved(true);
       }
       const toSave = answers();
       if (toSave.length > 0 && !answersSaved) {
@@ -248,7 +287,9 @@ export default function UpdatePatientStatusWorkspace({
                     labelText={
                       chosen?.death
                         ? t('dateOfDeath', 'Date of death')
-                        : t('dateOfStatusChange', 'Date of status change')
+                        : reenrolling
+                          ? t('dateOfReenrolment', 'Date of re-enrolment')
+                          : t('dateOfStatusChange', 'Date of status change')
                     }
                     value={date}
                     min={earliest || undefined}

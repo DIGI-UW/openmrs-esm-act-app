@@ -82,6 +82,7 @@ describe('statusOf', () => {
             state: { uuid: 'active', concept: { uuid: 'c-active', display: 'Active' } },
           },
           {
+            uuid: 'ps-ltfu',
             startDate: '2026-08-02T00:00:00.000+0000',
             endDate: '2026-08-02T00:00:00.000+0000',
             voided: false,
@@ -91,7 +92,12 @@ describe('statusOf', () => {
       }),
     );
 
-    expect(status).toEqual({ uuid: 'ltfu', name: 'Lost to follow-up', since: '2026-08-02T00:00:00.000+0000' });
+    expect(status).toEqual({
+      uuid: 'ltfu',
+      patientState: 'ps-ltfu',
+      name: 'Lost to follow-up',
+      since: '2026-08-02T00:00:00.000+0000',
+    });
   });
 
   it('names the state recorded last when it starts the day the Active state did, as core truncates starts', () => {
@@ -115,6 +121,7 @@ describe('statusOf', () => {
   it('has no name for a completed enrolment that records no state', () => {
     expect(statusOf(enrolment({ dateCompleted: '2026-08-02T00:00:00.000+0000' }))).toEqual({
       uuid: null,
+      patientState: null,
       name: null,
       since: '2026-08-02T00:00:00.000+0000',
     });
@@ -163,8 +170,37 @@ describe('statusOptionsOf', () => {
     expect(names(statusOptionsOf({ ...base, enrolmentActive: false, mayEditPrograms: false }))).toEqual([]);
   });
 
+  it('offers a living patient whose enrolment ended every state to correct it, and Active to enrol again', () => {
+    const again = { uuid: 'reenrol', name: 'Active (re-enrolled)', concept: '', death: false, reenrol: true };
+    const ended = { ...base, states: [...states, again], enrolmentActive: false, enrolmentEnded: true };
+    expect(names(statusOptionsOf(ended))).toEqual([
+      'Lost to follow-up',
+      'Physical relocation',
+      'Deceased',
+      'Active (re-enrolled)',
+    ]);
+    expect(names(statusOptionsOf({ ...ended, mayEditPeople: false }))).toEqual([
+      'Lost to follow-up',
+      'Physical relocation',
+      'Active (re-enrolled)',
+    ]);
+    expect(names(statusOptionsOf({ ...ended, mayEditPrograms: false }))).toEqual([]);
+    // Active is never offered to an active enrolment, nor to a patient in no programme.
+    expect(names(statusOptionsOf({ ...base, states: [...states, again] }))).toEqual([
+      'Lost to follow-up',
+      'Physical relocation',
+      'Deceased',
+    ]);
+    expect(names(statusOptionsOf({ ...base, states: [...states, again], enrolmentActive: false }))).toEqual([
+      'Deceased',
+    ]);
+  });
+
   it('offers nothing to a patient with no active enrolment who is already dead', () => {
     expect(names(statusOptionsOf({ ...base, enrolmentActive: false, personDead: true }))).toEqual([]);
+    expect(names(statusOptionsOf({ ...base, enrolmentActive: false, enrolmentEnded: true, personDead: true }))).toEqual(
+      [],
+    );
   });
 });
 
