@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { InlineNotification } from '@carbon/react';
 import { formatDate } from '@openmrs/esm-framework';
-import { kindOf, periodName, periodNames, type RunChartPeriod } from './run-chart-metrics';
+import { accumulates, kindOf, periodName, periodNames, type RunChartPeriod } from './run-chart-metrics';
 import { localDay, MIN_POINTS_FOR_MEDIAN, type RunChartPoint, withValue } from './run-chart-stats';
 import { pointDetail } from './run-chart-tooltip';
 import styles from './run-charts.scss';
@@ -40,15 +40,21 @@ export function HistoryNotice({
         lowContrast
         hideCloseButton
         title={t('runChartOnePoint', 'One point has a value in this range')}
-        subtitle={t(
-          'runChartChartAppears',
-          'The chart appears after the second {{unit}}; a median and shifts after {{count}} {{units}}.',
-          {
-            unit: periodName(t, period),
-            count: MIN_POINTS_FOR_MEDIAN,
-            units: periodNames(t, period),
-          },
-        )}
+        subtitle={
+          accumulates(metric)
+            ? t('runChartChartAppearsRunningTotal', 'The chart appears after the second {{unit}}.', {
+                unit: periodName(t, period),
+              })
+            : t(
+                'runChartChartAppears',
+                'The chart appears after the second {{unit}}; a median and shifts after {{count}} {{units}}.',
+                {
+                  unit: periodName(t, period),
+                  count: MIN_POINTS_FOR_MEDIAN,
+                  units: periodNames(t, period),
+                },
+              )
+        }
       />
       <p>
         {t('runChartLatest', 'Latest, {{date}}: {{detail}}', {

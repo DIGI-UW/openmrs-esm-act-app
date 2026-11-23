@@ -9,18 +9,23 @@ export type RunChartPeriod = 'day' | 'week' | 'month';
 export interface RunChartMetric {
   id: string;
   kind: RunChartMetricKind;
+  /**
+   * A running total, which climbs as the registry grows: it sits below its median for the first half of a range and
+   * above it for the second, so the shift rule would shade the whole chart. No median or shifts are drawn for it.
+   */
+  accumulates?: boolean;
 }
 
 /** ACT Core's eight run chart metrics, in the order of the design's tiles. */
 export const runChartMetrics: Array<RunChartMetric> = [
-  { id: 'total_registrants', kind: 'count' },
-  { id: 'active_registrants', kind: 'count' },
+  { id: 'total_registrants', kind: 'count', accumulates: true },
+  { id: 'active_registrants', kind: 'count', accumulates: true },
   { id: 'active_registrants_seen_last_7_months', kind: 'percent' },
   { id: 'active_registrants_prescribed_prophylaxis', kind: 'percent' },
   { id: 'active_registrants_adherent', kind: 'percent' },
   { id: 'consultation_visits_with_echocardiogram_resulted', kind: 'percent' },
   { id: 'consultation_visits_with_intervention', kind: 'percent' },
-  { id: 'interventions_completed', kind: 'count' },
+  { id: 'interventions_completed', kind: 'count', accumulates: true },
 ];
 
 /** The page opens on this metric, as the design does, so it is never empty. */
@@ -30,6 +35,10 @@ export const defaultPeriod: RunChartPeriod = 'week';
 
 export const kindOf = (id: string): RunChartMetricKind =>
   runChartMetrics.find((metric) => metric.id === id)?.kind ?? 'count';
+
+/** Whether the metric is a running total, which gets no median or shifts. */
+export const accumulates = (id: string): boolean =>
+  runChartMetrics.find((metric) => metric.id === id)?.accumulates ?? false;
 
 export const isMetric = (id: string | null | undefined): id is string =>
   runChartMetrics.some((metric) => metric.id === id);
