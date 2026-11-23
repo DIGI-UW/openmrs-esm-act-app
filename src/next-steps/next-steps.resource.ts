@@ -8,8 +8,16 @@ import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-fram
 export interface NextStep {
   key: string;
   form: string | null;
+  /** The title in the server's locale; show it through useNextStepText, which translates it by titleCode. */
   title: string;
+  /** The reason in the server's locale; show it through useNextStepText, which translates it by reasonCode. */
   reason: string;
+  /** The title's message code, such as actcore.nextStep.title.bpg. Absent from an older ACT Core. */
+  titleCode?: string;
+  /** The reason's message code, such as actcore.nextStep.reason.overdue. Absent from an older ACT Core. */
+  reasonCode?: string;
+  /** The values the reason fills in, in order: a date as an ISO yyyy-MM-dd string, a count as a number. */
+  reasonArgs?: Array<string | number>;
   isNew: boolean;
   done: boolean;
   /** A BPG step held back after an anaphylaxis no consultation has reviewed yet; its reason says so. */

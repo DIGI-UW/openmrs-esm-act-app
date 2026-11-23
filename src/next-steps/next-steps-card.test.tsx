@@ -460,6 +460,25 @@ describe('NextStepsCard', () => {
     );
   });
 
+  it('writes each step from its message codes, not from the text the server wrote', async () => {
+    steps = [
+      {
+        ...grace[0],
+        title: 'Donner une injection de BPG',
+        reason: 'Prevu aujourd hui',
+        titleCode: 'actcore.nextStep.title.bpg',
+        reasonCode: 'actcore.nextStep.reason.dueToday',
+        reasonArgs: [],
+      },
+    ];
+    respond();
+    renderCard();
+
+    expect(await screen.findByText('Give BPG injection')).toBeInTheDocument();
+    expect(screen.getByText('Due today')).toBeInTheDocument();
+    expect(screen.queryByText('Prevu aujourd hui')).not.toBeInTheDocument();
+  });
+
   it('lists a pregnancy step from the delivery outcome flag with its own icon and the default action', async () => {
     const pregnancyForm = 'f3bfa5d3-5bfd-3c82-9c71-dbe3bc01e8e4';
     steps = [

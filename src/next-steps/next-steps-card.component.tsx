@@ -23,6 +23,7 @@ import { launchInClinicalFormsWindow } from '../visits/launch-in-clinical-forms-
 import { restErrorMessage } from '../rest-error-message';
 import { sendReferral } from './send-referral';
 import { type NextStep, nextStepsKey, useNextSteps, usePublishedForms } from './next-steps.resource';
+import { stepIdentity, useNextStepText } from './next-step-text';
 import cardStyles from '../styles/summary-card.scss';
 import styles from './next-steps-card.scss';
 
@@ -59,8 +60,8 @@ function useFormCount(patientUuid: string, enabled: boolean) {
 
 /** The steps a newer list adds that are still to do, to name in the toast after a save. */
 function addedSteps(before: Array<NextStep>, after: Array<NextStep>) {
-  const known = new Set(before.filter((step) => !step.done).map((step) => `${step.key}|${step.reason}`));
-  return after.filter((step) => step.isNew && !step.done && !known.has(`${step.key}|${step.reason}`));
+  const known = new Set(before.filter((step) => !step.done).map(stepIdentity));
+  return after.filter((step) => step.isNew && !step.done && !known.has(stepIdentity(step)));
 }
 
 /** The patient summary's next steps for this visit, from ACT Core's rules over the patient's forms. */
@@ -71,6 +72,7 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
   const { patient } = usePatient(patientUuid);
   const { open, isOpening } = useOpenFormInVisit(patientUuid);
   const actionLabel = useActionLabel();
+  const text = useNextStepText();
   const { user, sessionLocation } = useSession();
   const { mutate } = useSWRConfig();
   const [sending, setSending] = useState(false);
@@ -89,10 +91,10 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
     if (added.length) {
       showSnackbar({
         kind: 'info',
-        title: t('nextStepAdded', 'Next step added: {{steps}}', { steps: added.map((step) => step.title).join(', ') }),
+        title: t('nextStepAdded', 'Next step added: {{steps}}', { steps: added.map(text.title).join(', ') }),
       });
     }
-  }, [steps, t]);
+  }, [steps, t, text]);
 
   // A failed refetch keeps the last list; only a first load that fails hides the card.
   if (!nextSteps.enabled || (error && !steps)) {
@@ -177,7 +179,7 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
                 />
                 <div className={styles.text}>
                   <span className={styles.title}>
-                    {step.title}
+                    {text.title(step)}
                     {step.isNew && !step.done && (
                       <Tag type={alert ? 'red' : 'blue'} size="sm" className={styles.newTag}>
                         {t('new', 'New')}
@@ -189,7 +191,7 @@ export default function NextStepsCard({ patientUuid }: { patientUuid: string }) 
                       </Tag>
                     )}
                   </span>
-                  <span className={styles.reason}>{step.reason}</span>
+                  <span className={styles.reason}>{text.reason(step)}</span>
                 </div>
                 {step.done ? (
                   <span className={styles.completed}>

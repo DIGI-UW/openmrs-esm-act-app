@@ -5,6 +5,7 @@ import { AddIcon, useConfig, userHasAccess, useSession } from '@openmrs/esm-fram
 import { MayEnterForm } from '../access/may-enter-form';
 import { type Config } from '../config-schema';
 import { heldBpgStep, useNextSteps } from '../next-steps/next-steps.resource';
+import { useNextStepText } from '../next-steps/next-step-text';
 import { useOpenFormInVisit } from '../visits/open-form-in-visit';
 import { useProphylaxisSummary } from './prophylaxis.resource';
 import styles from '../styles/summary-card.scss';
@@ -21,6 +22,7 @@ export function RecordProphylaxisButtons({ patientUuid }: { patientUuid: string 
   const { open: openForm, isOpening } = useOpenFormInVisit(patientUuid);
   const { summary } = useProphylaxisSummary(patientUuid);
   const held = heldBpgStep(useNextSteps(nextSteps.enabled ? patientUuid : null).steps);
+  const stepText = useNextStepText();
   const prescribed = summary?.type;
 
   if (summary?.status === 'none') {
@@ -39,7 +41,7 @@ export function RecordProphylaxisButtons({ patientUuid }: { patientUuid: string 
     <div className={styles.actions}>
       {buttons.map(({ type, label, form }) =>
         type === 'BPG' && held ? (
-          <span key={form} title={held.reason} data-testid="bpg-on-hold">
+          <span key={form} title={stepText.reason(held)} data-testid="bpg-on-hold">
             <Tag type="red" size="sm">
               {t('bpgOnHold', 'BPG on hold')}
             </Tag>
