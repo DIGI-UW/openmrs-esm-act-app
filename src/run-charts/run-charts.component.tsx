@@ -13,13 +13,14 @@ import {
   accumulates,
   defaultMetric,
   defaultPeriod,
+  flows,
   isMetric,
   isPeriod,
   kindOf,
   metricLabel,
   periodName,
-  type RunChartPeriod,
   runChartMetrics,
+  type RunChartPeriod,
 } from './run-chart-metrics';
 import {
   changeOf,
@@ -69,6 +70,10 @@ function MetricTile({
         {t('runChartTileRetry', 'Could not load. Try again')}
       </Button>
     );
+  } else if (flows(id) && held.length) {
+    // A flow adds up over the range; a change from first to last would compare two periods only.
+    const total = held.reduce((sum, point) => sum + (point.value as number), 0);
+    note = <span className={styles.flat}>{t('runChartTotalInRange', '{{total}} in the range', { total })}</span>;
   } else if (change) {
     const since = formatDate(localDay(change.from.date), { time: false, noToday: true });
     note = change.difference ? (
@@ -266,11 +271,15 @@ export default function RunCharts() {
             {noClinic ? label : t('runChartTitle', '{{metric}}, {{clinic}}', { metric: label, clinic: clinicName })}
           </h2>
           <p className={styles.sub}>
-            {period === 'day'
-              ? t('runChartPointNoteDay', 'One point per day.')
-              : t('runChartPointNote', 'One point per {{period}}, as of its last day.', {
+            {flows(metric)
+              ? t('runChartPointNoteFlow', 'One point per {{period}}: what was done in it.', {
                   period: periodName(t, period),
-                })}
+                })
+              : period === 'day'
+                ? t('runChartPointNoteDay', 'One point per day.')
+                : t('runChartPointNote', 'One point per {{period}}, as of its last day.', {
+                    period: periodName(t, period),
+                  })}
           </p>
           <div className={styles.filters}>
             <div className={styles.metricField}>

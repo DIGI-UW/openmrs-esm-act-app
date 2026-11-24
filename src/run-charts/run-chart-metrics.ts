@@ -14,6 +14,8 @@ export interface RunChartMetric {
    * above it for the second, so the shift rule would shade the whole chart. No median or shifts are drawn for it.
    */
   accumulates?: boolean;
+  /** A flow: what happened in each point's period, not a figure as of the point, so the range adds up. */
+  flow?: boolean;
 }
 
 /** ACT Core's eight run chart metrics, in the order of the design's tiles. */
@@ -25,7 +27,7 @@ export const runChartMetrics: Array<RunChartMetric> = [
   { id: 'active_registrants_adherent', kind: 'percent' },
   { id: 'consultation_visits_with_echocardiogram_resulted', kind: 'percent' },
   { id: 'consultation_visits_with_intervention', kind: 'percent' },
-  { id: 'interventions_completed', kind: 'count', accumulates: true },
+  { id: 'interventions_completed', kind: 'count', flow: true },
 ];
 
 /** The page opens on this metric, as the design does, so it is never empty. */
@@ -39,6 +41,9 @@ export const kindOf = (id: string): RunChartMetricKind =>
 /** Whether the metric is a running total, which gets no median or shifts. */
 export const accumulates = (id: string): boolean =>
   runChartMetrics.find((metric) => metric.id === id)?.accumulates ?? false;
+
+/** Whether the metric is a flow per period, whose tile shows the range's total rather than a change. */
+export const flows = (id: string): boolean => runChartMetrics.find((metric) => metric.id === id)?.flow ?? false;
 
 export const isMetric = (id: string | null | undefined): id is string =>
   runChartMetrics.some((metric) => metric.id === id);
@@ -63,7 +68,7 @@ export function metricLabel(t: TFunction, id: string) {
     case 'consultation_visits_with_intervention':
       return t('runChartMetricRecommendation', 'Consultations with a procedural recommendation, %');
     case 'interventions_completed':
-      return t('runChartMetricProceduresCompleted', 'Procedures completed');
+      return t('runChartMetricProceduresDone', 'Procedures done');
     default:
       return id;
   }

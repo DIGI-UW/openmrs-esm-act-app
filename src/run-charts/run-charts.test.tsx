@@ -89,7 +89,7 @@ describe('RunCharts', () => {
   });
 
   it('draws no median or shift for a running total, however many points, and says why', () => {
-    window.history.replaceState({}, '', '/home/act-run-charts?metric=interventions_completed');
+    window.history.replaceState({}, '', '/home/act-run-charts?metric=total_registrants');
     const counts = [5, 6, 6, 7, 8, 9, 11, 12, 15, 18, 21, 24].map((value, index) => point(index, value));
     vi.mocked(useRunChart).mockImplementation((params) => answer(params ? counts : [], 10) as never);
     render(<RunCharts />);
@@ -252,6 +252,26 @@ describe('RunCharts', () => {
     const total = tiles.find((tile) => tile.textContent?.includes('Total registrants'))!;
     expect(within(total).getByText(/\+20 since/)).toBeInTheDocument();
     expect(total).not.toHaveAttribute('aria-current');
+    // A flow adds up over the range rather than changing from first to last
+    const procedures = tiles.find((tile) => tile.textContent?.includes('Procedures done'))!;
+    expect(within(procedures).getByText('210 in the range')).toBeInTheDocument();
+    expect(within(procedures).queryByText(/since/)).not.toBeInTheDocument();
+  });
+
+  it('says what a flow metric counts per point, and keeps its median and shifts', () => {
+    window.history.replaceState({}, '', '/home/act-run-charts?metric=interventions_completed');
+    const done = [2, 0, 1, 3, 1, 2, 4, 4, 5, 6, 5, 4, 7].map((value, index) => point(index, value));
+    vi.mocked(useRunChart).mockImplementation((params) => answer(params ? done : [], 3.5) as never);
+    render(<RunCharts />);
+
+    expect(screen.getByText('One point per week: what was done in it.')).toBeInTheDocument();
+    expect(screen.queryByTestId('run-chart-running-total')).not.toBeInTheDocument();
+    const { data, options } = lastChartProps();
+    expect(data.some((item) => item.group === 'Median 3.5')).toBe(true);
+    expect(options.axes.bottom.highlights.data.map((shift: { label: string }) => shift.label)).toEqual([
+      'Shift: 6 in a row below the median',
+      'Shift: 7 in a row above the median',
+    ]);
   });
 
   it('says no change for a tile that has not moved, and shows a dash for one with no value', () => {
