@@ -60,9 +60,9 @@ export function metricLabel(t: TFunction, id: string) {
     case 'active_registrants_seen_last_7_months':
       return t('runChartMetricRetainedInCare', 'Retained in care (seen in 7 months), % of active registrants');
     case 'active_registrants_prescribed_prophylaxis':
-      return t('runChartMetricPrescribed', 'Prescribed prophylaxis, % of active registrants');
+      return t('runChartMetricPrescribed', 'Prescribed prophylaxis, % of active RHD patients');
     case 'active_registrants_adherent':
-      return t('runChartMetricAdherent', 'Adherent 80%+, % of active registrants');
+      return t('runChartMetricAdherent', 'Adherent 80%+ and covered, % of active RHD patients');
     case 'consultation_visits_with_echocardiogram_resulted':
       return t('runChartMetricEcho', 'Consultations with an echo in 13 months, %');
     case 'consultation_visits_with_intervention':
