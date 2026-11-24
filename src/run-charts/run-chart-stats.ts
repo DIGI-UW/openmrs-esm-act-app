@@ -37,10 +37,11 @@ export const withValue = (points: Array<RunChartPoint>) => points.filter((point)
 
 /**
  * The runs of SHIFT_LENGTH or more points on one side of the median. A point on the median, or with no value, neither
- * breaks a run nor counts in it.
+ * breaks a run nor counts in it. A median of zero judges nothing: at least half the points are zero, every other
+ * point is above it, and a run of them says only that something happened at all.
  */
 export function shifts(points: Array<RunChartPoint>, median: number | null): Array<Shift> {
-  if (median === null) {
+  if (median === null || median === 0) {
     return [];
   }
   const found: Array<Shift> = [];
