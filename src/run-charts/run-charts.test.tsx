@@ -258,6 +258,18 @@ describe('RunCharts', () => {
     expect(within(procedures).queryByText(/since/)).not.toBeInTheDocument();
   });
 
+  it('draws a zero median but no shift bands, and says why', () => {
+    window.history.replaceState({}, '', '/home/act-run-charts?metric=interventions_completed');
+    const sparse = [0, 1, 0, 0, 2, 0, 1, 0, 0, 3, 0, 1].map((value, index) => point(index, value));
+    vi.mocked(useRunChart).mockImplementation((params) => answer(params ? sparse : [], 0) as never);
+    render(<RunCharts />);
+
+    const { data, options } = lastChartProps();
+    expect(data.some((item) => item.group === 'Median 0')).toBe(true);
+    expect(options.axes.bottom.highlights).toBeUndefined();
+    expect(screen.getByTestId('run-chart-median-zero')).toHaveTextContent('no shift is judged');
+  });
+
   it('says what a flow metric counts per point, and keeps its median and shifts', () => {
     window.history.replaceState({}, '', '/home/act-run-charts?metric=interventions_completed');
     const done = [2, 0, 1, 3, 1, 2, 4, 4, 5, 6, 5, 4, 7].map((value, index) => point(index, value));

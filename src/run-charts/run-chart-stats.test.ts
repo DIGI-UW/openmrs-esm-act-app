@@ -53,6 +53,15 @@ describe('shifts', () => {
     ]);
   });
 
+  it('judges nothing with a median of zero, where every other point is above it', () => {
+    expect(
+      shifts(
+        [0, 1, 0, 2, 0, 1, 3, 0, 1, 2].map((value, index) => point(index, value)),
+        0,
+      ),
+    ).toEqual([]);
+  });
+
   it('finds none with no median', () => {
     expect(shifts(series(9, 9, 9, 9, 9, 9), null)).toEqual([]);
   });

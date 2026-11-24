@@ -244,6 +244,14 @@ export default function RunCharts() {
               'Each point is the figure on its date, worked out from the records as they are now.',
             )}
           </span>
+          {median === 0 && (
+            <span data-testid="run-chart-median-zero">
+              {t(
+                'runChartMedianZero',
+                'At least half the points are zero, so no shift is judged: a run of points above zero says only that something happened.',
+              )}
+            </span>
+          )}
           {accumulates(metric) && (
             <span data-testid="run-chart-running-total">
               {t(

@@ -887,6 +887,7 @@
   "runChartCouldNotLoad": "Could not load the run chart",
   "runChartLatest": "Latest, {{date}}: {{detail}}",
   "runChartMedianValue": "Median {{value}}",
+  "runChartMedianZero": "At least half the points are zero, so no shift is judged: a run of points above zero says only that something happened.",
   "runChartMetricActiveRegistrants": "Active registrants",
   "runChartMetricAdherent": "Adherent 80%+, % of active registrants",
   "runChartMetricEcho": "Consultations with an echo in 13 months, %",
