@@ -75,6 +75,15 @@ describe('RunChartCard', () => {
     expect(screen.getByRole('heading', { name: /Retained in care.*, acimi-uuid$/ })).toBeInTheDocument();
   });
 
+  it('keeps the median for Retained in care, which is not a running total', () => {
+    vi.mocked(useRunChart).mockImplementation(
+      (params) => answer(params ? Array.from({ length: 10 }, (_, index) => point(index, 60 + index)) : [], 64) as never,
+    );
+    render(<RunChartCard scope={{}} />);
+
+    expect(screen.getAllByText('Median 64').length).toBeGreaterThan(0);
+  });
+
   it('shows the latest value with the figures behind it, and no median before there is one', () => {
     render(<RunChartCard scope={{}} />);
 

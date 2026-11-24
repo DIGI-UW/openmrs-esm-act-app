@@ -10,7 +10,7 @@ import { useClinics } from '../programme-report/clinics.resource';
 import { HistoryNotice } from './run-chart-history-notice.component';
 import { useClinicName } from './run-chart-clinic-name';
 import { RunChartLine } from './run-chart-line.component';
-import { defaultMetric, defaultPeriod, kindOf, metricLabel } from './run-chart-metrics';
+import { accumulates, defaultMetric, defaultPeriod, kindOf, metricLabel } from './run-chart-metrics';
 import { MIN_POINTS_FOR_CHART, MIN_POINTS_FOR_MEDIAN, shifts, withValue } from './run-chart-stats';
 import { pointDetail } from './run-chart-tooltip';
 import { type RunChartParams, useRunChart } from './run-chart.resource';
@@ -44,7 +44,7 @@ export function RunChartCard({ scope }: { scope: Record<string, string> }) {
       };
   const chart = useRunChart(params);
   const held = withValue(chart.points);
-  const median = held.length >= MIN_POINTS_FOR_MEDIAN ? chart.median : null;
+  const median = held.length >= MIN_POINTS_FOR_MEDIAN && !accumulates(defaultMetric) ? chart.median : null;
   const runs = useMemo(() => shifts(chart.points, median), [chart.points, median]);
   const kind = kindOf(defaultMetric);
   const label = metricLabel(t, defaultMetric);

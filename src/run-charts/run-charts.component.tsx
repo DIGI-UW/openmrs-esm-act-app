@@ -10,6 +10,7 @@ import { useClinics } from '../programme-report/clinics.resource';
 import { restErrorMessage } from '../rest-error-message';
 import { useUrlFilters } from '../table-filters/url-filters';
 import {
+  accumulates,
   defaultMetric,
   defaultPeriod,
   isMetric,
@@ -166,7 +167,8 @@ export default function RunCharts() {
   const chart = useRunChart(params);
   const held = withValue(chart.points);
   const hasChart = held.length >= MIN_POINTS_FOR_CHART;
-  const hasMedian = held.length >= MIN_POINTS_FOR_MEDIAN;
+  // A running total gets no median or shifts: it would sit on one side of the median, then the other, whatever care did.
+  const hasMedian = held.length >= MIN_POINTS_FOR_MEDIAN && !accumulates(metric);
   const median = hasMedian ? chart.median : null;
   const runs = useMemo(() => shifts(chart.points, median), [chart.points, median]);
 
@@ -232,8 +234,19 @@ export default function RunCharts() {
         />
         <div className={styles.notes}>
           <span>
-            {t('runChartCalculated', 'Each point is the figure on its date, worked out from the records as they are now.')}
+            {t(
+              'runChartCalculated',
+              'Each point is the figure on its date, worked out from the records as they are now.',
+            )}
           </span>
+          {accumulates(metric) && (
+            <span data-testid="run-chart-running-total">
+              {t(
+                'runChartRunningTotal',
+                'A running total: no median or shifts are drawn, as a count that only grows sits on one side of its middle value, then the other.',
+              )}
+            </span>
+          )}
         </div>
       </>
     );

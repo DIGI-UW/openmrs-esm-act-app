@@ -88,6 +88,19 @@ describe('RunCharts', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
+  it('draws no median or shift for a running total, however many points, and says why', () => {
+    window.history.replaceState({}, '', '/home/act-run-charts?metric=interventions_completed');
+    const counts = [5, 6, 6, 7, 8, 9, 11, 12, 15, 18, 21, 24].map((value, index) => point(index, value));
+    vi.mocked(useRunChart).mockImplementation((params) => answer(params ? counts : [], 10) as never);
+    render(<RunCharts />);
+
+    const { data, options } = lastChartProps();
+    expect(data.map((item) => item.group)).toEqual(Array(12).fill('Value'));
+    expect(options.axes.bottom.highlights).toBeUndefined();
+    expect(screen.queryByText(/^Median/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('run-chart-running-total')).toHaveTextContent('A running total: no median or shifts');
+  });
+
   it('draws the median and a band for each shift once there are ten points, as local days', () => {
     vi.mocked(useRunChart).mockImplementation(
       (params) => answer(params ? series(40, 80, 80, 80, 80, 80, 80, 40, 40, 40) : [], 80 - 1) as never,
