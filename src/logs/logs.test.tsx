@@ -902,6 +902,99 @@ describe('Logs', () => {
       });
     });
 
+    describe('whose user or names are not what ACT Core records', () => {
+      const listed = (results: Array<unknown>) =>
+        backend({ '/actcore/download?': { results, totalCount: results.length, from: '2025-10-22', to: null } });
+      const openListed = async () => {
+        await userEvent.click(screen.getByRole('tab', { name: /Downloads/ }));
+        await screen.findAllByText('RHD Consultation Visit');
+      };
+      const unnamed = () =>
+        listed([
+          { ...downloadEntries[0], user: null },
+          { ...downloadEntries[0], user: { ...downloadEntries[0].user, username: { name: 'clinician' } } },
+          {
+            ...downloadEntries[1],
+            user: { ...downloadEntries[1].user, display: { name: 'James Kato' }, role: { name: 'Admin' } },
+          },
+          { ...downloadEntries[2], list: { ...downloadEntries[2].list, name: { name: 'Registry list' } } },
+          { ...downloadEntries[0], form: { ...downloadEntries[0].form, name: { name: 'RHD BPG Delivery' } } },
+          downloadEntries[1],
+        ]);
+
+      it('shows a missing user as unknown and a name that is not text as blank, and counts only the users it can name', async () => {
+        unnamed();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(rowTexts().map((row) => [row[2], row[4]])).toEqual([
+          ['unknown', 'RHD BPG Delivery'],
+          ['Sarah NamusokeClinician', 'RHD BPG Delivery'],
+          ['instanceAdmin', 'RHD Consultation Visit'],
+          ['Peter OcensiteAdmin · Site Administrator', ''],
+          ['Sarah Namusokeclinician · Clinician', ''],
+          ['James KatoinstanceAdmin · Instance Administrator', 'RHD Consultation Visit'],
+        ]);
+        expect(screen.getAllByTestId('downloads-figure')[2]).toHaveTextContent('Users3');
+      });
+
+      it('writes them into the CSV as blanks', async () => {
+        unnamed();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+        await waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.lastCall?.[2].map((row) => [row[1], row[2]])).toEqual([
+          ['', 'RHD BPG Delivery'],
+          ['', 'RHD BPG Delivery'],
+          ['instanceAdmin', 'RHD Consultation Visit'],
+          ['siteAdmin', ''],
+          ['clinician', ''],
+          ['instanceAdmin', 'RHD Consultation Visit'],
+        ]);
+      });
+
+      it("reads a list download whose filters are not text, since a list's filters are not shown", async () => {
+        listed([
+          {
+            ...downloadEntries[2],
+            detail: { ...downloadEntries[2].detail, filters: { status: { value: 'active' }, cardiacClinic: 3 } },
+          },
+          {
+            ...downloadEntries[2],
+            detail: { ...downloadEntries[2].detail, filters: { primaryCareClinic: ['Kawempe'] } },
+          },
+          downloadEntries[1],
+        ]);
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(rowTexts().map((row) => row[3])).toEqual([
+          'DownloadedRegistry list, 4 columns',
+          'DownloadedRegistry list, 4 columns',
+          'Downloaded1 fields, 2026-07-01 to 2026-09-30',
+        ]);
+        expect(await expand(0)).toHaveTextContent('Every patient on the registry');
+      });
+
+      it('says nothing of identifiers when the detail records them as other than true', async () => {
+        listed([
+          { ...downloadEntries[0], detail: { ...downloadEntries[0].detail, identifiers: 0 } },
+          downloadEntries[1],
+        ]);
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(await expand(0)).toHaveTextContent(/Fields the user chose and the file left outNoneRecorded/);
+      });
+    });
+
     it('folds the form and identifiers filters into the request, and fetches every matching download', async () => {
       const calls = backend();
       await signInWith(BOTH);

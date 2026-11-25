@@ -160,7 +160,7 @@ export interface DownloadLogDetail {
 
 export interface DownloadLogEntry {
   date: string;
-  user: { uuid: string; username: string; display?: string | null; role?: string | null };
+  user: { uuid: string; username: string; display?: string | null; role?: string | null } | null;
   /** Null once the form is purged, and for a list. */
   form: { uuid: string; name: string } | null;
   /** The list a CSV the app made itself was of: the registry, a worklist or a Logs tab. */
@@ -168,6 +168,6 @@ export interface DownloadLogEntry {
   detail: DownloadLogDetail | null;
   /** The value of ACT Core's identifiers filter that lists the download; absent from a server older than it. */
   identifiers?: 'with' | 'without' | 'research';
-  /** Whether a detail was recorded that ACT Core cannot read, which leaves `detail` null. */
+  /** Whether a detail was recorded that ACT Core or the app cannot read, which leaves `detail` null. */
   unreadable?: boolean;
 }

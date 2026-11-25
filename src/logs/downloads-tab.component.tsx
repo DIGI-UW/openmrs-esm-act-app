@@ -36,18 +36,33 @@ const texts = (value: unknown) => Array.isArray(value) && value.every((item) => 
 
 const textOrAbsent = (value: unknown) => value == null || typeof value === 'string';
 
+const text = (value: unknown) => (typeof value === 'string' ? value : '');
+
 /** Whether the detail has the shape the tab renders; one from an older, newer or edited row may not. */
-const readable = (detail: DownloadLogDetail) =>
+const readable = ({ detail, list }: DownloadLogEntry) =>
   texts(detail.fields) &&
   texts(detail.withheld) &&
   typeof detail.rows === 'number' &&
   (detail.patient == null || texts(detail.patient)) &&
   (detail.forms == null ||
     (Array.isArray(detail.forms) && detail.forms.every((form) => typeof form?.name === 'string'))) &&
-  ['status', 'cardiacClinic', 'primaryCareClinic'].every((key) => textOrAbsent(detail.filters?.[key]));
+  (Boolean(list) ||
+    ['status', 'cardiacClinic', 'primaryCareClinic'].every((key) => textOrAbsent(detail.filters?.[key])));
 
-const asListed = (entry: DownloadLogEntry): DownloadLogEntry =>
-  entry.detail && !readable(entry.detail) ? { ...entry, detail: null, unreadable: true } : entry;
+const asListed = (entry: DownloadLogEntry): DownloadLogEntry => {
+  const named = {
+    ...entry,
+    user: entry.user && {
+      ...entry.user,
+      username: text(entry.user.username),
+      display: text(entry.user.display),
+      role: text(entry.user.role),
+    },
+    form: entry.form && { ...entry.form, name: text(entry.form.name) },
+    list: entry.list && { ...entry.list, name: text(entry.list.name) },
+  };
+  return named.detail && !readable(named) ? { ...named, detail: null, unreadable: true } : named;
+};
 
 const tagged = (entry: DownloadLogEntry) => Boolean(entry.detail || (entry.unreadable && entry.identifiers));
 
@@ -123,7 +138,7 @@ export function DownloadsTab({
   const stats = {
     downloads: all.length,
     withIdentifiers: all.filter((entry) => identifierKind(entry) === 'with').length,
-    users: new Set(all.map((entry) => entry.user.username)).size,
+    users: new Set(all.map((entry) => entry.user?.username).filter(Boolean)).size,
     rows: all.reduce((sum, entry) => sum + (entry.detail?.rows ?? 0), 0),
   };
 
@@ -190,7 +205,7 @@ export function DownloadsTab({
               <span className={styles.muted}>{t('none', 'None')}</span>
             )}
           </div>
-          {entry.detail.identifiers && (
+          {entry.detail.identifiers === true && (
             <>
               <p className={styles.detailHeading}>{t('whyIdentifiers', 'Why identifiers were included')}</p>
               <p data-testid="why-identifiers">
@@ -270,7 +285,7 @@ export function DownloadsTab({
   const csvRows = () =>
     all.map((entry) => [
       fullTime(entry.date),
-      entry.user.username ?? '',
+      entry.user?.username ?? '',
       targetName(entry),
       entry.detail?.fields.join('; ') ?? '',
       entry.detail && !entry.list ? period(entry.detail) : '',
