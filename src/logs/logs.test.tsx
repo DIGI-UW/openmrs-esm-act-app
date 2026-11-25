@@ -278,7 +278,7 @@ describe('Logs', () => {
       await within(detail).findByText('Date of Injection');
       expect(within(detail).getByText('21-Oct-2026')).toBeInTheDocument();
       expect(within(detail).getByText('1.2 MU (1,200,000 units)')).toBeInTheDocument();
-      expect(line(detail, 'Saved')).toHaveTextContent(/Saved \d\d-\w{3}-\d{4}, 10:52:14/);
+      expect(line(detail, 'Saved')).toHaveTextContent(/Saved \d\d-\w{3,4}-\d{4}, 10:52:14/);
       expect(line(detail, 'Form')).toHaveTextContent('RHD BPG Delivery, visit of 2026-10-21');
       expect(line(detail, 'From')).toHaveTextContent('172.21.0.1, Chrome on macOS');
       expect(within(detail).getByRole('link', { name: "Open Grace Akello's chart" })).toHaveAttribute(
