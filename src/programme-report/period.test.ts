@@ -1,10 +1,14 @@
 import dayjs from 'dayjs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { periods } from './period';
 
 const today = dayjs('2026-10-07');
 
 describe('periods', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('offers this month and the eleven before it, each from its first to its last day', () => {
     const months = periods('month', today);
 
@@ -12,6 +16,12 @@ describe('periods', () => {
     expect(months[0]).toMatchObject({ key: '2026-10-01', label: 'Oct 2026' });
     expect(months[0].end.format('YYYY-MM-DD')).toBe('2026-10-31');
     expect(months[11]).toMatchObject({ key: '2025-11-01', label: 'Nov 2025' });
+  });
+
+  it('names the month as the rest of the app formats dates, even on its first day', () => {
+    vi.useFakeTimers({ now: new Date('2026-09-01T09:00:00Z') });
+
+    expect(periods('month')[0].label).toBe('Sept 2026');
   });
 
   it('offers this quarter and the three before it', () => {
