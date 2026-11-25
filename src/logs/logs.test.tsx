@@ -794,6 +794,25 @@ describe('Logs', () => {
           'With identifiers',
         ]);
       });
+      it('counts in With identifiers an unreadable download and no research download, whatever their details say', async () => {
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: researchDetail, identifiers: 'research', unreadable: false },
+              { ...downloadEntries[0], detail: researchDetail },
+              { ...downloadEntries[1], detail: null, identifiers: 'with', unreadable: true },
+            ],
+            totalCount: 3,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers1');
+      });
     });
 
     describe('whose detail lacks the shape ACT Core records', () => {
@@ -822,6 +841,8 @@ describe('Logs', () => {
                 { patient: 'sex' },
                 { forms: [null] },
                 { filters: { status: { value: 'active' } } },
+                { filters: { cardiacClinic: { name: 'Mulago' } } },
+                { filters: { primaryCareClinic: ['Kawempe'] } },
               ].map((change) => ({
                 ...downloadEntries[0],
                 form: null,
@@ -831,7 +852,7 @@ describe('Logs', () => {
               })),
               downloadEntries[1],
             ],
-            totalCount: 11,
+            totalCount: 13,
             from: '2025-10-22',
             to: null,
           },
@@ -852,11 +873,11 @@ describe('Logs', () => {
           ['DownloadedDetail could not be read', '', 'With identifiers'],
           ['DownloadedDetail could not be read', '', 'Without identifiers'],
           ['DownloadedDetail could not be read', '', ''],
-          ...Array(6).fill(['DownloadedDetail could not be read', '', 'With identifiers']),
+          ...Array(8).fill(['DownloadedDetail could not be read', '', 'With identifiers']),
           ['Downloaded1 fields, 2026-07-01 to 2026-09-30', '412', 'Without identifiers'],
         ]);
         expect(screen.getAllByTestId('downloads-figure')[3]).toHaveTextContent('Rows downloaded412');
-        for (let index = 0; index < 10; index++) {
+        for (let index = 0; index < 12; index++) {
           expect(await expand(index)).toHaveTextContent('The recorded detail could not be read');
         }
       });
@@ -875,7 +896,7 @@ describe('Logs', () => {
           ['', 'With identifiers'],
           ['', 'Without identifiers'],
           ['', ''],
-          ...Array(6).fill(['', 'With identifiers']),
+          ...Array(8).fill(['', 'With identifiers']),
           ['Date of Consultation Visit', 'Without identifiers'],
         ]);
       });
