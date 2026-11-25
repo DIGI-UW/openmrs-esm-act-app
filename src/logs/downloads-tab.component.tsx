@@ -29,8 +29,8 @@ const identifierKinds = ['with', 'without', 'research'] as const;
 
 type IdentifierKind = (typeof identifierKinds)[number];
 
-const identifierKind = (detail: DownloadLogDetail | null): IdentifierKind =>
-  detail?.identifiers ? 'with' : detail?.researchOnly ? 'research' : 'without';
+const identifierKind = (entry: DownloadLogEntry): IdentifierKind =>
+  entry.identifiers ?? (entry.detail?.researchOnly ? 'research' : entry.detail?.identifiers ? 'with' : 'without');
 
 const narrowed = (detail: DownloadLogDetail) =>
   Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
@@ -83,6 +83,9 @@ export function DownloadsTab({
     entry.list?.name ?? entry.form?.name ?? (entry.detail?.forms ?? []).map((form) => form.name).join(', ');
 
   const summary = (entry: DownloadLogEntry) => {
+    if (entry.unreadable) {
+      return t('downloadDetailUnreadable', 'Detail could not be read');
+    }
     if (!entry.detail) {
       return '';
     }
@@ -100,7 +103,7 @@ export function DownloadsTab({
 
   const stats = {
     downloads: all.length,
-    withIdentifiers: all.filter((entry) => entry.detail?.identifiers).length,
+    withIdentifiers: all.filter((entry) => identifierKind(entry) === 'with').length,
     users: new Set(all.map((entry) => entry.user.username)).size,
     rows: all.reduce((sum, entry) => sum + (entry.detail?.rows ?? 0), 0),
   };
@@ -137,9 +140,9 @@ export function DownloadsTab({
     target: targetName(entry),
     cells: [
       entry.detail?.rows ?? '',
-      entry.detail ? (
-        <Tag size="sm" type={identifierTag[identifierKind(entry.detail)]}>
-          {identifierLabels[identifierKind(entry.detail)]}
+      entry.detail || entry.unreadable ? (
+        <Tag size="sm" type={identifierTag[identifierKind(entry)]}>
+          {identifierLabels[identifierKind(entry)]}
         </Tag>
       ) : (
         ''
@@ -228,7 +231,11 @@ export function DownloadsTab({
         </div>
       </>
     ) : (
-      <p className={styles.muted}>{t('noDownloadDetail', 'No detail was recorded')}</p>
+      <p className={styles.muted}>
+        {entry.unreadable
+          ? t('recordedDownloadDetailUnreadable', 'The recorded detail could not be read')
+          : t('noDownloadDetail', 'No detail was recorded')}
+      </p>
     ),
   }));
 
@@ -249,7 +256,7 @@ export function DownloadsTab({
       entry.detail?.fields.join('; ') ?? '',
       entry.detail && !entry.list ? period(entry.detail) : '',
       String(entry.detail?.rows ?? ''),
-      entry.detail ? identifierLabels[identifierKind(entry.detail)] : '',
+      entry.detail || entry.unreadable ? identifierLabels[identifierKind(entry)] : '',
     ]);
 
   return (

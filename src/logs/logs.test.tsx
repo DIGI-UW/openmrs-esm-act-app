@@ -738,6 +738,61 @@ describe('Logs', () => {
       expect(within(detail).getByTestId('why-identifiers')).toBeInTheDocument();
     });
 
+    describe("as ACT Core's identifiers filter lists them", () => {
+      const researchDetail = { ...downloadEntries[0].detail, identifiers: true, researchOnly: true };
+      const listedAs = () =>
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: researchDetail, identifiers: 'research', unreadable: false },
+              { ...downloadEntries[0], detail: researchDetail },
+              { ...downloadEntries[1], detail: null, identifiers: 'with', unreadable: true },
+              { ...downloadEntries[1], detail: null, identifiers: 'without', unreadable: false },
+            ],
+            totalCount: 4,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+      const openListed = async () => {
+        await userEvent.click(screen.getByRole('tab', { name: /Downloads/ }));
+        await screen.findAllByText('RHD Consultation Visit');
+      };
+
+      it("tags and counts each download by the server's identifiers, and marks one whose detail cannot be read", async () => {
+        listedAs();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(rowTexts().map((row) => [row[3], row[6]])).toEqual([
+          ['Downloaded3 fields, All dates', 'Research participants, no identifiers'],
+          ['Downloaded3 fields, All dates', 'Research participants, no identifiers'],
+          ['DownloadedDetail could not be read', 'With identifiers'],
+          ['Downloaded', ''],
+        ]);
+        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers1');
+        expect(await expand(2)).toHaveTextContent('The recorded detail could not be read');
+      });
+
+      it("writes the server's identifiers into the CSV's Identifiers column", async () => {
+        listedAs();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+        await waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.lastCall?.[2].map((row) => row[6])).toEqual([
+          'Research participants, no identifiers',
+          'Research participants, no identifiers',
+          'With identifiers',
+          '',
+        ]);
+      });
+    });
+
     it('folds the form and identifiers filters into the request, and fetches every matching download', async () => {
       const calls = backend();
       await signInWith(BOTH);
