@@ -19,7 +19,7 @@ import {
 } from './log-filters.component';
 import { DetailLine, LogActionCell, LogTable, LogUserCell, type TagType } from './log-table.component';
 import { fullTime, logDay, logTime } from './log-time';
-import { useAllDownloads } from './logs.resource';
+import { asListed, useAllDownloads } from './logs.resource';
 import { type Figure, FigureTiles } from '../figure-tiles/figure-tiles.component';
 import styles from './logs.scss';
 
@@ -33,38 +33,6 @@ type IdentifierKind = (typeof identifierKinds)[number];
 const identifierKind = (entry: DownloadLogEntry): IdentifierKind =>
   entry.identifiers ??
   (entry.detail?.researchOnly ? 'research' : entry.unreadable || entry.detail?.identifiers ? 'with' : 'without');
-
-const texts = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === 'string');
-
-const textOrAbsent = (value: unknown) => value == null || typeof value === 'string';
-
-const text = (value: unknown) => (typeof value === 'string' ? value : '');
-
-/** Whether the detail has the shape the tab renders; one from an older, newer or edited row may not. */
-const readable = ({ detail, list }: DownloadLogEntry) =>
-  texts(detail.fields) &&
-  texts(detail.withheld) &&
-  typeof detail.rows === 'number' &&
-  (detail.patient == null || texts(detail.patient)) &&
-  (detail.forms == null ||
-    (Array.isArray(detail.forms) && detail.forms.every((form) => typeof form?.name === 'string'))) &&
-  (Boolean(list) ||
-    ['status', 'cardiacClinic', 'primaryCareClinic'].every((key) => textOrAbsent(detail.filters?.[key])));
-
-const asListed = (entry: DownloadLogEntry): DownloadLogEntry => {
-  const named = {
-    ...entry,
-    user: entry.user && {
-      ...entry.user,
-      username: text(entry.user.username),
-      display: text(entry.user.display),
-      role: text(entry.user.role),
-    },
-    form: entry.form && { ...entry.form, name: text(entry.form.name) },
-    list: entry.list && { ...entry.list, name: text(entry.list.name) },
-  };
-  return named.detail && !readable(named) ? { ...named, detail: null, unreadable: true } : named;
-};
 
 const tagged = (entry: DownloadLogEntry) => Boolean(entry.detail || entry.unreadable);
 

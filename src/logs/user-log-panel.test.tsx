@@ -101,6 +101,38 @@ describe('UserLogPanel', () => {
     expect(within(screen.getByRole('complementary')).queryByText('Opened')).not.toBeInTheDocument();
   });
 
+  it('reads a download whose names or detail an older server sent in another shape as the Downloads tab does', async () => {
+    backend();
+    const fetchAsBackend = mockOpenmrsFetch.getMockImplementation();
+    mockOpenmrsFetch.mockImplementation((async (url: string) =>
+      url.includes('/actcore/download?') && !url.endsWith('limit=1')
+        ? {
+            data: {
+              results: [
+                {
+                  ...downloadEntries[0],
+                  form: { uuid: 'f-bpg', name: 7 },
+                  detail: { ...downloadEntries[0].detail, rows: { count: 8 } },
+                },
+                { ...downloadEntries[2], list: { name: { display: 'Registry list' }, kind: 'registry' } },
+              ],
+              totalCount: 2,
+            },
+          }
+        : fetchAsBackend(url)) as never);
+    await signInWith(['View Read Audit Logs']);
+
+    renderPanel();
+
+    await screen.findByText(/Opened the chart/);
+    expect(
+      screen
+        .getAllByRole('definition')
+        .map((entry) => entry.textContent)
+        .filter((text) => text.startsWith('Downloaded')),
+    ).toEqual(['Downloaded ', 'Downloaded 486 rows']);
+  });
+
   it('closes from its button', async () => {
     backend();
     await signInWith(['View Audit Logs']);
