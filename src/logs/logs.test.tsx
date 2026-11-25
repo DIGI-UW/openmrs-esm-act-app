@@ -862,7 +862,7 @@ describe('Logs', () => {
         await screen.findAllByText('RHD Consultation Visit');
       };
 
-      it('marks each as unreadable beside the downloads that read, and tags only those the server lists', async () => {
+      it('marks each as unreadable beside the downloads that read, and tags one the server does not list as with identifiers', async () => {
         misshapen();
         await signInWith(BOTH);
         renderPage();
@@ -872,7 +872,7 @@ describe('Logs', () => {
           ['DownloadedDetail could not be read', '', 'Without identifiers'],
           ['DownloadedDetail could not be read', '', 'With identifiers'],
           ['DownloadedDetail could not be read', '', 'Without identifiers'],
-          ['DownloadedDetail could not be read', '', ''],
+          ['DownloadedDetail could not be read', '', 'With identifiers'],
           ...Array(8).fill(['DownloadedDetail could not be read', '', 'With identifiers']),
           ['Downloaded1 fields, 2026-07-01 to 2026-09-30', '412', 'Without identifiers'],
         ]);
@@ -880,6 +880,27 @@ describe('Logs', () => {
         for (let index = 0; index < 12; index++) {
           expect(await expand(index)).toHaveTextContent('The recorded detail could not be read');
         }
+      });
+
+      it('counts in With identifiers one the app cannot read from a server that does not say, but not one with no detail', async () => {
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: { rows: 3, identifiers: false } },
+              { ...downloadEntries[1], detail: null },
+              downloadEntries[1],
+            ],
+            totalCount: 3,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+        await signInWith(BOTH);
+        renderPage();
+        await openMisshapen();
+
+        expect(rowTexts().map((row) => row[6])).toEqual(['With identifiers', '', 'Without identifiers']);
+        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers1');
       });
 
       it('builds the CSV with their fields left blank', async () => {
@@ -895,7 +916,7 @@ describe('Logs', () => {
           ['', 'Without identifiers'],
           ['', 'With identifiers'],
           ['', 'Without identifiers'],
-          ['', ''],
+          ['', 'With identifiers'],
           ...Array(8).fill(['', 'With identifiers']),
           ['Date of Consultation Visit', 'Without identifiers'],
         ]);

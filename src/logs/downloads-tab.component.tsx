@@ -29,8 +29,10 @@ const identifierKinds = ['with', 'without', 'research'] as const;
 
 type IdentifierKind = (typeof identifierKinds)[number];
 
+/** How ACT Core's identifiers filter lists the download; without that, an unreadable one counts as with, as ACT Core does. */
 const identifierKind = (entry: DownloadLogEntry): IdentifierKind =>
-  entry.identifiers ?? (entry.detail?.researchOnly ? 'research' : entry.detail?.identifiers ? 'with' : 'without');
+  entry.identifiers ??
+  (entry.detail?.researchOnly ? 'research' : entry.unreadable || entry.detail?.identifiers ? 'with' : 'without');
 
 const texts = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === 'string');
 
@@ -64,7 +66,7 @@ const asListed = (entry: DownloadLogEntry): DownloadLogEntry => {
   return named.detail && !readable(named) ? { ...named, detail: null, unreadable: true } : named;
 };
 
-const tagged = (entry: DownloadLogEntry) => Boolean(entry.detail || (entry.unreadable && entry.identifiers));
+const tagged = (entry: DownloadLogEntry) => Boolean(entry.detail || entry.unreadable);
 
 const narrowed = (detail: DownloadLogDetail) =>
   Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
