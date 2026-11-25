@@ -748,8 +748,9 @@ describe('Logs', () => {
               { ...downloadEntries[0], detail: researchDetail },
               { ...downloadEntries[1], detail: null, identifiers: 'with', unreadable: true },
               { ...downloadEntries[1], detail: null, identifiers: 'without', unreadable: false },
+              { ...downloadEntries[1], identifiers: 'with', unreadable: false },
             ],
-            totalCount: 4,
+            totalCount: 5,
             from: '2025-10-22',
             to: null,
           },
@@ -770,8 +771,9 @@ describe('Logs', () => {
           ['Downloaded3 fields, All dates', 'Research participants, no identifiers'],
           ['DownloadedDetail could not be read', 'With identifiers'],
           ['Downloaded', ''],
+          ['Downloaded1 fields, 2026-07-01 to 2026-09-30', 'With identifiers'],
         ]);
-        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers1');
+        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers2');
         expect(await expand(2)).toHaveTextContent('The recorded detail could not be read');
       });
 
@@ -789,6 +791,92 @@ describe('Logs', () => {
           'Research participants, no identifiers',
           'With identifiers',
           '',
+          'With identifiers',
+        ]);
+      });
+    });
+
+    describe('whose detail lacks the shape ACT Core records', () => {
+      const misshapen = () =>
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: {}, identifiers: 'without', unreadable: false },
+              {
+                ...downloadEntries[0],
+                detail: { ...downloadEntries[0].detail, fields: 'ACT ID' },
+                identifiers: 'with',
+                unreadable: false,
+              },
+              {
+                ...downloadEntries[1],
+                detail: { ...downloadEntries[1].detail, withheld: undefined },
+                identifiers: 'without',
+                unreadable: false,
+              },
+              { ...downloadEntries[0], detail: { rows: 3, identifiers: true } },
+              ...[
+                { fields: [{ label: 'ACT ID' }] },
+                { withheld: [{ label: 'Given name' }] },
+                { rows: { count: 8 } },
+                { patient: 'sex' },
+                { forms: [null] },
+                { filters: { status: { value: 'active' } } },
+              ].map((change) => ({
+                ...downloadEntries[0],
+                form: null,
+                detail: { ...downloadEntries[0].detail, ...change },
+                identifiers: 'with',
+                unreadable: false,
+              })),
+              downloadEntries[1],
+            ],
+            totalCount: 11,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+      const openMisshapen = async () => {
+        await userEvent.click(screen.getByRole('tab', { name: /Downloads/ }));
+        await screen.findAllByText('RHD Consultation Visit');
+      };
+
+      it('marks each as unreadable beside the downloads that read, and tags only those the server lists', async () => {
+        misshapen();
+        await signInWith(BOTH);
+        renderPage();
+        await openMisshapen();
+
+        expect(rowTexts().map((row) => [row[3], row[5], row[6]])).toEqual([
+          ['DownloadedDetail could not be read', '', 'Without identifiers'],
+          ['DownloadedDetail could not be read', '', 'With identifiers'],
+          ['DownloadedDetail could not be read', '', 'Without identifiers'],
+          ['DownloadedDetail could not be read', '', ''],
+          ...Array(6).fill(['DownloadedDetail could not be read', '', 'With identifiers']),
+          ['Downloaded1 fields, 2026-07-01 to 2026-09-30', '412', 'Without identifiers'],
+        ]);
+        expect(screen.getAllByTestId('downloads-figure')[3]).toHaveTextContent('Rows downloaded412');
+        for (let index = 0; index < 10; index++) {
+          expect(await expand(index)).toHaveTextContent('The recorded detail could not be read');
+        }
+      });
+
+      it('builds the CSV with their fields left blank', async () => {
+        misshapen();
+        await signInWith(BOTH);
+        renderPage();
+        await openMisshapen();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+        await waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.lastCall?.[2].map((row) => [row[3], row[6]])).toEqual([
+          ['', 'Without identifiers'],
+          ['', 'With identifiers'],
+          ['', 'Without identifiers'],
+          ['', ''],
+          ...Array(6).fill(['', 'With identifiers']),
+          ['Date of Consultation Visit', 'Without identifiers'],
         ]);
       });
     });

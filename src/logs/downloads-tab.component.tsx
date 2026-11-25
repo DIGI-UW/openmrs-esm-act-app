@@ -32,6 +32,25 @@ type IdentifierKind = (typeof identifierKinds)[number];
 const identifierKind = (entry: DownloadLogEntry): IdentifierKind =>
   entry.identifiers ?? (entry.detail?.researchOnly ? 'research' : entry.detail?.identifiers ? 'with' : 'without');
 
+const texts = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+const textOrAbsent = (value: unknown) => value == null || typeof value === 'string';
+
+/** Whether the detail has the shape the tab renders; one from an older, newer or edited row may not. */
+const readable = (detail: DownloadLogDetail) =>
+  texts(detail.fields) &&
+  texts(detail.withheld) &&
+  typeof detail.rows === 'number' &&
+  (detail.patient == null || texts(detail.patient)) &&
+  (detail.forms == null ||
+    (Array.isArray(detail.forms) && detail.forms.every((form) => typeof form?.name === 'string'))) &&
+  ['status', 'cardiacClinic', 'primaryCareClinic'].every((key) => textOrAbsent(detail.filters?.[key]));
+
+const asListed = (entry: DownloadLogEntry): DownloadLogEntry =>
+  entry.detail && !readable(entry.detail) ? { ...entry, detail: null, unreadable: true } : entry;
+
+const tagged = (entry: DownloadLogEntry) => Boolean(entry.detail || (entry.unreadable && entry.identifiers));
+
 const narrowed = (detail: DownloadLogDetail) =>
   Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
 
@@ -54,7 +73,7 @@ export function DownloadsTab({
   );
   const [paging, setPaging] = useLogPaging(JSON.stringify(query));
   const { page, error, isLoading } = useAllDownloads(query);
-  const all = page?.results ?? [];
+  const all = useMemo(() => (page?.results ?? []).map(asListed), [page]);
 
   const identifierLabels: Record<IdentifierKind, string> = {
     with: t('withIdentifiers', 'With identifiers'),
@@ -140,7 +159,7 @@ export function DownloadsTab({
     target: targetName(entry),
     cells: [
       entry.detail?.rows ?? '',
-      entry.detail || entry.unreadable ? (
+      tagged(entry) ? (
         <Tag size="sm" type={identifierTag[identifierKind(entry)]}>
           {identifierLabels[identifierKind(entry)]}
         </Tag>
@@ -256,7 +275,7 @@ export function DownloadsTab({
       entry.detail?.fields.join('; ') ?? '',
       entry.detail && !entry.list ? period(entry.detail) : '',
       String(entry.detail?.rows ?? ''),
-      entry.detail || entry.unreadable ? identifierLabels[identifierKind(entry)] : '',
+      tagged(entry) ? identifierLabels[identifierKind(entry)] : '',
     ]);
 
   return (
