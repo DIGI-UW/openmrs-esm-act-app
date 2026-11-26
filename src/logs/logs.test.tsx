@@ -1,13 +1,13 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { downloadCsv } from '../table-filters/csv';
 import Logs from './logs.component';
-import { activityDetails, activityEntries, downloadEntries, readEntries, signInEntries } from './logs.fixture';
+import { activityDetails, activityEntries, downloadEntries, now, readEntries, signInEntries } from './logs.fixture';
 
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 
@@ -124,9 +124,15 @@ const lastUrl = (calls: Array<Call>, prefix: string) =>
 
 describe('Logs', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
     window.openmrsBase = '/openmrs';
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-logs');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('tabs and who sees them', () => {
