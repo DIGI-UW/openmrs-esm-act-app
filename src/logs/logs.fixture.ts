@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import { type DownloadLogEntry } from '../download/download.resource';
 import { type ActivityDetail, type ActivityEntry, type ReadEntry, type SignInEntry } from './logs.resource';
 
-/** The instant the fixture times count back from, at which the tests that show them stop the clock. */
+/** The instant the fixture times count back from; a test that shows Today or Yesterday stops the clock here. */
 export const now = new Date();
 
 /** A time of the day of `now`, or of `daysAgo` days before it, at the given clock time, as the server would write it. */
