@@ -24,6 +24,16 @@ describe('periods', () => {
     expect(periods('month')[0].label).toBe('Sept 2026');
   });
 
+  it("names the month in the user's language", () => {
+    const language = window.i18next.language;
+    window.i18next.language = 'fr';
+    try {
+      expect(periods('month', dayjs('2026-09-15'))[0].label).toBe('sept. 2026');
+    } finally {
+      window.i18next.language = language;
+    }
+  });
+
   it('offers this quarter and the three before it', () => {
     const quarters = periods('quarter', today);
 
