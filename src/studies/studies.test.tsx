@@ -67,6 +67,7 @@ describe('Studies', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
+    window.history.replaceState(null, '', '/openmrs/spa/home/act-studies');
     await signInWith(['App: act.studies', 'Task: act.manageStudies', 'Task: act.lists.export']);
     vi.mocked(useReportDataset).mockReturnValue({
       columns: [],

@@ -37,8 +37,9 @@ const zeros = Object.fromEntries(Object.keys(september).map((key) => [key, 0]));
 
 const posted: Array<{ url: string; body: unknown }> = [];
 
-/** Akunalaber, a primary care clinic, and Gulu, a cardiac one; Akunalaber's last month is entered. */
+/** Akunalaber, a primary care clinic, and Gulu, a cardiac one; Akunalaber's last month is entered, and a save sticks. */
 function backendAnswers(save?: (body: { counts: Counts; notes: string }) => Promise<ScreeningMonth>) {
+  const savedMonths = new Map<string, ScreeningMonth>();
   mockOpenmrsFetch.mockImplementation((async (url: string, init?: { method?: string; body?: unknown }) => {
     if (url.includes('/location?tag=RHD%20Community')) {
       return { data: { results: [{ uuid: 'akunalaber', display: 'Akunalaber HCIII' }], totalCount: 1 } };
@@ -55,7 +56,11 @@ function backendAnswers(save?: (body: { counts: Counts; notes: string }) => Prom
     const [, clinic, month] = url.match(/clinic=([^&]+)&month=(.+)$/) ?? [];
     if (init?.method === 'POST') {
       posted.push({ url, body: init.body });
-      return { data: await save(init.body as never) };
+      savedMonths.set(url, await save(init.body as never));
+      return { data: savedMonths.get(url) };
+    }
+    if (savedMonths.has(url)) {
+      return { data: savedMonths.get(url) };
     }
     const entered = clinic === 'akunalaber' && month === lastMonth;
     return {

@@ -349,6 +349,7 @@ function renderPage() {
 describe('Dashboard', () => {
   beforeEach(() => {
     window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard');
+    window.localStorage.removeItem('act.dashboard.collapsed');
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useReportDataset).mockReset();
     Object.keys(mutates).forEach((report) => delete mutates[report]);
@@ -991,7 +992,6 @@ describe('Dashboard', () => {
   });
 
   it('collapses a section to its title, and opens it collapsed again next time in this browser', async () => {
-    window.localStorage.removeItem('act.dashboard.collapsed');
     await signIn();
     const { unmount } = renderPage();
 
@@ -1005,7 +1005,6 @@ describe('Dashboard', () => {
     expect((await screen.findAllByTestId('dashboard-status'))[0]).not.toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Expand Registrant status' }));
     expect(screen.getAllByTestId('dashboard-status')[0]).toBeVisible();
-    window.localStorage.removeItem('act.dashboard.collapsed');
   });
 
   it('holds the screening cascade, the monthly counts and the registrations in tabs of one Screening card', async () => {
