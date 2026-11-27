@@ -112,7 +112,13 @@ function ActivityDetailRow({ entry, label }: { entry: ActivityEntry; label: stri
           </p>
         )}
         <p className={styles.detailLine}>
-          <ConfigurableLink to={`${adminLinks.auditLogsUrl}?username=${encodeURIComponent(entry.user.username)}`}>
+          <ConfigurableLink
+            to={
+              entry.user?.username
+                ? `${adminLinks.auditLogsUrl}?username=${encodeURIComponent(entry.user.username)}`
+                : adminLinks.auditLogsUrl
+            }
+          >
             {t('revisionInAuditModule', 'This change in the audit module (every field, every revision)')}
           </ConfigurableLink>
         </p>
@@ -209,7 +215,7 @@ export function ActivityTab({
       )
     ).results.map((entry) => [
       fullTime(entry.time),
-      entry.user.username ?? '',
+      entry.user?.username ?? '',
       entry.action,
       entry.summary ?? '',
       [entry.target?.display, entry.target?.actId].filter(Boolean).join(' '),
