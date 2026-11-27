@@ -1,6 +1,6 @@
 import React from 'react';
 import dayjs from 'dayjs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig, useSWRConfig } from 'swr';
@@ -118,7 +118,12 @@ describe('Reports', () => {
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("totals the facilities' rows in the tiles, the on-time rate over the period's timed injections", async () => {
+    vi.useFakeTimers({ now: new Date('2026-09-15T09:00:00Z'), toFake: ['Date'] });
     await atLocation(['RHD Tertiary']);
 
     renderPage();
@@ -128,7 +133,7 @@ describe('Reports', () => {
     expect(tile('Prophylaxis due this week')).toHaveTextContent('Next dose due within 7 days');
     expect(tile('Overdue')).toHaveTextContent('6');
     // 9 of 12 timed injections on time.
-    expect(tile('BPG on-time rate')).toHaveTextContent(`75%${dayjs().format('MMM YYYY')}`);
+    expect(tile('BPG on-time rate')).toHaveTextContent('75%Sept 2026');
   });
 
   it('shows no rate when no injection in the period was timed', async () => {
