@@ -417,6 +417,41 @@ describe('Logs', () => {
       ]);
     });
 
+    describe('whose entry has no user, as ACT Core sends for a revision with no author or a purged one', () => {
+      const unnamed = () =>
+        backend({
+          '/actcore/activity?': {
+            results: [{ ...activityEntries[0], user: null }, activityEntries[1]],
+            totalCount: 2,
+          },
+        });
+
+      it('shows the user as unknown, and links the change to the audit module unfiltered', async () => {
+        unnamed();
+        await signInWith(BOTH);
+        renderPage();
+        await screen.findByText('Grace Akello');
+
+        expect(rowTexts()[0][2]).toBe('unknown');
+        const detail = await expand(0);
+        expect(
+          within(detail).getByRole('link', { name: 'This change in the audit module (every field, every revision)' }),
+        ).toHaveAttribute('href', '/openmrs/module/auditlogweb/auditlogs.form');
+      });
+
+      it('writes the user into the CSV as a blank', async () => {
+        unnamed();
+        await signInWith(BOTH);
+        renderPage();
+        await screen.findByText('Grace Akello');
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+        await waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.lastCall?.[2].map((row) => row[1])).toEqual(['', 'communityClinician']);
+      });
+    });
+
     it('says why when the log cannot be loaded, such as for a user the server refuses', async () => {
       backend({
         '/actcore/activity?': Object.assign(new Error('403'), {
