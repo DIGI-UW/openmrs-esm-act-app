@@ -108,7 +108,8 @@ export interface ActivityEntry {
   /** Null for a flag dismissal, which ACT Core records outside the audit log, so it has nothing to expand. */
   revisionId: number | null;
   time: string;
-  user: LogUser;
+  /** Null for a revision with no author, or one whose user is purged. */
+  user: LogUser | null;
   kind: ActivityKind;
   /** The verb and object, as "Saved RHD BPG Delivery" or "Registered a patient". */
   action: string;
