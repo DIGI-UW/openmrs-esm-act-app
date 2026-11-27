@@ -1,6 +1,6 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
@@ -58,6 +58,15 @@ const patientInformation = (screen: unknown, diagnosed: boolean, date = '2026-09
 
 describe('clinical banner flags', () => {
   const now = new Date('2026-10-21T12:00:00+0300');
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('ages the procedural recommendation from the first consultation of the latest run that recommends its procedure', () => {
     expect(procedureStatus([], c, now)).toBeNull();

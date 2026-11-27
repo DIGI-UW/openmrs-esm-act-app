@@ -12,7 +12,7 @@ import {
 } from '../constants';
 import { restErrorMessage } from '../rest-error-message';
 import { describeSignInDetails, logTime } from './log-time';
-import { type Paging, useActivity, useDownloads, useReads, useSignIns } from './logs.resource';
+import { asListed, type Paging, useActivity, useDownloads, useReads, useSignIns } from './logs.resource';
 import { useSignInLabels } from './sign-ins-tab.component';
 import styles from './logs.scss';
 
@@ -108,7 +108,7 @@ export function UserLogPanel({
       ),
       summary: entry.count > 1 ? t('readCount', '{{count}} reads', { count: entry.count }) : null,
     })),
-    ...(downloads.page?.results ?? []).map((entry, index) => ({
+    ...(downloads.page?.results ?? []).map(asListed).map((entry, index) => ({
       key: `downloads-${entry.date}-${index}`,
       time: entry.date,
       source: 'downloads' as const,

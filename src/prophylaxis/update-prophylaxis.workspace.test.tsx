@@ -1,7 +1,7 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig, useSWRConfig } from 'swr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -20,7 +20,7 @@ import UpdateProphylaxisWorkspace from './update-prophylaxis.workspace';
 
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
 const { concepts } = config.prophylaxisUpdate;
-const today = dayjs().format('YYYY-MM-DD');
+let today: string;
 const q28 = { uuid: '50be4b26-6c5b-5aaa-9254-3bfd313b4522', display: 'Q28 day BPG' };
 const q21 = '2f3ee632-dd14-51b0-a4ec-de10e7958019';
 
@@ -96,6 +96,9 @@ async function openUpdate() {
 
 describe('UpdateProphylaxisWorkspace', () => {
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date());
+    today = dayjs().format('YYYY-MM-DD');
     await signInWith(['Add Encounters']);
     vi.mocked(useSession).mockReturnValue({
       ...vi.mocked(useSession)(),
@@ -103,6 +106,10 @@ describe('UpdateProphylaxisWorkspace', () => {
     } as never);
     vi.mocked(showSnackbar).mockClear();
     closeWorkspace.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('shows the current regimen, start and duration, and saves a changed regimen as a new encounter starting today', async () => {

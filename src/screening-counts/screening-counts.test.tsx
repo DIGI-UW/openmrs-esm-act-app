@@ -1,7 +1,7 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch, showSnackbar, useSession } from '@openmrs/esm-framework';
@@ -10,7 +10,7 @@ import ScreeningCounts from './screening-counts.component';
 import { type Counts, type ScreeningMonth } from './screening-counts.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
-const lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
+let lastMonth: string;
 
 /** The design's September at Akunalaber: school, community and health facility, as entered. */
 const september: Counts = {
@@ -84,9 +84,16 @@ const cell = (setting: string, metric: string) => screen.getByLabelText(new RegE
 
 describe('Screening counts', () => {
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date());
+    lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
     vi.clearAllMocks();
     posted.length = 0;
     await signInWith(['App: act.screeningCounts', 'Task: act.enterScreeningCounts']);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('heads the page with the data entry pictogram', async () => {
