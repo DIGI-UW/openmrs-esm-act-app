@@ -147,6 +147,47 @@ describe('DownloadData', () => {
     ]);
   });
 
+  it("loads a form's fields that the form engine has already cached under the same key", async () => {
+    await signInWith(['Task: act.downloadResearchData']);
+    backendAnswers();
+    const answer = mockOpenmrsFetch.getMockImplementation();
+    // Only the cache answers for the form, as when the form engine loaded it earlier in the session.
+    mockOpenmrsFetch.mockImplementation((url: string, init?: never) =>
+      url.includes('/o3/forms/echo') ? new Promise(() => {}) : answer(url, init),
+    );
+    const user = userEvent.setup();
+    // What the form engine leaves there: the response itself, not a list of fields.
+    const cache = new Map<string, unknown>([
+      ['/ws/rest/v1/o3/forms/echo', { data: { data: schema }, isLoading: false, isValidating: false }],
+    ]);
+    render(
+      <SWRConfig value={{ provider: () => cache as never }}>
+        <DownloadData />
+      </SWRConfig>,
+    );
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Echocardiogram' }));
+
+    expect(await screen.findByRole('checkbox', { name: 'Mitral valve: Regurgitation' })).toBeInTheDocument();
+  });
+
+  it('leaves the form engine the response it caches under the same key', async () => {
+    await signInWith(['Task: act.downloadResearchData']);
+    backendAnswers();
+    const user = userEvent.setup();
+    const cache = new Map<string, { data?: unknown }>();
+    render(
+      <SWRConfig value={{ provider: () => cache as never }}>
+        <DownloadData />
+      </SWRConfig>,
+    );
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Echocardiogram' }));
+    await screen.findByRole('checkbox', { name: 'Mitral valve: Regurgitation' });
+
+    expect(cache.get('/ws/rest/v1/o3/forms/echo')?.data).toEqual({ data: schema });
+  });
+
   it('lists each form by the name users see, as the server displays it', async () => {
     await signInWith(['Task: act.downloadResearchData']);
     backendAnswers();

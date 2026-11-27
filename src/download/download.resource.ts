@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { type TFunction } from 'i18next';
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 export interface DownloadForm {
   uuid: string;
@@ -80,10 +81,10 @@ export function formFields(schema: FormSchema): Array<DownloadField> {
 
 export function useFormFields(formUuid: string) {
   const url = formUuid ? `${restBaseUrl}/o3/forms/${formUuid}` : null;
-  const { data, error, isLoading } = useSWR<Array<DownloadField>, Error>(url, async () =>
-    formFields((await openmrsFetch<FormSchema>(url)).data),
-  );
-  return { fields: data ?? [], error, isLoading };
+  // The form engine caches the response under this same key, so the fields are read from the response, not cached.
+  const { data, error, isLoading } = useSWR<FetchResponse<FormSchema>, Error>(url, openmrsFetch);
+  const fields = useMemo(() => (data?.data ? formFields(data.data) : []), [data]);
+  return { fields, error, isLoading };
 }
 
 export type DownloadStatus = 'active' | 'inactive';
