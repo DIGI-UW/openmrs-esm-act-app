@@ -197,6 +197,42 @@ export const downloadsUrl = (query: DownloadsQuery, paging: Paging) =>
 export const useDownloads = (query: DownloadsQuery, paging: Paging, enabled = true) =>
   usePage<DownloadLogEntry>(enabled ? downloadsUrl(query, paging) : null, actCorePage);
 
+const texts = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+const textOrAbsent = (value: unknown) => value == null || typeof value === 'string';
+
+const text = (value: unknown) => (typeof value === 'string' ? value : '');
+
+/** Whether the detail has the shape the Downloads tab renders; one from an older, newer or edited row may not. */
+const readable = ({ detail, list }: DownloadLogEntry) =>
+  texts(detail.fields) &&
+  texts(detail.withheld) &&
+  typeof detail.rows === 'number' &&
+  (detail.patient == null || texts(detail.patient)) &&
+  (detail.forms == null ||
+    (Array.isArray(detail.forms) && detail.forms.every((form) => typeof form?.name === 'string'))) &&
+  (Boolean(list) ||
+    ['status', 'cardiacClinic', 'primaryCareClinic'].every((key) => textOrAbsent(detail.filters?.[key])));
+
+/**
+ * A download as the Downloads tab and the user log render it: its user's, form's and list's names read as empty where
+ * they are not text, and a detail of another shape dropped and marked unreadable.
+ */
+export const asListed = (entry: DownloadLogEntry): DownloadLogEntry => {
+  const named = {
+    ...entry,
+    user: entry.user && {
+      ...entry.user,
+      username: text(entry.user.username),
+      display: text(entry.user.display),
+      role: text(entry.user.role),
+    },
+    form: entry.form && { ...entry.form, name: text(entry.form.name) },
+    list: entry.list && { ...entry.list, name: text(entry.list.name) },
+  };
+  return named.detail && !readable(named) ? { ...named, detail: null, unreadable: true } : named;
+};
+
 /** Every download that matches, for the tab's summary line and its paging. */
 export function useAllDownloads(query: DownloadsQuery) {
   const key = downloadsUrl(query, { startIndex: 0, limit: MAX_LIMIT });

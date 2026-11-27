@@ -19,7 +19,7 @@ import {
 } from './log-filters.component';
 import { DetailLine, LogActionCell, LogTable, LogUserCell, type TagType } from './log-table.component';
 import { fullTime, logDay, logTime } from './log-time';
-import { useAllDownloads } from './logs.resource';
+import { asListed, useAllDownloads } from './logs.resource';
 import { type Figure, FigureTiles } from '../figure-tiles/figure-tiles.component';
 import styles from './logs.scss';
 
@@ -29,8 +29,12 @@ const identifierKinds = ['with', 'without', 'research'] as const;
 
 type IdentifierKind = (typeof identifierKinds)[number];
 
-const identifierKind = (detail: DownloadLogDetail | null): IdentifierKind =>
-  detail?.identifiers ? 'with' : detail?.researchOnly ? 'research' : 'without';
+/** How ACT Core's identifiers filter lists the download; without that, an unreadable one counts as with, as ACT Core does. */
+const identifierKind = (entry: DownloadLogEntry): IdentifierKind =>
+  entry.identifiers ??
+  (entry.detail?.researchOnly ? 'research' : entry.unreadable || entry.detail?.identifiers ? 'with' : 'without');
+
+const tagged = (entry: DownloadLogEntry) => Boolean(entry.detail || entry.unreadable);
 
 const narrowed = (detail: DownloadLogDetail) =>
   Boolean(detail.filters?.status || detail.filters?.cardiacClinic || detail.filters?.primaryCareClinic);
@@ -54,7 +58,7 @@ export function DownloadsTab({
   );
   const [paging, setPaging] = useLogPaging(JSON.stringify(query));
   const { page, error, isLoading } = useAllDownloads(query);
-  const all = page?.results ?? [];
+  const all = useMemo(() => (page?.results ?? []).map(asListed), [page]);
 
   const identifierLabels: Record<IdentifierKind, string> = {
     with: t('withIdentifiers', 'With identifiers'),
@@ -83,6 +87,9 @@ export function DownloadsTab({
     entry.list?.name ?? entry.form?.name ?? (entry.detail?.forms ?? []).map((form) => form.name).join(', ');
 
   const summary = (entry: DownloadLogEntry) => {
+    if (entry.unreadable) {
+      return t('downloadDetailUnreadable', 'Detail could not be read');
+    }
     if (!entry.detail) {
       return '';
     }
@@ -100,8 +107,8 @@ export function DownloadsTab({
 
   const stats = {
     downloads: all.length,
-    withIdentifiers: all.filter((entry) => entry.detail?.identifiers).length,
-    users: new Set(all.map((entry) => entry.user.username)).size,
+    withIdentifiers: all.filter((entry) => identifierKind(entry) === 'with').length,
+    users: new Set(all.map((entry) => entry.user?.username).filter(Boolean)).size,
     rows: all.reduce((sum, entry) => sum + (entry.detail?.rows ?? 0), 0),
   };
 
@@ -137,9 +144,9 @@ export function DownloadsTab({
     target: targetName(entry),
     cells: [
       entry.detail?.rows ?? '',
-      entry.detail ? (
-        <Tag size="sm" type={identifierTag[identifierKind(entry.detail)]}>
-          {identifierLabels[identifierKind(entry.detail)]}
+      tagged(entry) ? (
+        <Tag size="sm" type={identifierTag[identifierKind(entry)]}>
+          {identifierLabels[identifierKind(entry)]}
         </Tag>
       ) : (
         ''
@@ -168,7 +175,7 @@ export function DownloadsTab({
               <span className={styles.muted}>{t('none', 'None')}</span>
             )}
           </div>
-          {entry.detail.identifiers && (
+          {entry.detail.identifiers === true && (
             <>
               <p className={styles.detailHeading}>{t('whyIdentifiers', 'Why identifiers were included')}</p>
               <p data-testid="why-identifiers">
@@ -228,7 +235,11 @@ export function DownloadsTab({
         </div>
       </>
     ) : (
-      <p className={styles.muted}>{t('noDownloadDetail', 'No detail was recorded')}</p>
+      <p className={styles.muted}>
+        {entry.unreadable
+          ? t('recordedDownloadDetailUnreadable', 'The recorded detail could not be read')
+          : t('noDownloadDetail', 'No detail was recorded')}
+      </p>
     ),
   }));
 
@@ -244,12 +255,12 @@ export function DownloadsTab({
   const csvRows = () =>
     all.map((entry) => [
       fullTime(entry.date),
-      entry.user.username ?? '',
+      entry.user?.username ?? '',
       targetName(entry),
       entry.detail?.fields.join('; ') ?? '',
       entry.detail && !entry.list ? period(entry.detail) : '',
       String(entry.detail?.rows ?? ''),
-      entry.detail ? identifierLabels[identifierKind(entry.detail)] : '',
+      tagged(entry) ? identifierLabels[identifierKind(entry)] : '',
     ]);
 
   return (

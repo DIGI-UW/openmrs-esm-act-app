@@ -1,13 +1,13 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { signInWith } from '../access/sign-in.test-helper';
 import { downloadCsv } from '../table-filters/csv';
 import Logs from './logs.component';
-import { activityDetails, activityEntries, downloadEntries, readEntries, signInEntries } from './logs.fixture';
+import { activityDetails, activityEntries, downloadEntries, now, readEntries, signInEntries } from './logs.fixture';
 
 vi.mock('../table-filters/csv', () => ({ downloadCsv: vi.fn() }));
 
@@ -124,9 +124,15 @@ const lastUrl = (calls: Array<Call>, prefix: string) =>
 
 describe('Logs', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
     window.openmrsBase = '/openmrs';
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     window.history.replaceState(null, '', '/openmrs/spa/home/act-logs');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('tabs and who sees them', () => {
@@ -278,7 +284,7 @@ describe('Logs', () => {
       await within(detail).findByText('Date of Injection');
       expect(within(detail).getByText('21-Oct-2026')).toBeInTheDocument();
       expect(within(detail).getByText('1.2 MU (1,200,000 units)')).toBeInTheDocument();
-      expect(line(detail, 'Saved')).toHaveTextContent(/Saved \d\d-\w{3}-\d{4}, 10:52:14/);
+      expect(line(detail, 'Saved')).toHaveTextContent(/Saved \d\d-\w{3,4}-\d{4}, 10:52:14/);
       expect(line(detail, 'Form')).toHaveTextContent('RHD BPG Delivery, visit of 2026-10-21');
       expect(line(detail, 'From')).toHaveTextContent('172.21.0.1, Chrome on macOS');
       expect(within(detail).getByRole('link', { name: "Open Grace Akello's chart" })).toHaveAttribute(
@@ -730,6 +736,284 @@ describe('Logs', () => {
       detail = await expand(1);
       expect(line(detail, 'Patient fields')).toHaveTextContent('ACT ID, Sex, Age');
       expect(within(detail).getByTestId('why-identifiers')).toBeInTheDocument();
+    });
+
+    describe("as ACT Core's identifiers filter lists them", () => {
+      const researchDetail = { ...downloadEntries[0].detail, identifiers: true, researchOnly: true };
+      const listedAs = () =>
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: researchDetail, identifiers: 'research', unreadable: false },
+              { ...downloadEntries[0], detail: researchDetail },
+              { ...downloadEntries[1], detail: null, identifiers: 'with', unreadable: true },
+              { ...downloadEntries[1], detail: null, identifiers: 'without', unreadable: false },
+              { ...downloadEntries[1], identifiers: 'with', unreadable: false },
+            ],
+            totalCount: 5,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+      const openListed = async () => {
+        await userEvent.click(screen.getByRole('tab', { name: /Downloads/ }));
+        await screen.findAllByText('RHD Consultation Visit');
+      };
+
+      it("tags and counts each download by the server's identifiers, and marks one whose detail cannot be read", async () => {
+        listedAs();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(rowTexts().map((row) => [row[3], row[6]])).toEqual([
+          ['Downloaded3 fields, All dates', 'Research participants, no identifiers'],
+          ['Downloaded3 fields, All dates', 'Research participants, no identifiers'],
+          ['DownloadedDetail could not be read', 'With identifiers'],
+          ['Downloaded', ''],
+          ['Downloaded1 fields, 2026-07-01 to 2026-09-30', 'With identifiers'],
+        ]);
+        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers2');
+        expect(await expand(2)).toHaveTextContent('The recorded detail could not be read');
+      });
+
+      it("writes the server's identifiers into the CSV's Identifiers column", async () => {
+        listedAs();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+        await waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.lastCall?.[2].map((row) => row[6])).toEqual([
+          'Research participants, no identifiers',
+          'Research participants, no identifiers',
+          'With identifiers',
+          '',
+          'With identifiers',
+        ]);
+      });
+      it('counts in With identifiers an unreadable download and no research download, whatever their details say', async () => {
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: researchDetail, identifiers: 'research', unreadable: false },
+              { ...downloadEntries[0], detail: researchDetail },
+              { ...downloadEntries[1], detail: null, identifiers: 'with', unreadable: true },
+            ],
+            totalCount: 3,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers1');
+      });
+    });
+
+    describe('whose detail lacks the shape ACT Core records', () => {
+      const misshapen = () =>
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: {}, identifiers: 'without', unreadable: false },
+              {
+                ...downloadEntries[0],
+                detail: { ...downloadEntries[0].detail, fields: 'ACT ID' },
+                identifiers: 'with',
+                unreadable: false,
+              },
+              {
+                ...downloadEntries[1],
+                detail: { ...downloadEntries[1].detail, withheld: undefined },
+                identifiers: 'without',
+                unreadable: false,
+              },
+              { ...downloadEntries[0], detail: { rows: 3, identifiers: true } },
+              ...[
+                { fields: [{ label: 'ACT ID' }] },
+                { withheld: [{ label: 'Given name' }] },
+                { rows: { count: 8 } },
+                { patient: 'sex' },
+                { forms: [null] },
+                { filters: { status: { value: 'active' } } },
+                { filters: { cardiacClinic: { name: 'Mulago' } } },
+                { filters: { primaryCareClinic: ['Kawempe'] } },
+              ].map((change) => ({
+                ...downloadEntries[0],
+                form: null,
+                detail: { ...downloadEntries[0].detail, ...change },
+                identifiers: 'with',
+                unreadable: false,
+              })),
+              downloadEntries[1],
+            ],
+            totalCount: 13,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+      const openMisshapen = async () => {
+        await userEvent.click(screen.getByRole('tab', { name: /Downloads/ }));
+        await screen.findAllByText('RHD Consultation Visit');
+      };
+
+      it('marks each as unreadable beside the downloads that read, and tags one the server does not list as with identifiers', async () => {
+        misshapen();
+        await signInWith(BOTH);
+        renderPage();
+        await openMisshapen();
+
+        expect(rowTexts().map((row) => [row[3], row[5], row[6]])).toEqual([
+          ['DownloadedDetail could not be read', '', 'Without identifiers'],
+          ['DownloadedDetail could not be read', '', 'With identifiers'],
+          ['DownloadedDetail could not be read', '', 'Without identifiers'],
+          ['DownloadedDetail could not be read', '', 'With identifiers'],
+          ...Array(8).fill(['DownloadedDetail could not be read', '', 'With identifiers']),
+          ['Downloaded1 fields, 2026-07-01 to 2026-09-30', '412', 'Without identifiers'],
+        ]);
+        expect(screen.getAllByTestId('downloads-figure')[3]).toHaveTextContent('Rows downloaded412');
+        for (let index = 0; index < 12; index++) {
+          expect(await expand(index)).toHaveTextContent('The recorded detail could not be read');
+        }
+      });
+
+      it('counts in With identifiers one the app cannot read from a server that does not say, but not one with no detail', async () => {
+        backend({
+          '/actcore/download?': {
+            results: [
+              { ...downloadEntries[0], detail: { rows: 3, identifiers: false } },
+              { ...downloadEntries[1], detail: null },
+              downloadEntries[1],
+            ],
+            totalCount: 3,
+            from: '2025-10-22',
+            to: null,
+          },
+        });
+        await signInWith(BOTH);
+        renderPage();
+        await openMisshapen();
+
+        expect(rowTexts().map((row) => row[6])).toEqual(['With identifiers', '', 'Without identifiers']);
+        expect(screen.getAllByTestId('downloads-figure')[1]).toHaveTextContent('With identifiers1');
+      });
+
+      it('builds the CSV with their fields left blank', async () => {
+        misshapen();
+        await signInWith(BOTH);
+        renderPage();
+        await openMisshapen();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+        await waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.lastCall?.[2].map((row) => [row[3], row[6]])).toEqual([
+          ['', 'Without identifiers'],
+          ['', 'With identifiers'],
+          ['', 'Without identifiers'],
+          ['', 'With identifiers'],
+          ...Array(8).fill(['', 'With identifiers']),
+          ['Date of Consultation Visit', 'Without identifiers'],
+        ]);
+      });
+    });
+
+    describe('whose user or names are not what ACT Core records', () => {
+      const listed = (results: Array<unknown>) =>
+        backend({ '/actcore/download?': { results, totalCount: results.length, from: '2025-10-22', to: null } });
+      const openListed = async () => {
+        await userEvent.click(screen.getByRole('tab', { name: /Downloads/ }));
+        await screen.findAllByText('RHD Consultation Visit');
+      };
+      const unnamed = () =>
+        listed([
+          { ...downloadEntries[0], user: null },
+          { ...downloadEntries[0], user: { ...downloadEntries[0].user, username: { name: 'clinician' } } },
+          {
+            ...downloadEntries[1],
+            user: { ...downloadEntries[1].user, display: { name: 'James Kato' }, role: { name: 'Admin' } },
+          },
+          { ...downloadEntries[2], list: { ...downloadEntries[2].list, name: { name: 'Registry list' } } },
+          { ...downloadEntries[0], form: { ...downloadEntries[0].form, name: { name: 'RHD BPG Delivery' } } },
+          downloadEntries[1],
+        ]);
+
+      it('shows a missing user as unknown and a name that is not text as blank, and counts only the users it can name', async () => {
+        unnamed();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(rowTexts().map((row) => [row[2], row[4]])).toEqual([
+          ['unknown', 'RHD BPG Delivery'],
+          ['Sarah NamusokeClinician', 'RHD BPG Delivery'],
+          ['instanceAdmin', 'RHD Consultation Visit'],
+          ['Peter OcensiteAdmin · Site Administrator', ''],
+          ['Sarah Namusokeclinician · Clinician', ''],
+          ['James KatoinstanceAdmin · Instance Administrator', 'RHD Consultation Visit'],
+        ]);
+        expect(screen.getAllByTestId('downloads-figure')[2]).toHaveTextContent('Users3');
+      });
+
+      it('writes them into the CSV as blanks', async () => {
+        unnamed();
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+
+        await waitFor(() => expect(downloadCsv).toHaveBeenCalled());
+        expect(vi.mocked(downloadCsv).mock.lastCall?.[2].map((row) => [row[1], row[2]])).toEqual([
+          ['', 'RHD BPG Delivery'],
+          ['', 'RHD BPG Delivery'],
+          ['instanceAdmin', 'RHD Consultation Visit'],
+          ['siteAdmin', ''],
+          ['clinician', ''],
+          ['instanceAdmin', 'RHD Consultation Visit'],
+        ]);
+      });
+
+      it("reads a list download whose filters are not text, since a list's filters are not shown", async () => {
+        listed([
+          {
+            ...downloadEntries[2],
+            detail: { ...downloadEntries[2].detail, filters: { status: { value: 'active' }, cardiacClinic: 3 } },
+          },
+          {
+            ...downloadEntries[2],
+            detail: { ...downloadEntries[2].detail, filters: { primaryCareClinic: ['Kawempe'] } },
+          },
+          downloadEntries[1],
+        ]);
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(rowTexts().map((row) => row[3])).toEqual([
+          'DownloadedRegistry list, 4 columns',
+          'DownloadedRegistry list, 4 columns',
+          'Downloaded1 fields, 2026-07-01 to 2026-09-30',
+        ]);
+        expect(await expand(0)).toHaveTextContent('Every patient on the registry');
+      });
+
+      it('says nothing of identifiers when the detail records them as other than true', async () => {
+        listed([
+          { ...downloadEntries[0], detail: { ...downloadEntries[0].detail, identifiers: 0 } },
+          downloadEntries[1],
+        ]);
+        await signInWith(BOTH);
+        renderPage();
+        await openListed();
+
+        expect(await expand(0)).toHaveTextContent(/Fields the user chose and the file left outNoneRecorded/);
+      });
     });
 
     it('folds the form and identifiers filters into the request, and fetches every matching download', async () => {

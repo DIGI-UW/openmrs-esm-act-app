@@ -1,7 +1,7 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import useSWR, { SWRConfig } from 'swr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -18,7 +18,7 @@ import UpdatePatientStatusButton from './update-patient-status-button.component'
 import UpdatePatientStatusWorkspace from './update-patient-status.workspace';
 
 const config = getDefaultsFromConfigSchema(configSchema) as Config;
-const today = dayjs().format('YYYY-MM-DD');
+let today: string;
 const deathConcept = config.patientStatus.deathConcept;
 const registry = config.patientStatus.programUuid;
 const { concepts, encounterType, form } = config.patientStatus;
@@ -169,9 +169,16 @@ const optionNames = () => screen.getAllByRole('option').map((one) => one.textCon
 
 describe('UpdatePatientStatusWorkspace', () => {
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date());
+    today = dayjs().format('YYYY-MM-DD');
     await signInWith(['Edit Patient Programs', 'Edit People']);
     closeWorkspace.mockReset();
     vi.mocked(showSnackbar).mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("offers the workflow's terminal states to a patient in the registry, and ends the enrolment in the one chosen", async () => {
