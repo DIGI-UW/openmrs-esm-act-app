@@ -1,4 +1,5 @@
 import dayjs, { type Dayjs } from 'dayjs';
+import { formatDate } from '@openmrs/esm-framework';
 
 export type PeriodKind = 'month' | 'quarter';
 
@@ -24,7 +25,9 @@ export function periods(kind: PeriodKind, today: Dayjs = dayjs()): Array<Period>
     const start = first.subtract(i * step, 'month');
     const end = start.add(step, 'month').subtract(1, 'day');
     const label =
-      kind === 'month' ? start.format('MMM YYYY') : `Q${Math.floor(start.month() / 3) + 1} ${start.format('YYYY')}`;
+      kind === 'month'
+        ? formatDate(start.toDate(), { day: false, time: false, noToday: true })
+        : `Q${Math.floor(start.month() / 3) + 1} ${start.format('YYYY')}`;
     return { key: start.format('YYYY-MM-DD'), start, end, label };
   });
 }
