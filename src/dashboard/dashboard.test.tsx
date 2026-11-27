@@ -1,7 +1,7 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import { SWRConfig } from 'swr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DonutChart, SimpleBarChart } from '@carbon/charts-react';
@@ -96,7 +96,7 @@ const OPTIMISATION = '733a512c-3243-4e91-a44a-06a8e5384606';
 const SCREENING = '8b257a0c-7e96-5a01-9672-975cae3b0419';
 const DIAGNOSES = '6ddf6b36-2789-4733-8433-a877d54795cf';
 
-const today = dayjs().format('YYYY-MM-DD');
+let today: string;
 
 const EMERGENT = '1: emergent (24 hours)';
 const URGENT = '2: urgent (60 days/2 months)';
@@ -348,10 +348,17 @@ function renderPage() {
 
 describe('Dashboard', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date());
+    today = dayjs().format('YYYY-MM-DD');
     window.history.replaceState(null, '', '/openmrs/spa/home/act-dashboard');
     window.getOpenmrsSpaBase = () => '/openmrs/spa/';
     vi.mocked(useReportDataset).mockReset();
     Object.keys(mutates).forEach((report) => delete mutates[report]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('shows the registered, active, prophylaxis and waiting figures as tiles', async () => {
@@ -2187,8 +2194,13 @@ describe('Dashboard', () => {
   });
 
   describe('Screening counts', () => {
-    const lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
-    const yearToLastMonth = dayjs().subtract(12, 'month').format('YYYY-MM');
+    let lastMonth: string;
+    let yearToLastMonth: string;
+
+    beforeEach(() => {
+      lastMonth = dayjs().subtract(1, 'month').format('YYYY-MM');
+      yearToLastMonth = dayjs().subtract(12, 'month').format('YYYY-MM');
+    });
 
     it("sums every clinic's counts for the twelve months to the last one, with shares that add up to 100", async () => {
       await signIn();
@@ -2329,7 +2341,11 @@ describe('Dashboard', () => {
   });
 
   describe('screening from registrations', () => {
-    const yearBack = dayjs().subtract(364, 'day').format('YYYY-MM-DD');
+    let yearBack: string;
+
+    beforeEach(() => {
+      yearBack = dayjs().subtract(364, 'day').format('YYYY-MM-DD');
+    });
 
     it('counts the patients registered in the 365 days to the date, and says it counts registrations, not screening', async () => {
       await signIn();

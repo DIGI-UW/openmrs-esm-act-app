@@ -1,5 +1,5 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { signInWith } from '../access/sign-in.test-helper';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -208,10 +208,16 @@ const newlyPrescribed = {
 
 describe('ProphylaxisPage', () => {
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 1, 10));
     await signInWith(['Add Encounters']);
     vi.mocked(useOpenFormInVisit).mockReturnValue({ open: openForm, isOpening: false });
     setLayout('small-desktop');
     serve();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("lists the patient's BPG injections newest first, with the dose given, their facility and ACT Core's timing", async () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { SWRConfig } from 'swr';
 import dayjs from 'dayjs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
@@ -84,9 +84,15 @@ const rowOf = (procedureName: string) =>
 
 describe('ProceduralRecommendationsCard', () => {
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 20, 10));
     open.mockReset();
     vi.mocked(useMayEnterForm).mockReturnValue(true);
     await signInWith(['Get Encounters', 'Get Observations']);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("lists the latest consultation's recommendations: waiting, overdue, and done once Procedures and Outcomes records them", async () => {
