@@ -2,10 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createGlobalStore, launchWorkspace2, showModal } from '@openmrs/esm-framework';
 import { CLINICAL_FORMS_WINDOW, launchInClinicalFormsWindow } from './launch-in-clinical-forms-window';
 
-const openForm = { workspaceName: 'patient-form-entry-workspace', hasUnsavedChanges: false, title: 'RHD Echocardiogram' };
+const openForm = {
+  workspaceName: 'patient-form-entry-workspace',
+  hasUnsavedChanges: false,
+  title: 'RHD Echocardiogram',
+};
 const formsList = { workspaceName: 'clinical-forms-workspace', hasUnsavedChanges: false, title: 'Clinical forms' };
 
-let store: ReturnType<typeof createGlobalStore<{ openedWindows: Array<object>; isMostRecentlyOpenedWindowHidden: boolean }>>;
+let store: ReturnType<
+  typeof createGlobalStore<{ openedWindows: Array<object>; isMostRecentlyOpenedWindowHidden: boolean }>
+>;
 
 const windowWith = (...openedWorkspaces: Array<typeof openForm>) => ({
   windowName: CLINICAL_FORMS_WINDOW,

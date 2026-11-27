@@ -267,10 +267,7 @@ describe('Home quick action tiles', () => {
       'href',
       '/openmrs/spa/home/act-role-permissions',
     );
-    expect(screen.getByRole('link', { name: /Studies/ })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/home/act-studies',
-    );
+    expect(screen.getByRole('link', { name: /Studies/ })).toHaveAttribute('href', '/openmrs/spa/home/act-studies');
   });
 
   it("leaves out Role permissions when the home dashboard does not assign its page's link", () => {
